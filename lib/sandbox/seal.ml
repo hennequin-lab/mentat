@@ -39,11 +39,9 @@ let external_ =
     identity = Identity.declared_external;
   }
 
-let confined ~backend policy =
+let confined ~backend ~mutates policy =
   let escalation =
-    match Policy.writable_roots policy with
-    | [] -> Denied Error.Escalation_denied
-    | _ :: _ -> Available
+    if mutates then Available else Denied Error.Escalation_denied
   in
   match backend with
   | Error error ->

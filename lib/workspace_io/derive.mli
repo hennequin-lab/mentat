@@ -32,6 +32,13 @@ type derived = {
           them, so they are exempt from the scratch-disjointness guard; they
           join the sandbox policy's writable roots and are never described or
           protected. *)
+  toolchain_writable : Lpath.Abs.t list;
+      (** Toolchain state a build must write, outside the workspace — dune's
+          cache, which holds the revision-store lock a pinned-source build takes
+          unconditionally. Separate from {!platform_writable} because it is
+          persistent user state rather than scratch space: a route that promises
+          no mutation is still granted somewhere to put a temporary file, and is
+          not granted this. *)
   readable : Lpath.Abs.t list;
       (** The scoped read roots (workspace, configured, platform, executable,
           toolchain, git-worktree); [[]] when not scoped. *)

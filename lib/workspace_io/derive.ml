@@ -15,6 +15,7 @@ type derived = {
   workspace_roots : (Mentat_workspace.Root.t * Lpath.Abs.t) list;
   writable : Lpath.Abs.t list;
   platform_writable : Lpath.Abs.t list;
+  toolchain_writable : Lpath.Abs.t list;
   readable : Lpath.Abs.t list;
   protected : Lpath.Abs.t list;
   denied : Lpath.Abs.t list;
@@ -836,7 +837,8 @@ let run ~scoped ~lookup ~logical ~configured_reads ~configured_writes
       writable = primary :: configured_writes;
       platform_writable =
         shared_temp_dirs ~lookup ~workspace_roots:scope_roots
-        @ darwin_user_dirs ~lookup @ toolchain_writes;
+        @ darwin_user_dirs ~lookup;
+      toolchain_writable = toolchain_writes;
       readable;
       protected;
       denied;

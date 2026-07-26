@@ -426,11 +426,23 @@ let resolve ~sw ~stdenv ~logical ~mode ~read ~readable_roots ~writable_roots
             | Mentat_config.Read.Project ->
                 Mentat_sandbox.Policy.Only derived.Derive.readable
           in
+          (* A read-only route still needs somewhere to put a temporary file
+             — every libc temp helper wants one, and denying it breaks tools
+             that mutate nothing. What "read-only" promises is that the
+             *workspace* is not changed, so the platform scratch space is
+             granted and the workspace roots are not. The no-mutation promise
+             is carried by [mutates] rather than inferred from this list being
+             empty, so granting temp cannot silently buy an escalation. *)
+          let mutates =
+            match mode with Mentat_config.Mode.Read_only -> false | _ -> true
+          in
           let writable_roots, protected_paths =
             match mode with
-            | Mentat_config.Mode.Read_only -> ([], [])
+            | Mentat_config.Mode.Read_only ->
+                (derived.Derive.platform_writable, [])
             | _ ->
-                ( derived.Derive.writable @ derived.Derive.platform_writable,
+                ( derived.Derive.writable @ derived.Derive.platform_writable
+                  @ derived.Derive.toolchain_writable,
                   derived.Derive.protected )
           in
           let policy =
@@ -443,7 +455,7 @@ let resolve ~sw ~stdenv ~logical ~mode ~read ~readable_roots ~writable_roots
               ~denied_paths:derived.Derive.denied ~network
           in
           let backend = Probe.backend ~stdenv ~lookup in
-          Mentat_sandbox.confined ~backend policy
+          Mentat_sandbox.confined ~backend ~mutates policy
     in
     let* roots = open_roots ~sw ~fs ~logical derived.Derive.workspace_roots in
     let primary =

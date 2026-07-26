@@ -36,7 +36,7 @@ type t =
       (** the working directory is outside the confined readable roots.
           Retryable with a different working directory. *)
   | Escalation_denied
-      (** the sealed policy has no writable roots: a read-only sandbox admits no
+      (** the sealed posture promises no mutation: a read-only sandbox admits no
           approval-shaped exception. *)
   | Escalation_irrelevant
       (** escalation asks for what is already true on an unconfined or

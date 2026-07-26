@@ -28,7 +28,7 @@ let message = function
         "working directory %s is outside the confined readable roots"
         (Lpath.Abs.to_string cwd)
   | Escalation_denied ->
-      "the sealed policy has no writable roots: a read-only sandbox admits no \
+      "the sealed posture promises no mutation: a read-only sandbox admits no \
        escalation"
   | Escalation_irrelevant ->
       "sandbox escalation is not meaningful for this execution route"

@@ -183,11 +183,11 @@ type t
     permission approval. *)
 type escalation =
   | Available
-      (** workspace-write shaped: one command may run unconfined after a
+      (** the posture may mutate, so one command may run unconfined after a
           separate permission approval *)
   | Denied of Error.t
-      (** read-only shaped: the no-mutation promise admits no approval-shaped
-          exception *)
+      (** the posture promises no mutation, and that promise admits no
+          approval-shaped exception *)
   | Ignored
       (** unconfined or declared-external: escalation asks for what is already
           true *)
@@ -217,15 +217,24 @@ module Obligation : sig
   (** [pp ppf t] formats the obligation for diagnostics. *)
 end
 
-val confined : backend:(Backend.t, Error.t) result -> Policy.t -> t
-(** [confined ~backend policy] seals a confined route. [backend] carries the
-    resolver's probe outcome as data — never a profile — so the enforcement
-    profile can only be generated from {e this} policy, and evidence,
-    obligations, and identity always describe the policy commands run under.
-    [backend] is required: a forgotten probe outcome is a type error, not a
-    weaker seal. [Ok backend] lowers the profile with that backend's generator;
-    [Error e] (typically {!Error.Unavailable}) refuses every command —
-    fail-closed. Pure and total.
+val confined :
+  backend:(Backend.t, Error.t) result -> mutates:bool -> Policy.t -> t
+(** [confined ~backend ~mutates policy] seals a confined route.
+
+    [mutates] is the posture's own answer to whether this route may change the
+    filesystem at all, and it fixes {!escalation}: [true] admits the
+    approval-shaped exception, [false] refuses it. It is stated rather than
+    inferred from an empty writable set, because the two come apart — a
+    no-mutation posture may still be granted somewhere to put a temporary file,
+    and reading the promise off the shape of a list would silently trade it away
+    the moment that grant appeared. Product posture names the value; this
+    library never learns what a mode is. [backend] carries the resolver's probe
+    outcome as data — never a profile — so the enforcement profile can only be
+    generated from {e this} policy, and evidence, obligations, and identity
+    always describe the policy commands run under. [backend] is required: a
+    forgotten probe outcome is a type error, not a weaker seal. [Ok backend]
+    lowers the profile with that backend's generator; [Error e] (typically
+    {!Error.Unavailable}) refuses every command — fail-closed. Pure and total.
 
     {b Law (evidence fixed at seal).} {!evidence} is [Enforced] for [Ok],
     [Refused] for [Error] — and never changes across {!lower_argv} calls. *)

@@ -45,11 +45,11 @@ let confined ?(scratch = abs "/tmp") ?(reads = Policy.All)
   Policy.make ~scratch ~reads ~writable_roots ~protected_paths ~denied_paths
     ~network
 
-let sealed ?(backend = Backend.Seatbelt) policy =
-  Sandbox.confined ~backend:(Ok backend) policy
+let sealed ?(backend = Backend.Seatbelt) ?(mutates = true) policy =
+  Sandbox.confined ~backend:(Ok backend) ~mutates policy
 
 let refused_sealed ?(error = Error.Unavailable "no backend") policy =
-  Sandbox.confined ~backend:(Error error) policy
+  Sandbox.confined ~backend:(Error error) ~mutates:true policy
 
 let identity_of ?backend policy = Sandbox.identity (sealed ?backend policy)
 
@@ -665,7 +665,7 @@ let denials_are_unfiltered_and_identified () =
           ~protected_paths:[ outside ] ()));
   let identity p =
     Mentat_sandbox.identity
-      (Mentat_sandbox.confined ~backend:(Ok Backend.Seatbelt) p)
+      (Mentat_sandbox.confined ~backend:(Ok Backend.Seatbelt) ~mutates:true p)
   in
   is_false ~msg:"denying a path changes the durable identity"
     (Mentat_sandbox.Identity.equal (identity policy)
@@ -855,9 +855,23 @@ let escalation_stances () =
     (match Sandbox.escalation (sealed workspace_policy) with
     | Sandbox.Available -> true
     | _ -> false);
-  is_true ~msg:"read-only denies escalation"
-    (match Sandbox.escalation (sealed (confined ())) with
+  is_true ~msg:"a no-mutation posture denies escalation"
+    (match Sandbox.escalation (sealed ~mutates:false (confined ())) with
     | Sandbox.Denied Error.Escalation_denied -> true
+    | _ -> false);
+  (* The stance is the posture's own answer, not a reading of the writable list:
+     a no-mutation route granted scratch space must not thereby acquire an
+     approval-shaped escape. *)
+  is_true ~msg:"granting a no-mutation route a temp root buys no escalation"
+    (match
+       Sandbox.escalation
+         (sealed ~mutates:false (confined ~writable_roots:[ abs "/tmp" ] ()))
+     with
+    | Sandbox.Denied Error.Escalation_denied -> true
+    | _ -> false);
+  is_true ~msg:"a mutating route with no writable root is still available"
+    (match Sandbox.escalation (sealed ~mutates:true (confined ())) with
+    | Sandbox.Available -> true
     | _ -> false);
   is_true ~msg:"direct ignores escalation"
     (match Sandbox.escalation Sandbox.direct with
@@ -987,14 +1001,14 @@ let lower_escalated_drops_containment_never_prefixes () =
 let lower_escalated_refuses_denied_and_ignored () =
   (match
      Sandbox.lower_escalated_argv
-       (sealed (confined ()))
+       (sealed ~mutates:false (confined ()))
        ~cwd:(abs "/tmp") [ "true" ]
    with
   | Error Error.Escalation_denied ->
       (* Semantic pin: the read-only refusal message is product-neutral — no
          --sandbox flag hint leaks from the library. *)
       equal string ~msg:"read-only escalation refusal message"
-        "the sealed policy has no writable roots: a read-only sandbox admits \
+        "the sealed posture promises no mutation: a read-only sandbox admits \
          no escalation"
         (Error.message Error.Escalation_denied)
   | _ -> fail "read-only escalation must be Escalation_denied");

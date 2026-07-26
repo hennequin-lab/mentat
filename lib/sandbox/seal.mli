@@ -41,8 +41,9 @@ module Obligation : sig
   val pp : Format.formatter -> t -> unit
 end
 
-val confined : backend:(Backend.t, Error.t) result -> Policy.t -> t
-(** [confined ~backend policy] seals a confined route; see
+val confined :
+  backend:(Backend.t, Error.t) result -> mutates:bool -> Policy.t -> t
+(** [confined ~backend ~mutates policy] seals a confined route; see
     {!Mentat_sandbox.confined}. [Ok] lowers the profile from [policy]; [Error]
     refuses every command. Pure and total. *)
 
