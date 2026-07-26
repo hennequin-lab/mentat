@@ -455,6 +455,7 @@ let describe_roots_carries_user_toolchain_dirs () =
   let config_dune = mk_path (Filename.concat ".config" "dune")
   and data = mk_path (Filename.concat ".local" "share")
   and state = mk_path (Filename.concat ".local" "state")
+  and cache_dune = mk_path (Filename.concat ".cache" "dune")
   and cache_db =
     mk_path (Filename.concat ".cache" (Filename.concat "dune" "db"))
   and cache_toolchains =
@@ -498,8 +499,8 @@ let describe_roots_carries_user_toolchain_dirs () =
   in
   is_true ~msg:"the real opam root is admitted, labeled OPAMROOT"
     (admitted "toolchain:OPAMROOT" opam);
-  is_true ~msg:"the real XDG cache is admitted, labeled XDG_CACHE_HOME"
-    (admitted "toolchain:XDG_CACHE_HOME" cache);
+  is_true ~msg:"dune's own cache is admitted, labeled XDG_CACHE_HOME"
+    (admitted "toolchain:XDG_CACHE_HOME" cache_dune);
   is_true
     ~msg:"dune's own config directory is admitted, labeled XDG_CONFIG_HOME"
     (admitted "toolchain:XDG_CONFIG_HOME" config_dune);
@@ -536,9 +537,14 @@ let describe_roots_carries_user_toolchain_dirs () =
     | None -> fail "expected a confined seal carrying a policy"
   in
   let grants dir = List.exists (Abs.equal (abs dir)) writable in
-  is_true ~msg:"the carried XDG cache is writable, so dune can take its locks"
+  is_true ~msg:"dune's cache is writable, so it can take its rev-store lock"
+    (grants cache_dune);
+  is_false
+    ~msg:
+      "the shared XDG cache base is not writable — its neighbours hold other \
+       tools' executables"
     (grants cache);
-  is_false ~msg:"the carried opam root stays read-only" (grants opam);
+  is_false ~msg:"the opam root stays read-only" (grants opam);
   is_false ~msg:"the carried XDG config stays read-only" (grants config);
   (* The XDG state and data directories are not carried at all: no build tool
      resolves them and they hold Mentat's own session store and logs. *)
@@ -1838,11 +1844,17 @@ let child_environment_is_private_on_every_route () =
   in
   match String.split_on_char '\n' (stdout_str outcome) with
   | [ home; tmpdir; parent_only ] ->
-      is_true ~msg:"the child HOME is the private per-run scratch"
+      (* HOME is inherited: the resolver derives the toolchain's $HOME-relative
+         roots from the same value the child reads, so a directory cannot be
+         named to a tool without the grant that makes it usable. The temp family
+         is still the private per-run scratch. *)
+      equal string ~msg:"the child HOME is the launcher's own"
+        (Option.value (Sys.getenv_opt "HOME") ~default:"")
+        home;
+      is_true ~msg:"the child TMPDIR is the private per-run scratch"
         (String.starts_with
            ~prefix:(Filename.concat w.tmp_base "mentat-sandbox-")
-           home);
-      equal string ~msg:"the child TMPDIR is the same scratch" home tmpdir;
+           tmpdir);
       equal string ~msg:"a parent-only ambient variable is stripped" "ABSENT"
         parent_only
   | _ -> fail "unexpected env probe output"
@@ -2170,9 +2182,9 @@ let escalation_escapes_the_profile_never_the_environment () =
       equal string ~msg:"the escalated write landed" "y" (read_file outside)
   | Error e -> failf "escalated run failed: %a" Command.Error.pp e);
   let confined_env = run_ok w.io [ "/usr/bin/env" ] in
-  is_true ~msg:"the confined child HOME is exactly the scratch"
+  is_true ~msg:"the confined child TMPDIR is exactly the scratch"
     (String.includes
-       ~affix:("HOME=" ^ scratch ^ "\n")
+       ~affix:("TMPDIR=" ^ scratch ^ "\n")
        (stdout_str confined_env));
   match run_escalated_res w.io [ "/usr/bin/env" ] with
   | Ok escalated ->

@@ -28,20 +28,15 @@ type t = {
 }
 
 val make :
-  path:string ->
-  scratch:Lpath.Abs.t ->
-  carried_dirs:(string * Lpath.Abs.t) list ->
-  lookup:(string -> string option) ->
-  t
-(** [make ~path ~scratch ~carried_dirs ~lookup] builds the environment.
+  path:string -> scratch:Lpath.Abs.t -> lookup:(string -> string option) -> t
+(** [make ~path ~scratch ~lookup] builds the environment.
 
     [path] is the resolver-derived [PATH] value; its segments are normalized
     (absolute, deduplicated, malformed segments dropped). [scratch] becomes
-    [HOME], [TEMP], [TMP], and [TMPDIR]. [carried_dirs] are real user-level
-    toolchain directories exported as [(variable, value)] — opam's [OPAMROOT]
-    and dune's [XDG_*] base directories — so those tools still resolve their
-    root and shared cache once [HOME] is redirected to the scratch; the resolver
-    recovers them already existence-checked. [lookup] reads the ambient
-    environment for the allow-listed names: locale variables verbatim and the
-    OCaml toolchain variables with their path values normalized. Fixed pager,
-    color, and terminal bindings complete the set. *)
+    [TEMP], [TMP], and [TMPDIR]. [HOME] is {e inherited}, not rewritten: the
+    resolver derives the toolchain's [$HOME]-relative roots from the same value
+    the child reads, so no directory can be named to a tool without the grant
+    that makes it usable. [lookup] reads the ambient environment for the
+    allow-listed names: [HOME], locale variables verbatim, and the OCaml
+    toolchain variables with their path values normalized. Fixed pager, color,
+    and terminal bindings complete the set. *)
