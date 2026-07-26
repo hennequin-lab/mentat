@@ -213,19 +213,19 @@ let anthropic_models =
       ~pricing:
         (pricing ~input:10. ~output:50. ~cache_read:1. ~cache_write:12.5 ())
       ();
-    Model.make (llm "claude-opus-4-8") ~display_name:"Claude Opus 4.8"
-      ~family:"claude-opus" ~released_on:(date "2026-05-28")
+    Model.make (llm "claude-opus-5") ~display_name:"Claude Opus 5"
+      ~family:"claude-opus" ~released_on:(date "2026-07-21")
       ~knowledge_cutoff:(cutoff "2026-01") ~context_window:1_000_000
       ~max_output_tokens:128_000 ~input_modalities:text_image_pdf
       ~capabilities:tools_reasoning ~supported_reasoning:claude_47_efforts
       ~pricing:
         (pricing ~input:5. ~output:25. ~cache_read:0.5 ~cache_write:6.25 ())
       ();
-    Model.make (llm "claude-haiku-4-5")
-      ~display_name:"Claude Haiku 4.5 (latest)" ~family:"claude-haiku"
-      ~released_on:(date "2025-10-15") ~knowledge_cutoff:(cutoff "2025-02")
-      ~context_window:200_000 ~max_output_tokens:64_000
-      ~input_modalities:text_image_pdf ~capabilities:tools_reasoning
+    Model.make (llm "claude-haiku-4-5") ~display_name:"Claude Haiku 4.5"
+      ~family:"claude-haiku" ~released_on:(date "2025-10-15")
+      ~knowledge_cutoff:(cutoff "2025-02") ~context_window:200_000
+      ~max_output_tokens:64_000 ~input_modalities:text_image_pdf
+      ~capabilities:tools_reasoning
       ~pricing:
         (pricing ~input:1. ~output:5. ~cache_read:0.1 ~cache_write:1.25 ())
       ();

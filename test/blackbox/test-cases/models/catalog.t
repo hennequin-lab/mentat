@@ -22,7 +22,7 @@ provider reads [ready].
   openai/gpt-image-2             stable   -        5/30         sign-in
   anthropic/claude-sonnet-5 *    stable   1000000  2/10         sign-in
   anthropic/claude-fable-5       stable   1000000  10/50        sign-in
-  anthropic/claude-opus-4-8      stable   1000000  5/25         sign-in
+  anthropic/claude-opus-5        stable   1000000  5/25         sign-in
   anthropic/claude-haiku-4-5     stable   200000   1/5          sign-in
   google/gemini-3.6-flash *      stable   1048576  1.5/7.5      sign-in
   google/gemini-3.5-flash-lite   stable   1048576  0.3/2.5      sign-in
@@ -50,7 +50,7 @@ A default `list` hides it.
   openai/gpt-5.3-chat-latest     unavailable: OpenAI Responses does not support this chat alias  128000   1.75/14      sign-in
   anthropic/claude-sonnet-5 *    stable                                                          1000000  2/10         sign-in
   anthropic/claude-fable-5       stable                                                          1000000  10/50        sign-in
-  anthropic/claude-opus-4-8      stable                                                          1000000  5/25         sign-in
+  anthropic/claude-opus-5        stable                                                          1000000  5/25         sign-in
   anthropic/claude-haiku-4-5     stable                                                          200000   1/5          sign-in
   google/gemini-3.6-flash *      stable                                                          1048576  1.5/7.5      sign-in
   google/gemini-3.5-flash-lite   stable                                                          1048576  0.3/2.5      sign-in
