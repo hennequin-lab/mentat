@@ -1,0 +1,8 @@
+{
+  "session": "s1",
+  "into": "s2",
+  "anchor": {
+    "turn": "t1",
+    "edge": "before"
+  }
+}

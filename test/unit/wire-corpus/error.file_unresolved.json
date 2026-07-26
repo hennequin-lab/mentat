@@ -1,0 +1,6 @@
+{
+  "type": "file_unresolved",
+  "v": 1,
+  "path": "src/foo.ml",
+  "reason": "resolves outside the workspace"
+}

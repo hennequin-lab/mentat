@@ -1,0 +1,4 @@
+(library
+ (name mentat_eval_trace)
+ (modules mentat_eval_trace timing trace trace_metrics)
+ (libraries jsont jsont.bytesrw mentat_session mentat_llm mentat_tool))

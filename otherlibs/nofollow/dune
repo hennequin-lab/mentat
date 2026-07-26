@@ -1,0 +1,6 @@
+(library
+ (name nofollow)
+ (libraries unix)
+ (foreign_stubs
+  (language c)
+  (names nofollow_stubs)))

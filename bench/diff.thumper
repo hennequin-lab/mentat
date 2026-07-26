@@ -1,0 +1,24 @@
+# thumper baseline
+# version: 2
+# suite_name: diff
+
+# machine: 3b8ae6dbe74c4269
+# cpu: Apple M1 Max
+# ocaml: 5.5.0
+# git: 7cc7ffac
+# dirty: true
+# command: ./bench_diff.exe --quick -q
+
+render/20-files	alloc_words	2.971230e+05	2.971230e+05	2.971230e+05	0.000000e+00	5	0
+render/20-files	cpu_time	4.365198e-04	4.111566e-04	4.495328e-04	4.395695e-02	5	1
+render/20-files	wall_time	4.282087e-04	3.765869e-04	4.501520e-04	8.589863e-02	5	1
+render/200-line-file	alloc_words	2.216300e+04	2.216300e+04	2.216300e+04	0.000000e+00	5	0
+render/200-line-file	cpu_time	3.865178e-05	3.785855e-05	3.942246e-05	2.023075e-02	5	1
+render/200-line-file	wall_time	3.874719e-05	3.783899e-05	3.937928e-05	1.987614e-02	5	0
+render/one-line	alloc_words	2.040000e+03	2.040000e+03	2.040000e+03	0.000000e+00	7	0
+render/one-line	cpu_time	2.378284e-06	2.246754e-06	2.472750e-06	4.751254e-02	7	1
+render/one-line	wall_time	2.433149e-06	2.240900e-06	2.509542e-06	5.520454e-02	7	1
+stats_20-files	alloc_words	2.656000e+04	2.656000e+04	2.656000e+04	0.000000e+00	5	0
+stats_20-files	cpu_time	1.276316e-04	1.137204e-04	1.389989e-04	9.902933e-02	5	0
+stats_20-files	wall_time	1.303817e-04	1.126911e-04	1.432265e-04	1.171000e-01	5	0
+

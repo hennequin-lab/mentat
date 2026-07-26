@@ -1,0 +1,10 @@
+(lang dune 3.22)
+
+(name counter)
+
+(package
+ (name counter)
+ (allow_empty)
+ (depends
+  (ocaml
+   (>= 5.5.0))))

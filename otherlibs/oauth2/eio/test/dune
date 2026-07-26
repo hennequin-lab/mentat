@@ -1,0 +1,15 @@
+(test
+ (name test_oauth2_eio)
+ (modules test_oauth2_eio)
+ (libraries
+  cohttp
+  cohttp-eio
+  eio
+  eio_main
+  oauth2
+  oauth2_eio
+  uri
+  tls
+  tls-eio
+  cstruct
+  windtrap))

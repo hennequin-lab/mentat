@@ -1,0 +1,32 @@
+(library
+ (name tui_harness)
+ (modules key project screen tui util)
+ (private_modules util)
+ (libraries
+  eio
+  eio_main
+  matrix
+  matrix.test
+  mosaic
+  mentat_client
+  mentat_config
+  mentat_context
+  mentat_diagnostic
+  textdiff
+  mentat_digest
+  mentat_edit
+  mentat_llm
+  mentat_mutation
+  lpath
+  mentat_permission
+  mentat_protocol
+  mentat_provider
+  mentat_review
+  mentat_sandbox
+  mentat_session
+  mentat_test_censor
+  mentat_tool
+  mentat_tui
+  mentat_workspace
+  uri
+  unix))

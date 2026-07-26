@@ -1,0 +1,16 @@
+(library
+ (name mentat_protocol)
+ (private_modules import wire position projection)
+ (libraries
+  jsont
+  mentat_diagnostic
+  textdiff
+  mentat_llm
+  mentat_mutation
+  lpath
+  mentat_permission
+  mentat_provider
+  mentat_review
+  mentat_session
+  mentat_tool
+  mentat_workspace))

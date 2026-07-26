@@ -1,0 +1,9 @@
+{
+  "type": "model.download",
+  "v": 1,
+  "turn": "turn-c",
+  "model": "gpt-oss-20b",
+  "received": 1200000000,
+  "total": 12109566624,
+  "phase": "checking"
+}

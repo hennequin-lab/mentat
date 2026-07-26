@@ -1,0 +1,10 @@
+(lang dune 3.22)
+
+(name words)
+
+(package
+ (name words)
+ (allow_empty)
+ (depends
+  (ocaml
+   (>= 5.5.0))))

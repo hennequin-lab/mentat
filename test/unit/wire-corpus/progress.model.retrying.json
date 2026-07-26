@@ -1,0 +1,9 @@
+{
+  "type": "model.retrying",
+  "v": 1,
+  "turn": "turn-c",
+  "attempt": 3,
+  "limit": 10,
+  "delay": 8.5,
+  "reason": "provider overloaded"
+}

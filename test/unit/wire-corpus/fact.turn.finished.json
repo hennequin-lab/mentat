@@ -1,0 +1,8 @@
+{
+  "type": "turn.finished",
+  "v": 1,
+  "turn": "turn-c",
+  "outcome": {
+    "type": "completed"
+  }
+}

@@ -1,0 +1,16 @@
+(library
+ (name mentat_client)
+ (libraries
+  eio
+  mentat_config
+  mentat_diagnostic
+  textdiff
+  mentat_llm
+  mentat_mutation
+  lpath
+  mentat_permission
+  mentat_protocol
+  mentat_provider
+  mentat_review
+  mentat_session
+  mentat_workspace))

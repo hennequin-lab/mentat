@@ -1,0 +1,10 @@
+{
+  "type": "turn.finished",
+  "v": 1,
+  "turn": "turn-c",
+  "outcome": {
+    "type": "interrupted",
+    "reason": "user stop",
+    "cancelled": true
+  }
+}

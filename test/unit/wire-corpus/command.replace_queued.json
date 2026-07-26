@@ -1,0 +1,19 @@
+{
+  "type": "replace_queued",
+  "v": 1,
+  "session": "session-c",
+  "inputs": [
+    [
+      {
+        "type": "text",
+        "text": "First instead."
+      }
+    ],
+    [
+      {
+        "type": "text",
+        "text": "Then this."
+      }
+    ]
+  ]
+}

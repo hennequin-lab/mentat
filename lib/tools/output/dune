@@ -1,0 +1,5 @@
+(include_subdirs qualified)
+
+(library
+ (name mentat_tools_output)
+ (libraries mentat_tool mentat_llm jsont))

@@ -1,0 +1,4 @@
+(library
+ (name mentat_eval)
+ (modules mentat_eval usage markers check task result report)
+ (libraries jsont))

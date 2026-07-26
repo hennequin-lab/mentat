@@ -1,0 +1,3 @@
+(library
+ (name mentat_llm)
+ (libraries jsont jsonschema mentat_digest))

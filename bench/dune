@@ -1,0 +1,225 @@
+; Benchmark suites. One thumper executable per subject; committed .thumper
+; baselines are the contract, reviewed like goldens. Tier A is ALLOC-gated:
+; every suite budgets allocation (no_more_alloc_than 0, tightened to exact for
+; the deterministic suites; a small tolerance for bench_session_list, whose scan
+; carries variable-length filesystem paths) and gives wall and cpu a budget so
+; wide it never fires (no_slower_than 1000). Thumper still records wall and cpu,
+; but they never gate, because allocation is exactly reproducible and
+; machine-independent while wall time on a shared runner is not — an IO-heavy
+; case under load can run several times slower, which is noise, not a regression;
+; gating on it is theater.
+; The gate runs --quick: allocation is exact after a handful of samples, so a 2s
+; budget measures it reliably and keeps `dune runtest` fast; -q keeps dune output
+; to one character per case. (The default preset also has fork=Never and
+; fail_on_inconclusive=false, so the gate never forks and never flakes on an
+; inconclusive time metric.) The alloc-primary --deterministic preset is
+; deliberately NOT used here: its 50-sample, GC-compacting runs took minutes on
+; the larger suites, and a gate that slow dies of friction — allocation is
+; zero-variance, so --quick pins it just as exactly. A regression fails the rule
+; directly; an improvement writes <suite>.thumper.corrected that (diff?) exposes
+; for `dune promote`.
+; Baselines are generated with the same --quick preset the gate uses, so a clean
+; re-run is Equivalent with no spurious promote candidate.
+
+(executable
+ (name bench_path)
+ (modules bench_path)
+ (libraries thumper lpath))
+
+(executable
+ (name bench_digest)
+ (modules bench_digest)
+ (libraries thumper mentat_digest bench_support))
+
+(executable
+ (name bench_diff)
+ (modules bench_diff)
+ (libraries thumper textdiff bench_support))
+
+(executable
+ (name bench_resume)
+ (modules bench_resume)
+ (libraries thumper mentat_session jsont jsont.bytesrw bench_support))
+
+; bench_session_list runs Thumper.run inside Eio_main.run to reach the store.
+; Keep it on --quick (default preset, fork=Never); never --ci, whose per-case
+; fork would fork the process under the Eio scheduler.
+
+(executable
+ (name bench_session_list)
+ (modules bench_session_list)
+ (libraries
+  thumper
+  mentat_store
+  mentat_session
+  eio
+  eio_main
+  unix
+  bench_support))
+
+(executable
+ (name bench_mutation)
+ (modules bench_mutation)
+ (libraries thumper mentat_mutation bench_support))
+
+(executable
+ (name bench_revert)
+ (modules bench_revert)
+ (libraries thumper mentat_mutation bench_support))
+
+; bench_enter runs Thumper.run inside Eio_main.run for the context/skills load
+; cases. Keep it on --quick (default preset, fork=Never); never --ci, whose
+; per-case fork would fork the process under the Eio scheduler.
+
+(executable
+ (name bench_enter)
+ (modules bench_enter)
+ (libraries
+  thumper
+  mentat_context
+  mentat_config
+  mentat_session
+  mentat_llm
+  lpath
+  eio
+  eio.unix
+  eio_main
+  unix
+  bench_support))
+
+(executable
+ (name bench_transcript)
+ (modules bench_transcript)
+ (libraries thumper mentat_tui mosaic bench_support))
+
+; bench_poll_scaling is not a thumper suite: it is a boolean scaling gate over
+; the incremental projector [Feed.next] indexes, asserting one commit's advance
+; is flat across session sizes (see its header). It gates on runtest by exit
+; code, on allocation — exact and machine-independent — so it never flakes.
+
+(executable
+ (name bench_poll_scaling)
+ (modules bench_poll_scaling)
+ (libraries mentat_protocol mentat_session mentat_llm mentat_mutation
+  bench_support))
+
+; bench_engine_latency drives the real engine over an in-memory store to time
+; submit -> first streamed token across session sizes. It is a wall TREND (never
+; gated): engine orchestration is multi-fiber and stateful per turn, so it is a
+; direct driver — fresh session per sample, first samples discarded — not a
+; thumper suite, and it lives on @bench, printing to the nightly log. The
+; gate-worthy scaling property is bench_poll_scaling's, deterministically.
+
+(executable
+ (name bench_engine_latency)
+ (modules bench_engine_latency)
+ (libraries
+  mentat_agent
+  mentat_client
+  mentat_protocol
+  mentat_session
+  mentat_mutation
+  mentat_llm
+  mentat_sandbox
+  mentat_permission
+  mentat_diagnostic
+  mentat_edit
+  mentat_digest
+  lpath
+  eio
+  eio_main
+  mtime
+  mtime.clock.os
+  bench_support))
+
+; Tier A gate: each suite checked against its committed baseline on runtest.
+; One rule per suite (not a shared progn) so every suite runs even when another
+; regresses or needs a first baseline, and all promotions surface together.
+
+(rule
+ (alias runtest)
+ (action
+  (progn
+   (run %{exe:bench_path.exe} --quick -q)
+   (diff? path.thumper path.thumper.corrected))))
+
+(rule
+ (alias runtest)
+ (action
+  (progn
+   (run %{exe:bench_digest.exe} --quick -q)
+   (diff? digest.thumper digest.thumper.corrected))))
+
+(rule
+ (alias runtest)
+ (action
+  (progn
+   (run %{exe:bench_diff.exe} --quick -q)
+   (diff? diff.thumper diff.thumper.corrected))))
+
+(rule
+ (alias runtest)
+ (action
+  (progn
+   (run %{exe:bench_resume.exe} --quick -q)
+   (diff? resume.thumper resume.thumper.corrected))))
+
+(rule
+ (alias runtest)
+ (action
+  (progn
+   (run %{exe:bench_session_list.exe} --quick -q)
+   (diff? session_list.thumper session_list.thumper.corrected))))
+
+(rule
+ (alias runtest)
+ (action
+  (progn
+   (run %{exe:bench_mutation.exe} --quick -q)
+   (diff? mutation.thumper mutation.thumper.corrected))))
+
+(rule
+ (alias runtest)
+ (action
+  (progn
+   (run %{exe:bench_revert.exe} --quick -q)
+   (diff? revert.thumper revert.thumper.corrected))))
+
+(rule
+ (alias runtest)
+ (action
+  (progn
+   (run %{exe:bench_enter.exe} --quick -q)
+   (diff? enter.thumper enter.thumper.corrected))))
+
+(rule
+ (alias runtest)
+ (action
+  (progn
+   (run %{exe:bench_transcript.exe} --quick -q)
+   (diff? transcript.thumper transcript.thumper.corrected))))
+
+; The poll scaling gate: a boolean flat-across-sizes assertion, not a baseline
+; comparison, so it runs directly and fails runtest on a nonzero exit.
+
+(rule
+ (alias runtest)
+ (action
+  (run %{exe:bench_poll_scaling.exe})))
+
+; Whole-suite exploration on demand (no baseline interaction).
+
+(rule
+ (alias bench)
+ (action
+  (progn
+   (run %{exe:bench_path.exe} --explore)
+   (run %{exe:bench_digest.exe} --explore)
+   (run %{exe:bench_diff.exe} --explore)
+   (run %{exe:bench_resume.exe} --explore)
+   (run %{exe:bench_session_list.exe} --explore)
+   (run %{exe:bench_mutation.exe} --explore)
+   (run %{exe:bench_revert.exe} --explore)
+   (run %{exe:bench_enter.exe} --explore)
+   (run %{exe:bench_transcript.exe} --explore)
+   (run %{exe:bench_engine_latency.exe}))))

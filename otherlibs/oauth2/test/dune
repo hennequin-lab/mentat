@@ -1,0 +1,4 @@
+(test
+ (name test_oauth2)
+ (modules test_oauth2)
+ (libraries windtrap oauth2 jsont uri))

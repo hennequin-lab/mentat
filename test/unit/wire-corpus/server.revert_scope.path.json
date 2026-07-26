@@ -1,0 +1,7 @@
+{
+  "type": "path",
+  "path": {
+    "root": "root",
+    "rel": "src/a.ml"
+  }
+}

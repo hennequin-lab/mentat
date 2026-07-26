@@ -1,0 +1,8 @@
+; Internal developer tool: built and run from the tree
+; (_build/default/lab/bin/main.exe), not installed into the mentat package.
+; Never `dune exec` this binary: a campaign shells out to dune (build gate,
+; eval runs), and nesting it under `dune exec` deadlocks on the build lock.
+
+(executable
+ (name main)
+ (libraries cmdliner jsont jsont.bytesrw mentat_eval unix))

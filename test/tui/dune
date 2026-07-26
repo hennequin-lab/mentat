@@ -1,0 +1,661 @@
+; Complete-screen visual goldens for the next TUI. Each feature executable
+; drives the real Elm shell under Mosaic's headless Matrix backend and prints
+; every terminal row; expectations are intentionally human-reviewable frames.
+
+(executable
+ (name test_goal)
+ (modules test_goal)
+ (libraries
+  mentat_digest
+  mentat_diagnostic
+  mentat_llm
+  lpath
+  mentat_permission
+  mentat_protocol
+  mentat_sandbox
+  mentat_session
+  tui_harness
+  windtrap)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(rule
+ (alias runtest)
+ (deps test_goal.exe)
+ (action
+  (progn
+   (run ./test_goal.exe)
+   (diff? test_goal.ml test_goal.ml.corrected))))
+
+(executable
+ (name test_review)
+ (modules test_review)
+ (libraries tui_harness windtrap)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(rule
+ (alias runtest)
+ (deps test_review.exe)
+ (action
+  (progn
+   (run ./test_review.exe)
+   (diff? test_review.ml test_review.ml.corrected))))
+
+(executable
+ (name test_home)
+ (modules test_home)
+ (libraries
+  jsont
+  jsont.bytesrw
+  mentat_diagnostic
+  mentat_llm
+  lpath
+  mentat_permission
+  mentat_protocol
+  mentat_provider
+  mentat_sandbox
+  mentat_session
+  mentat_tui
+  tui_harness
+  windtrap)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(rule
+ (alias runtest)
+ (deps test_home.exe)
+ (action
+  (progn
+   (run ./test_home.exe)
+   (diff? test_home.ml test_home.ml.corrected))))
+
+(executable
+ (name test_turn)
+ (modules test_turn)
+ (libraries
+  mentat_llm
+  mentat_protocol
+  mentat_session
+  mentat_workspace
+  tui_harness
+  windtrap)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(rule
+ (alias runtest)
+ (deps test_turn.exe)
+ (action
+  (progn
+   (run ./test_turn.exe)
+   (diff? test_turn.ml test_turn.ml.corrected))))
+
+(executable
+ (name test_todo_board)
+ (modules test_todo_board)
+ (libraries mentat_session tui_harness windtrap)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(rule
+ (alias runtest)
+ (deps test_todo_board.exe)
+ (action
+  (progn
+   (run ./test_todo_board.exe)
+   (diff? test_todo_board.ml test_todo_board.ml.corrected))))
+
+(executable
+ (name test_transcript)
+ (modules test_transcript)
+ (libraries jsont mentat_llm mentat_tool tui_harness windtrap)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(rule
+ (alias runtest)
+ (deps test_transcript.exe)
+ (action
+  (progn
+   (run ./test_transcript.exe)
+   (diff? test_transcript.ml test_transcript.ml.corrected))))
+
+(executable
+ (name test_commands)
+ (modules test_commands)
+ (libraries mentat_protocol tui_harness windtrap)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(rule
+ (alias runtest)
+ (deps test_commands.exe)
+ (action
+  (progn
+   (run ./test_commands.exe)
+   (diff? test_commands.ml test_commands.ml.corrected))))
+
+(executable
+ (name test_queue)
+ (modules test_queue)
+ (libraries mentat_diagnostic mentat_protocol tui_harness windtrap)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(rule
+ (alias runtest)
+ (deps test_queue.exe)
+ (action
+  (progn
+   (run ./test_queue.exe)
+   (diff? test_queue.ml test_queue.ml.corrected))))
+
+(executable
+ (name test_threads)
+ (modules test_threads)
+ (libraries
+  jsont
+  mentat_diagnostic
+  mentat_digest
+  mentat_llm
+  lpath
+  mentat_permission
+  mentat_protocol
+  mentat_sandbox
+  mentat_session
+  mentat_tui
+  mentat_tool
+  tui_harness
+  windtrap)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(rule
+ (alias runtest)
+ (deps test_threads.exe)
+ (action
+  (progn
+   (run ./test_threads.exe)
+   (diff? test_threads.ml test_threads.ml.corrected))))
+
+(executable
+ (name test_tool_output)
+ (modules test_tool_output)
+ (libraries
+  jsont
+  mentat_llm
+  mentat_tool
+  mentat_tools_output
+  tui_harness
+  windtrap)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(rule
+ (alias runtest)
+ (deps test_tool_output.exe)
+ (action
+  (progn
+   (run ./test_tool_output.exe)
+   (diff? test_tool_output.ml test_tool_output.ml.corrected))))
+
+(executable
+ (name test_mutation)
+ (modules test_mutation)
+ (libraries
+  jsont
+  mentat_llm
+  lpath
+  mentat_session
+  mentat_tool
+  mentat_tools_output
+  tui_harness
+  windtrap)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(rule
+ (alias runtest)
+ (deps test_mutation.exe)
+ (action
+  (progn
+   (run ./test_mutation.exe)
+   (diff? test_mutation.ml test_mutation.ml.corrected))))
+
+(executable
+ (name test_permission)
+ (modules test_permission)
+ (libraries
+  jsont
+  mentat_diagnostic
+  mentat_digest
+  mentat_llm
+  lpath
+  mentat_permission
+  mentat_protocol
+  mentat_sandbox
+  mentat_session
+  mentat_tool
+  tui_harness
+  windtrap)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(rule
+ (alias runtest)
+ (deps test_permission.exe)
+ (action
+  (progn
+   (run ./test_permission.exe)
+   (diff? test_permission.ml test_permission.ml.corrected))))
+
+(executable
+ (name test_model_selection)
+ (modules test_model_selection)
+ (libraries
+  mentat_diagnostic
+  mentat_llm
+  lpath
+  mentat_permission
+  mentat_protocol
+  mentat_provider
+  mentat_sandbox
+  mentat_session
+  tui_harness
+  windtrap)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(rule
+ (alias runtest)
+ (deps test_model_selection.exe)
+ (action
+  (progn
+   (run ./test_model_selection.exe)
+   (diff? test_model_selection.ml test_model_selection.ml.corrected))))
+
+(executable
+ (name test_auth)
+ (modules test_auth)
+ (libraries
+  oauth2
+  mentat_client
+  mentat_diagnostic
+  mentat_llm
+  mentat_protocol
+  mentat_provider
+  tui_harness
+  uri
+  windtrap)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(rule
+ (alias runtest)
+ (deps test_auth.exe)
+ (action
+  (progn
+   (run ./test_auth.exe)
+   (diff? test_auth.ml test_auth.ml.corrected))))
+
+(executable
+ (name test_composer)
+ (modules test_composer)
+ (libraries mentat_diagnostic lpath mentat_session tui_harness windtrap)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(rule
+ (alias runtest)
+ (deps test_composer.exe)
+ (action
+  (progn
+   (run ./test_composer.exe)
+   (diff? test_composer.ml test_composer.ml.corrected))))
+
+(executable
+ (name test_image)
+ (modules test_image)
+ (libraries
+  mentat_diagnostic
+  mentat_llm
+  lpath
+  mentat_protocol
+  mentat_session
+  tui_harness
+  windtrap)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(rule
+ (alias runtest)
+ (deps test_image.exe)
+ (action
+  (progn
+   (run ./test_image.exe)
+   (diff? test_image.ml test_image.ml.corrected))))
+
+(executable
+ (name test_pane)
+ (modules test_pane)
+ (libraries
+  jsont
+  textdiff
+  mentat_llm
+  lpath
+  mentat_protocol
+  mentat_provider
+  mentat_session
+  mentat_tool
+  mentat_tools_output
+  mentat_workspace
+  tui_harness
+  windtrap)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(rule
+ (alias runtest)
+ (deps test_pane.exe)
+ (action
+  (progn
+   (run ./test_pane.exe)
+   (diff? test_pane.ml test_pane.ml.corrected))))
+
+(executable
+ (name test_web_fetch)
+ (modules test_web_fetch)
+ (libraries
+  jsont
+  mentat_digest
+  mentat_llm
+  lpath
+  mentat_permission
+  mentat_sandbox
+  mentat_session
+  mentat_tool
+  mentat_tools_output
+  tui_harness
+  windtrap)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(rule
+ (alias runtest)
+ (deps test_web_fetch.exe)
+ (action
+  (progn
+   (run ./test_web_fetch.exe)
+   (diff? test_web_fetch.ml test_web_fetch.ml.corrected))))
+
+(executable
+ (name test_settings)
+ (modules test_settings)
+ (libraries
+  mentat_config
+  mentat_diagnostic
+  mentat_llm
+  lpath
+  mentat_protocol
+  mentat_provider
+  tui_harness
+  windtrap)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(rule
+ (alias runtest)
+ (deps test_settings.exe)
+ (action
+  (progn
+   (run ./test_settings.exe)
+   (diff? test_settings.ml test_settings.ml.corrected))))
+
+(executable
+ (name test_settings_mutations)
+ (modules test_settings_mutations)
+ (libraries
+  mentat_diagnostic
+  mentat_permission
+  mentat_protocol
+  tui_harness
+  windtrap)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(rule
+ (alias runtest)
+ (deps test_settings_mutations.exe)
+ (action
+  (progn
+   (run ./test_settings_mutations.exe)
+   (diff? test_settings_mutations.ml test_settings_mutations.ml.corrected))))
+
+(executable
+ (name test_sessions)
+ (modules test_sessions)
+ (libraries
+  mentat_diagnostic
+  mentat_llm
+  lpath
+  mentat_permission
+  mentat_protocol
+  mentat_sandbox
+  mentat_session
+  tui_harness
+  windtrap)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(rule
+ (alias runtest)
+ (deps test_sessions.exe)
+ (action
+  (progn
+   (run ./test_sessions.exe)
+   (diff? test_sessions.ml test_sessions.ml.corrected))))
+
+(executable
+ (name test_lifecycle)
+ (modules test_lifecycle)
+ (libraries
+  mentat_diagnostic
+  mentat_digest
+  mentat_llm
+  lpath
+  mentat_protocol
+  mentat_session
+  tui_harness
+  windtrap)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(rule
+ (alias runtest)
+ (deps test_lifecycle.exe)
+ (action
+  (progn
+   (run ./test_lifecycle.exe)
+   (diff? test_lifecycle.ml test_lifecycle.ml.corrected))))
+
+(executable
+ (name test_rewind)
+ (modules test_rewind)
+ (libraries
+  mentat_diagnostic
+  mentat_digest
+  mentat_llm
+  lpath
+  mentat_protocol
+  mentat_session
+  tui_harness
+  windtrap)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(rule
+ (alias runtest)
+ (deps test_rewind.exe)
+ (action
+  (progn
+   (run ./test_rewind.exe)
+   (diff? test_rewind.ml test_rewind.ml.corrected))))
+
+(executable
+ (name test_runtime)
+ (modules test_runtime)
+ (libraries
+  eio
+  eio_main
+  matrix
+  matrix.test
+  mosaic
+  mentat_client
+  mentat_config
+  mentat_diagnostic
+  mentat_llm
+  lpath
+  mentat_permission
+  mentat_protocol
+  mentat_sandbox
+  mentat_session
+  mentat_tool
+  mentat_tools_output
+  mentat_tui
+  tui_harness
+  windtrap)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(rule
+ (alias runtest)
+ (deps test_runtime.exe)
+ (action
+  (progn
+   (run ./test_runtime.exe)
+   (diff? test_runtime.ml test_runtime.ml.corrected))))
+
+(executable
+ (name test_question)
+ (modules test_question)
+ (libraries
+  jsont
+  mentat_digest
+  mentat_llm
+  lpath
+  mentat_permission
+  mentat_sandbox
+  mentat_session
+  mentat_tool
+  mentat_tui
+  tui_harness
+  windtrap)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(rule
+ (alias runtest)
+ (deps test_question.exe)
+ (action
+  (progn
+   (run ./test_question.exe)
+   (diff? test_question.ml test_question.ml.corrected))))
+
+(executable
+ (name test_plan)
+ (modules test_plan)
+ (libraries
+  jsont
+  mentat_digest
+  mentat_llm
+  lpath
+  mentat_permission
+  mentat_sandbox
+  mentat_session
+  mentat_tool
+  mentat_tui
+  tui_harness
+  windtrap)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(rule
+ (alias runtest)
+ (deps test_plan.exe)
+ (action
+  (progn
+   (run ./test_plan.exe)
+   (diff? test_plan.ml test_plan.ml.corrected))))
+
+(executable
+ (name test_init)
+ (modules test_init)
+ (libraries mentat_tui tui_harness windtrap)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(rule
+ (alias runtest)
+ (deps test_init.exe)
+ (action
+  (progn
+   (run ./test_init.exe)
+   (diff? test_init.ml test_init.ml.corrected))))
+
+(executable
+ (name test_keybindings)
+ (modules test_keybindings)
+ (libraries jsont mentat_tui tui_harness windtrap)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(rule
+ (alias runtest)
+ (deps test_keybindings.exe)
+ (action
+  (progn
+   (run ./test_keybindings.exe)
+   (diff? test_keybindings.ml test_keybindings.ml.corrected))))
+
+(executable
+ (name test_editor)
+ (modules test_editor)
+ (libraries tui_harness windtrap)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(rule
+ (alias runtest)
+ (deps test_editor.exe)
+ (action
+  (progn
+   (run ./test_editor.exe)
+   (diff? test_editor.ml test_editor.ml.corrected))))
+
+(executable
+ (name test_notify)
+ (modules test_notify)
+ (libraries
+  jsont
+  mentat_config
+  mentat_digest
+  mentat_llm
+  lpath
+  mentat_permission
+  mentat_sandbox
+  mentat_session
+  mentat_tool
+  mentat_tui
+  tui_harness
+  windtrap)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(rule
+ (alias runtest)
+ (deps test_notify.exe)
+ (action
+  (progn
+   (run ./test_notify.exe)
+   (diff? test_notify.ml test_notify.ml.corrected))))

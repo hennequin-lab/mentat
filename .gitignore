@@ -1,0 +1,31 @@
+# opam switch
+_opam/
+
+# Build output directory
+_build/
+
+# Eval output directories
+_evals/
+
+# Lab campaign state
+_lab/
+
+# mentat session stores
+.mentat/
+
+# Dune lock files
+dune.lock/
+
+# Local reference repositories
+_ref/
+
+# Catch-all for hidden directories
+_*/
+
+# Release build staging (scripts/release/alpine-build.sh)
+dist/
+
+# Agents
+.claude/
+.mentat/
+.codex/

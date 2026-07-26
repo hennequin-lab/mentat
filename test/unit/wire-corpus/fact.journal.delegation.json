@@ -1,0 +1,15 @@
+{
+  "type": "journal.delegation",
+  "v": 1,
+  "edge": {
+    "child": "child-c",
+    "source_turn": "turn-c",
+    "source_call": "call-c",
+    "task": [
+      {
+        "type": "text",
+        "text": "Chart it."
+      }
+    ]
+  }
+}

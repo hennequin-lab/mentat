@@ -1,0 +1,13 @@
+{
+  "type": "answer_decision",
+  "v": 1,
+  "session": "session-c",
+  "decision": "2272a1369cd2d9f217be4b2437a0f71e7bc41a7413088be35d5882585b8ef422",
+  "answer": {
+    "type": "permission",
+    "answer": {
+      "version": 1,
+      "answer": "allow-exact-for-conversation"
+    }
+  }
+}

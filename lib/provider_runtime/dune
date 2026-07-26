@@ -1,0 +1,44 @@
+(library
+ (name mentat_provider_runtime)
+ (private_modules
+  tls_setup
+  oauth_flow
+  driver
+  builtin
+  credential_store
+  runtime
+  account_ops
+  login_flow)
+ (libraries
+  ;; the pure currency at the boundary and its foundations
+  mentat_provider
+  mentat_diagnostic
+  mentat_llm
+  oauth2
+  oauth2_eio
+  ;; per-provider transports (linked below this leaf; see RFC 0012 deviation note)
+  mentat_llm_http
+  mentat_llm_anthropic
+  mentat_llm_openai
+  mentat_llm_google
+  mentat_llm_ollama
+  mentat_llm_local
+  ;; effect content — the reason this is firewall B
+  eio
+  eio.unix
+  cohttp
+  cohttp-eio
+  tls
+  tls-eio
+  ca-certs
+  cstruct
+  domain-name
+  ipaddr
+  mirage-crypto-rng
+  mirage-crypto-rng.unix
+  logs
+  base64
+  jsont
+  jsont.bytesrw
+  uri
+  unix))

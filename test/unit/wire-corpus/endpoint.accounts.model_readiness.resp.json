@@ -1,0 +1,32 @@
+{
+  "providers": [
+    {
+      "provider": "openai",
+      "display_name": "OpenAI",
+      "auth_required": true,
+      "discovery": {
+        "type": "known",
+        "account": {
+          "status": "missing",
+          "provider": "openai"
+        }
+      },
+      "models": [
+        {
+          "model": {
+            "provider": "openai",
+            "api": "openai",
+            "id": "gpt-5"
+          },
+          "input_modalities": [
+            "text"
+          ],
+          "output_modalities": [
+            "text"
+          ],
+          "status": "stable"
+        }
+      ]
+    }
+  ]
+}

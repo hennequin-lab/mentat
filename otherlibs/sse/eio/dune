@@ -1,0 +1,3 @@
+(library
+ (name sse_eio)
+ (libraries cstruct eio sse))

@@ -1,0 +1,4 @@
+(test
+ (name test_fswatch)
+ (modules test_fswatch)
+ (libraries windtrap eio eio.unix eio_main unix threads.posix fswatch))

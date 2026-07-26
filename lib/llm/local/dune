@@ -1,0 +1,20 @@
+(library
+ (name mentat_llm_local)
+ (private_modules api modelfit)
+ (foreign_stubs
+  (language c)
+  (names modelfit_stubs))
+ (libraries
+  cohttp
+  cohttp-eio
+  cstruct
+  eio
+  eio.unix
+  jsont
+  jsont.bytesrw
+  logs
+  unix
+  uri
+  mentat_llm
+  mentat_llm_artifact
+  mentat_llm_http))

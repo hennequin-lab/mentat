@@ -1,0 +1,4 @@
+(test
+ (name test_textdiff)
+ (modules test_textdiff)
+ (libraries windtrap jsont textdiff))

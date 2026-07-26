@@ -1,0 +1,9 @@
+{
+  "type": "journal.goal",
+  "v": 1,
+  "update": {
+    "type": "declare",
+    "id": "goal-c",
+    "objective": "Chart everything"
+  }
+}

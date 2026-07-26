@@ -1,0 +1,8 @@
+; mentat_cram: the single cram helper binary on PATH, the mentat analog of
+; dune's dune_cmd. Its normalization delegates to the shared Mentat_test_censor
+; library under test/support/.
+
+(executable
+ (name mentat_cram)
+ (modules mentat_cram)
+ (libraries mentat_test_censor re jsont jsont.bytesrw unix))

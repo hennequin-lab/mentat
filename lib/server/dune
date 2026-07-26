@@ -1,0 +1,37 @@
+(library
+ (name mentat_server)
+ (private_modules codecs discovery flow_codec endpoint wire)
+ (libraries
+  ;; the wire spine and the multi-source client seam this library refills
+  mentat_protocol
+  mentat_client
+  ;; the SSE framing the feed and login edges emit and decode
+  sse
+  ;; the pure value vocabularies the endpoint codecs name (never an engine,
+  ;; store, or provider transport — RFC 0017 §1, Law S1)
+  mentat_config
+  mentat_diagnostic
+  textdiff
+  mentat_llm
+  mentat_mutation
+  lpath
+  mentat_permission
+  mentat_provider
+  mentat_review
+  mentat_session
+  mentat_workspace
+  ;; the socket transport and its security primitives
+  eio
+  eio.unix
+  unix
+  cohttp
+  cohttp-eio
+  tls
+  tls-eio
+  cstruct
+  ipaddr
+  mirage-crypto-rng
+  mirage-crypto-rng.unix
+  uri
+  jsont
+  jsont.bytesrw))

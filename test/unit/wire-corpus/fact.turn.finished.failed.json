@@ -1,0 +1,9 @@
+{
+  "type": "turn.finished",
+  "v": 1,
+  "turn": "turn-c",
+  "outcome": {
+    "type": "failed",
+    "message": "authentication rejected"
+  }
+}

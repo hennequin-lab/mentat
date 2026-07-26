@@ -1,0 +1,4 @@
+(test
+ (name test_subprocess)
+ (modules test_subprocess)
+ (libraries windtrap eio eio_main mtime unix subprocess))

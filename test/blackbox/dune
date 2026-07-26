@@ -1,0 +1,42 @@
+; Blackbox integration suite: cram tests driving the real binary through a
+; fake provider, organized as test-cases/<family>/*.t. The cram stanza and
+; (env (binaries …)) live in test-cases/dune, one level above the family dirs,
+; so helper binaries resolve for the nested .t files; this dune holds the
+; suite-wide lints. Everything sits on the `blackbox` alias, so a scoped run is
+; `dune build @test/blackbox/blackbox` (or a single family's runtest alias).
+
+; `dune runtest` proves the product, and this suite is the product's proof, so
+; the blackbox alias is part of @runtest.
+
+(alias
+ (name runtest)
+ (deps
+  (alias_rec blackbox)))
+
+; setup.sh hygiene: syntax-checked, and shellcheck-clean where available.
+
+(rule
+ (alias blackbox)
+ (deps setup.sh)
+ (action
+  (run %{bin:bash} -n setup.sh)))
+
+(rule
+ (alias blackbox)
+ (enabled_if %{bin-available:shellcheck})
+ (deps setup.sh)
+ (action
+  (run %{bin:shellcheck} -s bash setup.sh)))
+
+; Every .t opens with a prose description (a non-indented first line): a test
+; states what behavior it proves before it drives it.
+
+(rule
+ (alias blackbox)
+ (enabled_if %{bin-available:rg})
+ (deps
+  %{bin:rg}
+  (source_tree test-cases))
+ (action
+  (system
+   "rg -L --files-without-match '^\\S' --glob '*.t' test-cases; [ $? -eq 1 ]")))

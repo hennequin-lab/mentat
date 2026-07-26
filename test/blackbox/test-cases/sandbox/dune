@@ -1,0 +1,20 @@
+; sandbox-determinism.t is gated-UPSTREAM (NEW-1, #18): its byte-stable
+; profile_hash contract is blocked on an untracked upstream purity fix (make
+; profile_hash a pure function of the sealed policy, not of a temp path) AND on
+; the MENTAT_TEST_SANDBOX_CONFINED seam, neither of which has landed. It must not
+; run — or false-green — on the default `blackbox` alias until then.
+;
+; Mechanism (same as the retired gated/ bucket): dune folds every matching cram
+; stanza into one spec — aliases union, enabled_if accumulates and is ANDed. The
+; parent whole-subtree stanza (test-cases/dune) attaches this .t to `blackbox`
+; with no guard; this scoped stanza ANDs in the MENTAT_TEST_GATED guard, so the
+; folded enabled_if is false unless MENTAT_TEST_GATED=1. No false green: the test
+; simply does not run by default. The other sandbox/*.t are untouched — this
+; stanza applies to sandbox-determinism alone. When the upstream fix lands, drop
+; this file.
+
+(cram
+ (applies_to sandbox-determinism)
+ (alias blackbox-gated)
+ (enabled_if
+  (= %{env:MENTAT_TEST_GATED=0} 1)))

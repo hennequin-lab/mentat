@@ -1,0 +1,19 @@
+(library
+ (name fswatch)
+ (libraries eio eio.unix logs unix threads.posix)
+ (foreign_stubs
+  (language c)
+  (names
+   mentat_fswatch_clock_stubs
+   mentat_fswatch_inotify_stubs
+   mentat_fswatch_fsevents_stubs))
+ (c_library_flags
+  (:include fsevents_c_library_flags.sexp)))
+
+(rule
+ (targets fsevents_c_library_flags.sexp)
+ (action
+  (with-stdout-to
+   %{targets}
+   (system
+    "case \"$(uname -s)\" in Darwin) printf '(-framework CoreServices -framework CoreFoundation)\n' ;; *) printf '()\n' ;; esac"))))

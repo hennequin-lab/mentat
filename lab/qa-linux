@@ -1,0 +1,203 @@
+#!/bin/bash
+# qa-linux — a Linux body for lab/mentat-qa: one long-lived Ubuntu container
+# holding its own clone, toolchain, and build of mentat, driven from the host
+# with the exact mentat-qa vocabulary.
+#
+#   lab/qa-linux up [--amd64]   create/converge the container, provision it,
+#                               sync + build (first run builds the OCaml
+#                               toolchain from source: expect tens of minutes)
+#   lab/qa-linux sync           reset the clone to the host's HEAD, rebuild
+#   lab/qa-linux info           container state, clone sha vs host, binary
+#   lab/qa-linux shell          interactive bash inside the container
+#   lab/qa-linux attach [--name N]  print the command to watch a session live
+#   lab/qa-linux down           remove the container (the dune cache volume
+#                               survives, so re-up rebuilds in minutes)
+#   lab/qa-linux <verb> ...     anything else runs lab/mentat-qa <verb> ...
+#                               inside the container (start, screen, turn, ...)
+#
+# Inside the container:
+#   /mnt/mentat          host checkout, read-only (clone source only)
+#   /work/mentat         container-local clone; QA subject, committed HEAD only
+#   ~/.cache/dune       named volume mentat-qa-dune (toolchain + dep cache)
+#   ~/.cache/mentat-qa  bind mount -> host ~/.cache/mentat-qa-linux (evidence)
+#
+# The subject is committed HEAD by design (qa.md's ruler): sync checks the
+# clone out at the host's HEAD sha, so uncommitted host changes are invisible.
+# The instrument is the host working tree's lab/mentat-qa, docker-cp'd in
+# before every call (the mount's VirtioFS view can lag a fresh edit by
+# minutes; a copy is byte-exact), so driver fixes apply without a commit. Provider keys present in the host environment
+# (ANTHROPIC/OPENAI/GOOGLE/GEMINI_API_KEY) are passed in at `up`; mentat
+# config is container-local and dies with the container — fresh-user QA.
+# --amd64 runs under emulation: functional checks only, timing findings are
+# inadmissible. Verbs prefixed __ run inside the container; never call them
+# from the host.
+
+set -euo pipefail
+
+CONTAINER=mentat-qa-linux
+IMAGE=ubuntu:24.04
+DUNE_VOLUME=mentat-qa-dune
+CLONE=/work/mentat
+
+die() { echo "qa-linux: $*" >&2; exit 2; }
+
+repo_root() { git -C "$(dirname "$0")" rev-parse --show-toplevel; }
+
+container_exists() { docker inspect "$CONTAINER" >/dev/null 2>&1; }
+
+container_running() {
+  [ "$(docker inspect -f '{{.State.Running}}' "$CONTAINER" 2>/dev/null)" = true ]
+}
+
+# Deliver the current host-tree scripts and run an inner (__) verb. docker cp,
+# not the /mnt/mentat mount: VirtioFS serves stale views of fresh edits.
+run_inner() {
+  docker cp -q "$(repo_root)/lab/qa-linux" "$CONTAINER:/usr/local/bin/qa-linux"
+  docker exec -i "$CONTAINER" qa-linux "$@"
+}
+
+# ------------------------------------------------------- host-side lifecycle
+
+cmd_up() {
+  local platform=linux/arm64
+  while [ $# -gt 0 ]; do case "$1" in
+    --amd64)
+      platform=linux/amd64
+      echo "qa-linux: amd64 is emulated; timing findings are inadmissible" >&2
+      ;;
+    *) die "up: unknown flag $1" ;;
+  esac; shift; done
+
+  if container_exists; then
+    # Converge: platform is fixed at creation (down first to change it).
+    container_running || docker start "$CONTAINER" >/dev/null
+  else
+    local repo; repo="$(repo_root)"
+    local -a env_args=()
+    local k
+    for k in ANTHROPIC_API_KEY OPENAI_API_KEY GOOGLE_API_KEY GEMINI_API_KEY; do
+      if [ -n "${!k:-}" ]; then env_args+=(-e "$k"); fi
+    done
+    mkdir -p "$HOME/.cache/mentat-qa-linux"
+    # SYS_PTRACE: mentat-qa diagnose takes gdb stack snapshots on Linux.
+    # SYS_ADMIN + no seccomp: mentat's bubblewrap sandbox creates namespaces,
+    # which docker's default profile denies. The container is a lab
+    # instrument, not an isolation boundary.
+    # systempaths=unconfined: bwrap's fresh /proc mount is EPERM while
+    # docker's masked /proc paths make procfs "not fully visible".
+    docker run -d --init --name "$CONTAINER" --platform "$platform" \
+      --cap-add SYS_PTRACE --cap-add SYS_ADMIN \
+      --security-opt seccomp=unconfined --security-opt systempaths=unconfined \
+      -e LANG=C.UTF-8 ${env_args[0]+"${env_args[@]}"} \
+      -v "$repo:/mnt/mentat:ro" \
+      -v "$DUNE_VOLUME:/root/.cache/dune" \
+      -v "$HOME/.cache/mentat-qa-linux:/root/.cache/mentat-qa" \
+      "$IMAGE" sleep infinity >/dev/null
+  fi
+  run_inner __provision
+  cmd_sync
+}
+
+cmd_sync() {
+  container_running || die "container not running (lab/qa-linux up)"
+  local sha; sha="$(git -C "$(repo_root)" rev-parse HEAD)"
+  run_inner __sync "$sha"
+}
+
+cmd_status() {
+  if ! container_exists; then echo "container: absent (lab/qa-linux up)"; return; fi
+  echo "container: $(docker inspect -f '{{.State.Status}}, {{.Platform}}' "$CONTAINER")"
+  container_running || return 0
+  run_inner __status
+  echo "host HEAD: $(git -C "$(repo_root)" rev-parse --short HEAD)"
+}
+
+cmd_attach() {
+  local name=main
+  if [ "${1:-}" = "--name" ]; then name="$2"; fi
+  echo "docker exec -it $CONTAINER tmux -L mentat-qa attach -t $name -r" \
+    "  # read-only; omit -r to type"
+}
+
+cmd_down() {
+  container_exists || die "no container to remove"
+  docker rm -f "$CONTAINER" >/dev/null
+  echo "removed $CONTAINER (dune cache volume $DUNE_VOLUME kept)"
+}
+
+# ------------------------------------------- container-side (__ verbs) only
+
+cmd__provision() {
+  export DEBIAN_FRONTEND=noninteractive
+  apt-get update -q
+  apt-get install -qy --no-install-recommends \
+    git curl ca-certificates build-essential m4 pkg-config libgmp-dev \
+    libzstd-dev tmux gdb procps ncurses-term unzip patch bzip2 xz-utils \
+    ocaml bubblewrap
+  if ! command -v dune >/dev/null 2>&1; then
+    # get.dune.build has no Linux arm64 binaries; bootstrap from source with
+    # the system ocaml, the scripts/release/alpine-build.sh recipe.
+    local ver="${DUNE_VERSION:-3.23.1}"
+    mkdir -p /opt/dune && cd /opt/dune
+    curl -fsSL --proto '=https' --tlsv1.2 \
+      "https://github.com/ocaml/dune/archive/refs/tags/$ver.tar.gz" \
+      | tar xz --strip-components=1
+    ocaml boot/bootstrap.ml
+    install -m 755 _boot/dune.exe /usr/local/bin/dune
+  fi
+  dune --version
+  git config --global --add safe.directory /mnt/mentat
+  # Scratch projects git-commit at session start; the driver swallows the
+  # failure, silently leaving a commit-less repo, so identity must exist.
+  git config --global user.email qa@mentat.invalid
+  git config --global user.name mentat-qa
+  if [ ! -d "$CLONE/.git" ]; then git clone -q /mnt/mentat "$CLONE"; fi
+}
+
+cmd__sync() {
+  local sha="${1:?__sync needs the host HEAD sha}"
+  cd "$CLONE"
+  git fetch -q origin
+  git -c advice.detachedHead=false checkout -qf "$sha"
+  if [ ! -d dune.lock ]; then dune pkg lock; fi
+  dune build bin/main.exe
+  echo "synced: $(git rev-parse --short HEAD)," \
+    "mentat $(_build/default/bin/main.exe --version)"
+}
+
+cmd__status() {
+  if [ ! -d "$CLONE/.git" ]; then echo "clone: absent (lab/qa-linux up)"; return; fi
+  cd "$CLONE"
+  echo "clone: $(git rev-parse --short HEAD) ($(git log -1 --format=%s))"
+  if [ -x _build/default/bin/main.exe ]; then
+    echo "binary: mentat $(_build/default/bin/main.exe --version 2>/dev/null || echo '?')," \
+      "built $(date -d @"$(stat -c %Y _build/default/bin/main.exe)" '+%F %T')"
+  else
+    echo "binary: missing (lab/qa-linux sync)"
+  fi
+}
+
+# ---------------------------------------------------------------- dispatcher
+
+[ $# -ge 1 ] || die "usage: qa-linux <up|sync|info|shell|attach|down> | <mentat-qa verb> ... (see header)"
+CMD="$1"; shift
+
+case "$CMD" in
+  up) cmd_up "$@" ;;
+  sync) cmd_sync ;;
+  info) cmd_status ;;
+  shell)
+    container_running || die "container not running (lab/qa-linux up)"
+    exec docker exec -it -w "$CLONE" "$CONTAINER" bash
+    ;;
+  attach) cmd_attach "$@" ;;
+  down) cmd_down ;;
+  __provision) cmd__provision ;;
+  __sync) cmd__sync "$@" ;;
+  __status) cmd__status ;;
+  *)
+    container_running || die "container not running (lab/qa-linux up)"
+    docker cp -q "$(repo_root)/lab/mentat-qa" "$CONTAINER:/usr/local/bin/mentat-qa"
+    exec docker exec -i -w "$CLONE" "$CONTAINER" mentat-qa "$CMD" "$@"
+    ;;
+esac

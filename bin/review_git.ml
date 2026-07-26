@@ -1,0 +1,579 @@
+(*---------------------------------------------------------------------------
+  Copyright (c) 2026 Invariant Systems. All rights reserved.
+  SPDX-License-Identifier: ISC
+ ---------------------------------------------------------------------------*)
+
+(* The git worktree loader for review input — the effect boundary between the
+   pure review owner and a git worktree. It resolves a base revision, reads base
+   blobs and worktree files, computes a {!Mentat_review.Feature.t} for the
+   changes, scans CR occurrences, and fingerprints the reviewable state so a
+   caller can cheaply detect change. Nothing here mutates the repository.
+
+   The git subprocess and worktree reads are injected as [run] and [read]
+   closures, both fallible with a display-safe reason. The composition edge
+   constructs them over the workspace capability's sealed
+   [Mentat_workspace_io.Command.run] and [Mentat_workspace_io.File.load], so
+   every spawn crosses the one sealed process boundary; the pure parsing in
+   {!Parse} takes no closures and is exercised directly. *)
+
+module Error = struct
+  type kind =
+    | Not_a_repository
+    | Bad_revision of string
+    | Git_failed of string
+    | Raced
+    | Io of string
+
+  type t = { kind : kind; message : string }
+
+  let make kind message = { kind; message }
+  let kind t = t.kind
+  let message t = t.message
+  let pp ppf t = Format.pp_print_string ppf t.message
+end
+
+let git_failed message = Error (Error.make (Error.Git_failed message) message)
+
+(* Pure parsing. *)
+
+module Parse = struct
+  (* Workspace meta directories are never review content even when the
+     repository does not gitignore them; the same set the watchers ignore. A
+     tracked file under a meta directory is still dropped from the feature. *)
+  let meta_path rel =
+    List.exists
+      (fun component ->
+        List.mem component Mentat_workspace.observation_prune_names)
+      (String.split_on_char '/' (Lpath.Rel.to_string rel))
+
+  let nul_fields output =
+    List.filter
+      (fun field -> String.length field > 0)
+      (String.split_on_char '\000' output)
+
+  let rel_of ~context path =
+    match Lpath.Rel.of_string path with
+    | Ok rel -> Ok rel
+    | Error error ->
+        Error
+          (Printf.sprintf "unexpected path %S in git %s output: %s" path context
+             (Lpath.Error.message error))
+
+  (* Changed paths from [--name-status -z]: NUL-separated
+     [status, path, status, path, ...] records. Renames are disabled so every
+     record has exactly one path. *)
+  let name_status fields =
+    let rec pair = function
+      | [] -> Ok []
+      | status :: path :: rest -> (
+          match pair rest with
+          | Error _ as error -> error
+          | Ok tail -> (
+              match rel_of ~context:"name-status" path with
+              | Error message -> Error message
+              | Ok rel -> Ok ((status, rel) :: tail)))
+      | [ field ] ->
+          Error
+            (Printf.sprintf "unpaired field %S in git name-status output" field)
+    in
+    pair fields
+
+  (* Untracked paths from [ls-files --others -z], meta directories dropped. *)
+  let untracked_paths fields =
+    let rec collect = function
+      | [] -> Ok []
+      | path :: rest -> (
+          match collect rest with
+          | Error _ as error -> error
+          | Ok tail -> (
+              match rel_of ~context:"ls-files" path with
+              | Error message -> Error message
+              | Ok rel -> Ok (rel :: tail)))
+    in
+    match collect fields with
+    | Error _ as error -> error
+    | Ok paths -> Ok (List.filter (fun rel -> not (meta_path rel)) paths)
+
+  (* Line-addition count for an untracked file's worktree text — the additions
+     it contributes to the worktree summary, matching git's rule: every line is
+     an addition, and a final line without a trailing newline still counts. *)
+  let count_lines text =
+    if String.length text = 0 then 0
+    else
+      let newlines =
+        String.fold_left
+          (fun n c -> if Char.equal c '\n' then n + 1 else n)
+          0 text
+      in
+      if Char.equal text.[String.length text - 1] '\n' then newlines
+      else newlines + 1
+
+  (* Per-file counts from [diff --numstat -z]: NUL-separated
+     [<add>\t<del>\t<path>] records. [add]/[del] are ["-"] for a binary file,
+     counted as 0. Renames are disabled upstream, so no record carries the
+     rename form's empty leading path. *)
+  let numstat fields =
+    let count field =
+      if String.equal field "-" then Some 0 else int_of_string_opt field
+    in
+    let record field =
+      match String.index_opt field '\t' with
+      | None -> Error (Printf.sprintf "unparseable numstat record %S" field)
+      | Some i -> (
+          match String.index_from_opt field (i + 1) '\t' with
+          | None -> Error (Printf.sprintf "unparseable numstat record %S" field)
+          | Some j -> (
+              let add = String.sub field 0 i in
+              let del = String.sub field (i + 1) (j - i - 1) in
+              let path =
+                String.sub field (j + 1) (String.length field - j - 1)
+              in
+              match (count add, count del) with
+              | None, _ | _, None ->
+                  Error
+                    (Printf.sprintf "unparseable numstat counts in %S" field)
+              | Some add, Some del -> (
+                  match rel_of ~context:"numstat" path with
+                  | Error _ as error -> error
+                  | Ok rel -> Ok (add, del, rel))))
+    in
+    let rec loop = function
+      | [] -> Ok []
+      | field :: rest -> (
+          match record field with
+          | Error _ as error -> error
+          | Ok parsed -> (
+              match loop rest with
+              | Error _ as error -> error
+              | Ok tail -> Ok (parsed :: tail)))
+    in
+    loop fields
+
+  let fingerprint_key ~diff ~untracked_token =
+    Mentat_digest.key ~length:64
+      ~domain:"mentat.workspace_io.git.fingerprint.v1" [ diff; untracked_token ]
+
+  (* Parse the raw stdout of [git cat-file --batch] into [count] per-request
+     results in request order. Each present object is a header line
+     [<oid> <type> <size>\n], then [size] content bytes, then a newline; a
+     missing object is a single [<name> missing\n] line. Content bytes are
+     arbitrary, so the size drives the slice rather than a newline scan. A
+     missing marker is the last space-separated token being "missing"; a present
+     header's last token is the numeric size, so the two never collide even for
+     a path with spaces. *)
+  let cat_file_batch output ~count =
+    let len = String.length output in
+    let rec loop pos remaining acc =
+      if remaining = 0 then Ok (List.rev acc)
+      else if pos >= len then
+        Error "git cat-file --batch output ended before all objects were read"
+      else
+        match String.index_from_opt output pos '\n' with
+        | None -> Error "git cat-file --batch header was not newline-terminated"
+        | Some nl -> (
+            let header = String.sub output pos (nl - pos) in
+            let body = nl + 1 in
+            match List.rev (String.split_on_char ' ' header) with
+            | "missing" :: _ -> loop body (remaining - 1) (None :: acc)
+            | size :: _type :: _oid -> (
+                match int_of_string_opt size with
+                | None ->
+                    Error
+                      (Printf.sprintf "git cat-file --batch: bad object size %S"
+                         size)
+                | Some size when body + size > len ->
+                    Error
+                      "git cat-file --batch: object shorter than its declared \
+                       size"
+                | Some size ->
+                    let content = String.sub output body size in
+                    (* Each object's content is newline-terminated by git. *)
+                    loop (body + size + 1) (remaining - 1) (Some content :: acc)
+                )
+            | _ ->
+                Error
+                  (Printf.sprintf "git cat-file --batch: unparseable header %S"
+                     header))
+    in
+    loop 0 count []
+end
+
+(* Repository handles. *)
+
+type run = ?stdin:string -> string list -> (string, string) result
+type read = Lpath.Rel.t -> (string, string) result
+
+type write =
+  Lpath.Rel.t -> before:string -> after:string -> (unit, string) result
+
+type t = { run : run; read : read; write : write }
+
+let make ~run ~read ~write = { run; read; write }
+
+let git ?stdin t args =
+  Result.map_error
+    (fun message -> Error.make (Error.Git_failed message) message)
+    (t.run ?stdin ("git" :: args))
+
+let is_repository t =
+  match t.run [ "git"; "rev-parse"; "--show-toplevel" ] with
+  | Ok output when String.length (String.trim output) > 0 -> Ok ()
+  | Ok _ ->
+      Error
+        (Error.make Error.Not_a_repository "git did not report a worktree root")
+  | Error message ->
+      Error
+        (Error.make Error.Not_a_repository
+           ("not inside a git worktree: " ^ message))
+
+let resolve_base t spec =
+  match
+    t.run [ "git"; "rev-parse"; "--verify"; "--quiet"; spec ^ "^{commit}" ]
+  with
+  | Ok output ->
+      let hash = String.trim output in
+      if String.length hash > 0 then Ok hash
+      else
+        Error
+          (Error.make (Error.Bad_revision spec)
+             (Printf.sprintf "unknown base revision %s" spec))
+  | Error _ ->
+      Error
+        (Error.make (Error.Bad_revision spec)
+           (Printf.sprintf "unknown base revision %s" spec))
+
+let diff_args base = [ "diff"; "--no-color"; "--no-ext-diff"; base ]
+
+let untracked_paths t =
+  match git t [ "ls-files"; "--others"; "--exclude-standard"; "-z" ] with
+  | Error _ as error -> error
+  | Ok output -> (
+      match Parse.untracked_paths (Parse.nul_fields output) with
+      | Ok paths -> Ok paths
+      | Error message -> git_failed message)
+
+(* An equality token for the untracked set: paths plus content identities, so
+   creating, deleting, or editing an untracked file moves the fingerprint even
+   when a writer preserves mtimes. *)
+let untracked_token t paths =
+  let buffer = Buffer.create 256 in
+  List.iter
+    (fun rel ->
+      Mentat_digest.frame buffer (Lpath.Rel.to_string rel);
+      match t.read rel with
+      | Ok contents ->
+          Mentat_digest.frame buffer
+            (Mentat_digest.Content_ref.to_token
+               (Mentat_digest.Content_ref.of_contents contents))
+      | Error _ -> Mentat_digest.frame buffer "absent")
+    paths;
+  Buffer.contents buffer
+
+let fingerprint t ~base =
+  match git t (diff_args base) with
+  | Error _ as error -> error
+  | Ok output -> (
+      match untracked_paths t with
+      | Error _ as error -> error
+      | Ok untracked ->
+          Ok
+            (Parse.fingerprint_key ~diff:output
+               ~untracked_token:(untracked_token t untracked)))
+
+let changed_paths t ~base =
+  match
+    git t
+      [ "diff"; "--name-status"; "--no-renames"; "--no-ext-diff"; "-z"; base ]
+  with
+  | Error _ as error -> error
+  | Ok output -> (
+      match Parse.name_status (Parse.nul_fields output) with
+      | Error message -> git_failed message
+      | Ok tracked -> (
+          let tracked =
+            List.filter (fun (_, rel) -> not (Parse.meta_path rel)) tracked
+          in
+          match untracked_paths t with
+          | Error _ as error -> error
+          | Ok untracked ->
+              Ok (tracked @ List.map (fun rel -> ("A", rel)) untracked)))
+
+(* The lightweight worktree change summary from [base] to the worktree: changed
+   files with summed line additions and deletions. Tracked counts come from one
+   [diff --numstat] spawn; each untracked file adds one file and its line count
+   as additions. Unlike {!load} no base blob is read, no hunk is built, and no
+   CR is scanned — this is the ambient glance's cheap source. Meta directories
+   are excluded on both sides. *)
+let stats t ~base =
+  match
+    git t [ "diff"; "--numstat"; "--no-renames"; "--no-ext-diff"; "-z"; base ]
+  with
+  | Error _ as error -> error
+  | Ok output -> (
+      match Parse.numstat (Parse.nul_fields output) with
+      | Error message -> git_failed message
+      | Ok records -> (
+          let tracked =
+            List.filter (fun (_, _, rel) -> not (Parse.meta_path rel)) records
+          in
+          match untracked_paths t with
+          | Error _ as error -> error
+          | Ok untracked ->
+              let additions =
+                List.fold_left (fun acc (add, _, _) -> acc + add) 0 tracked
+              in
+              let deletions =
+                List.fold_left (fun acc (_, del, _) -> acc + del) 0 tracked
+              in
+              let untracked_additions =
+                List.fold_left
+                  (fun acc rel ->
+                    match t.read rel with
+                    | Ok text -> acc + Parse.count_lines text
+                    | Error _ -> acc)
+                  0 untracked
+              in
+              Ok
+                (Textdiff.Stats.v
+                   ~files:(List.length tracked + List.length untracked)
+                   ~additions:(additions + untracked_additions)
+                   ~deletions)))
+
+(* Read every base blob of [paths] in one [git cat-file --batch] spawn rather
+   than one [cat-file blob] per file, so a large changeset costs a single git
+   process instead of N. Returns each path's base-side text; a path git reports
+   missing (renamed away, say) is an error, matching the per-file reader this
+   replaces. *)
+let base_blobs t ~base paths =
+  match paths with
+  | [] -> Ok []
+  | _ -> (
+      let stdin =
+        String.concat ""
+          (List.map
+             (fun path -> base ^ ":" ^ Lpath.Rel.to_string path ^ "\n")
+             paths)
+      in
+      match git ~stdin t [ "cat-file"; "--batch" ] with
+      | Error _ as error -> error
+      | Ok output -> (
+          match Parse.cat_file_batch output ~count:(List.length paths) with
+          | Error message -> git_failed message
+          | Ok contents ->
+              let rec zip paths contents =
+                match (paths, contents) with
+                | [], [] -> Ok []
+                | path :: paths, Some content :: contents -> (
+                    match zip paths contents with
+                    | Error _ as error -> error
+                    | Ok tail -> Ok ((path, content) :: tail))
+                | path :: _, None :: _ ->
+                    git_failed
+                      (Printf.sprintf "base blob missing for %s"
+                         (Lpath.Rel.to_string path))
+                | _ ->
+                    git_failed
+                      "git cat-file --batch returned the wrong number of \
+                       objects"
+              in
+              zip paths contents))
+
+let worktree_text t ~path =
+  match t.read path with
+  | Ok contents -> Ok contents
+  | Error message -> Error (Error.make (Error.Io message) message)
+
+(* Assemble one file's (before, after) sides. [before] is the pre-fetched base
+   blob — [Some] for a Modified or Deleted file, [None] for an Added one — so no
+   git spawns happen here; the after side is the worktree read. *)
+let sides t ~before status path =
+  match status with
+  | "A" -> (
+      match worktree_text t ~path with
+      | Ok after -> Ok (None, Some after)
+      | Error _ as error -> error)
+  | "D" -> Ok (before, None)
+  | _ -> (
+      match worktree_text t ~path with
+      | Ok after -> Ok (before, Some after)
+      | Error _ as error -> error)
+
+let collect t ~base ~fingerprint:snapshot =
+  match changed_paths t ~base with
+  | Error _ as error -> error
+  | Ok changed -> (
+      let sorted =
+        List.sort (fun (_, a) (_, b) -> Lpath.Rel.compare a b) changed
+      in
+      (* Modified and deleted files have a base side; added files do not. Batch
+         the base blobs of the former into one cat-file spawn. *)
+      let base_paths =
+        List.filter_map
+          (fun (status, path) ->
+            if String.equal status "A" then None else Some path)
+          sorted
+      in
+      match base_blobs t ~base base_paths with
+      | Error _ as error -> error
+      | Ok blobs -> (
+          let table = Hashtbl.create (List.length blobs) in
+          List.iter
+            (fun (path, content) ->
+              Hashtbl.replace table (Lpath.Rel.to_string path) content)
+            blobs;
+          let before_of path =
+            Hashtbl.find_opt table (Lpath.Rel.to_string path)
+          in
+          let rec build files crs = function
+            | [] -> Ok (List.rev files, List.rev crs)
+            | (status, path) :: rest -> (
+                match sides t ~before:(before_of path) status path with
+                | Error _ as error -> error
+                | Ok (before, after) -> (
+                    (* Git's default diff context: two edits within a couple
+                       dozen lines stay separate hunks, matching what a reviewer
+                       sees in git. [Feature.File.make]'s own default is wider. *)
+                    match
+                      Mentat_review.Feature.File.make ~context:3 ~path ~before
+                        ~after ()
+                    with
+                    | Error error ->
+                        git_failed
+                          (Printf.sprintf "cannot load %s: %s"
+                             (Lpath.Rel.to_string path)
+                             (Format.asprintf "%a" Mentat_review.Error.pp error))
+                    | Ok file ->
+                        let file_crs =
+                          match after with
+                          | Some text -> Mentat_review.Cr.scan_file ~path ~text
+                          | None -> []
+                        in
+                        build (file :: files)
+                          (List.rev_append file_crs crs)
+                          rest))
+          in
+          match build [] [] sorted with
+          | Error _ as error -> error
+          | Ok (files, crs) ->
+              let feature =
+                Mentat_review.Feature.v ~base ~tip:"WORKTREE" files
+              in
+              Ok { Mentat_review.Live.feature; crs; fingerprint = snapshot }))
+
+let max_load_attempts = 3
+
+(* The snapshot is guarded by fingerprints taken before and after reading
+   content, with a small bounded retry; a worktree that keeps changing during a
+   load errors [Raced]. *)
+let load t ~base =
+  let rec attempt remaining =
+    match fingerprint t ~base with
+    | Error _ as error -> error
+    | Ok snapshot -> (
+        let retry error =
+          if remaining > 1 then attempt (remaining - 1)
+          else
+            match (Error.kind error : Error.kind) with
+            | Error.Io _ | Error.Raced ->
+                Error
+                  (Error.make Error.Raced
+                     "the worktree kept changing while loading the review")
+            | _ -> Error error
+        in
+        match collect t ~base ~fingerprint:snapshot with
+        | Error error -> (
+            match Error.kind error with
+            | Error.Io _ -> retry error
+            | _ -> Error error)
+        | Ok load -> (
+            match fingerprint t ~base with
+            | Error _ as error -> error
+            | Ok verify ->
+                if String.equal verify snapshot then Ok load
+                else retry (Error.make Error.Raced "worktree changed")))
+  in
+  attempt max_load_attempts
+
+let load_if_changed t ~base ~known =
+  match fingerprint t ~base with
+  | Error _ as error -> error
+  | Ok current -> (
+      match known with
+      | Some known when String.equal known current -> Ok `Unchanged
+      | Some _ | None -> (
+          match load t ~base with
+          | Ok load -> Ok (`Loaded load)
+          | Error _ as error -> error))
+
+type apply_error = Content_changed | Apply_failed of string
+
+(* The worktree-relative file an edit targets: an Add names it directly, a
+   Replace or Remove names it through the occurrence ref. *)
+let edit_path = function
+  | Mentat_review.Cr.Edit.Add { path; _ } -> path
+  | Mentat_review.Cr.Edit.Replace { ref; _ } -> ref.Mentat_review.Cr.Ref.path
+  | Mentat_review.Cr.Edit.Remove { ref } -> ref.Mentat_review.Cr.Ref.path
+
+(* Apply a wire-safe CR edit to its file and reload. The target file is read
+   once and, for a Replace or Remove, the edit's ref is re-resolved against a
+   fresh scan of that file — so staleness is judged against the commented CR,
+   not the whole worktree: an unrelated edit elsewhere never blocks the action,
+   and only a ref that no longer names a live occurrence is [Content_changed].
+   Files without a comment syntax, an out-of-range line, a stale write, and any
+   other failure are [Apply_failed]. The caller keeps its review either way. *)
+let apply_edit t ~base edit =
+  let cr_message error = Format.asprintf "%a" Mentat_review.Cr.Error.pp error in
+  let rel = edit_path edit in
+  match t.read rel with
+  | Error message -> Error (Apply_failed message)
+  | Ok text -> (
+      let resolve ref =
+        Mentat_review.Cr.resolve_ref
+          (Mentat_review.Cr.scan_file ~path:rel ~text)
+          ref
+      in
+      let op =
+        match edit with
+        | Mentat_review.Cr.Edit.Add { path; line; cr } ->
+            Ok (Mentat_review.Op.Add { path; line; cr })
+        | Mentat_review.Cr.Edit.Replace { ref; cr } -> (
+            match resolve ref with
+            | Some occurrence ->
+                Ok (Mentat_review.Op.Replace { occurrence; cr })
+            | None -> Error Content_changed)
+        | Mentat_review.Cr.Edit.Remove { ref } -> (
+            match resolve ref with
+            | Some occurrence -> Ok (Mentat_review.Op.Remove { occurrence })
+            | None -> Error Content_changed)
+      in
+      match op with
+      | Error _ as error -> error
+      | Ok op -> (
+          let edited =
+            match op with
+            | Mentat_review.Op.Add { line; cr; _ } -> (
+                match Mentat_review.Cr.Syntax.of_path rel with
+                | None ->
+                    Error
+                      (Printf.sprintf "%s has no conventional comment syntax"
+                         (Lpath.Rel.to_string rel))
+                | Some syntax ->
+                    Result.map_error cr_message
+                      (Mentat_review.Cr.add_before_line ~syntax ~text ~line cr))
+            | Mentat_review.Op.Replace { occurrence; cr } ->
+                Result.map_error cr_message
+                  (Mentat_review.Cr.replace ~text occurrence cr)
+            | Mentat_review.Op.Remove { occurrence } ->
+                Result.map_error cr_message
+                  (Mentat_review.Cr.remove ~text occurrence)
+          in
+          match edited with
+          | Error message -> Error (Apply_failed message)
+          | Ok edited -> (
+              match t.write rel ~before:text ~after:edited with
+              | Error message -> Error (Apply_failed message)
+              | Ok () -> (
+                  match load t ~base with
+                  | Ok load -> Ok load
+                  | Error error -> Error (Apply_failed (Error.message error)))))
+      )

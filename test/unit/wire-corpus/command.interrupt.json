@@ -1,0 +1,6 @@
+{
+  "type": "interrupt",
+  "v": 1,
+  "session": "session-c",
+  "reason": "stop"
+}

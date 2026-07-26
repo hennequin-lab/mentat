@@ -1,0 +1,35 @@
+; End-to-end proof that a CONFINED sandbox mode actually confines a spawned
+; command through the OS backend — the one property the rest of the blackbox
+; suite deliberately does not exercise, because test-cases/dune pins
+; MENTAT_SANDBOX_MODE=danger-full-access (unconfined, cross-platform) for
+; determinism. Each .t here overrides that pin explicitly and drives a real
+; `shell` tool call under `mentat run`, so enforcement is observed end to end.
+;
+; Platform gating. OS confinement is backend-specific: macOS Seatbelt
+; (/usr/bin/sandbox-exec) and Linux Bubblewrap (/usr/bin/bwrap) block in
+; different ways, and neither runs on the other host. So the enforcing bodies
+; are split per backend and gated by %{system}. The mechanism is the same as
+; the sibling sandbox/ family: the parent whole-subtree stanza (test-cases/dune)
+; already attaches every .t here to the `blackbox` alias with no guard; each
+; scoped stanza below ANDs in a %{system} guard, and dune folds the two into one
+; spec whose enabled_if is the conjunction. A backend's cases therefore run only
+; on that backend's host and are silently skipped — never false-green — on the
+; other. On this repo's CI both hosts run, so both backends are covered.
+;
+; escalation.t is intentionally ungated: it proves the per-command escalation
+; PERMISSION shape (a separate shell.escalate access), which is a pure policy
+; property independent of which backend enforces, and it pins
+; MENTAT_SANDBOX_REQUIRE=off so the run starts and the decision surfaces on any
+; host regardless of backend availability.
+
+(cram
+ (applies_to seatbelt-write seatbelt-read seatbelt-network)
+ (alias blackbox)
+ (enabled_if
+  (= %{system} macosx)))
+
+(cram
+ (applies_to bwrap-write bwrap-read bwrap-network)
+ (alias blackbox)
+ (enabled_if
+  (= %{system} linux)))

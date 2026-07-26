@@ -1,0 +1,30 @@
+# thumper baseline
+# version: 2
+# suite_name: resume
+
+# machine: 3b8ae6dbe74c4269
+# cpu: Apple M1 Max
+# ocaml: 5.5.0
+# git: 842de018
+# dirty: true
+# command: ./bench_resume.exe --quick -q
+
+decode/decode_100_	alloc_words	8.557200e+04	8.557200e+04	8.557200e+04	0.000000e+00	5	0
+decode/decode_100_	cpu_time	2.209749e-04	2.121020e-04	2.342674e-04	5.015347e-02	5	0
+decode/decode_100_	wall_time	2.233284e-04	2.123686e-04	2.459659e-04	7.521949e-02	5	0
+decode/decode_10k_	alloc_words	8.441172e+06	8.441172e+06	8.441172e+06	0.000000e+00	6	1
+decode/decode_10k_	cpu_time	3.591206e-02	3.396731e-02	3.769655e-02	5.192177e-02	6	0
+decode/decode_10k_	wall_time	3.708513e-02	3.383885e-02	4.043581e-02	8.894349e-02	6	0
+decode/decode_1k_	alloc_words	8.451720e+05	8.451720e+05	8.451720e+05	0.000000e+00	21	1
+decode/decode_1k_	cpu_time	3.270390e-03	3.248496e-03	3.315905e-03	1.030598e-02	21	2
+decode/decode_1k_	wall_time	3.347419e-03	3.288751e-03	3.440517e-03	2.266911e-02	21	3
+replay/replay_100_	alloc_words	3.702000e+03	3.702000e+03	3.702000e+03	0.000000e+00	5	0
+replay/replay_100_	cpu_time	1.491063e-06	1.438875e-06	1.576028e-06	4.599183e-02	5	0
+replay/replay_100_	wall_time	1.501515e-06	1.443969e-06	1.573959e-06	4.328624e-02	5	0
+replay/replay_10k_	alloc_words	3.700020e+05	3.700020e+05	3.700020e+05	0.000000e+00	9	0
+replay/replay_10k_	cpu_time	3.147788e-04	3.081184e-04	3.250752e-04	2.693455e-02	9	0
+replay/replay_10k_	wall_time	3.166156e-04	3.053119e-04	3.441417e-04	6.132008e-02	9	2
+replay/replay_1k_	alloc_words	3.700200e+04	3.700200e+04	3.700200e+04	0.000000e+00	5	0
+replay/replay_1k_	cpu_time	1.679646e-05	1.516677e-05	1.900000e-05	1.141081e-01	5	0
+replay/replay_1k_	wall_time	1.704281e-05	1.464281e-05	1.986905e-05	1.533267e-01	5	0
+

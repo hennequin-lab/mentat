@@ -1,0 +1,3 @@
+(library
+ (name mentat_ocaml_grep)
+ (libraries compiler-libs.common mentat_ocaml mentat_workspace))

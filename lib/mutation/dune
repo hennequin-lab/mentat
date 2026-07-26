@@ -1,0 +1,11 @@
+(library
+ (name mentat_mutation)
+ (private_modules import string_id canon change_id)
+ (libraries
+  jsont
+  mentat_digest
+  textdiff
+  mentat_edit
+  lpath
+  mentat_session
+  mentat_workspace))

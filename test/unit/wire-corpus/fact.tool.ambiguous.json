@@ -1,0 +1,34 @@
+{
+  "type": "tool.ambiguous",
+  "v": 1,
+  "claim": "d1031255325c7a843ca10177afa5515f33c5579f7372f39f50b9eff7d79d851c",
+  "mutation": {
+    "changes": [
+      {
+        "id": "0b4e37fb3daca27376d8356f673d949bcd8b001c56a467fbd7e4db5d5b702050",
+        "path": {
+          "root": "ws",
+          "rel": "src/a.ml"
+        },
+        "before": {
+          "type": "missing"
+        },
+        "after": {
+          "type": "text",
+          "identity": "sha256:a41d31bdf101c4f8538c9d1812ff71f2466e846c6eb869777e3255a7503e591a:30"
+        },
+        "additions": 3,
+        "deletions": 0
+      }
+    ],
+    "observed": [],
+    "totals": {
+      "files": 1,
+      "additions": 3,
+      "deletions": 0
+    },
+    "revertability": {
+      "type": "available"
+    }
+  }
+}

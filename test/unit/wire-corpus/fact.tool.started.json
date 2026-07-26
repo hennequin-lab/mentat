@@ -1,0 +1,15 @@
+{
+  "type": "tool.started",
+  "v": 1,
+  "claim": {
+    "turn": "turn-c",
+    "stage": "direct",
+    "call": {
+      "id": "call-c",
+      "name": "read_file",
+      "input": {}
+    },
+    "input": {},
+    "requests": []
+  }
+}

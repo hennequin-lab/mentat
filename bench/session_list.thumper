@@ -1,0 +1,21 @@
+# thumper baseline
+# version: 2
+# suite_name: session_list
+
+# machine: 3b8ae6dbe74c4269
+# cpu: Apple M1 Max
+# ocaml: 5.5.0
+# git: 842de018
+# dirty: true
+# command: ./bench_session_list.exe --quick -q
+
+scan/scan_100_	alloc_words	1.163102e+06	1.163088e+06	1.163109e+06	9.027583e-06	11	0
+scan/scan_100_	cpu_time	2.392813e-02	2.214367e-02	2.511835e-02	6.215873e-02	11	0
+scan/scan_100_	wall_time	3.184448e-02	2.674323e-02	3.564040e-02	1.396972e-01	11	1
+scan/scan_10_	alloc_words	1.163810e+05	1.163800e+05	1.163820e+05	8.592468e-06	22	1
+scan/scan_10_	cpu_time	2.275674e-03	2.097206e-03	2.422041e-03	7.137118e-02	22	2
+scan/scan_10_	wall_time	2.818846e-03	2.479048e-03	3.083218e-03	1.071662e-01	22	1
+scan/scan_1k_	alloc_words	1.167561e+07	1.167555e+07	1.167565e+07	4.410905e-06	4	0
+scan/scan_1k_	cpu_time	1.824342e-01	1.687680e-01	1.922660e-01	6.440130e-02	4	0
+scan/scan_1k_	wall_time	2.042223e-01	1.864202e-01	2.184422e-01	7.839986e-02	4	0
+

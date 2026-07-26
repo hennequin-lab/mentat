@@ -1,0 +1,13 @@
+(library
+ (name mentat_llm_artifact)
+ (libraries
+  cohttp
+  cohttp-eio
+  cstruct
+  eio
+  eio.unix
+  logs
+  mentat_digest
+  mentat_llm
+  unix
+  uri))

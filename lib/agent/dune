@@ -1,0 +1,20 @@
+(library
+ (name mentat_agent)
+ (private_modules driver feed media scheduler)
+ (libraries
+  base64
+  eio
+  mentat_agent_step
+  mentat_client
+  mentat_diagnostic
+  mentat_digest
+  mentat_edit
+  mentat_llm
+  mentat_mutation
+  mentat_permission
+  mentat_prompts
+  mentat_protocol
+  mentat_sandbox
+  mentat_session
+  mentat_tool
+  mentat_workspace))

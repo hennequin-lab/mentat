@@ -1,0 +1,16 @@
+(library
+ (name mentat_web)
+ (libraries
+  cmarkit
+  eio
+  mentat_client
+  textdiff
+  mentat_llm
+  mentat_mutation
+  lpath
+  mentat_permission
+  mentat_protocol
+  mentat_review
+  mentat_session
+  mentat_tool
+  mentat_workspace))

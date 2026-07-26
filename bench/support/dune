@@ -1,0 +1,18 @@
+; Fixture-builder library: the one place benchmark fixture sizes are pinned.
+; Libraries grow per commit as new suites need fixtures.
+
+(library
+ (name bench_support)
+ (libraries
+  textdiff
+  mentat_session
+  mentat_llm
+  jsont
+  jsont.bytesrw
+  lpath
+  mentat_mutation
+  mentat_edit
+  mentat_workspace
+  mentat_digest
+  mentat_tui
+  unix))

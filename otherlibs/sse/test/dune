@@ -1,0 +1,4 @@
+(test
+ (name test_sse)
+ (modules test_sse)
+ (libraries windtrap eio eio_main sse sse_eio))

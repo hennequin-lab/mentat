@@ -1,0 +1,11 @@
+{
+  "type": "queue_next",
+  "v": 1,
+  "session": "session-c",
+  "input": [
+    {
+      "type": "text",
+      "text": "Next."
+    }
+  ]
+}

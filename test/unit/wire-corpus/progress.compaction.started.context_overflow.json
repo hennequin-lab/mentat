@@ -1,0 +1,6 @@
+{
+  "type": "compaction.started",
+  "v": 1,
+  "turn": "turn-c",
+  "reason": "context_overflow"
+}

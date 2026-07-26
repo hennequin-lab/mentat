@@ -1,0 +1,13 @@
+{
+  "type": "turn.provider_failed",
+  "v": 1,
+  "claim": "6e5a44dc40fd76f3646adeded60b86bbfe938c7e53a519e5c10318aa0df7b169",
+  "error": {
+    "kind": "rate_limited",
+    "phase": "stream",
+    "provider": "openai",
+    "status": 429,
+    "request_id": "req-provider-1",
+    "message": "rate limited"
+  }
+}

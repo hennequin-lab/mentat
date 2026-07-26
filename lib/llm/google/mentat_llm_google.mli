@@ -1,0 +1,98 @@
+(*---------------------------------------------------------------------------
+  Copyright (c) 2026 Invariant Systems. All rights reserved.
+  SPDX-License-Identifier: ISC
+ ---------------------------------------------------------------------------*)
+
+(** Google Gemini provider for [mentat.llm].
+
+    This library translates checked {!Mentat_llm.Request.t} values to the Gemini
+    [streamGenerateContent] protocol and translates streamed Gemini chunks back
+    to semantic live events and terminal responses.
+
+    The usual construction path is {!model}, {!Credential.api_key}, optional
+    {!Config.make}, then {!client}. Run requests through
+    {!Mentat_llm.Client.response}; its [on_event] callback observes live events.
+
+    Credentials, endpoint overrides, and HTTP policy are supplied explicitly.
+    The library does not read process environment variables, choose CLI
+    precedence, persist sessions, discover accounts, price models, execute
+    tools, or own UI model selection.
+
+    Request translation follows Gemini's wire format:
+
+    - system and developer messages from the prelude and transcript become
+      [systemInstruction.parts] in provider order;
+    - user text becomes [text], and user base64 media becomes [inlineData];
+    - assistant text, reasoning, and tool calls become model [parts];
+    - tool results become user [functionResponse] parts with text content joined
+      by newlines;
+    - tools become Gemini [functionDeclarations], with JSON schemas projected to
+      Gemini's supported schema shape.
+
+    Unsupported request features are reported as structured
+    {!Mentat_llm.Error.t} values rather than being silently degraded. *)
+
+(** {1:configuration Configuration} *)
+
+module Config = Config
+(** Google Gemini client configuration. *)
+
+module Credential : sig
+  type t
+  (** The type for Google Gemini credentials.
+
+      Credential values are inert and are only turned into authorization headers
+      when {!client} starts a request. *)
+
+  val api_key : string -> t
+  (** [api_key key] is a Google Generative AI API key sent as [x-goog-api-key].
+
+      Raises [Invalid_argument] if [key] is empty or contains a newline. *)
+end
+
+(** {1:identity Provider identity} *)
+
+val provider : Mentat_llm.Provider.t
+(** [provider] is the [google] provider namespace. *)
+
+val api : Mentat_llm.Model.Api.t
+(** [api] is the [gemini] model API family. *)
+
+val model : string -> Mentat_llm.Model.t
+(** [model id] is Google Gemini model [id].
+
+    Raises [Invalid_argument] if [id] is empty. *)
+
+(** {1:clients Clients} *)
+
+val client :
+  env:Eio_unix.Stdenv.base ->
+  ?config:Config.t ->
+  credential:Credential.t ->
+  unit ->
+  Mentat_llm.Client.t
+(** [client ~env ~credential ()] is a Google Gemini client.
+
+    The returned client accepts requests whose model has {!provider} and {!api}.
+    Other models are rejected by {!Mentat_llm.Client.response} before the Google
+    adapter starts transport work.
+
+    The client borrows [env] for HTTP calls, TLS, retries, timeouts, and stream
+    reads. Each response owns a request-local transport scope and releases it
+    before returning. Startup and stream failures are distinguished by
+    {!Mentat_llm.Error.phase}. Cancellation observed before startup returns a
+    startup error with kind {!Mentat_llm.Error.Cancelled}; cancellation observed
+    while reading returns a stream-phase error of the same kind.
+
+    Startup errors include unsupported provider features such as replay,
+    JSON-schema response format, URI media, tool-result media, and reasoning
+    parts without text or summary. Gemini non-2xx responses are classified by
+    HTTP status and, when present, Google error [status]; response bodies are
+    redacted before being attached to {!Mentat_llm.Error.t}.
+
+    Live events include non-empty text deltas, reasoning-summary deltas for
+    Gemini [thought] parts, complete tool calls with synthesized [tool_N] ids,
+    and usage snapshots. Missing function-call names and malformed streamed JSON
+    are stream-phase decode failures. Raw SSE EOF completes the stream with the
+    accumulated response, including an empty response when Gemini sends a
+    terminal candidate without parts. *)

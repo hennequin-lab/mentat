@@ -1,0 +1,5 @@
+{
+  "type": "turn.assistant_interrupted",
+  "v": 1,
+  "text": "Stopping."
+}

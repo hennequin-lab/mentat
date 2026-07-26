@@ -1,0 +1,17 @@
+; Internal developer tool: built and run from the tree
+; (_build/default/eval/bin/main.exe), not installed into the mentat package.
+
+(executable
+ (name main)
+ (modules main corpus)
+ (libraries
+  cmdliner
+  jsont
+  jsont.bytesrw
+  mentat_eval
+  mentat_eval_trace
+  mentat_llm
+  mentat_provider
+  mentat_session
+  str
+  unix))

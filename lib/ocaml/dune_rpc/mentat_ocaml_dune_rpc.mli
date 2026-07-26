@@ -1,0 +1,21 @@
+(*---------------------------------------------------------------------------
+  Copyright (c) 2026 Invariant Systems. All rights reserved.
+  SPDX-License-Identifier: ISC
+ ---------------------------------------------------------------------------*)
+
+(** Dune RPC observation for OCaml project tooling.
+
+    This library observes an already-running Dune RPC server: it polls the
+    registry, selects the endpoint matching a workspace, and reports Dune's
+    latest-known diagnostics. It never starts Dune.
+
+    It is a separate library from {!Mentat_ocaml} for one reason: it contains
+    the Dune RPC protocol stack ([dune-rpc], [csexp], [xdg]) and the [eio]
+    effects that drive it. Normalising [dune describe] output into a project
+    description needs none of that and lives in {!Mentat_ocaml.Describe}. *)
+
+module Diagnostic = Rpc.Diagnostic
+(** Dune diagnostic identifiers and latest-known stores. *)
+
+module Instance = Rpc.Instance
+(** Workspace-level Dune RPC state shared by tools and watchers. *)

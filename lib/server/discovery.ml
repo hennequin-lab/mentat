@@ -1,0 +1,218 @@
+(*---------------------------------------------------------------------------
+  Copyright (c) 2026 Invariant Systems. All rights reserved.
+  SPDX-License-Identifier: ISC
+ ---------------------------------------------------------------------------*)
+
+type t = {
+  socket : string;
+  pid : int;
+  protocol : int;
+  binary : string;
+  config_home : string;
+  started_at : int;
+  web_url : string option;
+}
+
+(* The file-format version, distinct from the [protocol] member (the wire
+   version). An unknown [v] is treated as foreign, never mis-read. *)
+let file_version = 1
+
+let jsont =
+  Jsont.Object.map ~kind:"daemon discovery"
+    (fun v socket pid protocol binary config_home started_at web_url ->
+      if not (Int.equal v file_version) then
+        Jsont.Error.msg Jsont.Meta.none
+          (Printf.sprintf "unsupported discovery file version %d (expected %d)"
+             v file_version);
+      { socket; pid; protocol; binary; config_home; started_at; web_url })
+  |> Jsont.Object.mem "v" Jsont.int ~enc:(fun _ -> file_version)
+  |> Jsont.Object.mem "socket" Jsont.string ~enc:(fun t -> t.socket)
+  |> Jsont.Object.mem "pid" Jsont.int ~enc:(fun t -> t.pid)
+  |> Jsont.Object.mem "protocol" Jsont.int ~enc:(fun t -> t.protocol)
+  |> Jsont.Object.mem "binary" Jsont.string ~enc:(fun t -> t.binary)
+  |> Jsont.Object.mem "config_home" Jsont.string ~enc:(fun t -> t.config_home)
+  |> Jsont.Object.mem "started_at" Jsont.int ~enc:(fun t -> t.started_at)
+  (* Optional and additive: the browser-frontend URL (with its single-use
+     bootstrap token) when the daemon runs [--web], absent otherwise. A reader
+     that does not know the field is the same binary that wrote it (the identity
+     gate), so no [v] bump is owed. *)
+  |> Jsont.Object.opt_mem "web_url" Jsont.string ~enc:(fun t -> t.web_url)
+  |> Jsont.Object.error_unknown |> Jsont.Object.finish
+
+let daemon_json = "daemon.json"
+let write_counter = ref 0
+
+let write ~dir t =
+  let dir_s = Lpath.Abs.to_string dir in
+  try
+    (* The daemon binary's hardened [ensure_private_dir] is the perm authority;
+       here we only ensure the directory exists before the atomic write. *)
+    (try Unix.mkdir dir_s 0o700 with Unix.Unix_error (Unix.EEXIST, _, _) -> ());
+    let text =
+      match Jsont_bytesrw.encode_string jsont t with
+      | Ok s -> s ^ "\n"
+      | Error message -> failwith message
+    in
+    incr write_counter;
+    let tmp =
+      Filename.concat dir_s
+        (Printf.sprintf ".daemon.json.%d.%d.tmp" (Unix.getpid ()) !write_counter)
+    in
+    let fd =
+      Unix.openfile tmp
+        [ Unix.O_CREAT; Unix.O_EXCL; Unix.O_WRONLY; Unix.O_CLOEXEC ]
+        0o600
+    in
+    Fun.protect
+      ~finally:(fun () -> try Unix.close fd with Unix.Unix_error _ -> ())
+      (fun () ->
+        let bytes = Bytes.of_string text in
+        let written = Unix.write fd bytes 0 (Bytes.length bytes) in
+        if written <> Bytes.length bytes then failwith "short write");
+    (try Unix.rename tmp (Filename.concat dir_s daemon_json)
+     with exn ->
+       (try Unix.unlink tmp with Unix.Unix_error _ -> ());
+       raise exn);
+    Ok ()
+  with
+  | Failure message -> Error message
+  | Unix.Unix_error (error, fn, _) ->
+      Error (Printf.sprintf "%s: %s" fn (Unix.error_message error))
+
+let read ~dir =
+  let path = Filename.concat (Lpath.Abs.to_string dir) daemon_json in
+  if not (Sys.file_exists path) then `Absent
+  else
+    match In_channel.with_open_bin path In_channel.input_all with
+    | text -> (
+        match Jsont_bytesrw.decode_string jsont text with
+        | Ok t -> `Found t
+        | Error message -> `Foreign message)
+    | exception Sys_error message -> `Foreign message
+
+module Claim = struct
+  type guard = { fd : Unix.file_descr; path : string }
+
+  (* The in-process claimed-set: a second [try_acquire] in this process is
+     [`Held], so same-process contention is honest even before the kernel lock
+     (the run-lock registry idiom). *)
+  let held : (string, unit) Hashtbl.t = Hashtbl.create 8
+
+  let try_acquire ~dir =
+    let path = Filename.concat (Lpath.Abs.to_string dir) "daemon.lock" in
+    if Hashtbl.mem held path then Error `Held
+    else
+      match
+        Unix.openfile path [ Unix.O_CREAT; Unix.O_RDWR; Unix.O_CLOEXEC ] 0o600
+      with
+      | exception Unix.Unix_error (error, fn, _) ->
+          Error (`Io (Printf.sprintf "%s: %s" fn (Unix.error_message error)))
+      | fd -> (
+          match Unix.lockf fd Unix.F_TLOCK 0 with
+          | () ->
+              Hashtbl.replace held path ();
+              Ok { fd; path }
+          | exception Unix.Unix_error ((Unix.EACCES | Unix.EAGAIN), _, _) ->
+              (try Unix.close fd with Unix.Unix_error _ -> ());
+              Error `Held
+          | exception Unix.Unix_error (error, fn, _) ->
+              (try Unix.close fd with Unix.Unix_error _ -> ());
+              Error
+                (`Io (Printf.sprintf "%s: %s" fn (Unix.error_message error))))
+
+  let release guard =
+    Hashtbl.remove held guard.path;
+    (try Unix.lockf guard.fd Unix.F_ULOCK 0 with Unix.Unix_error _ -> ());
+    try Unix.close guard.fd with Unix.Unix_error _ -> ()
+end
+
+let clear ~dir ~pid =
+  match read ~dir with
+  | `Found t when Int.equal t.pid pid -> (
+      try Unix.unlink (Filename.concat (Lpath.Abs.to_string dir) daemon_json)
+      with Unix.Unix_error _ -> ())
+  | `Found _ | `Absent | `Foreign _ -> ()
+
+(* The find-or-spawn convergence state machine, lifted here
+   as a pure combinator over injected effects so its every branch is
+   deterministically unit-testable — a true two-process race is not. The library
+   owns the discipline (read → liveness-first probe → identity gate → spawn →
+   poll ladder → one full retry); the daemon binary supplies the real effects
+   ([Unix.create_process] spawn, a socket handshake probe, a clock sleep). *)
+
+type 'conn outcome =
+  [ `Attached of 'conn | `Mismatch of t | `Foreign_held | `Timeout ]
+
+let locate ~read ~claim_free ~probe ~identity_ok ~spawn ~sleep ~poll_budget =
+  (* After a spawn (or while a starting daemon has not yet written its socket),
+     poll: re-read and re-probe on the injected cadence until the socket answers
+     or the budget runs out. *)
+  let rec poll n =
+    if n <= 0 then `Timeout
+    else
+      match read () with
+      | `Found record -> (
+          match probe record with
+          | Some conn ->
+              (* The identity gate applies here too (F2): after we spawn, a
+                 different-identity daemon can win the claim and answer first — the
+                 exact skew A2 refuses. Never attach to it silently. *)
+              if identity_ok record then `Attached conn else `Mismatch record
+          | None ->
+              sleep ();
+              poll (n - 1))
+      | `Absent | `Foreign _ ->
+          sleep ();
+          poll (n - 1)
+  in
+  let attempt () =
+    match read () with
+    | `Found record -> (
+        match probe record with
+        | Some conn ->
+            (* Live: the identity gate applies only here. *)
+            if identity_ok record then `Attached conn else `Mismatch record
+        | None ->
+            (* Not answering: a free claim means the recorded daemon is dead —
+               a stale file, reclaimed by spawning the current binary; a
+               held claim means it is still starting, so poll. *)
+            if claim_free () then (
+              spawn ();
+              poll poll_budget)
+            else poll poll_budget)
+    | `Absent ->
+        spawn ();
+        poll poll_budget
+    | `Foreign _ ->
+        (* An unknown-version or undecodable file: reclaim it only when its
+           claim is free (a dead daemon left it); a held claim is a live daemon
+           we cannot speak to — refuse, never clobber. *)
+        if claim_free () then (
+          spawn ();
+          poll poll_budget)
+        else `Foreign_held
+  in
+  match attempt () with
+  | (`Attached _ | `Mismatch _ | `Foreign_held) as settled -> settled
+  | `Timeout -> (
+      (* D4 step 4: one full retry covers a winner that died between taking the
+         claim and writing the file — its lock died with it, so the next
+         read/claim reflects the vacancy. *)
+      match attempt () with
+      | (`Attached _ | `Mismatch _ | `Foreign_held) as settled -> settled
+      | `Timeout -> `Timeout)
+
+(* [MENTAT_DAEMON_SOCKET] beats discovery entirely (dune's [DUNE_RPC]
+   precedent): evaluated first, a [`Reached conn] — the named socket answered its
+   handshake — attaches straight through with no file read, no claim, no spawn,
+   and no identity gate beyond the handshake; a [`Set_unreachable] override is a
+   definite [`Timeout], never a fallback that reads the file or spawns; [`Unset]
+   defers to {!locate}. The daemon owns reading the variable and probing the
+   named socket; this owns the precedence. *)
+let locate_with_override ~socket_override ~read ~claim_free ~probe ~identity_ok
+    ~spawn ~sleep ~poll_budget =
+  match socket_override () with
+  | `Reached conn -> `Attached conn
+  | `Set_unreachable -> `Timeout
+  | `Unset ->
+      locate ~read ~claim_free ~probe ~identity_ok ~spawn ~sleep ~poll_budget

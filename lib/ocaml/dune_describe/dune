@@ -1,0 +1,4 @@
+(library
+ (name mentat_ocaml_dune_describe)
+ (private_modules sexp)
+ (libraries mentat_ocaml lpath mentat_workspace))

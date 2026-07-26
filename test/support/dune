@@ -1,0 +1,8 @@
+; Mentat_test_censor: the one output-normalization policy, shared by the
+; blackbox cram suite (through mentat_cram) and the TUI harness. It lives here,
+; under neither consumer, so neither owns the shared substrate.
+
+(library
+ (name mentat_test_censor)
+ (modules mentat_test_censor)
+ (libraries re))

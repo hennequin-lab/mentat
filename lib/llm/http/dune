@@ -1,0 +1,21 @@
+(library
+ (name mentat_llm_http)
+ (libraries
+  ca-certs
+  cohttp
+  cohttp-eio
+  cstruct
+  domain-name
+  eio
+  eio.unix
+  jsont
+  jsont.bytesrw
+  logs
+  mirage-crypto-rng
+  mirage-crypto-rng.unix
+  mentat_llm
+  sse
+  sse_eio
+  tls
+  tls-eio
+  uri))

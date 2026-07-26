@@ -1,0 +1,14 @@
+{
+  "type": "prompt",
+  "v": 1,
+  "session": "session-c",
+  "turn": "turn-cmd",
+  "input": [
+    {
+      "type": "text",
+      "text": "Go."
+    }
+  ],
+  "mode": "build",
+  "max_steps": 8
+}

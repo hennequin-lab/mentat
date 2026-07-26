@@ -1,0 +1,19 @@
+(library
+ (name mentat_review)
+ (private_modules
+  cr
+  codec
+  error
+  feature
+  scope
+  mark
+  verdict
+  cursor
+  review
+  live
+  op
+  command
+  view
+  file_diff
+  persist)
+ (libraries jsont textdiff mentat_digest lpath))

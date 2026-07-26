@@ -1,0 +1,21 @@
+{
+  "type": "compaction.installed",
+  "v": 1,
+  "compaction": {
+    "reason": "user_requested",
+    "provider_claim": "e4a2bf73cf29b32dd111351d4444e9a47e75414a5dfa0d67a26722bf95823cdb",
+    "request_digest": "4abb8a42696cb0bf5dcae0ba778a934aa16b243dbb701ebe3197e11a4ff7b1ad",
+    "summary_messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Summary."
+          }
+        ]
+      }
+    ],
+    "summarized_upto": 2
+  }
+}

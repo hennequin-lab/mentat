@@ -1,0 +1,27 @@
+# thumper baseline
+# version: 2
+# suite_name: enter
+
+# machine: 3b8ae6dbe74c4269
+# cpu: Apple M1 Max
+# ocaml: 5.5.0
+# git: 4a86ef56
+# dirty: true
+# command: ./bench_enter.exe --quick -q
+
+fs-trend/context_load	alloc_words	9.397000e+03	9.396000e+03	9.397000e+03	5.320847e-05	5	1
+fs-trend/context_load	cpu_time	2.572908e-04	2.319271e-04	2.736028e-04	8.098955e-02	5	0
+fs-trend/context_load	wall_time	2.948107e-04	2.750606e-04	3.104432e-04	6.000899e-02	5	0
+fs-trend/skills_load	alloc_words	9.938000e+03	9.938000e+03	9.939000e+03	5.031193e-05	5	0
+fs-trend/skills_load	cpu_time	2.673344e-04	2.562245e-04	2.814757e-04	4.722775e-02	5	0
+fs-trend/skills_load	wall_time	2.947292e-04	2.692688e-04	3.124040e-04	7.317766e-02	5	1
+pure/model_transcript	alloc_words	2.218000e+03	2.218000e+03	2.218000e+03	0.000000e+00	6	0
+pure/model_transcript	cpu_time	1.136028e-06	1.105733e-06	1.164864e-06	2.602553e-02	6	0
+pure/model_transcript	wall_time	1.109222e-06	9.916872e-07	1.234649e-06	1.095192e-01	6	0
+pure/request_digest	alloc_words	6.044900e+04	6.044900e+04	6.044900e+04	0.000000e+00	23	1
+pure/request_digest	cpu_time	2.375033e-04	2.341355e-04	2.387277e-04	9.667619e-03	23	1
+pure/request_digest	wall_time	2.353700e-04	2.293235e-04	2.380674e-04	1.857490e-02	23	2
+pure/request_make	alloc_words	9.000000e+00	9.000000e+00	9.000000e+00	0.000000e+00	5	0
+pure/request_make	cpu_time	9.490482e-09	8.867528e-09	9.764326e-09	4.724721e-02	5	1
+pure/request_make	wall_time	9.491976e-09	8.947336e-09	9.766099e-09	4.312917e-02	5	1
+

@@ -1,0 +1,20 @@
+{
+  "type": "tool.prepared",
+  "v": 1,
+  "claim": "d1031255325c7a843ca10177afa5515f33c5579f7372f39f50b9eff7d79d851c",
+  "description": "write beta 4 times",
+  "requests": [
+    {
+      "version": 1,
+      "items": [
+        {
+          "access": {
+            "type": "custom",
+            "name": "session.test",
+            "subject": "beta"
+          }
+        }
+      ]
+    }
+  ]
+}

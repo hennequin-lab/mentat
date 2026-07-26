@@ -1,0 +1,7 @@
+{
+  "type": "compaction.failed",
+  "v": 1,
+  "turn": "turn-c",
+  "reason": "context_pressure",
+  "message": "summary model gone"
+}

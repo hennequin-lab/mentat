@@ -1,0 +1,4 @@
+(library
+ (name mentat_diagnostic)
+ (public_name mentat.diagnostic)
+ (libraries jsont))

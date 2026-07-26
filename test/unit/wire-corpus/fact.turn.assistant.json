@@ -1,0 +1,27 @@
+{
+  "type": "turn.assistant",
+  "v": 1,
+  "response": {
+    "model": {
+      "provider": "openai",
+      "api": "responses",
+      "id": "gpt-5"
+    },
+    "usage": {
+      "input": 5,
+      "output": 2,
+      "reasoning": 0,
+      "cache_read": 0,
+      "cache_write": 0
+    },
+    "reasoning_summary": [],
+    "assistant": {
+      "parts": [
+        {
+          "type": "text",
+          "text": "Hello."
+        }
+      ]
+    }
+  }
+}

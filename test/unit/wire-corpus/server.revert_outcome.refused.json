@@ -1,0 +1,7 @@
+{
+  "type": "refused",
+  "problems": [
+    "a stale change",
+    "an unrecorded write"
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "type": "journal.queue",
+  "v": 1,
+  "update": {
+    "type": "enqueued",
+    "entry": {
+      "id": "q-c",
+      "input": [
+        {
+          "type": "text",
+          "text": "Next."
+        }
+      ]
+    }
+  }
+}

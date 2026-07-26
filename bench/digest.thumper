@@ -1,0 +1,39 @@
+# thumper baseline
+# version: 2
+# suite_name: digest
+
+# machine: 3b8ae6dbe74c4269
+# cpu: Apple M1 Max
+# ocaml: 5.5.0
+# git: 7cc7ffac
+# dirty: true
+# command: ./bench_digest.exe --quick -q
+
+capture/capture_1k_	alloc_words	9.000000e+00	9.000000e+00	9.000000e+00	0.000000e+00	5	0
+capture/capture_1k_	cpu_time	5.372387e-06	5.123426e-06	5.564477e-06	4.104792e-02	5	0
+capture/capture_1k_	wall_time	5.404257e-06	5.070709e-06	5.655159e-06	5.407307e-02	5	0
+capture/capture_1m_	alloc_words	9.000000e+00	9.000000e+00	9.000000e+00	0.000000e+00	5	0
+capture/capture_1m_	cpu_time	5.070900e-03	4.960857e-03	5.256500e-03	2.915093e-02	5	2
+capture/capture_1m_	wall_time	5.083083e-03	5.011298e-03	5.247463e-03	2.323051e-02	5	2
+capture/capture_64k_	alloc_words	9.000000e+00	9.000000e+00	9.000000e+00	0.000000e+00	5	0
+capture/capture_64k_	cpu_time	3.067522e-04	2.933404e-04	3.188349e-04	4.155561e-02	5	1
+capture/capture_64k_	wall_time	3.060169e-04	2.814519e-04	3.219978e-04	6.624784e-02	5	1
+dedup-check/equal-ref	alloc_words	0.000000e+00	0.000000e+00	0.000000e+00	inf	5	0
+dedup-check/equal-ref	cpu_time	2.677725e-09	2.652351e-09	2.711197e-09	1.098811e-02	5	0
+dedup-check/equal-ref	wall_time	2.689443e-09	2.617689e-09	2.745011e-09	2.367054e-02	5	2
+dedup-check/matches_same-bytes	alloc_words	6.000000e+00	6.000000e+00	6.000000e+00	0.000000e+00	5	0
+dedup-check/matches_same-bytes	cpu_time	3.103682e-04	3.053669e-04	3.175000e-04	1.954624e-02	5	0
+dedup-check/matches_same-bytes	wall_time	3.115948e-04	3.048214e-04	3.189558e-04	2.268078e-02	5	0
+dedup-check/matches_same-length	alloc_words	6.000000e+00	6.000000e+00	6.000000e+00	0.000000e+00	10	0
+dedup-check/matches_same-length	cpu_time	3.040625e-04	2.969350e-04	3.117778e-04	2.440736e-02	10	1
+dedup-check/matches_same-length	wall_time	3.034994e-04	2.890742e-04	3.164430e-04	4.508870e-02	10	1
+dedup-check/matches_wrong-length	alloc_words	0.000000e+00	0.000000e+00	0.000000e+00	inf	5	0
+dedup-check/matches_wrong-length	cpu_time	2.609987e-09	2.547875e-09	2.652067e-09	1.996035e-02	5	0
+dedup-check/matches_wrong-length	wall_time	2.637852e-09	2.540323e-09	2.704993e-09	3.121288e-02	5	0
+token/of-token	alloc_words	4.500000e+01	4.500000e+01	4.500000e+01	0.000000e+00	5	0
+token/of-token	cpu_time	2.764551e-07	2.543090e-07	2.891526e-07	6.301851e-02	5	1
+token/of-token	wall_time	2.796729e-07	2.552785e-07	2.914390e-07	6.464793e-02	5	1
+token/to-token	alloc_words	4.500000e+01	4.500000e+01	4.500000e+01	0.000000e+00	5	0
+token/to-token	cpu_time	2.609227e-07	2.560552e-07	2.669631e-07	2.090257e-02	5	1
+token/to-token	wall_time	2.601318e-07	2.546915e-07	2.701144e-07	2.964433e-02	5	0
+

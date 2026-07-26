@@ -1,0 +1,13 @@
+{
+  "type": "turn.message",
+  "v": 1,
+  "message": {
+    "role": "user",
+    "content": [
+      {
+        "type": "text",
+        "text": "hi"
+      }
+    ]
+  }
+}

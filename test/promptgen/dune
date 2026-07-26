@@ -1,0 +1,152 @@
+; The prompts generator's own tests: a golden output for a valid builtin
+; skill, and the build-failure diagnostics for invalid ones. Fixtures live
+; here, outside prompts/, so the real Mentat_prompts build never sees them.
+
+(rule
+ (targets good.out)
+ (deps
+  (:gen ../../prompts/gen/gen.exe)
+  (source_tree cases))
+ (action
+  (run %{gen} -o %{targets} cases/skills/good.md)))
+
+(rule
+ (alias runtest)
+ (action
+  (diff good.expected good.out)))
+
+(rule
+ (targets bad-name.out)
+ (deps
+  (:gen ../../prompts/gen/gen.exe)
+  (source_tree cases))
+ (action
+  (with-outputs-to
+   %{targets}
+   (with-accepted-exit-codes
+    1
+    (run %{gen} -o bad-name.ml cases/skills/Bad_Name.md)))))
+
+(rule
+ (alias runtest)
+ (action
+  (diff bad-name.expected bad-name.out)))
+
+(rule
+ (targets missing-description.out)
+ (deps
+  (:gen ../../prompts/gen/gen.exe)
+  (source_tree cases))
+ (action
+  (with-outputs-to
+   %{targets}
+   (with-accepted-exit-codes
+    1
+    (run
+     %{gen}
+     -o
+     missing-description.ml
+     cases/skills/missing-description.md)))))
+
+(rule
+ (alias runtest)
+ (action
+  (diff missing-description.expected missing-description.out)))
+
+(rule
+ (targets multiline-description.out)
+ (deps
+  (:gen ../../prompts/gen/gen.exe)
+  (source_tree cases))
+ (action
+  (with-outputs-to
+   %{targets}
+   (with-accepted-exit-codes
+    1
+    (run
+     %{gen}
+     -o
+     multiline-description.ml
+     cases/skills/multiline-description.md)))))
+
+(rule
+ (alias runtest)
+ (action
+  (diff multiline-description.expected multiline-description.out)))
+
+(rule
+ (targets duplicate-description.out)
+ (deps
+  (:gen ../../prompts/gen/gen.exe)
+  (source_tree cases))
+ (action
+  (with-outputs-to
+   %{targets}
+   (with-accepted-exit-codes
+    1
+    (run
+     %{gen}
+     -o
+     duplicate-description.ml
+     cases/skills/duplicate-description.md)))))
+
+(rule
+ (alias runtest)
+ (action
+  (diff duplicate-description.expected duplicate-description.out)))
+
+(rule
+ (targets unterminated.out)
+ (deps
+  (:gen ../../prompts/gen/gen.exe)
+  (source_tree cases))
+ (action
+  (with-outputs-to
+   %{targets}
+   (with-accepted-exit-codes
+    1
+    (run %{gen} -o unterminated.ml cases/skills/unterminated.md)))))
+
+(rule
+ (alias runtest)
+ (action
+  (diff unterminated.expected unterminated.out)))
+
+(rule
+ (targets nested.out)
+ (deps
+  (:gen ../../prompts/gen/gen.exe)
+  (source_tree cases))
+ (action
+  (with-outputs-to
+   %{targets}
+   (with-accepted-exit-codes
+    1
+    (run %{gen} -o nested.ml cases/deep/skills/nested/file.md)))))
+
+(rule
+ (alias runtest)
+ (action
+  (diff nested.expected nested.out)))
+
+(rule
+ (targets duplicate.out)
+ (deps
+  (:gen ../../prompts/gen/gen.exe)
+  (source_tree cases))
+ (action
+  (with-outputs-to
+   %{targets}
+   (with-accepted-exit-codes
+    1
+    (run
+     %{gen}
+     -o
+     duplicate.ml
+     cases/dup/a/skills/same.md
+     cases/dup/b/skills/same.md)))))
+
+(rule
+ (alias runtest)
+ (action
+  (diff duplicate.expected duplicate.out)))

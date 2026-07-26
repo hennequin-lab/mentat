@@ -1,0 +1,4 @@
+(library
+ (name mentat_tool)
+ (libraries jsont mentat_permission mentat_llm)
+ (private_modules canonical_json definition))

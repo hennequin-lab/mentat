@@ -1,0 +1,7 @@
+{
+  "step": "progress",
+  "progress": {
+    "kind": "browser_url",
+    "url": "https://issuer/authorize"
+  }
+}

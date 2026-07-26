@@ -1,0 +1,9 @@
+{
+  "type": "invalid_position",
+  "v": 1,
+  "position": {
+    "type": "foreign_session",
+    "expected": "session-c",
+    "actual": "session-d"
+  }
+}

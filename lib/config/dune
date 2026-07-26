@@ -1,0 +1,11 @@
+(library
+ (name mentat_config)
+ (libraries
+  jsont
+  jsont.bytesrw
+  lpath
+  mentat_diagnostic
+  mentat_llm
+  mentat_provider
+  mentat_sandbox
+  mentat_permission))

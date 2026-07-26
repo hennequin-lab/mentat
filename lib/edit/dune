@@ -1,0 +1,3 @@
+(library
+ (name mentat_edit)
+ (libraries textdiff mentat_digest mentat_workspace))

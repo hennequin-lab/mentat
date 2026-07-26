@@ -1,0 +1,12 @@
+{
+  "type": "model.usage",
+  "v": 1,
+  "turn": "turn-c",
+  "usage": {
+    "input": 9,
+    "output": 4,
+    "reasoning": 0,
+    "cache_read": 0,
+    "cache_write": 0
+  }
+}

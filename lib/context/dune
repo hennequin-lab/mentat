@@ -1,0 +1,15 @@
+(library
+ (name mentat_context)
+ (libraries
+  eio
+  eio.unix
+  unix
+  jsont
+  frontmatter
+  lpath
+  mentat_prompts
+  mentat_config
+  mentat_digest
+  mentat_llm
+  mentat_tool
+  mentat_diagnostic))

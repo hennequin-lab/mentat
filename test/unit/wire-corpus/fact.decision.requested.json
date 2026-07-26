@@ -1,0 +1,43 @@
+{
+  "type": "decision.requested",
+  "v": 1,
+  "request": {
+    "turn": "turn-c",
+    "call": {
+      "id": "call-c",
+      "name": "read_file",
+      "input": {}
+    },
+    "stage": "direct",
+    "request": {
+      "type": "permission",
+      "review": {
+        "version": 1,
+        "request": {
+          "version": 1,
+          "items": [
+            {
+              "access": {
+                "type": "custom",
+                "name": "session.review",
+                "subject": "c"
+              }
+            }
+          ]
+        },
+        "reasons": [
+          {
+            "access": {
+              "type": "custom",
+              "name": "session.review",
+              "subject": "c"
+            },
+            "reason": {
+              "type": "unmatched"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

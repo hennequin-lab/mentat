@@ -1,0 +1,7 @@
+{
+  "step": "saved",
+  "account": {
+    "status": "missing",
+    "provider": "openai"
+  }
+}

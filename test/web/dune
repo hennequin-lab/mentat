@@ -1,0 +1,19 @@
+(test
+ (name test_web)
+ (libraries
+  windtrap
+  eio
+  eio_main
+  mentat_web
+  mentat_server
+  mentat_client
+  mentat_protocol
+  mentat_session
+  mentat_llm
+  lpath
+  mentat_permission
+  mentat_tool
+  mentat_sandbox
+  mentat_workspace
+  mentat_digest
+  jsont))

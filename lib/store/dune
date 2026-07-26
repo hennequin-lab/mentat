@@ -1,0 +1,19 @@
+(library
+ (name mentat_store)
+ (private_modules correlation disk import layout handle session_lock)
+ (libraries
+  base64
+  eio
+  eio.unix
+  jsont
+  jsont.bytesrw
+  logs
+  mentat_diagnostic
+  mentat_digest
+  mentat_edit
+  mentat_mutation
+  lpath
+  mentat_review
+  mentat_session
+  mentat_workspace
+  unix))

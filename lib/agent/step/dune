@@ -1,0 +1,11 @@
+(library
+ (name mentat_agent_step)
+ (libraries
+  jsont
+  mentat_digest
+  mentat_llm
+  mentat_permission
+  mentat_prompts
+  mentat_sandbox
+  mentat_session
+  mentat_tool))

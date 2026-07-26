@@ -1,0 +1,16 @@
+{
+  "type": "journal.tasks",
+  "v": 1,
+  "board": [
+    {
+      "id": "task-c",
+      "owner": {
+        "type": "main"
+      },
+      "content": "Chart the module graph",
+      "status": "pending",
+      "priority": "medium",
+      "position": 0
+    }
+  ]
+}

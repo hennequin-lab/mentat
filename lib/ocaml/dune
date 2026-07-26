@@ -1,0 +1,4 @@
+(library
+ (name mentat_ocaml)
+ (private_modules import)
+ (libraries lpath mentat_workspace))

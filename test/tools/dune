@@ -1,0 +1,600 @@
+(library
+ (name test_tools_support)
+ (modules test_tools_support)
+ (libraries
+  windtrap
+  eio
+  eio.unix
+  unix
+  jsont
+  jsont.bytesrw
+  mentat_config
+  mentat_llm
+  lpath
+  mentat_sandbox
+  mentat_tool
+  mentat_workspace
+  mentat_workspace_io)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(test
+ (name test_tools_read_file_expect)
+ (modules test_tools_read_file_expect)
+ (deps test_tools_read_file_expect.ml)
+ (libraries
+  windtrap
+  test_tools_support
+  eio
+  eio.unix
+  eio_main
+  unix
+  jsont
+  jsont.bytesrw
+  mentat_config
+  mentat_digest
+  mentat_edit
+  mentat_llm
+  lpath
+  mentat_permission
+  mentat_sandbox
+  mentat_tool
+  mentat_tools
+  mentat_tools_output
+  mentat_workspace
+  mentat_workspace_io)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(test
+ (name test_tools_search_text_expect)
+ (modules test_tools_search_text_expect)
+ (deps test_tools_search_text_expect.ml)
+ (libraries
+  windtrap
+  test_tools_support
+  eio
+  eio.mock
+  eio.unix
+  eio_main
+  unix
+  mtime
+  jsont
+  jsont.bytesrw
+  mentat_config
+  mentat_digest
+  mentat_edit
+  mentat_llm
+  lpath
+  mentat_permission
+  mentat_sandbox
+  mentat_tool
+  mentat_tools
+  mentat_tools_output
+  mentat_workspace
+  mentat_workspace_io)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(test
+ (name test_tools_write_file_expect)
+ (modules test_tools_write_file_expect)
+ (deps test_tools_write_file_expect.ml)
+ (libraries
+  windtrap
+  test_tools_support
+  eio
+  eio.unix
+  eio_main
+  unix
+  jsont
+  jsont.bytesrw
+  mentat_config
+  mentat_digest
+  mentat_edit
+  mentat_llm
+  lpath
+  mentat_permission
+  mentat_sandbox
+  mentat_tool
+  mentat_tools
+  mentat_tools_output
+  mentat_workspace
+  mentat_workspace_io)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(test
+ (name test_tools_applied_within_review_expect)
+ (modules test_tools_applied_within_review_expect)
+ (deps test_tools_applied_within_review_expect.ml)
+ (libraries
+  windtrap
+  test_tools_support
+  eio
+  eio.unix
+  eio_main
+  unix
+  jsont
+  jsont.bytesrw
+  mentat_config
+  mentat_digest
+  mentat_edit
+  mentat_llm
+  lpath
+  mentat_permission
+  mentat_sandbox
+  mentat_tool
+  mentat_tools
+  mentat_workspace
+  mentat_workspace_io)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(test
+ (name test_tools_glob_expect)
+ (modules test_tools_glob_expect)
+ (deps test_tools_glob_expect.ml)
+ (libraries
+  windtrap
+  test_tools_support
+  eio
+  eio.unix
+  eio_main
+  unix
+  jsont
+  jsont.bytesrw
+  mentat_config
+  mentat_edit
+  mentat_llm
+  lpath
+  mentat_permission
+  mentat_sandbox
+  mentat_tool
+  mentat_tools
+  mentat_tools_output
+  mentat_workspace
+  mentat_workspace_io)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(test
+ (name test_tools_ocaml_search_expressions_expect)
+ (modules test_tools_ocaml_search_expressions_expect)
+ (deps test_tools_ocaml_search_expressions_expect.ml)
+ (libraries
+  windtrap
+  test_tools_support
+  eio
+  eio.unix
+  eio_main
+  unix
+  jsont
+  jsont.bytesrw
+  mentat_config
+  mentat_edit
+  mentat_llm
+  lpath
+  mentat_permission
+  mentat_sandbox
+  mentat_tool
+  mentat_tools
+  mentat_tools_output
+  mentat_workspace
+  mentat_workspace_io)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(test
+ (name test_tools_ocaml_replace_expressions_expect)
+ (modules test_tools_ocaml_replace_expressions_expect)
+ (deps test_tools_ocaml_replace_expressions_expect.ml)
+ (libraries
+  windtrap
+  test_tools_support
+  eio
+  eio.unix
+  eio_main
+  unix
+  jsont
+  jsont.bytesrw
+  mentat_config
+  mentat_edit
+  mentat_llm
+  lpath
+  mentat_permission
+  mentat_sandbox
+  mentat_tool
+  mentat_tools
+  mentat_tools_output
+  mentat_workspace
+  mentat_workspace_io)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(test
+ (name test_tools_shell_expect)
+ (modules test_tools_shell_expect)
+ (deps test_tools_shell_expect.ml)
+ (libraries
+  windtrap
+  test_tools_support
+  eio
+  eio.unix
+  eio_main
+  unix
+  jsont
+  jsont.bytesrw
+  mentat_config
+  mentat_digest
+  mentat_edit
+  mentat_llm
+  lpath
+  mentat_permission
+  mentat_sandbox
+  mentat_tool
+  mentat_tools
+  mentat_tools_output
+  mentat_workspace
+  mentat_workspace_io)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(test
+ (name test_tools_shell_background)
+ (modules test_tools_shell_background)
+ (deps test_tools_shell_background.ml)
+ (libraries
+  windtrap
+  test_tools_support
+  eio
+  eio.unix
+  eio_main
+  unix
+  jsont
+  mentat_config
+  lpath
+  mentat_permission
+  mentat_sandbox
+  mentat_tool
+  mentat_tools
+  mentat_workspace
+  mentat_workspace_io)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(test
+ (name test_tools_ocaml_ast_edit_expect)
+ (modules test_tools_ocaml_ast_edit_expect)
+ (deps test_tools_ocaml_ast_edit_expect.ml)
+ (libraries
+  windtrap
+  test_tools_support
+  eio
+  eio.unix
+  eio_main
+  unix
+  jsont
+  jsont.bytesrw
+  mentat_config
+  mentat_digest
+  mentat_edit
+  mentat_llm
+  lpath
+  mentat_permission
+  mentat_sandbox
+  mentat_tool
+  mentat_tools
+  mentat_workspace
+  mentat_workspace_io)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(test
+ (name test_tools_ocaml_type_at_expect)
+ (modules test_tools_ocaml_type_at_expect)
+ (deps test_tools_ocaml_type_at_expect.ml)
+ (libraries
+  windtrap
+  test_tools_support
+  eio
+  eio.mock
+  eio.unix
+  eio_main
+  unix
+  mtime
+  jsont
+  jsont.bytesrw
+  mentat_config
+  mentat_edit
+  mentat_llm
+  lpath
+  mentat_permission
+  mentat_sandbox
+  mentat_tool
+  mentat_tools
+  mentat_tools_output
+  mentat_workspace
+  mentat_workspace_io)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(test
+ (name test_tools_edit_file_expect)
+ (modules test_tools_edit_file_expect)
+ (deps test_tools_edit_file_expect.ml)
+ (libraries
+  windtrap
+  test_tools_support
+  eio
+  eio.unix
+  eio_main
+  unix
+  jsont
+  jsont.bytesrw
+  mentat_config
+  mentat_digest
+  mentat_edit
+  mentat_llm
+  lpath
+  mentat_permission
+  mentat_sandbox
+  mentat_tool
+  mentat_tools
+  mentat_workspace
+  mentat_workspace_io)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(test
+ (name test_tools_apply_patch_expect)
+ (modules test_tools_apply_patch_expect)
+ (deps test_tools_apply_patch_expect.ml)
+ (libraries
+  windtrap
+  test_tools_support
+  eio
+  eio.unix
+  eio_main
+  unix
+  jsont
+  jsont.bytesrw
+  mentat_config
+  mentat_edit
+  mentat_llm
+  lpath
+  mentat_permission
+  mentat_sandbox
+  mentat_tool
+  mentat_tools
+  mentat_workspace
+  mentat_workspace_io)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(test
+ (name test_tools_ocaml_eval_expect)
+ (modules test_tools_ocaml_eval_expect)
+ (deps test_tools_ocaml_eval_expect.ml)
+ (libraries
+  windtrap
+  test_tools_support
+  eio
+  eio.mock
+  eio.unix
+  eio_main
+  unix
+  mtime
+  jsont
+  jsont.bytesrw
+  mentat_config
+  mentat_edit
+  mentat_llm
+  lpath
+  mentat_permission
+  mentat_sandbox
+  mentat_tool
+  mentat_tools
+  mentat_tools_output
+  mentat_workspace
+  mentat_workspace_io)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(test
+ (name test_tools_ocaml_rename_expect)
+ (modules test_tools_ocaml_rename_expect)
+ (deps test_tools_ocaml_rename_expect.ml)
+ (libraries
+  windtrap
+  test_tools_support
+  eio
+  eio.mock
+  eio.unix
+  eio_main
+  unix
+  jsont
+  jsont.bytesrw
+  mentat_config
+  mentat_edit
+  mentat_llm
+  lpath
+  mentat_permission
+  mentat_sandbox
+  mentat_tool
+  mentat_tools
+  mentat_tools_output
+  mentat_workspace
+  mentat_workspace_io)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(test
+ (name test_tools_ocaml_find_references_expect)
+ (modules test_tools_ocaml_find_references_expect)
+ (deps test_tools_ocaml_find_references_expect.ml)
+ (libraries
+  windtrap
+  test_tools_support
+  eio
+  eio.mock
+  eio.unix
+  eio_main
+  unix
+  mtime
+  jsont
+  jsont.bytesrw
+  mentat_config
+  mentat_edit
+  mentat_llm
+  lpath
+  mentat_permission
+  mentat_sandbox
+  mentat_tool
+  mentat_tools
+  mentat_workspace
+  mentat_workspace_io)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(test
+ (name test_tools_ocaml_find_definitions_expect)
+ (modules test_tools_ocaml_find_definitions_expect)
+ (deps test_tools_ocaml_find_definitions_expect.ml)
+ (libraries
+  windtrap
+  test_tools_support
+  eio
+  eio.mock
+  eio.unix
+  eio_main
+  unix
+  mtime
+  jsont
+  jsont.bytesrw
+  mentat_config
+  mentat_edit
+  mentat_llm
+  lpath
+  mentat_permission
+  mentat_sandbox
+  mentat_tool
+  mentat_tools_output
+  mentat_tools
+  mentat_workspace
+  mentat_workspace_io)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(test
+ (name test_tools_ocaml_docs_expect)
+ (modules test_tools_ocaml_docs_expect)
+ (deps test_tools_ocaml_docs_expect.ml)
+ (libraries
+  windtrap
+  test_tools_support
+  eio
+  eio.mock
+  eio.unix
+  eio_main
+  unix
+  mtime
+  jsont
+  jsont.bytesrw
+  mentat_config
+  mentat_edit
+  mentat_llm
+  lpath
+  mentat_permission
+  mentat_sandbox
+  mentat_tool
+  mentat_tools_output
+  mentat_tools
+  mentat_workspace
+  mentat_workspace_io)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(test
+ (name test_tools_ocaml_dune_describe_expect)
+ (modules test_tools_ocaml_dune_describe_expect)
+ (deps test_tools_ocaml_dune_describe_expect.ml)
+ (libraries
+  windtrap
+  test_tools_support
+  eio
+  eio.mock
+  eio.unix
+  eio_main
+  unix
+  mtime
+  jsont
+  jsont.bytesrw
+  mentat_config
+  mentat_llm
+  lpath
+  mentat_permission
+  mentat_sandbox
+  mentat_tool
+  mentat_tools
+  mentat_tools_output
+  mentat_workspace
+  mentat_workspace_io)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(test
+ (name test_tools_web_fetch_expect)
+ (modules test_tools_web_fetch_expect)
+ (deps test_tools_web_fetch_expect.ml)
+ (libraries
+  windtrap
+  test_tools_support
+  eio
+  eio_main
+  jsont
+  jsont.bytesrw
+  mentat_llm
+  mentat_permission
+  mentat_tool
+  mentat_tools
+  mentat_tools_output
+  uri)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(test
+ (name test_tools_web_search_expect)
+ (modules test_tools_web_search_expect)
+ (deps test_tools_web_search_expect.ml)
+ (libraries
+  windtrap
+  test_tools_support
+  eio
+  eio_main
+  jsont
+  jsont.bytesrw
+  mentat_llm
+  mentat_permission
+  mentat_tool
+  mentat_tools
+  mentat_tools_output
+  uri)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(test
+ (name test_tools_dependency_laws)
+ (modules test_tools_dependency_laws)
+ ; Law L1 sweeps every source under lib and bin, and the exact-pin laws read one
+ ; dune file each, so the whole lib and bin trees are materialised as deps. A
+ ; single source_tree per top directory subsumes the per-library dune deps the
+ ; older per-boundary laws named. otherlibs carries the standalone law's members.
+ (deps
+  test_tools_dependency_laws.ml
+  (source_tree ../../lib)
+  (source_tree ../../bin)
+  (source_tree ../../otherlibs))
+ (libraries compiler-libs.common windtrap unix)
+ (preprocess
+  (pps ppx_windtrap)))

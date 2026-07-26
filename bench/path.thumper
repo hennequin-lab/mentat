@@ -1,0 +1,27 @@
+# thumper baseline
+# version: 2
+# suite_name: path
+
+# machine: 3b8ae6dbe74c4269
+# cpu: Apple M1 Max
+# ocaml: 5.5.0
+# git: 7cc7ffac
+# dirty: true
+# command: ./bench_path.exe --quick -q
+
+guard/parse_abs	alloc_words	4.930000e+02	4.930000e+02	4.930000e+02	0.000000e+00	5	0
+guard/parse_abs	cpu_time	1.534987e-06	1.446550e-06	1.595421e-06	4.849257e-02	5	1
+guard/parse_abs	wall_time	1.542319e-06	1.455085e-06	1.606571e-06	4.910986e-02	5	1
+guard/parse_rel	alloc_words	6.050000e+02	6.050000e+02	6.050000e+02	0.000000e+00	5	0
+guard/parse_rel	cpu_time	1.803182e-06	1.653361e-06	1.945470e-06	8.099822e-02	5	0
+guard/parse_rel	wall_time	1.856275e-06	1.711350e-06	2.016018e-06	8.206443e-02	5	0
+guard/resolve_abs	alloc_words	6.330000e+02	6.330000e+02	6.330000e+02	0.000000e+00	5	0
+guard/resolve_abs	cpu_time	1.943761e-06	1.748104e-06	2.026613e-06	7.164181e-02	5	1
+guard/resolve_abs	wall_time	1.925892e-06	1.704029e-06	2.028646e-06	8.427701e-02	5	1
+guard/resolve_any	alloc_words	6.470000e+02	6.470000e+02	6.470000e+02	0.000000e+00	5	0
+guard/resolve_any	cpu_time	2.012518e-06	1.930041e-06	2.117225e-06	4.650511e-02	5	0
+guard/resolve_any	wall_time	2.022967e-06	1.921914e-06	2.140526e-06	5.403250e-02	5	0
+guard/resolve_rel	alloc_words	6.180000e+02	6.180000e+02	6.180000e+02	0.000000e+00	5	0
+guard/resolve_rel	cpu_time	1.900435e-06	1.815250e-06	2.062994e-06	6.518083e-02	5	0
+guard/resolve_rel	wall_time	1.903723e-06	1.812202e-06	2.069542e-06	6.758862e-02	5	0
+

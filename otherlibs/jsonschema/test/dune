@@ -1,0 +1,4 @@
+(test
+ (name test_jsonschema)
+ (modules test_jsonschema)
+ (libraries windtrap jsont jsonschema))

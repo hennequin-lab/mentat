@@ -1,0 +1,49 @@
+; The cram spine. The whole-subtree cram stanza + (env (binaries …)) sit here,
+; one level above the family dirs (test-cases/<family>/<family>.t), so the
+; helpers resolve for the nested .t files. Helpers are put on PATH by
+; (binaries) and invoked bare from setup.sh (never `./…`), which keeps the
+; fakes depth-independent. Global determinism is set once via (env …); the
+; suite-wide lints live one level up in blackbox/dune.
+
+(env
+ (_
+  (env-vars
+   (MENTAT_SANDBOX_MODE danger-full-access) ; unconfined, cross-platform
+   (MENTAT_AUTO_TITLE 0) ; no second (titling) provider request
+   (MENTAT_LOCAL_MEMORY_BUDGET 24GiB))
+  ; host-independent fit verdicts
+  (binaries
+   ../support/mentat_cram.exe ; censor + json + shared cram primitives
+   fake_provider_server.exe
+   fake_dune_rpc_server.exe)))
+
+; Helpers must be depended on via %{bin:NAME} (the names the (binaries) stanza
+; registers), not by file path: a %{bin:…} dep puts the binary on the cram
+; test's PATH so setup.sh can invoke it bare; a plain-path dep only copies the
+; file in without extending PATH.
+
+(cram
+ (applies_to :whole_subtree)
+ (alias blackbox)
+ (shell bash)
+ (deps
+  %{bin:mentat}
+  %{bin:mentat_cram}
+  %{bin:fake_provider_server}
+  %{bin:fake_dune_rpc_server})
+ (setup_scripts ../setup.sh)
+ (timeout 60))
+
+; Copy the fakes under the short names the (binaries) stanza registers, so
+; setup.sh can invoke them bare regardless of a .t's depth.
+
+(rule
+ (copy ../bin/mentat_fake_provider_server.exe fake_provider_server.exe))
+
+; The fake Dune RPC endpoint: a hermetic stand-in for `dune build --watch` that
+; registers in the XDG registry and serves canned diagnostics through the real
+; dune-rpc handshake, so the build-health notice producer can be driven without
+; a dune or compiler on PATH (the negative cases still assert neither is).
+
+(rule
+ (copy ../bin/mentat_fake_dune_rpc_server.exe fake_dune_rpc_server.exe))

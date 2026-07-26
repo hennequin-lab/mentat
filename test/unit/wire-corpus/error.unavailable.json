@@ -1,0 +1,11 @@
+{
+  "type": "unavailable",
+  "v": 1,
+  "diagnostic": {
+    "message": "store unreachable",
+    "context": "connection refused",
+    "hints": [
+      "retry shortly"
+    ]
+  }
+}

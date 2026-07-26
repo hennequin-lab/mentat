@@ -1,0 +1,152 @@
+; Real-process coverage for the executable-owned terminal boundary, split by
+; observation level: the cli_launch suites and test_tool_permission_live assert
+; complete 80x24 rendered screen goldens (pty_session drives an emulated
+; screen; predicates only synchronize reads), while test_terminal_host asserts
+; raw OSC/control bytes, termios restoration, and SIGWINCH delivery — host
+; invariants a rendered frame cannot observe (terminal_process is its raw-byte
+; PTY driver, private to that suite).
+;
+; The cli_launch cases are partitioned across three exes — launch, trust, and
+; misc — so windtrap's per-exe serial execution runs them in parallel; their
+; shared fixtures live in cli_launch_fixture. The partition is a pure
+; parallelism mechanism: every case, and its screen golden, is byte-identical
+; to its single-exe form.
+
+(executables
+ (names
+  test_cli_launch
+  test_cli_launch_trust
+  test_cli_launch_misc
+  test_ergonomics_pty
+  test_tool_permission_live
+  test_terminal_host)
+ (modules
+  pty_session
+  cli_launch_fixture
+  test_cli_launch
+  test_cli_launch_trust
+  test_cli_launch_misc
+  test_ergonomics_pty
+  test_tool_permission_live
+  terminal_process
+  test_terminal_host)
+ (libraries
+  jsont.bytesrw
+  matrix.pty
+  matrix.vte
+  mtime
+  mtime.clock.os
+  mentat_llm
+  lpath
+  mentat_permission
+  mentat_sandbox
+  mentat_session
+  tui_harness
+  unix
+  windtrap)
+ (preprocess
+  (pps ppx_windtrap)))
+
+(rule
+ (alias runtest)
+ (deps
+  %{bin:mentat}
+  ../../blackbox/bin/mentat_fake_provider_server.exe
+  test_cli_launch.exe)
+ (action
+  (progn
+   (setenv
+    MENTAT_BIN
+    %{bin:mentat}
+    (setenv
+     MENTAT_FAKE_PROVIDER_BIN
+     %{dep:../../blackbox/bin/mentat_fake_provider_server.exe}
+     (run ./test_cli_launch.exe)))
+   (diff? test_cli_launch.ml test_cli_launch.ml.corrected))))
+
+(rule
+ (alias runtest)
+ (deps
+  %{bin:mentat}
+  ../../blackbox/bin/mentat_fake_provider_server.exe
+  test_cli_launch_trust.exe)
+ (action
+  (progn
+   (setenv
+    MENTAT_BIN
+    %{bin:mentat}
+    (setenv
+     MENTAT_FAKE_PROVIDER_BIN
+     %{dep:../../blackbox/bin/mentat_fake_provider_server.exe}
+     (run ./test_cli_launch_trust.exe)))
+   (diff? test_cli_launch_trust.ml test_cli_launch_trust.ml.corrected))))
+
+(rule
+ (alias runtest)
+ (deps
+  %{bin:mentat}
+  ../../blackbox/bin/mentat_fake_provider_server.exe
+  test_cli_launch_misc.exe)
+ (action
+  (progn
+   (setenv
+    MENTAT_BIN
+    %{bin:mentat}
+    (setenv
+     MENTAT_FAKE_PROVIDER_BIN
+     %{dep:../../blackbox/bin/mentat_fake_provider_server.exe}
+     (run ./test_cli_launch_misc.exe)))
+   (diff? test_cli_launch_misc.ml test_cli_launch_misc.ml.corrected))))
+
+(rule
+ (alias runtest)
+ (deps
+  %{bin:mentat}
+  ../../blackbox/bin/mentat_fake_provider_server.exe
+  test_ergonomics_pty.exe)
+ (action
+  (progn
+   (setenv
+    MENTAT_BIN
+    %{bin:mentat}
+    (setenv
+     MENTAT_FAKE_PROVIDER_BIN
+     %{dep:../../blackbox/bin/mentat_fake_provider_server.exe}
+     (run ./test_ergonomics_pty.exe)))
+   (diff? test_ergonomics_pty.ml test_ergonomics_pty.ml.corrected))))
+
+(rule
+ (alias runtest)
+ (deps
+  %{bin:mentat}
+  ../../blackbox/bin/mentat_fake_provider_server.exe
+  test_terminal_host.exe)
+ (action
+  (progn
+   (setenv
+    MENTAT_BIN
+    %{bin:mentat}
+    (setenv
+     MENTAT_FAKE_PROVIDER_BIN
+     %{dep:../../blackbox/bin/mentat_fake_provider_server.exe}
+     (run ./test_terminal_host.exe)))
+   (diff? test_terminal_host.ml test_terminal_host.ml.corrected))))
+
+; The live tool-through-permission test is opt-in: it skips (exit 0) unless
+; MENTAT_TUI_LIVE_TEST is set, so it stays on the runtest alias while keeping
+; CI hermetic. Enable with [MENTAT_TUI_LIVE_TEST=1 dune test test/tui/pty].
+
+(rule
+ (alias runtest)
+ (deps
+  %{bin:mentat}
+  ../../blackbox/bin/mentat_fake_provider_server.exe
+  test_tool_permission_live.exe)
+ (action
+  (setenv
+   MENTAT_BIN
+   %{bin:mentat}
+   (setenv
+    MENTAT_FAKE_PROVIDER_BIN
+    %{dep:../../blackbox/bin/mentat_fake_provider_server.exe}
+    (run ./test_tool_permission_live.exe)))))

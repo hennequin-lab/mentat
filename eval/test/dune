@@ -1,0 +1,23 @@
+(test
+ (name test_eval)
+ (modules test_eval)
+ (libraries windtrap jsont mentat_eval))
+
+; test_trace builds real replay-validated sessions through the current session
+; API and asserts Trace.of_session's reconstruction, cross-checking its
+; executed/failed/rejected classification against Mentat_session.Metrics.
+
+(test
+ (name test_trace)
+ (modules test_trace)
+ (libraries
+  windtrap
+  jsont
+  mentat_eval_trace
+  mentat_session
+  mentat_llm
+  mentat_tool
+  mentat_permission
+  mentat_sandbox
+  lpath
+  mentat_digest))

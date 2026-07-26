@@ -1,0 +1,51 @@
+(include_subdirs qualified)
+
+(library
+ (name mentat_tools)
+ (private_modules
+  address
+  change_evidence
+  codec
+  confinement
+  edit_error
+  fs_error
+  permissions
+  stat_kind
+  text_helpers)
+ (libraries
+  ;; the waist and the one effect capability
+  base64
+  mentat_tool
+  mentat_tools_output
+  mentat_llm
+  mentat_workspace_io
+  ;; the pure vocabularies a tool composes
+  compiler-libs.common
+  mentat_permission
+  mentat_workspace
+  mentat_edit
+  textdiff
+  mentat_digest
+  mentat_sandbox
+  lpath
+  mentat_ocaml
+  mentat_ocaml_dune_describe
+  mentat_ocaml_grep
+  mentat_prompts
+  jsont
+  jsont.bytesrw
+  ;; concrete credential-free web fetch transport
+  ca-certs
+  cohttp
+  cohttp-eio
+  cstruct
+  domain-name
+  ipaddr
+  mirage-crypto-rng
+  mirage-crypto-rng.unix
+  mtime
+  re
+  tls
+  tls-eio
+  uri
+  eio))

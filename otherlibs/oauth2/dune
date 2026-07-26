@@ -1,0 +1,3 @@
+(library
+ (name oauth2)
+ (libraries base64 jsont jsont.bytesrw uri))

@@ -1,0 +1,20 @@
+{
+  "type": "undo.updated",
+  "v": 1,
+  "update": {
+    "type": "armed",
+    "anchor": "turn-c",
+    "revert": "revert-1"
+  },
+  "dropped_turns": 2,
+  "files": [
+    {
+      "path": {
+        "root": "ws",
+        "rel": "lib/a.ml"
+      },
+      "additions": 12,
+      "deletions": 4
+    }
+  ]
+}

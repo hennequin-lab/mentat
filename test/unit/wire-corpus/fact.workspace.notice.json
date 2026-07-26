@@ -1,0 +1,10 @@
+{
+  "type": "workspace.notice",
+  "v": 1,
+  "notice": {
+    "source": "fswatch",
+    "severity": "info",
+    "title": "2 workspace file changes since the last scan",
+    "body": "- changed lib/a.ml\n- changed lib/b.ml"
+  }
+}
