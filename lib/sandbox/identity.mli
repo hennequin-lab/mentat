@@ -6,17 +6,18 @@
 (** The durable identity of a sealed sandbox's confinement.
 
     A small, secret-free fingerprint of {e what a sealed sandbox confines}: its
-    evidence class, its backend, and a {b scratch-invariant} confinement digest.
-    It holds no profile text and cannot spawn: it is a value to persist, reload,
-    and compare. [Session.Contract] seals it as the turn's sandbox identity.
+    evidence class, its backend, and a confinement digest. It holds no profile
+    text and cannot spawn: it is a value to persist, reload, and compare.
+    [Session.Contract] seals it as the turn's sandbox identity.
 
     {b Confinement identity, not execution identity.} The child environment is
-    excluded structurally — this library never sees one. The
-    {b per-run scratch path is also excluded}: it is minted fresh every process,
-    so a digest that included it would differ on every resume and refuse every
-    pending invocation. The digest is computed from the {b scratch-normalized}
-    profile: the profile regenerated with the policy's scratch field replaced by
-    a fixed sentinel. It is therefore invariant under scratch regeneration.
+    excluded structurally — this library never sees one. Nothing else is: the
+    digest is taken over the profile exactly as generated. It once carried a
+    normalization step, for a per-run scratch directory that was minted fresh
+    every process and would have moved the digest on every resume. Nothing is
+    per-run any more, so the digest is a direct function of the policy — which
+    makes it {e stable} only to the extent that the resolver's derivation is,
+    and that is a property of the derivation, not of this module.
 
     {b The profile text is the digest input, deliberately — not the confinement
        fields directly.} Hashing the reads, writable roots, protected paths, and
@@ -74,33 +75,32 @@ val refused : t
 
 val enforced : backend:Backend.t -> profile:Mentat_digest.t -> t
 (** [enforced ~backend ~profile] is the identity of an enforced confined seal.
-    [profile] is the scratch-normalized profile digest used for resume
-    comparison, not the run's real profile digest. Constructing this value does
-    not establish confinement or mint enforcement evidence. *)
+    [profile] is the profile digest used for resume comparison. Constructing
+    this value does not establish confinement or mint enforcement evidence. *)
 
 val digest : t -> Mentat_digest.t
 (** [digest t] is {e the} sandbox digest sealed into the turn contract:
     [Mentat_digest.derive ~domain:"mentat.sandbox.identity.v1"] over the
-    evidence class, the backend id (enforced only), and the scratch-normalized
-    profile digest in hexadecimal (enforced only). Stable across processes and
-    reloadable; never derived from a live value. No absolute host path appears
-    in plaintext — paths are carried as the profile hash. This is {b not}
-    {!Evidence}'s profile digest, which keeps the real scratch for the run-start
-    audit. *)
+    evidence class, the backend id (enforced only), and the profile digest in
+    hexadecimal (enforced only). Stable across processes and reloadable; never
+    derived from a live value. No absolute host path appears in plaintext —
+    paths are carried as the profile hash. *)
 
 val equal : t -> t -> bool
 (** [equal a b] is digest equality — what the resume reload check compares.
 
-    {b Law (scratch-invariant).} Two seals of the same policy differing only in
-    their per-run scratch path have equal identity. The digest changes on any
-    durable confinement change — a widened writable root, a flipped network, an
-    added read root, a changed protected path, a changed backend — and on a
-    generator change that alters the profile text.
+    {b Law (confinement-determined).} Two seals of equal policies on one backend
+    have equal identity, and the digest changes on any confinement change — a
+    widened writable root, a flipped network, an added read root, an added
+    denial, a changed backend — and on a generator change that alters the
+    profile text.
 
-    Invariance assumes the per-run scratch is disjoint from the policy's root
-    lattice, which the resolver guarantees (scratch is a fresh temporary
-    directory). A scratch that were a lexical ancestor of a confined root yields
-    a differing identity — fail-closed, never a collision. *)
+    The converse is what a caller must not assume: equal {e workspaces} need not
+    seal equal policies. The derivation reads the machine, so a root that only
+    exists on the second resolution enters the policy and moves the digest with
+    no confinement having been reconfigured. That is fail-closed — a resume
+    refuses and re-approves — but it is why a grant, which widens a policy for
+    one command, is never allowed to reach a stored identity. *)
 
 val pp : Format.formatter -> t -> unit
 (** [pp ppf t] formats the class and backend for diagnostics. It is not storage

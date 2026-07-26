@@ -33,12 +33,11 @@ val wrap : t -> cwd:Lpath.Abs.t -> string list -> string list
     Pure prefix application; [argv] is [Seal]-validated non-empty. *)
 
 val identity_digest : Backend.t -> Policy.t -> Mentat_digest.t
-(** [identity_digest backend policy] is the {b scratch-normalized} profile
-    digest: the digest of [policy]'s profile regenerated with the policy's
-    scratch field replaced by a fixed sentinel throughout (the scratch field
-    itself and its fold into the read roots). It is therefore invariant under
-    scratch regeneration — two policies differing only in their per-run scratch
-    path have equal identity digests — while still changing on any durable
-    confinement change or generator change. {!Identity} seals it; {!digest} (the
-    real profile digest, keeping the run's scratch) is what {!Evidence} audits.
-    Total. *)
+(** [identity_digest backend policy] is the profile digest {!Identity} seals for
+    resume comparison: the digest of the profile [policy] lowers to on
+    [backend]. It changes on any confinement change and on a generator change
+    that alters the profile text. It once normalized a per-run scratch path out
+    of the profile first; nothing in a policy is per-run any more, so it is now
+    the same function as {!digest} applied to a freshly prepared profile, kept
+    separate because what the two answer for differs — {!Identity} compares
+    across processes, {!Evidence} audits one run. Total. *)

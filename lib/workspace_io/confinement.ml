@@ -71,8 +71,22 @@ let observe ~sandbox ~evidence ~transcript =
             | Mentat_sandbox.Policy.All -> false)
       in
       let transcript = String.lowercase_ascii transcript in
+      let network_restricted =
+        match Mentat_sandbox.policy sandbox with
+        | None -> false
+        | Some policy -> (
+            match Mentat_sandbox.Policy.network policy with
+            | Mentat_sandbox.Policy.Network.Restricted -> true
+            | Mentat_sandbox.Policy.Network.Enabled -> false)
+      in
+      (* A network-shaped failure is a refusal only where the posture refuses
+         the network. Where it does not, the host really was unreachable, and
+         the answer is no refusal at all rather than a filesystem one — the
+         filesystem list would otherwise claim "operation not permitted while
+         establishing" as its own. *)
       let refusal =
-        if matches network_signatures transcript then Some Network
+        if matches network_signatures transcript then
+          if network_restricted then Some Network else None
         else if matches filesystem_signatures transcript then Some Filesystem
         else None
       in

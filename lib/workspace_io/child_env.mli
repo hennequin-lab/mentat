@@ -7,15 +7,17 @@
 
     Constructed exactly once, at resolution, and served byte-for-byte to every
     launch on every route: ambient secrets and agent sockets never appear
-    because inheritance is allow-listed, and the per-run scratch directory
-    doubles as [HOME] and the temp-dir family. Construction is total — ambient
-    values that cannot be represented (a NUL byte, a malformed path segment) are
-    dropped, never fatal.
+    because inheritance is allow-listed, and nothing is rewritten. The
+    allow-list carries every variable the resolver derives a root from — [HOME],
+    the temp-dir family, and the three base directories beneath it — so the
+    child computes the same directories the policy grants. Construction is
+    total: ambient values that cannot be represented (a NUL byte, a malformed
+    path segment) are dropped, never fatal.
 
     [PWD] is deliberately absent here and written by the launch instead: it
     names the directory a single command starts in, which the resolution does
-    not know, and the external backends assign it themselves once they enter
-    the sandbox. *)
+    not know, and the external backends assign it themselves once they enter the
+    sandbox. *)
 
 type t = {
   bindings : string array;

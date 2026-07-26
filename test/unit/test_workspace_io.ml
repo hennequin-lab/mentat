@@ -279,6 +279,28 @@ let escalation_projects_the_sealed_stance () =
       | Sandbox.Available | Sandbox.Denied _ ->
           fail "a direct route projects an ignored escalation stance")
 
+(* Resume compares the identity a fresh resolution projects against the one the
+   suspended contract stored, so a resolution that is not a function of the
+   workspace refuses a pending invocation with nothing having changed. The pure
+   direction — a changed policy changes the digest — is pinned in the sandbox
+   suite; this is the direction only a real resolution can answer, and it is
+   load-bearing now that no normalization step stands between the derivation and
+   the digest. *)
+let resolving_twice_agrees_on_the_identity () =
+  in_dirs "identity-stable" @@ fun ~stdenv ~base:_ ~ws_dir ~out_dir:_ ~tmp_base ->
+  let primary = Workspace.Root.of_dir (abs ws_dir) in
+  let logical = Workspace.make ~primary ~read_only:[] () |> Result.get_ok in
+  let resolve () =
+    Eio.Switch.run @@ fun sw ->
+    Wio.identity
+      (capability_exn ~stdenv ~sw ~tmp_base ~writable_roots:[] logical)
+  in
+  let first = resolve () in
+  let second = resolve () in
+  is_true
+    ~msg:"two resolutions of one unchanged workspace project one identity"
+    (Sandbox.Identity.equal first second)
+
 let resolve_path_uses_the_capability_workspace () =
   with_capability "resolve-path" ~aux:[ "vendor" ] @@ fun w ->
   let auxiliary = List.hd w.aux in
@@ -2188,6 +2210,8 @@ let () =
       (* Resolution *)
       test "escalation projects the sealed stance per mode"
         escalation_projects_the_sealed_stance;
+      test "resolving twice agrees on the identity"
+        resolving_twice_agrees_on_the_identity;
       test "resolve_path is bound to the capability workspace"
         resolve_path_uses_the_capability_workspace;
       test "describe_roots labels the scoped read roots"

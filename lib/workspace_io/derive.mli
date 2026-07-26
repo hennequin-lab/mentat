@@ -25,20 +25,21 @@ type derived = {
   writable : Lpath.Abs.t list;
       (** The primary root and the validated configured writable roots. *)
   platform_writable : Lpath.Abs.t list;
-      (** Shared scratch space, and the platform infrastructure directories that
-          must accept writes for system tooling to function: [/tmp] on both
-          platforms, plus on macOS the per-user Darwin temp and cache buckets
-          Apple's developer-tool shims cache under. The scratch may nest inside
-          them, so they are exempt from the scratch-disjointness guard; they
-          join the sandbox policy's writable roots and are never described or
-          protected. *)
+      (** Shared scratch space: [/tmp] on both platforms, and each of the
+          temp-dir variables the child inherits that names an existing,
+          non-broad directory — on macOS that is how the per-user Darwin temp
+          bucket is admitted. Nothing here outlives a command by intent, which
+          is what makes it the one writable set a no-mutation route still gets.
+          These join the sandbox policy's writable roots and are never described
+          or protected. *)
   toolchain_writable : Lpath.Abs.t list;
       (** Toolchain state a build must write, outside the workspace — dune's
           cache, which holds the revision-store lock a pinned-source build takes
-          unconditionally. Separate from {!platform_writable} because it is
-          persistent user state rather than scratch space: a route that promises
-          no mutation is still granted somewhere to put a temporary file, and is
-          not granted this. *)
+          unconditionally, and on macOS the per-user Darwin {e cache} bucket
+          Apple's developer-tool shims cache under. Separate from
+          {!platform_writable} because it is persistent user state rather than
+          scratch space: a route that promises no mutation is still granted
+          somewhere to put a temporary file, and is not granted this. *)
   readable : Lpath.Abs.t list;
       (** The scoped read roots (workspace, configured, platform, executable,
           toolchain, git-worktree); [[]] when not scoped. *)

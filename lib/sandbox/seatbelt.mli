@@ -17,10 +17,12 @@
     The base profile is ported from the Codex reference agent's Seatbelt policy,
     itself derived from Chrome's macOS sandbox policy, and is production-proven
     against real build tools. [Policy.All] permits host-wide reads and
-    executable mappings; [Policy.Only roots] admits both operations only beneath
-    the roots. Writes are denied except under writable roots and the private
-    scratch, with concrete protected paths carved out; network is denied unless
-    the policy enables it.
+    executable mappings; [Policy.Denied] admits both operations only beneath the
+    policy's readable clauses. Writes are denied except beneath a
+    {!Policy.Access.Write} clause, and every {!Policy.Access.Read} clause emits
+    an explicit write-denial of its own — SBPL resolves each operation
+    separately, so a read-allow does not withdraw a write-allow an enclosing
+    clause already made. Network is denied unless the policy enables it.
 
     {b No path byte enters the SBPL text}: every resolved path reaches
     [sandbox-exec] as a [-D KEY=VALUE] parameter referenced by name from the

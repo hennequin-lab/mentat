@@ -41,8 +41,12 @@ val escalatable : t -> bool
 
 val refusal : t -> refusal option
 (** [refusal t] is the signature match, if any. It is a lenient affix scan over
-    the child's own bytes: a hint, never proof. A network match wins over a
-    filesystem one, being the more specific diagnosis. *)
+    the child's own bytes: a hint, never proof.
+
+    A network-shaped failure is reported only where the posture actually
+    restricts the network; elsewhere the host was genuinely unreachable and the
+    answer is [None], never {!Filesystem} — a blocked-connection message
+    contains wording the filesystem signatures would otherwise claim. *)
 
 val observe :
   sandbox:Mentat_sandbox.t ->

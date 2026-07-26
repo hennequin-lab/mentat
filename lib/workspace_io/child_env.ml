@@ -5,13 +5,22 @@
 
 type t = { bindings : string array; path_dirs : string list }
 
-(* Nothing in the child environment is rewritten. [HOME] and the temp-dir
-   family are inherited like every other allow-listed name, so the resolver
-   derives its roots from the same values the child reads and the two cannot
-   disagree — which is the whole of the bug class this replaced. A redirect also
-   concealed the absence of the grants it stood in for: [/tmp] was ungranted for
-   the life of the product and nobody noticed, because nothing ever pointed at
-   it. Inheriting makes a missing grant a first-run error instead of a silence.
+(* Nothing in the child environment is rewritten. [HOME], the temp-dir family
+   and the three base directories the resolver reads are inherited like every
+   other allow-listed name, so the resolver derives its roots from the same
+   values the child reads and the two cannot disagree — which is the whole of
+   the bug class this replaced. A redirect also concealed the absence of the
+   grants it stood in for: [/tmp] was ungranted for the life of the product and
+   nobody noticed, because nothing ever pointed at it. Inheriting makes a
+   missing grant a first-run error instead of a silence.
+
+   The rule that keeps the pair honest is not "inherit [HOME]" but {e inherit
+   every variable a root is derived from}. Leave one out and the resolver grants
+   the directory the launcher named while the child computes a different one
+   from its [$HOME] default — the same disagreement, one variable narrower.
+   Inheriting these opens nothing on its own: each is a base the policy still
+   has to grant a clause under, and Mentat's own directory beneath one of them
+   is denied outright.
 
    Ambient secrets and agent sockets are still stripped: inheritance is
    allow-listed, which is the part worth keeping. *)
@@ -32,6 +41,9 @@ let inherited_names =
     "TEMP";
     "TMP";
     "TMPDIR";
+    "OPAMROOT";
+    "XDG_CACHE_HOME";
+    "XDG_CONFIG_HOME";
     "LANG";
     "LANGUAGE";
     "LC_ALL";

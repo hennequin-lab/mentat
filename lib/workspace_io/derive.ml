@@ -414,8 +414,8 @@ let toolchain_roots ~lookup ~workspace_roots =
       ("DUNE_OCAML_STDLIB", false);
     ]
   in
-  (* Ambient toolchain values recover the launcher's real toolchain layout with
-     HOME confined to the scratch; they are best-effort, not user intent. A value
+  (* Ambient toolchain values recover the launcher's real toolchain layout;
+     they are best-effort, not user intent. A value
      that names no usable directory is dropped with a logged warning so the
      derived read scope only narrows and a stray artifact never bricks startup:
      [dune exec] leaks unexpanded placeholders ([OCAML_TOPLEVEL_PATH=%{toplevel}%]),
@@ -649,25 +649,31 @@ let owned_directories paths =
 (* [/tmp] is where a command puts a scratch file when it does not consult the
    environment for one, and a literal [/tmp/...] path is common enough in build
    scripts and in model-authored commands that its absence reads as a broken
-   sandbox rather than a confined one. The launcher's [$TMPDIR] joins it: every
-   libc temp helper consults that variable first, and the child now inherits it,
-   so a launcher that sets it anywhere other than [/tmp] would otherwise hand
-   the child a path no bind covers. A [$TMPDIR] resolving to a broad root is
-   dropped rather than admitted. It went unnoticed because the temp-dir
-   family is redirected to the private scratch, so only a path spelled out in
-   full ever reaches it. Admitted writable on both platforms, canonicalized
-   because macOS resolves it to [/private/tmp]. The scratch may be minted
-   beneath it, which is why the whole platform-writable set is exempt from the
-   scratch-disjointness guard. *)
+   sandbox rather than a confined one.
+
+   The launcher's temp-dir family joins it. The child inherits all three names,
+   and what reads them is not one convention but several: libc helpers take
+   [TMPDIR], Node and Python fall through [TMPDIR] then [TEMP] then [TMP]. So
+   the set that must be granted is the set that is inherited — grant only
+   [TMPDIR] and a launcher that sets [TMP] alone hands the child a path no bind
+   covers, which is the very defect this file records for [/tmp]. Each is
+   admitted only where it exists and does not resolve broad; a broad one is
+   dropped rather than admitted. Canonicalized, because macOS resolves the
+   bucket to [/private/tmp]. *)
+let temp_variables = [ "TMPDIR"; "TEMP"; "TMP" ]
+
 let shared_temp_dirs ~lookup ~workspace_roots =
   let ambient =
-    match lookup "TMPDIR" with
-    | None -> []
-    | Some spelling -> (
-        match existing_auto_root spelling with
-        | Some path when not (broad_root ~lookup ~workspace_roots path) ->
-            [ path ]
-        | Some _ | None -> [])
+    List.concat_map
+      (fun variable ->
+        match lookup variable with
+        | None -> []
+        | Some spelling -> (
+            match existing_auto_root spelling with
+            | Some path when not (broad_root ~lookup ~workspace_roots path) ->
+                [ path ]
+            | Some _ | None -> []))
+      temp_variables
   in
   List.filter_map existing_auto_root [ "/tmp" ] @ ambient
 
@@ -835,10 +841,8 @@ let run ~scoped ~lookup ~logical ~configured_reads ~configured_writes
     {
       workspace_roots = roots;
       writable = primary :: configured_writes;
-      platform_writable =
-        shared_temp_dirs ~lookup ~workspace_roots:scope_roots
-        @ darwin_user_dirs ~lookup;
-      toolchain_writable = toolchain_writes;
+      platform_writable = shared_temp_dirs ~lookup ~workspace_roots:scope_roots;
+      toolchain_writable = darwin_user_dirs ~lookup @ toolchain_writes;
       readable;
       protected;
       denied;
