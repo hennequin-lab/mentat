@@ -319,8 +319,7 @@ let encode_reasoning_effort = function
   | Llm.Request.Options.Reasoning_effort.Medium -> Ok "medium"
   | Llm.Request.Options.Reasoning_effort.High -> Ok "high"
   | Llm.Request.Options.Reasoning_effort.Extra_high -> Ok "xhigh"
-  | Llm.Request.Options.Reasoning_effort.Max ->
-      invalid_request "OpenAI Responses does not support reasoning effort max"
+  | Llm.Request.Options.Reasoning_effort.Max -> Ok "max"
 
 let encode_response_format = function
   | Llm.Request.Options.Text -> None

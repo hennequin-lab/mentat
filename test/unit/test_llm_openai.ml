@@ -707,7 +707,7 @@ let bearer_request_omits_reasoning_without_encrypted_content () =
 let reasoning_effort_encoding () =
   let cases =
     let open Llm.Request.Options.Reasoning_effort in
-    [ (Disabled, "none"); (High, "high"); (Extra_high, "xhigh") ]
+    [ (Disabled, "none"); (High, "high"); (Extra_high, "xhigh"); (Max, "max") ]
   in
   List.iter
     (fun (effort, expected) ->
@@ -830,13 +830,6 @@ let unsupported_requests_do_not_touch_transport () =
     in
     request ~transcript ()
   in
-  let unsupported_reasoning_effort =
-    let options =
-      Llm.Request.Options.make
-        ~reasoning_effort:Llm.Request.Options.Reasoning_effort.Max ()
-    in
-    request ~options ()
-  in
   let result, requests =
     with_openai_server
       (fun index request ->
@@ -864,9 +857,6 @@ let unsupported_requests_do_not_touch_transport () =
       equal_error_kind name kind error;
       equal int ~msg:(name ^ " request count") 0 (List.length requests))
     [
-      ( "unsupported reasoning effort",
-        Llm.Error.Invalid_request,
-        unsupported_reasoning_effort );
       ("unsupported media", Llm.Error.Unsupported, unsupported_media);
       ( "unresolved content reference",
         Llm.Error.Invalid_request,
