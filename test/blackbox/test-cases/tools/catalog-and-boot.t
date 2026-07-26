@@ -240,12 +240,14 @@ tools in an untrusted workspace, even when that workspace has a Dune marker.
 
 Delegated sessions receive the same project-tool gate over their fixed
 read-only vocabulary: four executables while tooling is off and the exact seven
-when it is engaged. Their collaboration verbs are unchanged.
+when it is engaged. Their collaboration verbs are unchanged. The child is a
+read-only specialist: a `general` child is a full-capability delegate carrying
+the parent catalog, which would prove nothing about the gate.
 
   $ capture_delegated () {
   >   name=$1
   >   cat > "$name.jsonl" <<JSONL
-  > {"expect":{"body_contains":["$name parent"]},"response":{"id":"$name-1","status":"completed","model":"gpt-5.6-sol","output":[{"type":"function_call","id":"spawn-item","call_id":"spawn-call","name":"spawn","arguments":"{\"task\":\"inspect delegated tools\"}"}]}}
+  > {"expect":{"body_contains":["$name parent"]},"response":{"id":"$name-1","status":"completed","model":"gpt-5.6-sol","output":[{"type":"function_call","id":"spawn-item","call_id":"spawn-call","name":"spawn","arguments":"{\"task\":\"inspect delegated tools\",\"role\":\"explore\"}"}]}}
   > {"expect":{"body_contains":["\"model\":\"gpt-5.6-sol\""]},"response":{"id":"$name-2","status":"completed","model":"gpt-5.6-sol","output":[{"type":"message","role":"assistant","content":[{"type":"output_text","text":"done"}]}]}}
   > {"expect":{"body_contains":["\"model\":\"gpt-5.6-sol\""]},"response":{"id":"$name-3","status":"completed","model":"gpt-5.6-sol","output":[{"type":"message","role":"assistant","content":[{"type":"output_text","text":"done"}]}]}}
   > JSONL
