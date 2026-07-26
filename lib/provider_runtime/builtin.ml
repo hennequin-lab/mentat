@@ -45,6 +45,7 @@ let text_image_audio_video_pdf =
     Modality.text; Modality.image; Modality.audio; Modality.video; Modality.pdf;
   ]
 
+let tools_only = [ Capability.tools ]
 let tools_reasoning = [ Capability.tools; Capability.reasoning ]
 
 let tools_reasoning_json_schema =
@@ -221,11 +222,16 @@ let anthropic_models =
       ~pricing:
         (pricing ~input:5. ~output:25. ~cache_read:0.5 ~cache_write:6.25 ())
       ();
+    (* Haiku 4.5 predates adaptive thinking: it reasons only under the manual
+       token budget this provider no longer sends, and rejects the effort
+       parameter that replaced it. Declaring no reasoning capability is what
+       makes that true rather than merely unreached, and it keeps the selection
+       gate from offering an effort the encoder could not express. *)
     Model.make (llm "claude-haiku-4-5") ~display_name:"Claude Haiku 4.5"
       ~family:"claude-haiku" ~released_on:(date "2025-10-15")
       ~knowledge_cutoff:(cutoff "2025-02") ~context_window:200_000
       ~max_output_tokens:64_000 ~input_modalities:text_image_pdf
-      ~capabilities:tools_reasoning
+      ~capabilities:tools_only
       ~pricing:
         (pricing ~input:1. ~output:5. ~cache_read:0.1 ~cache_write:1.25 ())
       ();
