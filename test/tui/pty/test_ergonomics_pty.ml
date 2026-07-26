@@ -73,11 +73,11 @@ let%expect_test "a keybindings.json remap loads and takes effect" =
 10 |      ▎ welcome — and thanks for trying mentat this early.
 11 |      ▎ it's experimental: sessions and config may change without migration.
 12 |
-13 |           reverse-i-search:
-14 |           ❯ remembered prompt
-15 |           ────────────────────────────────────────────────────────────
-16 |           ⌕ search history
-17 |           ────────────────────────────────────────────────────────────
+13 | reverse-i-search:
+14 | ❯ remembered prompt
+15 | ────────────────────────────────────────────────────────────────────────────────
+16 | ⌕ search history
+17 | ────────────────────────────────────────────────────────────────────────────────
 18 |
 19 |                          ! /login — no connected account
 20 |                               ∅ no recent sessions
@@ -124,9 +124,9 @@ let%expect_test
 11 |      ▎ it's experimental: sessions and config may change without migration.
 12 |
 13 |
-14 |           ────────────────────────────────────────────────────────────
-15 |           ❯ edited-in-pty
-16 |           ────────────────────────────────────────────────────────────
+14 | ────────────────────────────────────────────────────────────────────────────────
+15 | ❯ edited-in-pty
+16 | ────────────────────────────────────────────────────────────────────────────────
 17 |
 18 |                          ! /login — no connected account
 19 |                               ∅ no recent sessions

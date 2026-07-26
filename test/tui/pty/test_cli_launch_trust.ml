@@ -64,9 +64,9 @@ let%expect_test "restricted choice is remembered by the next launch" =
 11 |      ▎ it's experimental: sessions and config may change without migration.
 12 |
 13 |
-14 |           ────────────────────────────────────────────────────────────
-15 |           ❯ message mentat
-16 |           ────────────────────────────────────────────────────────────
+14 | ────────────────────────────────────────────────────────────────────────────────
+15 | ❯ message mentat
+16 | ────────────────────────────────────────────────────────────────────────────────
 17 |
 18 |                          ! /login — no connected account
 19 |                               ∅ no recent sessions
@@ -93,9 +93,9 @@ let%expect_test "restricted choice is remembered by the next launch" =
 11 |      ▎ it's experimental: sessions and config may change without migration.
 12 |
 13 |
-14 |           ────────────────────────────────────────────────────────────
-15 |           ❯ message mentat
-16 |           ────────────────────────────────────────────────────────────
+14 | ────────────────────────────────────────────────────────────────────────────────
+15 | ❯ message mentat
+16 | ────────────────────────────────────────────────────────────────────────────────
 17 |
 18 |                          ! /login — no connected account
 19 |                               ∅ no recent sessions
@@ -157,9 +157,9 @@ let%expect_test
 11 |      ▎ it's experimental: sessions and config may change without migration.
 12 |
 13 |
-14 |           ────────────────────────────────────────────────────────────
-15 |           ❯ message mentat
-16 |           ────────────────────────────────────────────────────────────
+14 | ────────────────────────────────────────────────────────────────────────────────
+15 | ❯ message mentat
+16 | ────────────────────────────────────────────────────────────────────────────────
 17 |
 18 |                          ! /login — no connected account
 19 |                               ∅ no recent sessions
@@ -243,9 +243,9 @@ let%expect_test "trusted selection is coherent and starts no project process" =
 11 |      ▎ it's experimental: sessions and config may change without migration.
 12 |
 13 |
-14 |           ────────────────────────────────────────────────────────────
-15 |           ❯ message mentat
-16 |           ────────────────────────────────────────────────────────────
+14 | ────────────────────────────────────────────────────────────────────────────────
+15 | ❯ message mentat
+16 | ────────────────────────────────────────────────────────────────────────────────
 17 |
 18 |                          ! /login — no connected account
 19 |                               ∅ no recent sessions
@@ -434,9 +434,9 @@ let%expect_test "a trust-store failure stays visible and permits retry" =
 11 |      ▎ it's experimental: sessions and config may change without migration.
 12 |
 13 |
-14 |           ────────────────────────────────────────────────────────────
-15 |           ❯ message mentat
-16 |           ────────────────────────────────────────────────────────────
+14 | ────────────────────────────────────────────────────────────────────────────────
+15 | ❯ message mentat
+16 | ────────────────────────────────────────────────────────────────────────────────
 17 |
 18 |                          ! /login — no connected account
 19 |                               ∅ no recent sessions
@@ -505,9 +505,9 @@ let%expect_test "failed activation rolls back visibly and permits retry" =
 11 |      ▎ it's experimental: sessions and config may change without migration.
 12 |
 13 |
-14 |           ────────────────────────────────────────────────────────────
-15 |           ❯ message mentat
-16 |           ────────────────────────────────────────────────────────────
+14 | ────────────────────────────────────────────────────────────────────────────────
+15 | ❯ message mentat
+16 | ────────────────────────────────────────────────────────────────────────────────
 17 |
 18 |                          ! /login — no connected account
 19 |                               ∅ no recent sessions

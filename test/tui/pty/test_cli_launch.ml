@@ -25,9 +25,9 @@ let%expect_test "bare invocation opens the complete Home UI and restores it" =
 11 |      ▎ it's experimental: sessions and config may change without migration.
 12 |
 13 |
-14 |           ────────────────────────────────────────────────────────────
-15 |           ❯ message mentat
-16 |           ────────────────────────────────────────────────────────────
+14 | ────────────────────────────────────────────────────────────────────────────────
+15 | ❯ message mentat
+16 | ────────────────────────────────────────────────────────────────────────────────
 17 |
 18 |                          ! /login — no connected account
 19 |                               ∅ no recent sessions
@@ -190,9 +190,9 @@ let%expect_test "a launch draft is visible in the complete Home screen" =
 11 |      ▎ it's experimental: sessions and config may change without migration.
 12 |
 13 |
-14 |           ────────────────────────────────────────────────────────────
-15 |           ❯ fix the parser first
-16 |           ────────────────────────────────────────────────────────────
+14 | ────────────────────────────────────────────────────────────────────────────────
+15 | ❯ fix the parser first
+16 | ────────────────────────────────────────────────────────────────────────────────
 17 |
 18 |                          ! /login — no connected account
 19 |                               ∅ no recent sessions
