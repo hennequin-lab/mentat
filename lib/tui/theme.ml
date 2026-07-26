@@ -155,15 +155,15 @@ module Palette = struct
       code_string = hex "#93B187";
       code_number = hex "#D8A96A";
       selection_bg = Ansi.Color.default;
-      diff_added_bg = hex "#12321E";
-      diff_removed_bg = hex "#3A1A1E";
+      diff_added_bg = hex "#0A3418";
+      diff_removed_bg = hex "#421616";
       diff_added_sign = hex "#74B96A";
       diff_removed_sign = hex "#E5565B";
       diff_gutter_fg = hex "#6C665F";
-      diff_added_gutter_bg = hex "#0D2617";
-      diff_removed_gutter_bg = hex "#2C1418";
+      diff_added_gutter_bg = hex "#072612";
+      diff_removed_gutter_bg = hex "#2E1010";
       diff_added_emphasis = hex "#1C5232";
-      diff_removed_emphasis = hex "#5C2A30";
+      diff_removed_emphasis = hex "#5E2020";
     }
 
   (* [mentat-light]: the same brand direction over a light terminal. *)
@@ -199,13 +199,23 @@ module Palette = struct
     }
 
   (* A port from an upstream palette. The upstream provides the brand, mode,
-     outcome, syntax, and diff hues directly; the mentat-only tiers (text tiers,
-     rule, chip, overlay, gutters, word-run emphasis) derive from the neutral
-     background and ink foreground by a fixed blend, so every port fills all 27
-     roles consistently. Diff backgrounds are the upstream add/delete colours
-     tinted toward the background; the signs reuse the outcome hues. *)
-  let port ~neutral ~ink ~primary ~info ~accent ~success ~warning ~error
-      ~diff_add ~diff_delete ~keyword ~type_ ~string ~number =
+     outcome, and syntax hues directly; the mentat-only tiers (text tiers, rule,
+     chip, overlay) derive from the neutral background and ink foreground by a
+     fixed blend, so every port fills all 27 roles consistently.
+
+     The diff fills — both backgrounds, both gutter backgrounds, both word-run
+     emphases — come from [diff], the mentat table of the port's own terminal
+     ({!default} for a dark port, {!mentat_light} for a light one), never from
+     the upstream. An upstream "add" hue is routinely teal, olive, or blue, and
+     tinting one toward a warm neutral lands in brown; a reader recognizes an
+     addition and a deletion by hue before reading a word, so those fills stay
+     green and red under every preset. The two signs are the exception: they are
+     the [success] and [error] hues, which already mean green and red, so a
+     preset keeps its own [+] and [-]. The gutter foreground stays the port's own
+     [faint], so a line number reads against its own text tiers. All nine remain
+     ordinary roles: a user theme can still set any of them. *)
+  let port ~diff ~neutral ~ink ~primary ~info ~accent ~success ~warning ~error
+      ~keyword ~type_ ~string ~number =
     let neutral = hex neutral in
     let ink = hex ink in
     let faint = blend ink neutral 0.5 in
@@ -228,82 +238,82 @@ module Palette = struct
       code_string = hex string;
       code_number = hex number;
       selection_bg = Ansi.Color.default;
-      diff_added_bg = blend (hex diff_add) neutral 0.65;
-      diff_removed_bg = blend (hex diff_delete) neutral 0.65;
+      diff_added_bg = diff.diff_added_bg;
+      diff_removed_bg = diff.diff_removed_bg;
       diff_added_sign = hex success;
       diff_removed_sign = hex error;
       diff_gutter_fg = faint;
-      diff_added_gutter_bg = blend (hex diff_add) neutral 0.78;
-      diff_removed_gutter_bg = blend (hex diff_delete) neutral 0.78;
-      diff_added_emphasis = blend (hex diff_add) neutral 0.32;
-      diff_removed_emphasis = blend (hex diff_delete) neutral 0.32;
+      diff_added_gutter_bg = diff.diff_added_gutter_bg;
+      diff_removed_gutter_bg = diff.diff_removed_gutter_bg;
+      diff_added_emphasis = diff.diff_added_emphasis;
+      diff_removed_emphasis = diff.diff_removed_emphasis;
     }
 
   let solarized_dark =
-    port ~neutral:"#002b36" ~ink:"#93a1a1" ~primary:"#6c71c4" ~info:"#2aa198"
-      ~accent:"#d33682" ~success:"#859900" ~warning:"#b58900" ~error:"#dc322f"
-      ~diff_add:"#4c7654" ~diff_delete:"#c34b4b" ~keyword:"#859900"
-      ~type_:"#268bd2" ~string:"#2aa198" ~number:"#d33682"
+    port ~diff:default ~neutral:"#002b36" ~ink:"#93a1a1" ~primary:"#6c71c4"
+      ~info:"#2aa198" ~accent:"#d33682" ~success:"#859900" ~warning:"#b58900"
+      ~error:"#dc322f" ~keyword:"#859900" ~type_:"#268bd2" ~string:"#2aa198"
+      ~number:"#d33682"
 
   let solarized_light =
-    port ~neutral:"#fdf6e3" ~ink:"#586e75" ~primary:"#268bd2" ~info:"#2aa198"
-      ~accent:"#d33682" ~success:"#859900" ~warning:"#b58900" ~error:"#dc322f"
-      ~diff_add:"#c6dc7a" ~diff_delete:"#f2a1a1" ~keyword:"#728600"
-      ~type_:"#268bd2" ~string:"#1f8f88" ~number:"#d33682"
+    port ~diff:mentat_light ~neutral:"#fdf6e3" ~ink:"#586e75" ~primary:"#268bd2"
+      ~info:"#2aa198" ~accent:"#d33682" ~success:"#859900" ~warning:"#b58900"
+      ~error:"#dc322f" ~keyword:"#728600" ~type_:"#268bd2" ~string:"#1f8f88"
+      ~number:"#d33682"
 
   let gruvbox_dark =
-    port ~neutral:"#282828" ~ink:"#ebdbb2" ~primary:"#83a598" ~info:"#d3869b"
-      ~accent:"#fb4934" ~success:"#b8bb26" ~warning:"#fabd2f" ~error:"#fb4934"
-      ~diff_add:"#b8bb26" ~diff_delete:"#fb4934" ~keyword:"#fb4934"
-      ~type_:"#83a598" ~string:"#b8bb26" ~number:"#d3869b"
+    port ~diff:default ~neutral:"#282828" ~ink:"#ebdbb2" ~primary:"#83a598"
+      ~info:"#d3869b" ~accent:"#fb4934" ~success:"#b8bb26" ~warning:"#fabd2f"
+      ~error:"#fb4934" ~keyword:"#fb4934" ~type_:"#83a598" ~string:"#b8bb26"
+      ~number:"#d3869b"
 
   let gruvbox_light =
-    port ~neutral:"#fbf1c7" ~ink:"#3c3836" ~primary:"#076678" ~info:"#8f3f71"
-      ~accent:"#9d0006" ~success:"#79740e" ~warning:"#b57614" ~error:"#9d0006"
-      ~diff_add:"#79740e" ~diff_delete:"#9d0006" ~keyword:"#9d0006"
-      ~type_:"#076678" ~string:"#79740e" ~number:"#8f3f71"
+    port ~diff:mentat_light ~neutral:"#fbf1c7" ~ink:"#3c3836" ~primary:"#076678"
+      ~info:"#8f3f71" ~accent:"#9d0006" ~success:"#79740e" ~warning:"#b57614"
+      ~error:"#9d0006" ~keyword:"#9d0006" ~type_:"#076678" ~string:"#79740e"
+      ~number:"#8f3f71"
 
   let catppuccin_dark =
-    port ~neutral:"#1e1e2e" ~ink:"#cdd6f4" ~primary:"#b4befe" ~info:"#89dceb"
-      ~accent:"#f38ba8" ~success:"#a6d189" ~warning:"#f4b8e4" ~error:"#f38ba8"
-      ~diff_add:"#94e2d5" ~diff_delete:"#f38ba8" ~keyword:"#cba6f7"
-      ~type_:"#89b4fa" ~string:"#a6d189" ~number:"#fab387"
+    port ~diff:default ~neutral:"#1e1e2e" ~ink:"#cdd6f4" ~primary:"#b4befe"
+      ~info:"#89dceb" ~accent:"#f38ba8" ~success:"#a6d189" ~warning:"#f4b8e4"
+      ~error:"#f38ba8" ~keyword:"#cba6f7" ~type_:"#89b4fa" ~string:"#a6d189"
+      ~number:"#fab387"
 
   let catppuccin_light =
-    port ~neutral:"#f5e0dc" ~ink:"#4c4f69" ~primary:"#7287fd" ~info:"#04a5e5"
-      ~accent:"#d20f39" ~success:"#40a02b" ~warning:"#df8e1d" ~error:"#d20f39"
-      ~diff_add:"#a6d189" ~diff_delete:"#e78284" ~keyword:"#8839ef"
-      ~type_:"#1e66f5" ~string:"#40a02b" ~number:"#ca6702"
+    port ~diff:mentat_light ~neutral:"#eff1f5" ~ink:"#4c4f69" ~primary:"#7287fd"
+      ~info:"#04a5e5" ~accent:"#d20f39" ~success:"#40a02b" ~warning:"#df8e1d"
+      ~error:"#d20f39" ~keyword:"#8839ef" ~type_:"#1e66f5" ~string:"#40a02b"
+      ~number:"#ca6702"
 
   let tokyonight_dark =
-    port ~neutral:"#1a1b26" ~ink:"#c0caf5" ~primary:"#7aa2f7" ~info:"#7dcfff"
-      ~accent:"#ff9e64" ~success:"#9ece6a" ~warning:"#e0af68" ~error:"#f7768e"
-      ~diff_add:"#41a6b5" ~diff_delete:"#c34043" ~keyword:"#bb9af7"
-      ~type_:"#7aa2f7" ~string:"#9ece6a" ~number:"#ff9e64"
+    port ~diff:default ~neutral:"#1a1b26" ~ink:"#c0caf5" ~primary:"#7aa2f7"
+      ~info:"#7dcfff" ~accent:"#ff9e64" ~success:"#9ece6a" ~warning:"#e0af68"
+      ~error:"#f7768e" ~keyword:"#bb9af7" ~type_:"#7aa2f7" ~string:"#9ece6a"
+      ~number:"#ff9e64"
 
   let tokyonight_light =
-    port ~neutral:"#e1e2e7" ~ink:"#273153" ~primary:"#2e7de9" ~info:"#007197"
-      ~accent:"#b15c00" ~success:"#587539" ~warning:"#8c6c3e" ~error:"#c94060"
-      ~diff_add:"#4f8f7b" ~diff_delete:"#d05f7c" ~keyword:"#9854f1"
-      ~type_:"#1f6fd4" ~string:"#587539" ~number:"#b15c00"
+    port ~diff:mentat_light ~neutral:"#e1e2e7" ~ink:"#273153" ~primary:"#2e7de9"
+      ~info:"#007197" ~accent:"#b15c00" ~success:"#587539" ~warning:"#8c6c3e"
+      ~error:"#c94060" ~keyword:"#9854f1" ~type_:"#1f6fd4" ~string:"#587539"
+      ~number:"#b15c00"
 
   let nord_dark =
-    port ~neutral:"#2e3440" ~ink:"#e5e9f0" ~primary:"#88c0d0" ~info:"#81a1c1"
-      ~accent:"#d57780" ~success:"#a3be8c" ~warning:"#d08770" ~error:"#bf616a"
-      ~diff_add:"#81a1c1" ~diff_delete:"#bf616a" ~keyword:"#81a1c1"
-      ~type_:"#88c0d0" ~string:"#a3be8c" ~number:"#b48ead"
+    port ~diff:default ~neutral:"#2e3440" ~ink:"#e5e9f0" ~primary:"#88c0d0"
+      ~info:"#81a1c1" ~accent:"#d57780" ~success:"#a3be8c" ~warning:"#d08770"
+      ~error:"#bf616a" ~keyword:"#81a1c1" ~type_:"#88c0d0" ~string:"#a3be8c"
+      ~number:"#b48ead"
 
   let one_dark =
-    port ~neutral:"#282c34" ~ink:"#abb2bf" ~primary:"#61afef" ~info:"#d19a66"
-      ~accent:"#56b6c2" ~success:"#98c379" ~warning:"#e5c07b" ~error:"#e06c75"
-      ~diff_add:"#aad482" ~diff_delete:"#e8828b" ~keyword:"#c678dd"
-      ~type_:"#e5c07b" ~string:"#98c379" ~number:"#d19a66"
+    port ~diff:default ~neutral:"#282c34" ~ink:"#abb2bf" ~primary:"#61afef"
+      ~info:"#d19a66" ~accent:"#56b6c2" ~success:"#98c379" ~warning:"#e5c07b"
+      ~error:"#e06c75" ~keyword:"#c678dd" ~type_:"#e5c07b" ~string:"#98c379"
+      ~number:"#d19a66"
 
   let one_light =
-    port ~neutral:"#fafafa" ~ink:"#383a42" ~primary:"#4078f2" ~info:"#986801"
-      ~accent:"#0184bc" ~success:"#50a14f" ~warning:"#c18401" ~error:"#e45649"
-      ~diff_add:"#489447" ~diff_delete:"#d65145" ~keyword:"#a626a4"
-      ~type_:"#c18401" ~string:"#50a14f" ~number:"#986801"
+    port ~diff:mentat_light ~neutral:"#fafafa" ~ink:"#383a42" ~primary:"#4078f2"
+      ~info:"#986801" ~accent:"#0184bc" ~success:"#50a14f" ~warning:"#c18401"
+      ~error:"#e45649" ~keyword:"#a626a4" ~type_:"#c18401" ~string:"#50a14f"
+      ~number:"#986801"
 
   let accent t = t.accent
   let mode_plan t = t.mode_plan

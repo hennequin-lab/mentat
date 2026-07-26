@@ -70,7 +70,9 @@ Keys supported by `get`, `set`, and `unset`:
 | `small_model` | Model used for automatic session titles; an unset, unknown, or unavailable selector falls back to the main model. |
 | `reasoning` | Default reasoning effort: `none`, `minimal`, `low`, `medium`, `high`, `xhigh`, or `max`. |
 | `tui.thinking` | Whether the TUI shows thinking summaries. |
-| `tui.theme` | TUI color theme name; defaults to `mentat`. |
+| `tui.theme` | TUI color theme: a built-in name, a user theme file basename, or `auto`; defaults to `mentat-dark`. |
+| `tui.theme_dark` | Theme `tui.theme=auto` selects on a dark terminal (default `mentat-dark`). |
+| `tui.theme_light` | Theme `tui.theme=auto` selects on a light terminal (default `mentat-light`). |
 | `notify.enabled` | Enable TUI completion and decision notifications (default `true`). |
 | `notify.channel` | Notification channel: `off`, `bell`, `osc9`, `osc777`, `auto`, or `command`. |
 | `notify.when` | Notify `unfocused` (default) or `always`. |
@@ -151,13 +153,26 @@ Unknown entries in `notify.on` are ignored with a warning.
 
 ## Themes
 
-`tui.theme=mentat` selects the built-in palette. Any other value `NAME` loads
-`<config-home>/themes/NAME.json`, limited to 1 MiB, when the TUI starts. A theme
-is a partial JSON object whose values are `#rrggbb`, named ANSI colors, or
-`default`:
+`tui.theme` names the palette the TUI starts in. Thirteen themes are built in:
+`mentat-dark` (the default), `mentat-light`, `solarized`, `solarized-light`,
+`gruvbox`, `gruvbox-light`, `catppuccin`, `catppuccin-light`, `tokyonight`,
+`tokyonight-light`, `nord`, `one-dark`, and `one-light`. `/theme` browses them
+and writes the selection back to user config.
+
+`tui.theme=auto` follows the terminal's own light/dark color scheme, switching
+between `tui.theme_dark` (default `mentat-dark`, and the theme used until the
+terminal answers) and `tui.theme_light` (default `mentat-light`). Both keys are
+ignored unless `tui.theme` is `auto`.
+
+Any name that is not built in loads `<config-home>/themes/NAME.json`, limited to
+1 MiB, when the TUI starts. A theme is a partial JSON object whose values are
+`#rrggbb`, named ANSI colors, or `default`. An optional `extends` key names the
+built-in theme to overlay; without it a same-named built-in is the base, else
+`mentat-dark`:
 
 ```json
 {
+  "extends": "nord",
   "accent": "#00e5ff",
   "muted": "bright-black",
   "selection_bg": "default"
@@ -166,9 +181,17 @@ is a partial JSON object whose values are `#rrggbb`, named ANSI colors, or
 
 The color roles are `accent`, `mode_plan`, `mode_review`, `muted`, `faint`,
 `rule`, `success`, `warning`, `error`, `history`, `chip_fg`, `user_bg`,
-`overlay`, `code_keyword`, `code_type`, `code_string`, `code_number`, and
-`selection_bg`. Omitted or invalid roles keep their built-in color. A missing,
-unreadable, or non-object theme falls back to the built-in palette and logs a
+`overlay`, `code_keyword`, `code_type`, `code_string`, `code_number`,
+`selection_bg`, and the diff group: `diff_added_bg`, `diff_removed_bg`,
+`diff_added_sign`, `diff_removed_sign`, `diff_gutter_fg`,
+`diff_added_gutter_bg`, `diff_removed_gutter_bg`, `diff_added_emphasis`, and
+`diff_removed_emphasis`. Every built-in theme draws the diff backgrounds,
+gutter backgrounds, and word emphases from the same green and red, tinted for a
+dark or a light terminal, so an addition and a deletion read the same way
+whichever theme is selected; the `+` and `-` signs follow each theme's own
+`success` and `error`. A theme file may still override any of them. Omitted or
+invalid roles keep the base's color, so a partial theme is always complete. A
+missing, unreadable, or non-object theme falls back to its base and logs a
 warning.
 
 ## Image limits

@@ -299,11 +299,11 @@ let%expect_test "the compose input deletes a word with ctrl+w" =
     {|01 | ────────────────────────────────────────────────────────────────────────────────
 02 | Review  HEAD..worktree                                    0/1 reviewed · pending
 03 |  ▾ lib                          │lib/code.ml · unreviewed · +1 −1
-04 |    ❯ [ ] code.ml              M │ 1   let alpha = 1
-05 |                                 │ 2   let beta = 2
-06 |                                 │ 3 - let gamma = 3
-07 |                                 │ 3 + let gamma = 33
-08 |                                 │ 4   let delta = 4
+04 |    ❯ [ ] code.ml              M │  1   let alpha = 1
+05 |                                 │  2   let beta = 2
+06 |                                 │  3 - let gamma = 3
+07 |                                 │❯ 3 + let gamma = 33
+08 |                                 │  4   let delta = 4
 09 |                                 │
 10 |                                 │
 11 |
@@ -413,14 +413,14 @@ let%expect_test "the compose dialog opens over the dimmed diff" =
     {|01 | ────────────────────────────────────────────────────────────────────────────────
 02 | Review  HEAD..worktree                                    0/1 reviewed · pending
 03 |  ▾ lib                          │lib/code.ml · unreviewed · +1 −1
-04 |    ❯ [ ] code.ml              M │ 1   let alpha = 1
-05 |                                 │ 2   let beta = 2
-06 |                                 │ 3 - let gamma = 3
-07 |                                 │ 3 + let gamma = 33
-08 |                                 │ 4   let delta = 4
+04 |    ❯ [ ] code.ml              M │  1   let alpha = 1
+05 |                                 │  2   let beta = 2
+06 |                                 │  3 - let gamma = 3
+07 |                                 │❯ 3 + let gamma = 33
+08 |                                 │  4   let delta = 4
 09 |                                 │
 10 |                                 │
-11 | 
+11 |
 12 |             CR on lib/code.ml:3
 13 |             handle: comment
 14 |
@@ -432,7 +432,7 @@ let%expect_test "the compose dialog opens over the dimmed diff" =
 20 |                                 │
 21 |                                 │
 22 |                                 │
-23 | 
+23 |
 24 | enter add CR · esc cancel|}]
 
 [%%run_tests "mentat.tui.review"]

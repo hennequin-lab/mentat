@@ -105,7 +105,14 @@ module Line_color = struct
     content : Mosaic.Ansi.Color.t option;
   }
 
-  let solid c = { gutter = c; content = Some c }
+  (* A row mark rides the gutter alone. Over the content it would repaint the
+     line's add/del background, and on a diff line that background is the
+     meaning: an accent wash over a deletion reads brown rather than red. The
+     content overlay is spelled out as fully transparent because the diff blends
+     a [None] content against the gutter wash, tinting the line's own background
+     just the same; only a zero alpha leaves it untouched. *)
+  let gutter_mark color =
+    { gutter = color; content = Some (Mosaic.Ansi.Color.of_rgba 0 0 0 0) }
 end
 
 module Diff_sign = struct
@@ -152,7 +159,7 @@ module Reveal = struct
 end
 
 (* A subtle alpha wash derived from a theme role — no new base colors. The diff
-   widget blends it over the line's normal background. *)
+   widget blends it over the line's normal gutter background. *)
 let wash base ~alpha =
   let r, g, b = Mosaic.Ansi.Color.to_rgb base in
   Mosaic.Ansi.Color.of_rgba r g b alpha
@@ -161,7 +168,7 @@ let cursor_alpha = 56
 let compose_alpha = 120
 
 let line_highlight ~base ~alpha side n =
-  Diff_highlight.make side n (Line_color.solid (wash base ~alpha))
+  Diff_highlight.make side n (Line_color.gutter_mark (wash base ~alpha))
 
 let diff_side = function
   | Mentat_review.Scope.Old -> Mosaic.Diff.Old
@@ -374,16 +381,17 @@ let cursor_effects ~palette ~focused ~dimmed cursor_line =
     (signs, highlights)
 
 (* [compose_line] is a [(path_string, line)] anchor; matched by string so an Add
-   target's relative path and a CR view's path unify. *)
-let compose_highlight ~palette ~path_str compose_line =
+   target's relative path and a CR view's path unify. The anchor carries its own
+   gutter cursor in [warning]: it exists only while the compose dialog owns
+   attention, which is exactly when {!cursor_effects} withholds the diff's
+   cursor, so the landing line would otherwise be marked by a gutter tint alone. *)
+let compose_effects ~palette ~path_str compose_line =
   match compose_line with
   | Some (path, n) when String.equal path path_str ->
-      [
-        line_highlight
-          ~base:(Theme.Palette.warning palette)
-          ~alpha:compose_alpha Mosaic.Diff.New n;
-      ]
-  | _ -> []
+      let color = Theme.Palette.warning palette in
+      ( [ Diff_sign.make Mosaic.Diff.New n (Gutter_sign.cursor color) ],
+        [ line_highlight ~base:color ~alpha:compose_alpha Mosaic.Diff.New n ] )
+  | _ -> ([], [])
 
 (* One file-level diff node over {!Diff_view}, with review's fixed wrap and
    size. Every consumer computes its own theme, text style, and decorations. *)
@@ -419,8 +427,11 @@ let file_source ~full_context fd hunks =
 let file_node ~palette ~file_reviewed ~dimmed ~focused ~cursor_line
     ~compose_line ~on_line_click ~layout fd source =
   let path = fd_path fd in
-  let line_signs, cursor_hl =
+  let cursor_signs, cursor_hl =
     cursor_effects ~palette ~focused ~dimmed cursor_line
+  in
+  let compose_signs, compose_hl =
+    compose_effects ~palette ~path_str:(path_string path) compose_line
   in
   (* No syntax colour while dimmed — the compose dialog owns attention, so the
      diff reads as monochrome-faint. *)
@@ -428,10 +439,9 @@ let file_node ~palette ~file_reviewed ~dimmed ~focused ~cursor_line
   diff_node ~palette ~layout
     ~theme:(body_theme ~palette ~file_reviewed ~dimmed)
     ~text_style:(body_text_style ~palette ~dimmed)
-    ?language ~line_signs
-    ~line_highlights:
-      (cursor_hl
-      @ compose_highlight ~palette ~path_str:(path_string path) compose_line)
+    ?language
+    ~line_signs:(cursor_signs @ compose_signs)
+    ~line_highlights:(cursor_hl @ compose_hl)
     ?on_line_click:(line_click_handler ~path on_line_click)
     source
 
@@ -474,13 +484,13 @@ let cr_context_body ~palette ~focused ~dimmed ~compose_line ~on_line_click c fd
         }
       in
       let source = Diff_view.of_patch (Mosaic.Diff.Patch.make [ hunk ]) in
-      let line_signs, cursor_hl =
+      let cursor_signs, cursor_hl =
         cursor_effects ~palette ~focused ~dimmed (Some (Mosaic.Diff.New, line))
       in
-      let compose_hl =
-        Option.fold ~none:[]
+      let compose_signs, compose_hl =
+        Option.fold ~none:([], [])
           ~some:(fun fd ->
-            compose_highlight ~palette
+            compose_effects ~palette
               ~path_str:(path_string (fd_path fd))
               compose_line)
           fd
@@ -499,7 +509,9 @@ let cr_context_body ~palette ~focused ~dimmed ~compose_line ~on_line_click c fd
           ~text_style:
             (if dimmed then dimmed_text_style palette
              else diff_text_style palette)
-          ?language ~line_signs ~line_highlights:(cursor_hl @ compose_hl)
+          ?language
+          ~line_signs:(cursor_signs @ compose_signs)
+          ~line_highlights:(cursor_hl @ compose_hl)
           ?on_line_click:on_click source;
       ]
 

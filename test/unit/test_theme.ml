@@ -169,6 +169,33 @@ let presets =
                 (same dt.Diff.line_number_fg
                    (Palette.diff_gutter_fg preset.Preset.palette)))
             Preset.all);
+      (* An addition reads green and a deletion red before a word of the line is
+         read, so every shipped preset's diff fills lead on the matching channel
+         by a visible margin. Dominance alone is too weak a test: an olive fill
+         can lead on green by one unit and still read brown. The shipped fills
+         clear 20; 16 leaves the light pastels headroom while rejecting the
+         teal, blue, and olive an upstream "add" hue routinely tints toward. *)
+      let margin = 16 in
+      test "every preset's diff fills are green and red" (fun () ->
+          let green name role palette =
+            let r, g, b = Color.to_rgb (role palette) in
+            is_true ~msg:(name ^ " leads on green") (g - max r b >= margin)
+          in
+          let red name role palette =
+            let r, g, b = Color.to_rgb (role palette) in
+            is_true ~msg:(name ^ " leads on red") (r - max g b >= margin)
+          in
+          List.iter
+            (fun (preset : Preset.t) ->
+              let p = preset.Preset.palette in
+              let of_ role = preset.Preset.name ^ " " ^ role in
+              green (of_ "added_bg") Palette.diff_added_bg p;
+              green (of_ "added_gutter_bg") Palette.diff_added_gutter_bg p;
+              green (of_ "added_emphasis") Palette.diff_added_emphasis p;
+              red (of_ "removed_bg") Palette.diff_removed_bg p;
+              red (of_ "removed_gutter_bg") Palette.diff_removed_gutter_bg p;
+              red (of_ "removed_emphasis") Palette.diff_removed_emphasis p)
+            Preset.all);
     ]
 
 let diff_projections =

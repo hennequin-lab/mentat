@@ -323,11 +323,19 @@ module Palette : sig
       unless themed, keeping selection a mark rather than a fill. *)
 
   (** The diff group. Each accessor feeds exactly one {!Mosaic.Diff.theme} field
-      built by {!diff_theme}, except the two [*_emphasis] colors, which are
-      plain word-run colors for the pending intra-line [line_spans] seam and
-      have no consumer yet. Content foreground is background-distinguished only:
-      added, removed, and context lines differ by background over one shared
-      muted text style, so there is no per-side content-fg role. *)
+      built by {!diff_theme}, except the two [*_emphasis] colors, which are the
+      word-run colors drawn as [line_spans] behind the bytes that actually
+      changed on a modified line. Content foreground is background-distinguished
+      only: added, removed, and context lines differ by background over one
+      shared muted text style, so there is no per-side content-fg role.
+
+      Every shipped preset draws the four fills — both backgrounds, both gutter
+      backgrounds — and the two emphases from the same green and red, tinted for
+      a dark or a light terminal: a reader recognizes an addition and a deletion
+      by hue before reading a word. The two signs are each preset's own
+      {!success} and {!error}, and {!diff_gutter_fg} its own {!faint}, so a [+]
+      and a line number keep the preset's character. All nine are ordinary
+      roles, so a user theme that wants other colours may set them. *)
 
   val diff_added_bg : t -> Mosaic.Ansi.Color.t
   val diff_removed_bg : t -> Mosaic.Ansi.Color.t
@@ -359,10 +367,11 @@ module Palette : sig
 
   (** {2:diff_projections Diff themes}
 
-      The three finished {!Mosaic.Diff.theme} values review renders, built from
-      the diff roles so review never rebuilds one by hand. Every field maps to a
-      diff role or to a principled constant: the context and content backgrounds
-      and the line-number background are [None] (no chrome). *)
+      The three finished {!Mosaic.Diff.theme} values review and the permission
+      dialog render, built from the diff roles so no surface rebuilds one by
+      hand. Every field maps to a diff role or to a principled constant: the
+      context and content backgrounds and the line-number background are [None]
+      (no chrome). *)
 
   val diff_theme : t -> Mosaic.Diff.theme
   (** [diff_theme t] is the live diff theme: the add/del backgrounds, signs, and
