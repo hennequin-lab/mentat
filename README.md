@@ -168,12 +168,15 @@ behavior.
 ### Building from source
 
 Mentat uses Dune package management — you need a recent Dune (3.22+), and
-`dune pkg lock` provisions the OCaml compiler (5.5+) and all dependencies.
+`dune pkg lock` provisions the OCaml compiler (5.5+) and every OCaml
+dependency. System libraries are not provisioned; `dune show depexts` prints
+the ones your own package manager has to supply.
 
 ```sh
 git clone https://github.com/invariant-hq/mentat.git
 cd mentat
 dune pkg lock
+dune show depexts   # system packages to install before building
 dune build
 ```
 
