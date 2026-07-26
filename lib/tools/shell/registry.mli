@@ -70,7 +70,7 @@ val start :
     {!max_concurrent} processes are already running — checked before any spawn,
     so no handle is minted — and [Refused] on a pre-spawn refusal. *)
 
-(** {1 Poll and kill}
+(** {1 Read and kill}
 
     Both return the primitive's incremental
     {!Mentat_workspace_io.Command.Session.chunk}: the {e raw} bytes appended to
@@ -81,11 +81,18 @@ val start :
     filtering are the calling tool's concern, never the registry's. *)
 
 val read :
-  t -> handle:string -> Mentat_workspace_io.Command.Session.chunk option
-(** [read t ~handle] is the output appended since the last {!read} or {!kill} of
-    [handle], advancing the stored cursor, with the live status. It is [None]
-    when [handle] names no process in this session — never started, or minted by
-    a prior engine (the honest resume answer). *)
+  t ->
+  handle:string ->
+  cancelled:(unit -> bool) ->
+  seconds:float ->
+  Mentat_workspace_io.Command.Session.chunk option
+(** [read t ~handle ~cancelled ~seconds] is the output appended since the last
+    {!read} or {!kill} of [handle], advancing the stored cursor, with the live
+    status. It waits up to [seconds] for that output, returning the moment the
+    process writes, exits, or [cancelled] reports [true] — see
+    {!Mentat_workspace_io.Command.Session.await}. It is [None] when [handle]
+    names no process in this session — never started, or minted by a prior
+    engine (the honest resume answer) — and answers that without waiting. *)
 
 val kill :
   t -> handle:string -> Mentat_workspace_io.Command.Session.chunk option

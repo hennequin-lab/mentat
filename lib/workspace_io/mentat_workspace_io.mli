@@ -629,6 +629,21 @@ module Command : sig
         {!chunk.dropped} and the read resumes at the window start — never a
         silent gap, the same discipline as {!Captured.Truncated}. *)
 
+    val await :
+      t -> from:Cursor.t -> cancelled:(unit -> bool) -> seconds:float -> chunk
+    (** [await t ~from ~cancelled ~seconds] is {!read} under a deadline: it
+        returns the moment the session appends output past [from], settles, or
+        [cancelled] reports [true], and otherwise when [seconds] elapse. A
+        cursor that already has output behind it returns without waiting.
+
+        An expired deadline is not a failure: the result is the chunk {!read}
+        would have returned, so an empty chunk from a still-[Running] session
+        means the session produced nothing for the whole wait. [cancelled] is
+        the engine-owned cooperative stop, sampled during the wait because
+        nothing announces it; the caller decides what an interrupted wait means.
+        Parent fiber cancellation propagates as cancellation, as everywhere
+        else. *)
+
     val signal : t -> unit
     (** [signal t] cooperatively terminates the child: SIGTERM, a bounded grace,
         then SIGKILL, each sent to the child's process group before the child,

@@ -282,6 +282,7 @@
   eio
   eio.unix
   eio_main
+  mtime
   unix
   jsont
   mentat_config

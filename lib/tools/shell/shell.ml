@@ -122,7 +122,7 @@ module Input = struct
               ( "background",
                 property "boolean"
                   "Run the command in the background and return a handle to \
-                   poll with shell_output and stop with shell_kill. Use for \
+                   read with shell_output and stop with shell_kill. Use for \
                    dev servers, watchers, and long log tails. timeout_ms is \
                    ignored for a background command; a background command runs \
                    confined and cannot be escalated (escalate a command in the \
@@ -511,8 +511,8 @@ let background_receipt ~handle ~pid ~command ~workdir =
       "Started background command: %s\n\
        Workdir: %s\n\
        Handle: %s (pid %d)\n\
-       Output is polled, not streamed: read new output with \
-       shell_output(handle=\"%s\") and stop it with shell_kill(handle=\"%s\"). \
+       Read its output with shell_output(handle=\"%s\"), which waits for the \
+       command to say something, and stop it with shell_kill(handle=\"%s\"). \
        It keeps running across turns until it exits or is killed. The kill \
        reaches this process and the workers it forked; one that ignores the \
        graceful signal and outlives it may keep running."

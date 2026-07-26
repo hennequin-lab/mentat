@@ -1542,12 +1542,19 @@ module Command = struct
       mutable signalled : bool;
       out_done : unit Eio.Promise.t;
       err_done : unit Eio.Promise.t;
+      changed : Eio.Condition.t;
     }
 
     (* How long the drains may flush a signalled child's final tail before
        [signal] settles. Bounded so a descendant holding a pipe past the grace
        cannot stall the settle. *)
     let signal_drain_grace = 0.2
+
+    (* How often a waiting [await] re-reads the caller's cooperative stop. The
+       predicate is a plain read the engine owns and broadcasts nothing about,
+       so it is the one input to the wait that has to be sampled rather than
+       awaited. *)
+    let stop_poll = 0.05
 
     (* Spawn [argv] with captured stdout/stderr and a null stdin, then wire the
        two drain daemons and the waiter under [sw]. Raises the same launch
@@ -1581,8 +1588,12 @@ module Command = struct
           signalled = false;
           out_done;
           err_done;
+          changed = Eio.Condition.create ();
         }
       in
+      (* Every fiber that appends bytes or settles the status broadcasts, so a
+         waiting [await] re-reads exactly when there is something new to read
+         and never on a timer. *)
       let drain source ring resolve_done =
         Eio.Fiber.fork_daemon ~sw (fun () ->
             let buffer = Cstruct.create 8192 in
@@ -1590,6 +1601,7 @@ module Command = struct
               match Eio.Flow.single_read source buffer with
               | n ->
                   Ring.add ring (Cstruct.to_string (Cstruct.sub buffer 0 n));
+                  Eio.Condition.broadcast session.changed;
                   loop ()
               | exception End_of_file -> ()
               | exception Eio.Exn.Io _ -> ()
@@ -1608,6 +1620,7 @@ module Command = struct
           (match session.live with
           | Running when not session.signalled -> session.live <- Exited status
           | Running | Exited _ | Terminated -> ());
+          Eio.Condition.broadcast session.changed;
           `Stop_daemon);
       session
 
@@ -1627,6 +1640,51 @@ module Command = struct
         since = Mtime.span t.started_at (Eio.Time.Mono.now t.clock);
       }
 
+    (* [await] is [read] given a deadline: it returns the instant the session
+       appends output, settles, or is stopped, and otherwise when [seconds]
+       elapse. The rings and the status are re-read on a broadcast rather than
+       on a tick, so a busy session costs one wake per append and a silent one
+       costs nothing until the deadline. The cooperative stop is the exception,
+       polled on its own fiber because nothing broadcasts it. A deadline that
+       expires is not a failure — it is the same chunk [read] would have
+       returned, with whatever the session produced in the meantime. *)
+    let await t ~from ~cancelled ~seconds =
+      let fresh chunk =
+        chunk.dropped > 0
+        || (not (String.is_empty chunk.stdout))
+        || not (String.is_empty chunk.stderr)
+      in
+      let settled chunk =
+        match chunk.status with
+        | Running -> false
+        | Exited _ | Terminated -> true
+      in
+      let poll () =
+        let chunk = read t ~from in
+        if fresh chunk || settled chunk then Some chunk else None
+      in
+      match poll () with
+      | Some chunk -> chunk
+      | None -> (
+          let waited =
+            Eio.Time.Timeout.run
+              (Eio.Time.Timeout.seconds t.clock seconds)
+              (fun () ->
+                Ok
+                  (Eio.Fiber.first
+                     (fun () -> Eio.Condition.loop_no_mutex t.changed poll)
+                     (fun () ->
+                       let rec stop () =
+                         if cancelled () then read t ~from
+                         else begin
+                           Eio.Time.Mono.sleep t.clock stop_poll;
+                           stop ()
+                         end
+                       in
+                       stop ())))
+          in
+          match waited with Ok chunk -> chunk | Error `Timeout -> read t ~from)
+
     let signal t =
       match t.live with
       | Exited _ | Terminated -> ()
@@ -1637,6 +1695,7 @@ module Command = struct
              so a cancellation during the best-effort tail drain still leaves a
              correct [Terminated] rather than a stale [Running]. *)
           t.live <- Terminated;
+          Eio.Condition.broadcast t.changed;
           ignore
             (Eio.Time.Timeout.run
                (Eio.Time.Timeout.seconds t.clock signal_drain_grace) (fun () ->

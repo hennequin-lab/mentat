@@ -7,9 +7,10 @@
    terminals): [shell] with background=true, [shell_output], and
    [shell_kill], all sharing one per-session [Registry] bound to the test
    switch. Assertions (not expect blocks) so nondeterministic pids and output
-   timing never pin a golden; determinism comes from the tools' own poll/kill
-   seams — [shell_kill] settles the drains, and [shell_output] polls
-   incrementally until the process has exited and no new bytes remain. Every
+   timing never pin a golden; determinism comes from the tools' own read/kill
+   seams — [shell_kill] settles the drains, and [shell_output] waits for output
+   and reads incrementally until the process has exited and no new bytes
+   remain. Every
    child is a stable system inode ([/bin/sh], [/bin/sleep]) so no fresh script
    inode pays the macOS syspolicyd tax. *)
 
@@ -63,9 +64,9 @@ let with_world name fn =
 
 (* Tool call plumbing. *)
 
-let run tool input =
+let run ?(cancelled = fun () -> false) tool input =
   match Tool.Call.decode tool (model_call tool input) with
-  | Ok call -> finished (Tool.Call.run call ~cancelled:(fun () -> false))
+  | Ok call -> finished (Tool.Call.run call ~cancelled)
   | Error error ->
       failf "call decode failed: %s" (Tool.Call.Decode_error.message error)
 
@@ -79,7 +80,21 @@ let bg_input ?background ?timeout_ms ?escalate command =
   |> add "escalate" (Option.map (fun v -> Json.bool v) escalate)
   |> json_object
 
-let handle_input handle = json_object [ ("handle", Json.string handle) ]
+let handle_input ?wait_ms handle =
+  json_object
+    (("handle", Json.string handle)
+    ::
+    (match wait_ms with
+    | None -> []
+    | Some wait_ms -> [ ("wait_ms", Json.int wait_ms) ]))
+
+(* The monotonic span a call took, in seconds — the only way to observe that a
+   read waited rather than answering at once. *)
+let elapsed ~clock fn =
+  let start = Eio.Time.Mono.now clock in
+  let value = fn () in
+  let span = Mtime.span start (Eio.Time.Mono.now clock) in
+  (value, Mtime.Span.to_float_ns span /. 1e9)
 let json_of result = Tool.Output.json (output_exn result)
 
 let json_str result name =
@@ -102,7 +117,8 @@ let completed_handle result =
   json_str result "handle"
 
 (* [shell_output] is incremental and destructive; accumulate its stdout and new
-   byte count until the process has exited and a poll yields nothing new. The
+   byte count until the process has exited and a read yields nothing new. Each
+   read waits, so the loop is bounded by the process rather than by a spin. The
    safety timeout only bounds a genuine hang. *)
 let find_from ~sub s from =
   let sub_len = String.length sub and s_len = String.length s in
@@ -238,6 +254,97 @@ let%test "shell_output caps a large read to its tail" =
   is_true ~msg:"the rendered output is bounded by the per-read cap"
     (String.length (stdout_section (Tool.Output.text (output_exn result)))
     <= Shell.Shell_output.max_read_bytes)
+
+(* A read is a wait with a deadline, not a snapshot. The command says nothing
+   for a second, so a read issued straight after the start can only return
+   "late" by having waited for it — and it must come back well before its
+   budget, because the wait ends on the write rather than on the clock. *)
+let%test "shell_output waits for output and returns on the write" =
+  with_world "output-wait" @@ fun world ->
+  let handle =
+    completed_handle
+      (run world.shell (bg_input ~background:true "sleep 1; printf late"))
+  in
+  let result, seconds =
+    elapsed ~clock:world.clock (fun () ->
+        run world.shell_output (handle_input handle))
+  in
+  is_true ~msg:"the read waited for the command to write"
+    (String.includes ~affix:"late"
+       (stdout_section (Tool.Output.text (output_exn result))));
+  is_true ~msg:"it did not answer before the command wrote" (seconds >= 0.9);
+  is_true ~msg:"it returned on the write, not on its budget"
+    (seconds
+    < float_of_int Shell.Shell_output.default_wait_ms /. 1_000. *. 0.8)
+
+(* A silent command costs the reader its whole budget, and the result says so:
+   an empty read that looks free is what invites a read to be repeated in place
+   of work. *)
+let%test "an empty read spends its budget and names it" =
+  with_world "output-budget" @@ fun world ->
+  let handle =
+    completed_handle (run world.shell (bg_input ~background:true "sleep 30"))
+  in
+  let result, seconds =
+    elapsed ~clock:world.clock (fun () ->
+        run world.shell_output (handle_input handle))
+  in
+  let budget = float_of_int Shell.Shell_output.min_wait_ms /. 1_000. in
+  is_true ~msg:"the read waited its whole budget for a silent command"
+    (seconds >= budget *. 0.9);
+  is_true ~msg:"an empty read names the budget it spent"
+    (String.includes
+       ~affix:
+         (Printf.sprintf "no new output in %dms" Shell.Shell_output.min_wait_ms)
+       (Tool.Output.text (output_exn result)))
+
+(* The budget is declared in the schema and enforced, never clamped: a read
+   that asked for a deadline it would not get would reason about the wrong
+   one. *)
+let%test "a wait_ms outside the accepted range is refused" =
+  with_world "output-range" @@ fun world ->
+  let refused wait_ms =
+    let input = handle_input ~wait_ms "bg_1" in
+    match
+      Tool.Call.decode world.shell_output (model_call world.shell_output input)
+    with
+    | Ok _ -> false
+    | Error error ->
+        String.includes ~affix:"wait_ms"
+          (Tool.Call.Decode_error.message error)
+  in
+  is_true ~msg:"a budget below the floor is refused, not raised"
+    (refused (Shell.Shell_output.min_wait_ms - 1));
+  is_true ~msg:"a budget above the ceiling is refused, not lowered"
+    (refused (Shell.Shell_output.max_wait_ms + 1));
+  is_true ~msg:"the floor itself is accepted"
+    (not (refused Shell.Shell_output.min_wait_ms));
+  is_true ~msg:"the ceiling itself is accepted"
+    (not (refused Shell.Shell_output.max_wait_ms))
+
+(* A waiting read is not a wedged turn: the engine's cooperative stop ends the
+   wait, and the read reports the interruption rather than the empty chunk it
+   happened to be holding. *)
+let%test "a stop during the wait interrupts the read" =
+  with_world "output-stop" @@ fun world ->
+  let handle =
+    completed_handle (run world.shell (bg_input ~background:true "sleep 30"))
+  in
+  (* False on the entry check, true from the wait onward: the call starts and
+     is stopped while waiting, which is the case the deadline must not own. *)
+  let calls = ref 0 in
+  let cancelled () =
+    incr calls;
+    !calls > 1
+  in
+  let result, seconds =
+    elapsed ~clock:world.clock (fun () ->
+        run ~cancelled world.shell_output (handle_input handle))
+  in
+  is_true ~msg:"the stop ends the wait well inside the budget" (seconds < 1.0);
+  match Tool.Result.status result with
+  | Tool.Result.Interrupted _ -> ()
+  | _ -> fail "a stop during the wait must interrupt, not return an empty read"
 
 let%test "shell_output on an unknown handle is not_found" =
   with_world "output-unknown" @@ fun world ->

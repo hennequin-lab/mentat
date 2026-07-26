@@ -1,4 +1,4 @@
-Background terminals end to end: a run starts a background shell command, polls
+Background terminals end to end: a run starts a background shell command, reads
 its new output, and stops it — the three short tool calls (shell with
 background, shell_output, shell_kill) over one long-lived process. A resumed
 session honestly reports a prior-engine handle as gone, because the registry is
@@ -8,20 +8,20 @@ it.
 
   $ use_trusted_workspace
 
-The background start returns a handle immediately; shell_output polls it while it
-runs; shell_kill stops it. The command prints a line then blocks, so the poll
-sees a running status and the kill drains the final tail. The [expect] guards
-assert the data flowed back to the model, deterministically: the receipt handle
-bg_1 reaches the second request, the running status reaches the third, and the
-polled line plus the terminated status reach the fourth. The output line is
-asserted on the kill (which settles the drains) rather than the poll (whose live
-read races the OS scheduling the child and its first write) — the honest analog
-of a poll-until without a branchable fake provider.
+The background start returns a handle immediately; shell_output reads it while it
+runs; shell_kill stops it. The command prints a line then blocks, so the read
+returns that line with a running status and the kill drains the final tail. The
+[expect] guards assert the data flowed back to the model, deterministically: the
+receipt handle bg_1 reaches the second request, the line and the running status
+reach the third, and the line and the terminated status reach the fourth. The
+read does not race the OS scheduling the child and its first write: it waits for
+the write, so the line it returns is an assertion about the read rather than
+about the scheduler.
 
   $ cat > bg.jsonl <<'JSONL'
   > {"response":{"id":"r1","status":"completed","model":"gpt-5.6-sol","output":[{"type":"function_call","id":"i1","call_id":"c1","name":"shell","arguments":"{\"command\":\"printf bg-line; sleep 30\",\"background\":true}"}]}}
   > {"expect":{"body_contains":["bg_1"]},"response":{"id":"r2","status":"completed","model":"gpt-5.6-sol","output":[{"type":"function_call","id":"i2","call_id":"c2","name":"shell_output","arguments":"{\"handle\":\"bg_1\"}"}]}}
-  > {"expect":{"body_contains":["running"]},"response":{"id":"r3","status":"completed","model":"gpt-5.6-sol","output":[{"type":"function_call","id":"i3","call_id":"c3","name":"shell_kill","arguments":"{\"handle\":\"bg_1\"}"}]}}
+  > {"expect":{"body_contains":["bg-line","running"]},"response":{"id":"r3","status":"completed","model":"gpt-5.6-sol","output":[{"type":"function_call","id":"i3","call_id":"c3","name":"shell_kill","arguments":"{\"handle\":\"bg_1\"}"}]}}
   > {"expect":{"body_contains":["bg-line","terminated"]},"response":{"id":"r4","status":"completed","model":"gpt-5.6-sol","output":[{"type":"message","role":"assistant","content":[{"type":"output_text","text":"done"}]}]}}
   > JSONL
   $ start_fake_openai bg.jsonl capture-bg port-bg

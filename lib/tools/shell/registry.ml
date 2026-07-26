@@ -70,13 +70,21 @@ let find t ~handle =
     (fun (e : Entry.t) -> String.equal e.Entry.handle handle)
     t.entries
 
-(* Advance the entry's cursor over one incremental read and return the chunk. *)
-let drain (entry : Entry.t) =
-  let chunk = Session.read entry.Entry.session ~from:entry.Entry.cursor in
+(* Advance the entry's cursor over one incremental read and return the chunk.
+   [take] is the read: immediate for the final drain of a kill, deadlined for a
+   reader that is waiting for the process to say something. *)
+let advance take (entry : Entry.t) =
+  let chunk = take entry.Entry.session entry.Entry.cursor in
   entry.Entry.cursor <- chunk.Session.next;
   chunk
 
-let read t ~handle = Option.map drain (find t ~handle)
+let drain = advance (fun session from -> Session.read session ~from)
+
+let read t ~handle ~cancelled ~seconds =
+  Option.map
+    (advance (fun session from ->
+         Session.await session ~from ~cancelled ~seconds))
+    (find t ~handle)
 
 let kill t ~handle =
   Option.map
