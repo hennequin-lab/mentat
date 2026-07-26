@@ -646,6 +646,17 @@ let workspace_roots ~scoped ~lookup logical =
 let roots_overlap a b =
   Lpath.Abs.is_within ~root:a b || Lpath.Abs.is_within ~root:b a
 
+(* [/tmp] is where a command puts a scratch file when it does not consult the
+   environment for one, and a literal [/tmp/...] path is common enough in build
+   scripts and in model-authored commands that its absence reads as a broken
+   sandbox rather than a confined one. It went unnoticed because the temp-dir
+   family is redirected to the private scratch, so only a path spelled out in
+   full ever reaches it. Admitted writable on both platforms, canonicalized
+   because macOS resolves it to [/private/tmp]. The scratch may be minted
+   beneath it, which is why the whole platform-writable set is exempt from the
+   scratch-disjointness guard. *)
+let shared_temp_dirs () = List.filter_map existing_auto_root [ "/tmp" ]
+
 (* Apple's developer-tool shims (git, xcrun, clang) cache under the per-user
    confstr [DARWIN_USER_CACHE_DIR] — the [C] sibling of the [T] temp bucket —
    which no environment redirect can move; without it every CLT-backed tool
@@ -778,7 +789,7 @@ let run ~scoped ~lookup ~logical ~configured_reads ~configured_writes =
     {
       workspace_roots = roots;
       writable = primary :: configured_writes;
-      platform_writable = darwin_user_dirs ~lookup;
+      platform_writable = shared_temp_dirs () @ darwin_user_dirs ~lookup;
       readable;
       protected;
       path;

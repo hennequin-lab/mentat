@@ -39,12 +39,13 @@ type derived = {
   writable : Lpath.Abs.t list;
       (** The primary root and the validated configured writable roots. *)
   platform_writable : Lpath.Abs.t list;
-      (** Platform infrastructure directories that must accept writes for system
-          tooling to function — on macOS the per-user Darwin temp and cache
-          buckets that Apple's developer-tool shims cache under. The scratch may
-          nest inside them, so they are exempt from the scratch-disjointness
-          guard; they join the sandbox policy's writable roots and are never
-          described or protected. Empty on Linux. *)
+      (** Shared scratch space, and the platform infrastructure directories that
+          must accept writes for system tooling to function: [/tmp] on both
+          platforms, plus on macOS the per-user Darwin temp and cache buckets
+          Apple's developer-tool shims cache under. The scratch may nest inside
+          them, so they are exempt from the scratch-disjointness guard; they
+          join the sandbox policy's writable roots and are never described or
+          protected. *)
   readable : Lpath.Abs.t list;
       (** The scoped read roots (workspace, configured, platform, executable,
           toolchain, git-worktree); [[]] when not scoped. *)

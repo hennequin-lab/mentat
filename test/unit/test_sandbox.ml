@@ -593,6 +593,8 @@ let bubblewrap_scoped_reads_golden () =
         "--unshare-net";
         "--proc";
         "/proc";
+        "--remount-ro";
+        "/";
         "--chdir";
         "/usr";
         "--";
@@ -617,6 +619,30 @@ let bubblewrap_network_enabled_golden () =
   in
   is_false ~msg:"enabled network does not unshare the net namespace"
     (List.exists (String.equal "--unshare-net") args)
+
+(* The [Only] root is a writable tmpfs, so an unbound write would land in it and
+   report success. The seal closes that, and it must trail [--proc]/[--dev],
+   which bwrap cannot create under a sealed root. [All] binds its root read-only
+   already and takes no seal. *)
+let bubblewrap_seals_a_scoped_root () =
+  let scoped =
+    bubblewrap_lowered
+      (confined ~reads:(Policy.Only [ abs "/usr" ]) ())
+      ~cwd:(abs "/usr") ~program:"true" []
+  in
+  let rec index_of needle index = function
+    | [] -> None
+    | x :: _ when String.equal x needle -> Some index
+    | _ :: rest -> index_of needle (index + 1) rest
+  in
+  (match (index_of "--remount-ro" 0 scoped, index_of "--proc" 0 scoped) with
+  | Some seal, Some proc ->
+      is_true ~msg:"the scoped root is sealed read-only" (seal > proc)
+  | _ -> fail "a scoped bubblewrap lowering must seal its root after --proc");
+  is_false ~msg:"an all-reads root is bound read-only and takes no seal"
+    (List.exists
+       (String.equal "--remount-ro")
+       (bubblewrap_lowered (confined ()) ~cwd:(abs "/tmp") ~program:"true" []))
 
 let bubblewrap_uses_strict_ro_bind () =
   (* Hardening #2: carveouts use strict [--ro-bind], never [--ro-bind-try],
@@ -1150,7 +1176,7 @@ let identity_digest_pins () =
     "297fd640e39e2af77bcd6d7b5f174a07fb6a0dc71e66a1f421bfdfd928fa7496"
     (Digest.to_hex (Identity.digest (identity_of pinned_policy)));
   equal string ~msg:"bubblewrap enforced identity digest golden"
-    "d71cbc691e3ad9296ab34ebfaaea62efb3851008c7c072de292b25fb45e56f0a"
+    "cd4ebac3753b0e1ea3b7906a7e745a5e0cf851db9a088ebf42aef7fa54923d5e"
     (Digest.to_hex
        (Identity.digest (identity_of ~backend:Backend.Bubblewrap pinned_policy)))
 
@@ -1377,6 +1403,7 @@ let () =
       test "bubblewrap scoped-reads golden" bubblewrap_scoped_reads_golden;
       test "bubblewrap network-enabled golden" bubblewrap_network_enabled_golden;
       test "bubblewrap uses strict --ro-bind" bubblewrap_uses_strict_ro_bind;
+      test "bubblewrap seals a scoped root" bubblewrap_seals_a_scoped_root;
       (* Route constructors *)
       test "route evidence table" route_evidence_table;
       test "route policy projection" route_policy_projection;

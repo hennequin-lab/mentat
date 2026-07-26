@@ -33,6 +33,21 @@ let filesystem_args policy =
   @ List.concat_map bind_writable roots
   @ List.concat_map bind_protected carveouts
 
+(* An [Only] read scope builds its root as a [--tmpfs], which is writable. A
+   write to a path no bind covers therefore lands in that ephemeral mount and
+   the command exits 0 — the data is gone at teardown and nothing told the
+   caller. Sealing the root read-only turns those writes into [EROFS] without
+   touching the binds beneath it, which keep the access their own mount carries.
+   [All] needs no seal: its root is already a read-only bind.
+
+   The seal must be the last argument. Bubblewrap applies operations in order
+   and creates each mount point inside the new root as it goes, so [--proc] and
+   [--dev] fail with [EROFS] if the root is sealed before they run. *)
+let seal_root policy =
+  match Policy.reads policy with
+  | Policy.All -> []
+  | Policy.Only _ -> [ "--remount-ro"; "/" ]
+
 let arguments policy =
   let namespace =
     [ "--new-session"; "--die-with-parent"; "--unshare-user"; "--unshare-pid" ]
@@ -43,3 +58,4 @@ let arguments policy =
     | Policy.Network.Enabled -> []
   in
   namespace @ filesystem_args policy @ network @ [ "--proc"; "/proc" ]
+  @ seal_root policy
