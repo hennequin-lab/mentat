@@ -107,8 +107,7 @@ module Input = struct
                       Defaults to %d."
                      max_timeout_ms default_timeout_ms)
                   [
-                    ("minimum", json_int 1);
-                    ("maximum", json_int max_timeout_ms);
+                    ("minimum", json_int 1); ("maximum", json_int max_timeout_ms);
                   ] );
               ( "description",
                 property "string" "Optional reviewer and UI metadata."
@@ -330,94 +329,6 @@ module Output = struct
       ~text:(text output) ~truncated:(truncated output) semantic
 end
 
-let network_denial_signatures =
-  [
-    "could not resolve host";
-    "couldn't resolve host";
-    "could not resolve";
-    "name or service not known";
-    "temporary failure in name resolution";
-    "couldn't connect to server";
-    "connection refused";
-    "network is unreachable";
-    "no route to host";
-    "operation not permitted while establishing";
-  ]
-
-(* Filesystem refusals under a confining profile surface as the bare OS wording,
-   which differs by backend: seatbelt denies a write with [EPERM] and bubblewrap
-   denies one against a read-only bind with [EROFS], so a list carrying only the
-   permission spellings is silent on Linux for exactly the refusals a
-   workspace-write route produces. [network_denial_signatures] keeps the specific
-   "...while establishing" network variant, so the two lists do not both match a
-   network refusal; [result_of_output] also prefers the network note when both
-   apply. *)
-let filesystem_denial_signatures =
-  [ "operation not permitted"; "permission denied"; "read-only file system" ]
-
-(* An enforced-sandbox advisory: when [output]'s captured transcript carries any
-   of [signatures], [note] is returned for appending to the failure message; a
-   non-enforced route or a non-match returns [""]. Detection is a lenient
-   lowercase affix scan of the captured streams — a hint about the likely cause,
-   never proof, exactly as the [signatures] docstrings warn. *)
-let enforced_denial_note output ~signatures ~note =
-  let outcome = output.Output.outcome in
-  match outcome.Mentat_workspace_io.Command.sandbox_evidence with
-  | Mentat_sandbox.Evidence.Enforced _ ->
-      let transcript =
-        Mentat_workspace_io.Command.Captured.render
-          outcome.Mentat_workspace_io.Command.stdout
-        ^ "\n"
-        ^ Mentat_workspace_io.Command.Captured.render
-            outcome.Mentat_workspace_io.Command.stderr
-        |> String.lowercase_ascii
-      in
-      if List.exists (fun affix -> String.includes ~affix transcript) signatures
-      then note
-      else ""
-  | Mentat_sandbox.Evidence.Not_requested | Mentat_sandbox.Evidence.Refused _
-  | Mentat_sandbox.Evidence.Declared_external ->
-      ""
-
-let network_denial_note ~network_restricted output =
-  if not network_restricted then ""
-  else
-    enforced_denial_note output ~signatures:network_denial_signatures
-      ~note:
-        "\n\n\
-         This command ran inside a sandbox with network access restricted, and \
-         its output looks like a blocked network request. This is a policy \
-         restriction, not a transient error: retry the exact command with \
-         escalate=true only if it genuinely needs network access."
-
-(* An enforcing profile always confines writes — a route with no policy mints no
-   [Enforced] evidence — so [enforced_denial_note] alone decides whether the
-   advisory fires, and a write refusal is explained whatever the read scope.
-   [reads_confined] only picks the wording. Naming [sandbox.readable_roots]
-   under an unconfined read scope would send the user to a field the resolver
-   discards, and would read a plain [EACCES] from an unrestricted traversal as a
-   policy refusal. *)
-let filesystem_denial_note ~reads_confined output =
-  let note =
-    if reads_confined then
-      "\n\n\
-       This command ran inside a sandbox that confines filesystem access, and \
-       its output looks like a refused read or write. This is a policy \
-       restriction, not a transient error: retry the exact command with \
-       escalate=true only if the access is genuinely needed, or ask the user \
-       to add the path to sandbox.readable_roots (reads) or \
-       sandbox.writable_roots (writes) for a standing grant."
-    else
-      "\n\n\
-       This command ran inside a sandbox that confines writes to the workspace \
-       while leaving reads unrestricted, and its output looks like a refused \
-       write. This is a policy restriction, not a transient error: retry the \
-       exact command with escalate=true only if the write is genuinely needed, \
-       or ask the user to add the path to sandbox.writable_roots for a \
-       standing grant."
-  in
-  enforced_denial_note output ~signatures:filesystem_denial_signatures ~note
-
 let command_error_message error =
   Mentat_workspace_io.Command.Error.message error
 
@@ -437,16 +348,10 @@ let command_error_failure = function
   | Mentat_workspace_io.Command.Error.Io _ ->
       `Unavailable
 
-let result_of_output ~network_restricted ~reads_confined output =
+let result_of_output output =
   let outcome = output.Output.outcome in
-  (* At most one advisory: a network refusal is the more specific diagnosis, so
-     it wins when both a network and a filesystem signature match (the network
-     "...while establishing" wording is a superstring of the bare filesystem
-     one). *)
   let note =
-    match network_denial_note ~network_restricted output with
-    | "" -> filesystem_denial_note ~reads_confined output
-    | network_note -> network_note
+    Confinement.denial_note outcome.Mentat_workspace_io.Command.confinement
   in
   match outcome.Mentat_workspace_io.Command.termination with
   | Mentat_workspace_io.Command.Exited (`Exited 0) ->
@@ -474,8 +379,8 @@ let result_of_output ~network_restricted ~reads_confined output =
         (Format.asprintf "command supervision failed: %a%s" Eio.Exn.pp_err error
            note)
 
-let run_command workspace_io ~clock ~shell ~network_restricted ~reads_confined
-    ~escalation ~cancelled input workdir timeout_ms =
+let run_command workspace_io ~clock ~shell ~escalation ~cancelled input workdir
+    timeout_ms =
   let argv = shell_argv shell input.Input.command in
   let capture =
     Mentat_workspace_io.Command.Head_tail
@@ -500,7 +405,7 @@ let run_command workspace_io ~clock ~shell ~network_restricted ~reads_confined
         (command_error_message error)
   | Ok outcome ->
       Output.make ~input ~workdir ~timeout_ms outcome
-      |> result_of_output ~network_restricted ~reads_confined
+      |> result_of_output
       |> Mentat_tool.Result.map Output.encode
 
 (* Background start receipt: the handle and pid live here, in the model-visible
@@ -577,8 +482,7 @@ let escalation_denied () =
   Mentat_tool.Result.failed `Invalid_input
     (Mentat_sandbox.Error.message Mentat_sandbox.Error.Escalation_denied)
 
-let run workspace_io ~clock ~shell ~registry ~network_restricted ~reads_confined
-    ~escalation ~cancelled input =
+let run workspace_io ~clock ~shell ~registry ~escalation ~cancelled input =
   if cancelled () then interrupted ()
   else if input.Input.background then
     if input.Input.escalate then background_escalation_refused ()
@@ -595,36 +499,19 @@ let run workspace_io ~clock ~shell ~registry ~network_restricted ~reads_confined
           match resolve_workdir workspace_io input with
           | Error message -> Mentat_tool.Result.failed `Invalid_input message
           | Ok workdir ->
-              run_command workspace_io ~clock ~shell ~network_restricted
-                ~reads_confined ~escalation ~cancelled input workdir timeout_ms)
+              run_command workspace_io ~clock ~shell ~escalation ~cancelled
+                input workdir timeout_ms)
 
 let make ?registry workspace_io ~clock ~shell =
   if String.is_empty shell then invalid_arg "shell must not be empty";
   if String.contains shell '\000' then invalid_arg "shell must not contain NUL";
   let ordinary_execution = Confinement.confined workspace_io in
   let escalation = Mentat_workspace_io.escalation workspace_io in
-  let network_restricted =
-    match Mentat_workspace_io.policy workspace_io with
-    | None -> false
-    | Some policy -> (
-        match Mentat_sandbox.Policy.network policy with
-        | Mentat_sandbox.Policy.Network.Restricted -> true
-        | Mentat_sandbox.Policy.Network.Enabled -> false)
-  in
-  let reads_confined =
-    match Mentat_workspace_io.policy workspace_io with
-    | None -> false
-    | Some policy -> (
-        match Mentat_sandbox.Policy.reads_default policy with
-        | Mentat_sandbox.Policy.Denied -> true
-        | Mentat_sandbox.Policy.All -> false)
-  in
   Mentat_tool.make ~name ~description:Mentat_prompts.Tools.shell
     ~input:Input.contract ~output:Fun.id
     ~permissions:(permissions workspace_io ~ordinary_execution ~escalation)
     ~run:(fun ~cancelled input ->
-      run workspace_io ~clock ~shell ~registry ~network_restricted
-        ~reads_confined ~escalation ~cancelled input)
+      run workspace_io ~clock ~shell ~registry ~escalation ~cancelled input)
     ()
 
 module Registry = Registry

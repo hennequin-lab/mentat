@@ -72,16 +72,16 @@
     escalated command's [Command.outcome.sandbox_evidence] is
     {!Mentat_sandbox.escalated_evidence}.
 
-    {b Cleanup reaches the child's process group.} Every child is spawned as
-    the leader of a new process group, and cancellation, timeout, and an
-    explicit kill signal that group before the child, so the workers a command
-    forks are stopped with it. Only the child is reaped. {b Two descendants
-    still survive}: one that put itself in another process group or session, and
-    one that ignores a SIGTERM its own leader obeys — after the leader is reaped
-    the group has no name this library will trust, so nothing escalates it. A
-    survivor may keep writing the workspace; no caller may assume descendant
-    quiescence. Switch release is Eio's own kill-and-reap and stays on the child
-    alone. *)
+    {b Cleanup reaches the child's process group.} Every child is spawned as the
+    leader of a new process group, and cancellation, timeout, and an explicit
+    kill signal that group before the child, so the workers a command forks are
+    stopped with it. Only the child is reaped.
+    {b Two descendants still survive}: one that put itself in another process
+    group or session, and one that ignores a SIGTERM its own leader obeys —
+    after the leader is reaped the group has no name this library will trust, so
+    nothing escalates it. A survivor may keep writing the workspace; no caller
+    may assume descendant quiescence. Switch release is Eio's own kill-and-reap
+    and stays on the child alone. *)
 
 module Resolve_error = Resolve_error
 (** Workspace capability resolution errors. *)
@@ -391,6 +391,9 @@ module Edit : sig
 end
 
 (** Child process launches — the single sealed process-spawn boundary. *)
+module Confinement = Confinement
+(** What confined a command, observed once at the spawn boundary. *)
+
 module Command : sig
   type stream = Stdout | Stderr  (** The stream a bound applies to. *)
 
@@ -437,10 +440,9 @@ module Command : sig
   type termination =
     | Exited of Eio.Process.exit_status
         (** the child exited on its own — so nothing was signalled, and its
-            process group was left alone. Both streams are
-            {!Captured.Complete} unless a descendant held a pipe open past the
-            bounded drain grace, which marks that stream {!Captured.Truncated}.
-        *)
+            process group was left alone. Both streams are {!Captured.Complete}
+            unless a descendant held a pipe open past the bounded drain grace,
+            which marks that stream {!Captured.Truncated}. *)
     | Timed_out
         (** the timeout won the race; the child's process group was signalled
             and the child terminated and reaped. [duration] is the measured
@@ -465,11 +467,14 @@ module Command : sig
     stderr : Captured.t;
     duration : Mtime.Span.t;
     sandbox_evidence : Mentat_sandbox.Evidence.t;
+    confinement : Confinement.t option;
   }
   (** The result of a run whose child was spawned. [stdout] and [stderr] are the
       captured bytes under the {!capture} policy; [duration] is monotonic;
       [sandbox_evidence] records the actual ordinary or escalated route selected
-      before this child was spawned. Read [termination] to learn how the run
+      before this child was spawned; [confinement] is what guarded it, observed
+      once here so every spawn site has the same diagnosis instead of the one
+      tool that grew a scan of its own. Read [termination] to learn how the run
       ended and {!Captured.is_complete} to learn whether the bytes are whole. *)
 
   (** Pre-spawn launch refusals — the only failures that erase output, because
@@ -538,8 +543,8 @@ module Command : sig
       when it reports [true], the child is terminated and the outcome is
       {!Stopped}. Parent fiber cancellation is the other, distinct signal: it
       propagates as cancellation after the same bounded cleanup and never
-      appears as an outcome. The child runs in the private environment on
-      every route.
+      appears as an outcome. The child runs in the private environment on every
+      route.
 
       Raises [Invalid_argument] if a [capture] bound is negative — a programmer
       error, never a run outcome. *)
@@ -688,10 +693,10 @@ module Command : sig
       under [sw] and returns at once with a live {!Session.t} — the same
       validate/bind/discharge/lower/launch sequence as {!run}, on the ordinary
       confined route. Stdin is an explicit [/dev/null]; stdout and stderr are
-      captured into the session's live rings, never inherited. The child leads
-      a new process group, which {!Session.signal} reaches. Two drain daemons
-      and a waiter fiber run under [sw]; releasing [sw] kills and reaps the
-      child — the session's lifetime {e is} [sw].
+      captured into the session's live rings, never inherited. The child leads a
+      new process group, which {!Session.signal} reaches. Two drain daemons and
+      a waiter fiber run under [sw]; releasing [sw] kills and reaps the child —
+      the session's lifetime {e is} [sw].
 
       The waiter and reaper are cancellation-safe fibers on Eio's own
       [Process.await]/[signal], never a systhread [waitpid] — a systhread

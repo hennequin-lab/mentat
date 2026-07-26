@@ -1045,6 +1045,8 @@ end
 
 (* Command. *)
 
+module Confinement = Confinement
+
 module Command = struct
   type stream = Stdout | Stderr
   type capture = All | Limit of int | Head_tail of { head : int; tail : int }
@@ -1077,6 +1079,7 @@ module Command = struct
     stderr : Captured.t;
     duration : Mtime.Span.t;
     sandbox_evidence : Mentat_sandbox.Evidence.t;
+    confinement : Confinement.t option;
   }
 
   module Error = struct
@@ -1247,9 +1250,8 @@ module Command = struct
     match
       Subprocess.run ~proc_mgr:t.proc_mgr ~mono:t.mono ~fs:t.fs
         ~cwd:prepared.cwd ~env:prepared.child_environment
-        ~executable:prepared.executable
-        ?stdin ~capture:(capture_policy capture) ~timeout ~cancelled
-        prepared.lowered
+        ~executable:prepared.executable ?stdin ~capture:(capture_policy capture)
+        ~timeout ~cancelled prepared.lowered
     with
     | result ->
         let termination =
@@ -1275,6 +1277,16 @@ module Command = struct
                 ~complete:result.Subprocess.stderr_complete;
             duration = result.Subprocess.duration;
             sandbox_evidence;
+            confinement =
+              Confinement.observe ~sandbox:t.sandbox ~evidence:sandbox_evidence
+                ~transcript:
+                  (Captured.render
+                     (captured result.Subprocess.stdout
+                        ~complete:result.Subprocess.stdout_complete)
+                  ^ "\n"
+                  ^ Captured.render
+                      (captured result.Subprocess.stderr
+                         ~complete:result.Subprocess.stderr_complete));
           }
     | exception Subprocess.Launch exn -> Error (launch_failure exn)
 
@@ -1518,8 +1530,7 @@ module Command = struct
       | Some chunk -> chunk
       | None -> (
           let waited =
-            Eio.Time.Timeout.run
-              (Eio.Time.Timeout.seconds t.clock seconds)
+            Eio.Time.Timeout.run (Eio.Time.Timeout.seconds t.clock seconds)
               (fun () ->
                 Ok
                   (Eio.Fiber.first
@@ -1565,8 +1576,7 @@ module Command = struct
     match
       Session.launch ~sw ~proc_mgr:t.proc_mgr ~fs:t.fs
         ~env:prepared.child_environment ~mono:t.mono ~cwd:prepared.cwd
-        ~executable:prepared.executable
-        prepared.lowered
+        ~executable:prepared.executable prepared.lowered
     with
     | session -> Ok session
     | exception exn when is_launch_failure exn -> Error (launch_failure exn)

@@ -41,3 +41,13 @@ val custom_access :
     routes without exposing a fixed implementation argv as model-authored
     command text. OCaml intelligence tools use this fact alongside their read
     scope. *)
+
+val denial_note : Mentat_workspace_io.Confinement.t option -> string
+(** [denial_note observation] is the advisory to append to a failed command's
+    message, or [""] when nothing guarded the command or nothing in its output
+    looks like the guard refusing something.
+
+    Every spawn site renders through here, so a tool that cannot be escalated
+    never advises an escalation, an unscoped route never names a read field the
+    resolver discards, and a backend that cannot distinguish a denied read from
+    a missing file says so rather than asserting a refusal. *)

@@ -190,11 +190,18 @@ let run_describe workspace_io ~clock ~program ~cwd ~label ~args ~cancelled =
       | Mentat_workspace_io.Command.Exited (`Exited code) ->
           if code <> 0 then
             let detail = command_detail outcome in
+            (* This spawns dune, so it is the cold-cache case: a confined
+               refusal here reached the model as an unexplained nonzero exit. *)
+            let note =
+              Confinement.denial_note
+                outcome.Mentat_workspace_io.Command.confinement
+            in
             Error
               (Mentat_tool.Result.failed `Failed
-                 (if String.is_empty detail then
-                    Printf.sprintf "%s exited with status %d" label code
-                  else detail))
+                 ((if String.is_empty detail then
+                     Printf.sprintf "%s exited with status %d" label code
+                   else detail)
+                 ^ note))
           else if
             not
               (Mentat_workspace_io.Command.Captured.is_complete

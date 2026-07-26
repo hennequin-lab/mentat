@@ -113,10 +113,14 @@ let fake_dune_script =
       "printf '%s\\n' \"$@\" > \"$plan/argv-$n\"";
       "if [ \"${MENTAT_DUNE_DESCRIBE_SECRET+x}\" = x ]; then secret=set; else \
        secret=unset; fi";
-      "if [ \"${HOME-}\" = \"${TMPDIR-}\" ]; then scratch=shared; else \
-       scratch=different; fi";
-      "printf 'secret=%s\\nscratch=%s\\nterm=%s\\nno_color=%s\\n' \"$secret\" \
-       \"$scratch\" \"${TERM-unset}\" \"${NO_COLOR-unset}\" > \"$plan/env-$n\"";
+      (* Both were once redirected to one per-run scratch, so they matched.
+         The environment is inherited now: HOME is the launcher's own and is
+         not a temp directory. *)
+      "if [ \"${HOME-}\" = \"${TMPDIR-}\" ]; then home_is_tmp=yes; else \
+       home_is_tmp=no; fi";
+      "printf 'secret=%s\\nhome_is_tmp=%s\\nterm=%s\\nno_color=%s\\n' \
+       \"$secret\" \"$home_is_tmp\" \"${TERM-unset}\" \"${NO_COLOR-unset}\" > \
+       \"$plan/env-$n\"";
       "behavior=response";
       "if [ -f \"$plan/behavior-$n\" ]; then behavior=$(cat \
        \"$plan/behavior-$n\"); fi";
@@ -522,10 +526,10 @@ let%expect_test
     invocations: 2
     cwd-1: <primary>
     argv-1: "describe\nworkspace\n--root\n.\n--with-deps\n"
-    env-1: "secret=unset\nscratch=shared\nterm=dumb\nno_color=1\n"
+    env-1: "secret=unset\nhome_is_tmp=no\nterm=dumb\nno_color=1\n"
     cwd-2: <primary>
     argv-2: "describe\ntests\n--root\n.\n"
-    env-2: "secret=unset\nscratch=shared\nterm=dumb\nno_color=1\n"
+    env-2: "secret=unset\nhome_is_tmp=no\nterm=dumb\nno_color=1\n"
     stderr-leaked: false
     |}]
 
@@ -649,7 +653,9 @@ let%expect_test "rendering caps each ordered page and reports text truncation" =
     ^ (List.init (cap + 2) library_item |> String.concat " ")
     ^ ")"
   in
-  let tests = "(" ^ (List.init (cap + 1) test_item |> String.concat " ") ^ ")" in
+  let tests =
+    "(" ^ (List.init (cap + 1) test_item |> String.concat " ") ^ ")"
+  in
   set_response world 1 workspace;
   set_response world 2 tests;
   let result = run world empty_input in

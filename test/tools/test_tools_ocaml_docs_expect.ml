@@ -691,7 +691,7 @@ let%expect_test "Merlin fallback receives exact source cwd argv and private env"
     cwd: <workspace>
     argv: "single\noutline\n-filename\n<workspace>/broken.ml\n"
     stdin exact: true
-    env: "scratch=yes\nsecret=unset\n"
+    env: "scratch=no\nsecret=unset\n"
     |}]
 
 let run_merlin_case label configure =
@@ -809,7 +809,7 @@ let%expect_test "fresh Dune universe resolves library module focus and recovery"
     cwd: <workspace>
     argv: "describe\nworkspace\n--root\n.\n--with-deps\n"
     stdin-empty: true
-    env: "scratch=yes\nsecret=unset\n"
+    env: "scratch=no\nsecret=unset\n"
     commands: dune=5 merlin=0 ocamlfind=0
     |}]
 
@@ -853,7 +853,7 @@ let%expect_test "locked package and admitted switch sources retain provenance" =
     text: "dep@2.0 (opam switch <switch>)\nlevel=library_overview source=<switch>/lib/dep/dep.mli interface_available=true\nitems=1/1 offset=1\n- value from_switch: val from_switch : string\n  doc: Switch synopsis.\n"
     json: {"version":1,"values":1,"types":0,"modules":0}
     cwd: <workspace>
-    argv-exact: true stdin-empty: true env: "scratch=yes\nsecret=unset\n"
+    argv-exact: true stdin-empty: true env: "scratch=no\nsecret=unset\n"
     |}]
 
 let%expect_test "name-source no-follow and post-describe race fail safely" =

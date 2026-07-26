@@ -491,12 +491,12 @@ let%expect_test "confined permissions and escalation match the selected route" =
     -- read-only escalation --
     requests: 0
     status: failed invalid_input
-    message: the sealed policy has no writable roots: a read-only sandbox admits no escalation
+    message: the sealed posture promises no mutation: a read-only sandbox admits no escalation
     metadata: false
     -- read-only escalation with missing cwd --
     requests: 0
     status: failed invalid_input
-    message: the sealed policy has no writable roots: a read-only sandbox admits no escalation
+    message: the sealed posture promises no mutation: a read-only sandbox admits no escalation
     metadata: false |}]
 
 let%expect_test
@@ -529,7 +529,7 @@ let%expect_test
   [%expect
     {|
     status: completed
-    stdout: "cwd=<workspace>/subject/nested\nstdin=null\nscratch=shared\nsecret=unset\n"
+    stdout: "cwd=<workspace>/subject/nested\nstdin=null\nsecret=unset\n"
     stderr: "wrapper:-lc\n"
     configured command ran: true shell flag exact: true |}]
 
@@ -879,7 +879,7 @@ let%expect_test "sandbox denial is explained and escalation uses run_escalated"
     status: failed failed
     message: command exited with status 7
 
-    This command ran inside a sandbox that confines writes to the workspace while leaving reads unrestricted, and its output looks like a refused write. This is a policy restriction, not a transient error: retry the exact command with escalate=true only if the write is genuinely needed, or ask the user to add the path to sandbox.writable_roots for a standing grant.
+    This command ran inside a sandbox that confines filesystem access, and its output looks like a refused read or write. This is a policy restriction, not a transient error: retry the exact command with escalate=true only if the access is genuinely needed, or ask the user to add the path to sandbox.writable_roots for a standing grant.
     metadata: false
     outside exists: false evidence: enforced
     -- network denial diagnostic --

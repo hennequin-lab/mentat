@@ -129,6 +129,7 @@ type output = {
   stderr : captured;
   duration_ms : int;
   timeout_ms : int;
+  confinement : Mentat_workspace_io.Confinement.t option;
 }
 
 let stream_name = function
@@ -263,6 +264,7 @@ let output_of_outcome ~clock ~started ~address ~stage ~timeout_ms outcome =
     termination;
     stdout = captured_of_command outcome.Mentat_workspace_io.Command.stdout;
     stderr = captured_of_command outcome.Mentat_workspace_io.Command.stderr;
+    confinement = outcome.Mentat_workspace_io.Command.confinement;
     duration_ms = elapsed_ms clock started;
     timeout_ms;
   }
@@ -271,9 +273,12 @@ let result_of_output output =
   match output.termination with
   | Exited 0 -> Mentat_tool.Result.completed ~output ()
   | Exited code ->
+      (* This stage spawns dune, so it is the cold-cache case: a confined
+         refusal reached the model as an unexplained nonzero exit. *)
       Mentat_tool.Result.failed ~output `Failed
         (Printf.sprintf "OCaml eval %s exited with status %d"
-           (stage_name output.stage) code)
+           (stage_name output.stage) code
+        ^ Confinement.denial_note output.confinement)
   | Signaled signal ->
       Mentat_tool.Result.failed ~output `Failed
         (Printf.sprintf "OCaml eval %s terminated by signal %d"
@@ -370,6 +375,7 @@ let synthetic_timeout ~clock ~started ~address ~stage ~timeout_ms =
     stderr = Complete "";
     duration_ms = elapsed_ms clock started;
     timeout_ms;
+    confinement = None;
   }
   |> result_of_output
 

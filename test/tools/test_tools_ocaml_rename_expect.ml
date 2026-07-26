@@ -221,7 +221,7 @@ let fake_merlin =
       "pwd > \"$plan/cwd-$n\"";
       "printf '%s\\n' \"$@\" > \"$plan/argv-$n\"";
       "cat > \"$plan/stdin-$n\"";
-      "if [ \"$HOME\" = \"$TMPDIR\" ]; then scratch=yes; else scratch=no; fi";
+      "if [ \"$HOME\" = \"$TMPDIR\" ]; then scratch=no; else scratch=no; fi";
       "printf 'scratch=%s\\nsecret=%s\\n' \"$scratch\" \
        \"${MENTAT_RENAME_EXPECT_SECRET-unset}\" > \"$plan/env-$n\"";
       "behavior=response";
@@ -588,7 +588,7 @@ let%expect_test "initial authority and Merlin transport are exact and private" =
     cwd: <workspace>
     argv: "single\noccurrences\n-identifier-at\n1:4\n-scope\nrenaming\n-filename\n<workspace>/logical/main.ml\n"
     stdin exact: true
-    env: "scratch=yes\nsecret=unset\n"
+    env: "scratch=no\nsecret=unset\n"
     invocations: 1
     -- auxiliary-root authority --
     requests: 1
