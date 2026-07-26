@@ -796,9 +796,13 @@ exit 2|}
     metadata: false
     tree unchanged: true |}]
 
+(* The stand-in silences its own shell before attempting the write, so the
+   refusal it provokes leaves the streams a real no-match run leaves: nothing
+   on either. A diagnostic on stderr under status 1 is how a launch wrapper
+   reports that it never ran ripgrep at all, and would be classified as one. *)
 let%expect_test "ripgrep runs through the workspace command confinement" =
   with_world ~mode:Mentat_config.Mode.Read_only
-    ~rg:(Script "printf 'changed\\n' > src/app.ml 2>/dev/null; exit 1")
+    ~rg:(Script "exec 2>/dev/null; printf 'changed\\n' > src/app.ml; exit 1")
   @@ fun world ->
   let path = relative world "src/app.ml" in
   let before = In_channel.with_open_bin path In_channel.input_all in
@@ -812,6 +816,50 @@ let%expect_test "ripgrep runs through the workspace command confinement" =
     text: "pattern=\"alpha\" mode=files results=0/0 offset=1 limit=100 status=complete\nNo matches\n"
     truncated: false
     file unchanged: true |}]
+
+(* An absent ripgrep is a failed search on every route, never an empty one.
+   The two routes cannot report it the same way: a direct spawn resolves [rg]
+   at the boundary and refuses before any child runs, while a confined spawn
+   resolves the sandbox backend — a program that does exist — so the absence
+   surfaces only as the wrapper's own exit, which is status 1 with an empty
+   stdout, the shape ripgrep uses for "no matches". Which route a host takes
+   depends on the backend it has and each words its diagnosis differently, so
+   the case records the classification and not the sentence: the tool must not
+   complete, must name the program it could not run, and must never answer
+   with the no-matches rendering. *)
+let print_absent_backend result =
+  let message =
+    match Tool.Result.status result with
+    | Tool.Result.Completed ->
+        Option.fold ~none:"" ~some:Tool.Output.text (Tool.Result.output result)
+    | Tool.Result.Failed { message; _ } -> message
+    | Tool.Result.Interrupted { reason; _ } -> reason
+  in
+  Printf.printf "completed: %b\nnames ripgrep: %b\nclaims no matches: %b\n"
+    (match Tool.Result.status result with
+    | Tool.Result.Completed -> true
+    | Tool.Result.Failed _ | Tool.Result.Interrupted _ -> false)
+    (String.includes ~affix:"rg" message)
+    (String.includes ~affix:"No matches" message)
+
+let%expect_test "an absent ripgrep never reads as an empty search" =
+  with_world ~mode:Mentat_config.Mode.Read_only ~rg:Missing (fun confined ->
+      print_case "confined route";
+      print_absent_backend (run confined (input "alpha")));
+  with_world ~mode:Mentat_config.Mode.Danger_full_access ~rg:Missing
+    (fun direct ->
+      print_case "direct route";
+      print_absent_backend (run direct (input "alpha")));
+  [%expect
+    {|
+    -- confined route --
+    completed: false
+    names ripgrep: true
+    claims no matches: false
+    -- direct route --
+    completed: false
+    names ripgrep: true
+    claims no matches: false |}]
 
 let%expect_test "ripgrep byte payloads are distinct from malformed payloads" =
   with_world

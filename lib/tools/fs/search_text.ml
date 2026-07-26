@@ -794,6 +794,18 @@ let command_failure code stderr =
          "ripgrep exited with status " ^ string_of_int code
        else "ripgrep exited with status " ^ string_of_int code ^ ": " ^ message)
 
+(* Status 1 is ripgrep's "no matches", but it is also what a launch wrapper
+   returns when it cannot exec the program it wraps: a confined route runs
+   ripgrep under the sandbox backend, and Bubblewrap answers a failed [execvp]
+   with status 1, nothing on stdout and its own diagnostic on stderr. Ripgrep
+   itself never combines those three — it emits a JSON summary event on stdout
+   for every search it actually performs, and [--no-messages] silences the
+   non-fatal read errors that are its only other source of stderr — so that
+   combination is the wrapper's failure, and parsing the empty stdout as
+   ripgrep's would report a search that never ran as an empty one. *)
+let is_absent_backend ~code ~stdout ~stderr =
+  code = 1 && String.is_empty stdout && not (String.is_empty stderr)
+
 let run_rg workspace_io ~clock ~cancelled input roots =
   let timeout = Eio.Time.Timeout.seconds clock max_rg_timeout_seconds in
   match
@@ -825,14 +837,17 @@ let run_rg workspace_io ~clock ~cancelled input roots =
           Error
             (Command_failed
                ("ripgrep terminated by signal " ^ string_of_int signal))
-      | Mentat_workspace_io.Command.Exited (`Exited (0 | 1)) ->
+      | Mentat_workspace_io.Command.Exited (`Exited ((0 | 1) as code)) ->
           if
-            Mentat_workspace_io.Command.Captured.is_complete
-              outcome.Mentat_workspace_io.Command.stdout
-            && Mentat_workspace_io.Command.Captured.is_complete
-                 outcome.Mentat_workspace_io.Command.stderr
-          then parse_rg_events workspace_io ~cancelled stdout
-          else Error Incomplete_output
+            not
+              (Mentat_workspace_io.Command.Captured.is_complete
+                 outcome.Mentat_workspace_io.Command.stdout
+              && Mentat_workspace_io.Command.Captured.is_complete
+                   outcome.Mentat_workspace_io.Command.stderr)
+          then Error Incomplete_output
+          else if is_absent_backend ~code ~stdout ~stderr then
+            Error (command_failure code stderr)
+          else parse_rg_events workspace_io ~cancelled stdout
       | Mentat_workspace_io.Command.Exited (`Exited code) ->
           Error (command_failure code stderr))
 
