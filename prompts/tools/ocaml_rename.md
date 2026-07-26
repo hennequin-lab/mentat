@@ -12,7 +12,8 @@ to check blast radius or show the user a plan before applying. Project-wide
 occurrences depend on the Merlin/Dune index (dune build @ocaml-index). The
 rename refuses rather than half-apply if the index looks stale or any
 reference no longer holds the old name. It does not check whether new_name
-collides with an existing binding — run ocaml_dune_diagnostics after applying.
-It also refuses (rather than guess) at labelled-argument and record-field pun
-sites such as `~x` and `{ x }`; edit those by hand. Prefer this over search_text
-plus manual edits for any rename.
+collides with an existing binding — build the project after applying (shell,
+`dune build @check`) to see any name it now shadows or duplicates. It also
+refuses (rather than guess) at labelled-argument and record-field pun sites
+such as `~x` and `{ x }`; edit those by hand. Prefer this over search_text plus
+manual edits for any rename.
