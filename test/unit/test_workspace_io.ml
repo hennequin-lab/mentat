@@ -229,6 +229,13 @@ let run_escalated_res ?cwd ?stdin ?(capture = Command.All)
    runs a shell command as a real [/bin/sh] child of this process, so a
    shell-mediated probe is itself a direct child and would answer questions
    about process names the shell can carry. *)
+(* The probe is reaped under an installed SIGCHLD handler, which interrupts the
+   wait before it runs: its own exit is the signal that arrives. *)
+let rec waitpid_nointr pid =
+  match Unix.waitpid [] pid with
+  | result -> result
+  | exception Unix.Unix_error (Unix.EINTR, _, _) -> waitpid_nointr pid
+
 let assert_leader_gone name =
   let devnull = Unix.openfile "/dev/null" [ Unix.O_RDWR ] 0 in
   let argv = [| "pgrep"; "-P"; string_of_int (Unix.getpid ()); "-x"; name |] in
@@ -237,7 +244,7 @@ let assert_leader_gone name =
       ~finally:(fun () -> Unix.close devnull)
       (fun () ->
         let pid = Unix.create_process "pgrep" argv devnull devnull devnull in
-        snd (Unix.waitpid [] pid))
+        snd (waitpid_nointr pid))
   in
   equal int
     ~msg:(name ^ ": the direct child is terminated and reaped")
