@@ -32,9 +32,15 @@ Under an unconfined route the read scope seals no policy, so `explain` stays
   $ MENTAT_SANDBOX_READ=all mentat sandbox explain --json
   {"schema_version":1,"type":"sandbox.explain","identity":"not requested","evidence":{"kind":"not_requested"},"policy":null,"roots":[]}
 
-The removed `--verbose` spelling is not retained as a compatibility flag.
-Cmdliner rejects it before resolving a workspace.
+The removed per-command `--verbose` spelling is not retained as a compatibility
+flag. The bare spelling is still accepted, but only as the process-wide
+diagnostics flag every command shares: it is taken from argv before Cmdliner so
+the level is set before the reporter is installed, and it raises the stderr log
+level without adding a field to the report. Identical stdout is what says the
+removed verbose status did not come back through it.
 
-  $ mentat sandbox status --verbose >verbose.out 2>&1; code=$?; grep -o "unknown option --verbose" verbose.out; echo $code
-  unknown option --verbose
-  124
+  $ mentat sandbox status --verbose 2>/dev/null
+  mode=danger-full-access
+  read=project
+  network=restricted
+  evidence=not requested
