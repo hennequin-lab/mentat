@@ -247,10 +247,15 @@ let separator ~palette height =
            ~style:(Theme.Palette.rule_style palette)
            ~wrap:`None Theme.v_separator))
 
-let pane ~grow ~shrink ~width ~height rows =
-  Mosaic.box ~flex_direction:Mosaic.Flex_direction.Column ~flex_grow:grow
-    ~flex_shrink:shrink ~overflow:hidden_overflow
-    ~size:{ Mosaic.width; height = Mosaic.px height }
+(* Both panes are exact boxes, never grown or shrunk to fit. The diff pane's
+   width has to be definite: everything under it sizes itself in percentages,
+   and a percentage of an indefinite box falls back to the content's own width,
+   which lets one long diff line set the width of a split diff's two halves and
+   push the new side outside the clip. *)
+let pane ~width ~height rows =
+  Mosaic.box ~flex_direction:Mosaic.Flex_direction.Column ~flex_grow:0.
+    ~flex_shrink:0. ~overflow:hidden_overflow
+    ~size:{ Mosaic.width = Mosaic.px width; height = Mosaic.px height }
     rows
 
 let split ~palette ~width ~height ~nav ~diff =
@@ -258,9 +263,9 @@ let split ~palette ~width ~height ~nav ~diff =
   Mosaic.box ~flex_direction:Mosaic.Flex_direction.Row
     ~size:{ Mosaic.width = Mosaic.pct 100; height = Mosaic.px height }
     [
-      pane ~grow:0. ~shrink:0. ~width:(Mosaic.px nav_w) ~height nav;
+      pane ~width:nav_w ~height nav;
       separator ~palette height;
-      pane ~grow:1. ~shrink:1. ~width:Mosaic.auto ~height diff;
+      pane ~width:(max 1 (width - nav_w - 1)) ~height diff;
     ]
 
 (* Compose dialog. *)

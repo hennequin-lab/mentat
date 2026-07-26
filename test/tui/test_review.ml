@@ -53,6 +53,17 @@ let far_tip =
 
 let far_diff = [ ("lib/far.ml", Some far_base, Some far_tip) ]
 
+(* An addition far wider than the pane will be. The side-by-side layout sizes
+   its two halves from the widest line in the whole patch, so this is the shape
+   that can push the new side past the pane's edge. *)
+let wide_base = "let a = 1\nlet b = 2\nlet c = 3\n"
+
+let wide_tip =
+  "let a = 1\nlet b = 2\nlet wide = \"" ^ String.make 300 'x'
+  ^ "\"\nlet c = 3\n"
+
+let wide_diff = [ ("lib/wide.ml", Some wide_base, Some wide_tip) ]
+
 let open_review t =
   Tui.paste t "/review";
   Tui.enter t;
@@ -434,5 +445,39 @@ let%expect_test "the compose dialog opens over the dimmed diff" =
 22 |                                 │
 23 |
 24 | enter add CR · esc cancel|}]
+
+(* Wide enough that the diff resolves to the side-by-side layout, with an added
+   line wider than the pane. Both sides must be on screen: the new side carries
+   every added line, so losing it means reviewing an addition shows the reviewer
+   everything except what was added. *)
+let%expect_test "the side-by-side diff keeps its new side beside a long line" =
+  Tui.run ~size:(155, 24) ~name:"review-wide-split" ~review:wide_diff
+  @@ fun t ->
+  open_review t;
+  Tui.print t;
+  [%expect {|01 | ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+02 | Review  HEAD..worktree                                                                                                               0/1 reviewed · pending
+03 |  ▾ lib                          │lib/wide.ml · unreviewed · +1 −0
+04 |    ❯ [ ] wide.ml              M │  1 let a = 1                                                 1   let a = 1
+05 |                                 │  2 let b = 2                                                 2   let b = 2
+06 |                                 │                                                              3 + let wide =
+07 |                                 │                                                                  "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+08 |                                 │                                                                  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+09 |                                 │                                                                  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+10 |                                 │                                                                  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+11 |                                 │                                                                  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+12 |                                 │                                                                  xxxxxxxxxxxxxxxxxxxxx"
+13 |                                 │  3 let c = 3                                                 4   let c = 3
+14 |                                 │
+15 |                                 │
+16 |                                 │
+17 |                                 │
+18 |                                 │
+19 |                                 │
+20 |                                 │
+21 |                                 │
+22 |                                 │
+23 |
+24 | tab focus diff · space mark · enter open · c comment · a approve · esc close|}]
 
 [%%run_tests "mentat.tui.review"]
