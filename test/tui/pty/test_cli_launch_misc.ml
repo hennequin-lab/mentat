@@ -35,11 +35,11 @@ let%expect_test
 10 |      ▎ welcome — and thanks for trying mentat this early.
 11 |      ▎ it's experimental: sessions and config may change without migration.
 12 |
-13 |           ❯ +  swap/
-14 |             +  dune-project
-15 |           ────────────────────────────────────────────────────────────
-16 |           ❯ @
-17 |           ────────────────────────────────────────────────────────────
+13 | ❯ +  swap/
+14 |   +  dune-project
+15 | ────────────────────────────────────────────────────────────────────────────────
+16 | ❯ @
+17 | ────────────────────────────────────────────────────────────────────────────────
 18 |
 19 |                          ! /login — no connected account
 20 |                               ∅ no recent sessions
@@ -271,14 +271,14 @@ let%expect_test
     {|01 | ────────────────────────────────────────────────────────────────────────────────
 02 | Review  $BASE..WORKTREE0/4 reviewed · pending
 03 |  ▾ lib                          │lib/engine.ml · unreviewed · +2 −2
-04 |      [ ] config.ml            M │ 2   let v02 = 2
-05 |    ❯ [ ] engine.ml            M │ 3   let v03 = 3
-06 |      [ ] notes.ml             A │ 4   let v04 = 4
-07 |                                 │ 5 - let v05 = 5
-08 |                                 │ 5 + let v05 = 500
-09 |                                 │ 6   let v06 = 6
-10 |                                 │ 7   let v07 = 7
-11 |                                 │ 8   let v08 = 8
+04 |      [ ] config.ml            M │  2   let v02 = 2
+05 |    ❯ [ ] engine.ml            M │  3   let v03 = 3
+06 |      [ ] notes.ml             A │  4   let v04 = 4
+07 |                                 │  5 - let v05 = 5
+08 |                                 │  5 + let v05 = 500
+09 |                                 │  6   let v06 = 6
+10 |                                 │  7   let v07 = 7
+11 |                                 │  8   let v08 = 8
 12 |                                 │ 27   let v27 = 27
 13 |                                 │ 28   let v28 = 28
 14 |                                 │ 29   let v29 = 29
@@ -302,22 +302,22 @@ let%expect_test
     {|01 | ────────────────────────────────────────────────────────────────────────────────
 02 | Review  $BASE..WORKTREE0/4 reviewed · pending
 03 |  ▾ lib                          │lib/engine.ml · hunk 1/2 · unreviewed · +2 −2
-04 |      [ ] config.ml            M │  2   let v02 = 2
-05 |    ❯ [ ] engine.ml            M │  3   let v03 = 3
-06 |      [ ] notes.ml             A │  4   let v04 = 4
-07 |                                 │❯ 5 - let v05 = 5
-08 |                                 │  5 + let v05 = 500
-09 |                                 │  6   let v06 = 6
-10 |                                 │  7   let v07 = 7
-11 |                                 │  8   let v08 = 8
-12 |                                 │ 27   let v27 = 27
-13 |                                 │ 28   let v28 = 28
-14 |                                 │ 29   let v29 = 29
-15 |                                 │ 30 - let v30 = 30
-16 |                                 │ 30 + let v30 = 3000
-17 |                                 │ 31   let v31 = 31
-18 |                                 │ 32   let v32 = 32
-19 |                                 │ 33   let v33 = 33
+04 |      [ ] config.ml            M │   2   let v02 = 2
+05 |    ❯ [ ] engine.ml            M │   3   let v03 = 3
+06 |      [ ] notes.ml             A │   4   let v04 = 4
+07 |                                 │❯  5 - let v05 = 5
+08 |                                 │   5 + let v05 = 500
+09 |                                 │   6   let v06 = 6
+10 |                                 │   7   let v07 = 7
+11 |                                 │   8   let v08 = 8
+12 |                                 │  27   let v27 = 27
+13 |                                 │  28   let v28 = 28
+14 |                                 │  29   let v29 = 29
+15 |                                 │  30 - let v30 = 30
+16 |                                 │  30 + let v30 = 3000
+17 |                                 │  31   let v31 = 31
+18 |                                 │  32   let v32 = 32
+19 |                                 │  33   let v33 = 33
 20 |                                 │
 21 |                                 │
 22 |                                 │
