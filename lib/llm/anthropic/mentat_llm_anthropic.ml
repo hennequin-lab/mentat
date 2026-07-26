@@ -111,7 +111,6 @@ let result_map f values =
 let json_member name value = Jsont.Json.mem (Jsont.Json.name name) value
 let string_member name value = json_member name (Jsont.Json.string value)
 let bool_member name value = json_member name (Jsont.Json.bool value)
-let int_member name value = json_member name (Jsont.Json.int value)
 let list_member name value = json_member name (Jsont.Json.list value)
 
 let encode_image_source media_type = function
@@ -319,46 +318,47 @@ let encode_tool_choice tools = function
         (Jsont.Json.object'
            [ string_member "type" "tool"; string_member "name" name ])
 
-let thinking_budget ~max_tokens = function
-  | Llm.Request.Options.Reasoning_effort.Disabled -> assert false
-  | effort ->
-      if max_tokens <= 1024 then
-        invalid_request
-          "Anthropic thinking requires max_output_tokens greater than 1024"
-      else
-        let max_budget = max_tokens - 1 in
-        let budget =
-          match effort with
-          | Llm.Request.Options.Reasoning_effort.Minimal ->
-              max 1024 (max_tokens * 20 / 100)
-          | Llm.Request.Options.Reasoning_effort.Low ->
-              max 1024 (max_tokens * 35 / 100)
-          | Llm.Request.Options.Reasoning_effort.Medium ->
-              max 1024 (max_tokens * 50 / 100)
-          | Llm.Request.Options.Reasoning_effort.High ->
-              max 1024 (max_tokens * 70 / 100)
-          | Llm.Request.Options.Reasoning_effort.Extra_high ->
-              max 1024 (max_tokens * 90 / 100)
-          | Llm.Request.Options.Reasoning_effort.Max -> max_budget
-          | Llm.Request.Options.Reasoning_effort.Disabled -> assert false
-        in
-        Ok (min budget max_budget)
+(* The effort ceiling for adaptive thinking. Anthropic's ladder has no separate
+   minimal rung, so [Minimal] folds into [low]. [Disabled] never reaches here —
+   {!encode_thinking} switches thinking off before any effort is read — and maps
+   to the lowest rung only to keep this total. *)
+let encode_effort = function
+  | Llm.Request.Options.Reasoning_effort.Disabled
+  | Llm.Request.Options.Reasoning_effort.Minimal
+  | Llm.Request.Options.Reasoning_effort.Low ->
+      "low"
+  | Llm.Request.Options.Reasoning_effort.Medium -> "medium"
+  | Llm.Request.Options.Reasoning_effort.High -> "high"
+  | Llm.Request.Options.Reasoning_effort.Extra_high -> "xhigh"
+  | Llm.Request.Options.Reasoning_effort.Max -> "max"
 
-let encode_thinking ~max_tokens options =
+(* Thinking is adaptive: the model paces its own reasoning within a ceiling set
+   by [output_config.effort], a sibling of [thinking] rather than a member of
+   it. The manual [{type: enabled, budget_tokens}] shape this encoder used to
+   send is rejected outright by every current Claude model, so no request builds
+   a token budget any more and the old [max_output_tokens > 1024] floor that
+   budget needed is gone with it.
+
+   [display: summarized] is deliberate. These models default to [omitted],
+   which streams signed but textless thinking blocks; mentat renders reasoning
+   summaries in its transcript, so it asks for text it can show. The replay path
+   still tolerates empty thinking text, so a signed block remains replayable
+   either way. *)
+let encode_thinking options =
   match Llm.Request.Options.reasoning_effort options with
-  | None -> Ok None
+  | None -> (None, None)
   | Some Llm.Request.Options.Reasoning_effort.Disabled ->
-      Ok (Some (Jsont.Json.object' [ string_member "type" "disabled" ]))
+      (Some (Jsont.Json.object' [ string_member "type" "disabled" ]), None)
   | Some effort ->
-      Result.map
-        (fun budget ->
-          Some
-            (Jsont.Json.object'
-               [
-                 string_member "type" "enabled";
-                 int_member "budget_tokens" budget;
-               ]))
-        (thinking_budget ~max_tokens effort)
+      ( Some
+          (Jsont.Json.object'
+             [
+               string_member "type" "adaptive";
+               string_member "display" "summarized";
+             ]),
+        Some
+          (Jsont.Json.object' [ string_member "effort" (encode_effort effort) ])
+      )
 
 let thinking_enabled options =
   match Llm.Request.Options.reasoning_effort options with
@@ -371,6 +371,17 @@ let thinking_enabled options =
       | Llm.Request.Options.Reasoning_effort.Extra_high
       | Llm.Request.Options.Reasoning_effort.Max ) ->
       true
+
+(* Sampling parameters are removed on current Claude models, which run adaptive
+   thinking whether [thinking] is absent or explicitly [adaptive]. Absence
+   therefore proves nothing, and the earlier "omit while thinking is enabled"
+   rule let [temperature] through on exactly the requests those models reject.
+   An explicit [disabled] is the one state that establishes thinking is off, so
+   it is the one state that still carries sampling parameters. *)
+let sampling_supported options =
+  match Llm.Request.Options.reasoning_effort options with
+  | Some Llm.Request.Options.Reasoning_effort.Disabled -> true
+  | Some _ | None -> false
 
 let check_thinking_options options =
   if thinking_enabled options then
@@ -455,36 +466,36 @@ let encode_request request =
         | Ok () -> (
             match split_messages (Llm.Request.messages request) with
             | Error error -> Error error
-            | Ok (system, messages) -> (
-                match encode_thinking ~max_tokens options with
-                | Error error -> Error error
-                | Ok thinking ->
-                    let tools =
-                      match Llm.Request.Options.tool_choice options with
-                      | Llm.Request.Options.No_tools -> []
-                      | Llm.Request.Options.Auto | Llm.Request.Options.Required
-                      | Llm.Request.Options.Tool _ ->
-                          List.map encode_tool (Llm.Request.tools request)
-                    in
-                    let tools = mark_last with_cache_control tools in
-                    let system = mark_last with_cache_control system in
-                    let messages = mark_last mark_last_content_block messages in
-                    Ok
-                      {
-                        Api.Messages.model = Llm.Model.id model;
-                        system;
-                        messages;
-                        tools;
-                        tool_choice =
-                          encode_tool_choice tools
-                            (Llm.Request.Options.tool_choice options);
-                        thinking;
-                        max_tokens;
-                        temperature =
-                          (if thinking_enabled options then None
-                           else Llm.Request.Options.temperature options);
-                        stream = true;
-                      })))
+            | Ok (system, messages) ->
+                let thinking, output_config = encode_thinking options in
+                let tools =
+                  match Llm.Request.Options.tool_choice options with
+                  | Llm.Request.Options.No_tools -> []
+                  | Llm.Request.Options.Auto | Llm.Request.Options.Required
+                  | Llm.Request.Options.Tool _ ->
+                      List.map encode_tool (Llm.Request.tools request)
+                in
+                let tools = mark_last with_cache_control tools in
+                let system = mark_last with_cache_control system in
+                let messages = mark_last mark_last_content_block messages in
+                Ok
+                  {
+                    Api.Messages.model = Llm.Model.id model;
+                    system;
+                    messages;
+                    tools;
+                    tool_choice =
+                      encode_tool_choice tools
+                        (Llm.Request.Options.tool_choice options);
+                    thinking;
+                    output_config;
+                    max_tokens;
+                    temperature =
+                      (if sampling_supported options then
+                         Llm.Request.Options.temperature options
+                       else None);
+                    stream = true;
+                  }))
 
 let usage_of_json json =
   let input = Option.value (int_field "input_tokens" json) ~default:0 in

@@ -75,11 +75,19 @@ val model : string -> Mentat_llm.Model.t
     maps to Anthropic [tool]. Response-format JSON schemas and provider replay
     are not supported by this adapter.
 
-    [max_output_tokens] defaults to [4096]. Explicit Anthropic thinking uses a
-    provider budget derived from the requested reasoning effort and requires
-    [max_output_tokens > 1024]; while thinking is enabled, [temperature] is
-    omitted. Forced tool choice with thinking is rejected because Anthropic does
-    not support that combination. *)
+    [max_output_tokens] defaults to [4096]. A requested reasoning effort selects
+    Anthropic adaptive thinking, whose ceiling travels as [output_config.effort]
+    beside the [thinking] object rather than as a token budget inside it:
+    [Minimal] and [Low] map to [low], [Medium] to [medium], [High] to [high],
+    [Extra_high] to [xhigh], and [Max] to [max]. Thinking asks for summarized
+    display so reasoning arrives as readable text. A [Disabled] effort sends
+    Anthropic [disabled] and no [output_config]; no requested effort sends
+    neither, leaving the model its own default.
+
+    [temperature] is sent only alongside an explicitly disabled thinking, since
+    current Anthropic models reject sampling parameters and treat an absent
+    [thinking] as adaptive. Forced tool choice with thinking is rejected because
+    Anthropic does not support that combination. *)
 
 (** {1:clients Clients} *)
 

@@ -52,6 +52,18 @@ let field msg name json =
 
 let has_field name json = Option.is_some (object_field name json)
 
+(* Whether [name] appears as a member anywhere in [json], however deeply
+   nested. Used to hold a retired wire field to zero occurrences rather than to
+   the one place it used to sit. *)
+let rec mentions_field name = function
+  | Jsont.Object (members, _) ->
+      List.exists
+        (fun (member, value) ->
+          String.equal (fst member) name || mentions_field name value)
+        members
+  | Jsont.Array (items, _) -> List.exists (mentions_field name) items
+  | Jsont.Null _ | Jsont.Bool _ | Jsont.Number _ | Jsont.String _ -> false
+
 let string_field msg name json =
   match field msg name json with
   | Jsont.String (value, _) -> value
@@ -501,7 +513,9 @@ let maximal_request_encoding () =
   equal string ~msg:"model" "claude-test" (string_field "body" "model" body);
   equal bool ~msg:"stream" true (bool_field "body" "stream" body);
   equal int ~msg:"max tokens" 8192 (int_field "body" "max_tokens" body);
-  check "temperature" (number_field "body" "temperature" body = 0.25);
+  (* No requested effort leaves thinking to the model, which current Anthropic
+     models resolve as adaptive, so sampling parameters stay behind. *)
+  check "temperature omitted" (not (has_field "temperature" body));
   let system = list_field "body" "system" body in
   equal int ~msg:"system block count" 4 (List.length system);
   equal string ~msg:"host system text" "host system"
@@ -550,7 +564,8 @@ let maximal_request_encoding () =
     (string_field "tool_choice" "type" (field "body" "tool_choice" body));
   equal string ~msg:"tool choice name" "read_file"
     (string_field "tool_choice" "name" (field "body" "tool_choice" body));
-  check "thinking omitted" (not (has_field "thinking" body))
+  check "thinking omitted" (not (has_field "thinking" body));
+  check "output_config omitted" (not (has_field "output_config" body))
 
 let headers_and_default_request_encoding () =
   let result, requests =
@@ -576,30 +591,53 @@ let headers_and_default_request_encoding () =
   check "tool choice omitted" (not (has_field "tool_choice" body));
   check "thinking omitted" (not (has_field "thinking" body))
 
+(* Every requested effort travels as adaptive thinking with its ceiling in the
+   sibling [output_config.effort]; a token budget inside [thinking] is refused
+   by current Anthropic models, so it must not appear anywhere in the body.
+   [max_output_tokens = 1024] is deliberate: the old budget needed headroom
+   above it, and adaptive thinking does not. *)
 let reasoning_effort_encoding () =
+  let adaptive_case (effort, expected) =
+    let options =
+      Llm.Request.Options.make ~max_output_tokens:1024 ~reasoning_effort:effort
+        ~temperature:0.25 ()
+    in
+    let check_body body =
+      let thinking = field "body" "thinking" body in
+      equal string ~msg:(expected ^ " thinking type") "adaptive"
+        (string_field "thinking" "type" thinking);
+      equal string ~msg:(expected ^ " thinking display") "summarized"
+        (string_field "thinking" "display" thinking);
+      equal string ~msg:(expected ^ " effort") expected
+        (string_field "output_config" "effort"
+           (field "body" "output_config" body));
+      check
+        (expected ^ " omits temperature")
+        (not (has_field "temperature" body))
+    in
+    ("effort " ^ expected, options, check_body)
+  in
   let cases =
     let open Llm.Request.Options in
-    [
-      ( "disabled",
-        make ~reasoning_effort:Reasoning_effort.Disabled (),
-        fun body ->
-          equal string ~msg:"disabled thinking" "disabled"
-            (string_field "thinking" "type" (field "body" "thinking" body)) );
-      ( "high",
-        make ~max_output_tokens:8192 ~reasoning_effort:Reasoning_effort.High (),
-        fun body ->
-          let thinking = field "body" "thinking" body in
-          equal string ~msg:"high thinking" "enabled"
-            (string_field "thinking" "type" thinking);
-          equal int ~msg:"high budget" 5734
-            (int_field "thinking" "budget_tokens" thinking) );
-      ( "max",
-        make ~max_output_tokens:2048 ~reasoning_effort:Reasoning_effort.Max (),
-        fun body ->
-          equal int ~msg:"max budget" 2047
-            (int_field "thinking" "budget_tokens"
-               (field "body" "thinking" body)) );
-    ]
+    ( "disabled",
+      make ~reasoning_effort:Reasoning_effort.Disabled ~temperature:0.25 (),
+      fun body ->
+        equal string ~msg:"disabled thinking" "disabled"
+          (string_field "thinking" "type" (field "body" "thinking" body));
+        check "disabled omits output_config"
+          (not (has_field "output_config" body));
+        check "disabled keeps temperature"
+          (number_field "body" "temperature" body = 0.25) )
+    :: List.map adaptive_case
+         Reasoning_effort.
+           [
+             (Minimal, "low");
+             (Low, "low");
+             (Medium, "medium");
+             (High, "high");
+             (Extra_high, "xhigh");
+             (Max, "max");
+           ]
   in
   let results, requests =
     with_anthropic_server
@@ -618,7 +656,11 @@ let reasoning_effort_encoding () =
       ignore (expect_stream_ok name result))
     cases results;
   List.iter2
-    (fun (_name, _options, check) request -> check (request_body request))
+    (fun (name, _options, check_body) request ->
+      let body = request_body request in
+      check (name ^ " sends no thinking budget")
+        (not (mentions_field "budget_tokens" body));
+      check_body body)
     cases requests
 
 let unsupported_requests_do_not_touch_transport () =
@@ -661,13 +703,6 @@ let unsupported_requests_do_not_touch_transport () =
     in
     request ~options ()
   in
-  let small_thinking =
-    let options =
-      Llm.Request.Options.make ~max_output_tokens:1024
-        ~reasoning_effort:Llm.Request.Options.Reasoning_effort.High ()
-    in
-    request ~options ()
-  in
   let forced_thinking =
     let tool =
       Llm.Tool.make ~name:"read_file" ~description:"Read a file."
@@ -701,7 +736,6 @@ let unsupported_requests_do_not_touch_transport () =
         Llm.Error.Invalid_request,
         unresolved_reference );
       ("json schema", Llm.Error.Unsupported, json_schema);
-      ("small thinking", Llm.Error.Invalid_request, small_thinking);
       ("forced thinking", Llm.Error.Invalid_request, forced_thinking);
     ]
 
@@ -1412,10 +1446,11 @@ let cache_breakpoints_mark_the_prefix () =
   ephemeral "final block of last message" (List.nth last 1)
 
 let omitted_display_thinking_decodes_to_signature_only_reasoning () =
-  (* Models with [display: omitted] (Opus 4.7/4.8, Sonnet 5, Fable 5) sign the
-     thinking block over empty thinking text: a signature_delta arrives with no
-     thinking_delta, so the durable reasoning part carries a signature but no
-     text. *)
+  (* Models that default to [display: omitted] — Fable 5, Opus 5, Opus 4.8,
+     Opus 4.7, and Sonnet 5 — sign the thinking block over empty thinking text:
+     a signature_delta arrives with no thinking_delta, so the durable reasoning
+     part carries a signature but no text. The encoder asks for [summarized]
+     display, but a stream that omits the text anyway must still decode. *)
   let result, _requests =
     with_anthropic_server
       (fun _index _request ->

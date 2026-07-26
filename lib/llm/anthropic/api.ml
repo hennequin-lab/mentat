@@ -93,6 +93,7 @@ module Messages = struct
     tools : Jsont.json list;
     tool_choice : Jsont.json option;
     thinking : Jsont.json option;
+    output_config : Jsont.json option;
     max_tokens : int;
     temperature : float option;
     stream : bool;
@@ -129,6 +130,9 @@ module Messages = struct
     in
     let fields = add_opt json_member "tool_choice" request.tool_choice fields in
     let fields = add_opt json_member "thinking" request.thinking fields in
+    let fields =
+      add_opt json_member "output_config" request.output_config fields
+    in
     let fields =
       add_opt number_member "temperature" request.temperature fields
     in

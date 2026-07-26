@@ -96,6 +96,10 @@ module Messages : sig
         (** Raw Anthropic [tool_choice] value, if any. *)
     thinking : Jsont.json option;
         (** Raw Anthropic [thinking] object, if any. *)
+    output_config : Jsont.json option;
+        (** Raw Anthropic [output_config] object, if any. This is where the
+            thinking effort ceiling lives; it is a sibling of [thinking], not a
+            member of it. *)
     max_tokens : int;  (** Raw [max_tokens] value. *)
     temperature : float option;  (** Raw [temperature] value, if any. *)
     stream : bool;  (** Raw [stream] value. The public adapter sets [true]. *)
