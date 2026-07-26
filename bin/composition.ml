@@ -2129,9 +2129,13 @@ let build_execution_layer t : (execution_layer, Exit_status.t) result =
   in
   (* The between-turns reminder: an ephemeral, engine-authored prelude
      fragment listing the session's running background processes, so the model
-     does not forget to poll or stop them. Read from the per-session registry at
-     turn preparation (below), it is never journaled — a resumed session's empty
-     registry emits nothing, so a dropped note changes no durable projection. *)
+     knows what it left running and can stop what it no longer needs. It states
+     the running set and nothing more: a standing instruction to read output
+     turns every request into an invitation to poll a handle that usually has
+     nothing new, which spends the turn's steps without advancing the task.
+     Read from the per-session registry at turn preparation (below), it is
+     never journaled — a resumed session's empty registry emits nothing, so a
+     dropped note changes no durable projection. *)
   let reminder_fragments registry =
     match Tools.Shell.Registry.running registry with
     | [] -> []
@@ -2147,9 +2151,8 @@ let build_execution_layer t : (execution_layer, Exit_status.t) result =
         [
           Mentat_llm.Message.developer
             (Printf.sprintf
-               "Background shell processes are running in this session. Read \
-                new output with shell_output(handle), or stop one with \
-                shell_kill(handle).\n\
+               "Background shell processes still running in this session. Stop \
+                one with shell_kill(handle) when you no longer need it.\n\
                 %s"
                (String.concat "\n" (List.map line views)));
         ]
