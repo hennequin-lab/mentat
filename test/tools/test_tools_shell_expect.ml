@@ -861,6 +861,8 @@ let%expect_test "sandbox denial is explained and escalation uses run_escalated"
     -- ordinary confinement --
     status: failed failed
     message: command exited with status 1
+
+    This command ran inside a sandbox that confines writes to the workspace while leaving reads unrestricted, and its output looks like a refused write. This is a policy restriction, not a transient error: retry the exact command with escalate=true only if the write is genuinely needed, or ask the user to add the path to sandbox.writable_roots for a standing grant.
     metadata: false
     outside exists: false evidence: enforced
     -- network denial diagnostic --
@@ -894,6 +896,35 @@ let%expect_test "a confined read denial is explained with the escalate path" =
         && String.includes ~affix:"sandbox.readable_roots" message
         && String.includes ~affix:"sandbox.writable_roots" message)
   | _ -> fail "read-denial-shaped failure unexpectedly completed");
+  [%expect {| policy note: true |}]
+
+let%expect_test "a write denial is explained under an unconfined read scope" =
+  with_world ~mode:Mentat_config.Mode.Workspace_write
+    ~read:Mentat_config.Read.All "write-denial"
+  @@ fun world ->
+  require_enforced world;
+  (* Bubblewrap refuses a write against a read-only bind with [EROFS], not the
+     permission wording seatbelt uses, and a workspace-write route confines
+     writes whether or not its reads are scoped. Both together are the shape a
+     build tool hits when it writes outside the project, so neither the backend
+     spelling nor the read scope may decide whether the refusal is explained.
+     The read scope does decide the wording: with reads unrestricted the note
+     must not send the user to [sandbox.readable_roots], which the resolver
+     discards on an unscoped route. *)
+  let diagnostic =
+    run world
+      (input
+         "printf 'dune: open(/root/.cache/dune/rev-store.lock): Read-only file \
+          system\\n' >&2; exit 1")
+  in
+  (match Tool.Result.status diagnostic with
+  | Tool.Result.Failed { message; _ } ->
+      Printf.printf "policy note: %b\n"
+        (String.includes ~affix:"policy restriction" message
+        && String.includes ~affix:"escalate=true" message
+        && String.includes ~affix:"sandbox.writable_roots" message
+        && not (String.includes ~affix:"sandbox.readable_roots" message))
+  | _ -> fail "write-denial-shaped failure unexpectedly completed");
   [%expect {| policy note: true |}]
 
 let%expect_test "durable replay retains presentation but no mutation authority"

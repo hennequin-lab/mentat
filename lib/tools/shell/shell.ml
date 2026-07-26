@@ -342,13 +342,16 @@ let network_denial_signatures =
     "operation not permitted while establishing";
   ]
 
-(* Filesystem-read refusals under a project-confined read scope surface as the
-   bare OS wording. [network_denial_signatures] keeps the specific
+(* Filesystem refusals under a confining profile surface as the bare OS wording,
+   which differs by backend: seatbelt denies a write with [EPERM] and bubblewrap
+   denies one against a read-only bind with [EROFS], so a list carrying only the
+   permission spellings is silent on Linux for exactly the refusals a
+   workspace-write route produces. [network_denial_signatures] keeps the specific
    "...while establishing" network variant, so the two lists do not both match a
    network refusal; [result_of_output] also prefers the network note when both
    apply. *)
 let filesystem_denial_signatures =
-  [ "operation not permitted"; "permission denied" ]
+  [ "operation not permitted"; "permission denied"; "read-only file system" ]
 
 (* An enforced-sandbox advisory: when [output]'s captured transcript carries any
    of [signatures], [note] is returned for appending to the failure message; a
@@ -385,19 +388,33 @@ let network_denial_note ~network_restricted output =
          restriction, not a transient error: retry the exact command with \
          escalate=true only if it genuinely needs network access."
 
+(* An enforcing profile always confines writes — a route with no policy mints no
+   [Enforced] evidence — so [enforced_denial_note] alone decides whether the
+   advisory fires, and a write refusal is explained whatever the read scope.
+   [reads_confined] only picks the wording. Naming [sandbox.readable_roots]
+   under an unconfined read scope would send the user to a field the resolver
+   discards, and would read a plain [EACCES] from an unrestricted traversal as a
+   policy refusal. *)
 let filesystem_denial_note ~reads_confined output =
-  if not reads_confined then ""
-  else
-    enforced_denial_note output ~signatures:filesystem_denial_signatures
-      ~note:
-        "\n\n\
-         This command ran inside a sandbox that confines filesystem access to \
-         the project, and its output looks like a refused access to a path \
-         outside it. This is a policy restriction, not a transient error: \
-         retry the exact command with escalate=true only if the access is \
-         genuinely needed, or ask the user to add the path to \
-         sandbox.readable_roots (reads) or sandbox.writable_roots (writes) for \
-         a standing grant."
+  let note =
+    if reads_confined then
+      "\n\n\
+       This command ran inside a sandbox that confines filesystem access, and \
+       its output looks like a refused read or write. This is a policy \
+       restriction, not a transient error: retry the exact command with \
+       escalate=true only if the access is genuinely needed, or ask the user \
+       to add the path to sandbox.readable_roots (reads) or \
+       sandbox.writable_roots (writes) for a standing grant."
+    else
+      "\n\n\
+       This command ran inside a sandbox that confines writes to the workspace \
+       while leaving reads unrestricted, and its output looks like a refused \
+       write. This is a policy restriction, not a transient error: retry the \
+       exact command with escalate=true only if the write is genuinely needed, \
+       or ask the user to add the path to sandbox.writable_roots for a \
+       standing grant."
+  in
+  enforced_denial_note output ~signatures:filesystem_denial_signatures ~note
 
 let command_error_message error =
   Mentat_workspace_io.Command.Error.message error
