@@ -9,7 +9,7 @@
 ; case under load can run several times slower, which is noise, not a regression;
 ; gating on it is theater.
 ; The gate runs --quick: allocation is exact after a handful of samples, so a 2s
-; budget measures it reliably and keeps `dune runtest` fast; -q keeps dune output
+; budget measures it reliably; -q keeps dune output
 ; to one character per case. (The default preset also has fork=Never and
 ; fail_on_inconclusive=false, so the gate never forks and never flakes on an
 ; inconclusive time metric.) The alloc-primary --deterministic preset is
@@ -132,75 +132,87 @@
   mtime.clock.os
   bench_support))
 
-; Tier A gate: each suite checked against its committed baseline on runtest.
+; Tier A gate: each suite checked against its committed baseline on @bench.
 ; One rule per suite (not a shared progn) so every suite runs even when another
 ; regresses or needs a first baseline, and all promotions surface together.
+;
+; These gates are NOT on runtest, because a thumper baseline file is partitioned
+; by machine: it holds one section per host key, and a suite checks against its
+; own host's section. A committed baseline therefore says nothing about a host
+; that has not blessed one, so on any new machine the gate reports a missing
+; baseline rather than a regression. That is a correct answer to the question
+; thumper is asked, and a useless one for `dune runtest`, which every checkout
+; must be able to pass. Allocation is machine-independent in value; the lookup
+; that finds a number to compare it against is not.
 
 (rule
- (alias runtest)
+ (alias bench)
  (action
   (progn
    (run %{exe:bench_path.exe} --quick -q)
    (diff? path.thumper path.thumper.corrected))))
 
 (rule
- (alias runtest)
+ (alias bench)
  (action
   (progn
    (run %{exe:bench_digest.exe} --quick -q)
    (diff? digest.thumper digest.thumper.corrected))))
 
 (rule
- (alias runtest)
+ (alias bench)
  (action
   (progn
    (run %{exe:bench_diff.exe} --quick -q)
    (diff? diff.thumper diff.thumper.corrected))))
 
 (rule
- (alias runtest)
+ (alias bench)
  (action
   (progn
    (run %{exe:bench_resume.exe} --quick -q)
    (diff? resume.thumper resume.thumper.corrected))))
 
 (rule
- (alias runtest)
+ (alias bench)
  (action
   (progn
    (run %{exe:bench_session_list.exe} --quick -q)
    (diff? session_list.thumper session_list.thumper.corrected))))
 
 (rule
- (alias runtest)
+ (alias bench)
  (action
   (progn
    (run %{exe:bench_mutation.exe} --quick -q)
    (diff? mutation.thumper mutation.thumper.corrected))))
 
 (rule
- (alias runtest)
+ (alias bench)
  (action
   (progn
    (run %{exe:bench_revert.exe} --quick -q)
    (diff? revert.thumper revert.thumper.corrected))))
 
 (rule
- (alias runtest)
+ (alias bench)
  (action
   (progn
    (run %{exe:bench_enter.exe} --quick -q)
    (diff? enter.thumper enter.thumper.corrected))))
 
 (rule
- (alias runtest)
+ (alias bench)
  (action
   (progn
    (run %{exe:bench_transcript.exe} --quick -q)
    (diff? transcript.thumper transcript.thumper.corrected))))
 
 ; The poll scaling gate: a boolean flat-across-sizes assertion, not a baseline
-; comparison, so it runs directly and fails runtest on a nonzero exit.
+; comparison, so it runs directly and fails runtest on a nonzero exit. It stays
+; on runtest precisely because it holds no baseline — it asserts a property of
+; the projector rather than comparing against a recorded number, so it answers
+; the same on every host.
 
 (rule
  (alias runtest)
