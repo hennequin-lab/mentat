@@ -24,8 +24,28 @@ source-build development packages. Package names vary by operating system and
 distribution; verify that `pkg-config` can discover GMP rather than relying on a
 command copied for another distribution.
 
+`dune show depexts` names the system packages the locked OCaml dependencies
+need, for the lock file you resolved rather than for one distribution. It
+reports only those: the C toolchain that compiles them and the runtime programs
+in the table above are outside the lock file, so a host that has neither still
+fails after installing everything the command prints. On Debian or Ubuntu the
+toolchain is `build-essential`; `bwrap` ships as `bubblewrap` and `rg` as
+`ripgrep`. macOS runs Seatbelt through the built-in `sandbox-exec` and needs no
+Bubblewrap.
+
+Confirm that each prerequisite is discoverable rather than merely installed:
+
+```sh
+cc --version                  # a C toolchain the build can drive
+pkg-config --modversion gmp   # GMP is visible to the build
+ls /usr/bin/bwrap             # Linux only, and this exact path
+command -v rg
+```
+
 Use `mentat doctor`, `mentat sandbox status`, and `mentat sandbox explain` to
 inspect the resulting host and sandbox posture without making a model request.
+`mentat sandbox status` reports `evidence=enforced (linux-bubblewrap ...)` once
+Bubblewrap is usable at the required path.
 
 ## Release installer
 
