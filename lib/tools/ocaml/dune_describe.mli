@@ -144,7 +144,9 @@ val max_detail_bytes : int
 
 val max_display_items : int
 (** [max_display_items] is the maximum number of local components and the
-    maximum number of tests listed in completed text, [20] for each group. *)
+    maximum number of tests listed in completed text, [200] for each group. It
+    keeps one outsized group from crowding out the other; {!max_output_bytes}
+    is the bound on the whole summary. *)
 
 val max_output_bytes : int
 (** [max_output_bytes] is the 64-KiB maximum for completed authoritative text.

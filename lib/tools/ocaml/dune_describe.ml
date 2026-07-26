@@ -11,7 +11,15 @@ module Workspace = Mentat_workspace
 
 let name = "ocaml_dune_describe"
 let command_timeout_seconds = 30.
-let max_display_items = 20
+
+(* The per-group listing cap. It exists so one enormous group cannot crowd the
+   other out of the byte budget, not to summarize: a project's libraries and
+   tests are the inventory this tool is asked for, and answering a 77-test
+   project with 20 names and a count leaves the caller to find the rest some
+   other way. At this width both groups fit whole for any project of ordinary
+   size, and {!max_output_bytes} remains the bound that actually protects the
+   context window. *)
+let max_display_items = 200
 
 module Input = struct
   let object_codec =

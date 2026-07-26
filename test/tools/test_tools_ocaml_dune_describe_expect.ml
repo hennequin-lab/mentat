@@ -636,14 +636,20 @@ let positions_in_order text fragments =
   in
   loop 0 fragments
 
+(* The cap is expressed relative to {!Describe.max_display_items} rather than
+   spelled out, so widening it moves the fixture with it instead of leaving a
+   case that no longer reaches the boundary it exists to prove. *)
 let%expect_test "rendering caps each ordered page and reports text truncation" =
   with_world "bounds" @@ fun world ->
+  let cap = Describe.max_display_items in
+  let library_name index = Printf.sprintf "lib%02d" index in
+  let test_name index = Printf.sprintf "test%02d" index in
   let workspace =
     "((root .) (build_context _build/default) "
-    ^ (List.init 22 library_item |> String.concat " ")
+    ^ (List.init (cap + 2) library_item |> String.concat " ")
     ^ ")"
   in
-  let tests = "(" ^ (List.init 21 test_item |> String.concat " ") ^ ")" in
+  let tests = "(" ^ (List.init (cap + 1) test_item |> String.concat " ") ^ ")" in
   set_response world 1 workspace;
   set_response world 2 tests;
   let result = run world empty_input in
@@ -652,20 +658,22 @@ let%expect_test "rendering caps each ordered page and reports text truncation" =
   print_project_summary result;
   Printf.printf
     "component-order=%b component-last=%b component-hidden=%b component-more=%b\n"
-    (positions_in_order text [ "lib00"; "lib10"; "lib19" ])
-    (contains text "lib19")
-    (not (contains text "lib20"))
+    (positions_in_order text
+       [ library_name 0; library_name (cap / 2); library_name (cap - 1) ])
+    (contains text (library_name (cap - 1)))
+    (not (contains text (library_name cap)))
     (contains text "- ... 2 more local component(s)");
   Printf.printf "test-order=%b test-last=%b test-hidden=%b test-more=%b\n"
-    (positions_in_order text [ "test00"; "test10"; "test19" ])
-    (contains text "test19")
-    (not (contains text "test20"))
+    (positions_in_order text
+       [ test_name 0; test_name (cap / 2); test_name (cap - 1) ])
+    (contains text (test_name (cap - 1)))
+    (not (contains text (test_name cap)))
     (contains text "- ... 1 more test(s)");
   [%expect
     {|
     status: completed
-    json: {"version":1,"components":22,"tests":21}
-    components: 22 tests: 21 truncated: true
+    json: {"version":1,"components":202,"tests":201}
+    components: 202 tests: 201 truncated: true
     component-order=true component-last=true component-hidden=true component-more=true
     test-order=true test-last=true test-hidden=true test-more=true
     |}]
