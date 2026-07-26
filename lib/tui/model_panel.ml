@@ -460,18 +460,25 @@ let prose ?key ?(style = Ansi.Style.default) ?(wrap = `Word) value =
   text ?key ~style ~wrap ~truncate:false ~selectable:false ~flex_shrink:0.
     ~min_size:minimum_size ~size:full_width value
 
-let content_column ?key ?(grow = true) ?(gap = 1) children =
+(* A stack of panel blocks, always one row apart. The separation is structural
+   rather than air: a block the panel has squeezed below a whole row is still
+   drawn on one, and a neighbour placed flush against it then starts on that same
+   row, so the two texts interleave. One row of clearance makes that impossible,
+   and it costs the panel a row it can afford to lose. *)
+let content_column ?key ?(grow = true) children =
   box ?key ~flex_direction:Flex_direction.Column
     ~flex_grow:(if grow then 1. else 0.)
     ~flex_shrink:1. ~min_size:minimum_size
     ~size:(if grow then fill_remaining else full_width)
-    ~gap:{ width = px 0; height = px gap }
+    ~gap:{ width = px 0; height = px 1 }
     children
 
+(* A diagnostic fills the room the panel leaves it. Its basis is zero rather
+   than the panel's full height, so it takes only what is left over instead of
+   claiming the rows its neighbouring blocks stand on. *)
 let diagnostic_scroll ~key ~style message =
   scroll_box ~key ~scroll_x:false ~scroll_y:true ~focusable:false ~flex_grow:1.
-    ~flex_shrink:1. ~min_size:minimum_size
-    ~size:{ width = pct 100; height = pct 100 }
+    ~flex_shrink:1. ~min_size:minimum_size ~size:fill_remaining
     [ content_column ~grow:false [ prose ~style message ] ]
 
 let current_line ~palette snapshot =
@@ -643,16 +650,25 @@ let readiness_table ~palette t rows =
     ~on_activate:(fun index -> Some (Activate_index index))
     ()
 
-let readiness_content ~palette ~gap t =
+(* The catalog's share of the panel, as a flat run of blocks in the panel's own
+   stack rather than a column nested inside it. A nested column is what a short
+   panel squeezes: it keeps the height its own lines need while shrinking to
+   less, and those lines are then drawn below it, over the set-by-name field.
+   Flat, the panel shortens the run instead, and every block keeps its row. *)
+let readiness_blocks ~palette t =
   match t.readiness with
   | Loading ->
-      diagnostic_scroll ~key:"model.catalog.loading"
-        ~style:(Theme.Palette.muted_style palette)
-        "⠋ loading the live model catalog… You can set a model by name below."
+      [
+        diagnostic_scroll ~key:"model.catalog.loading"
+          ~style:(Theme.Palette.muted_style palette)
+          "⠋ loading the live model catalog… You can set a model by name below.";
+      ]
   | Unavailable message ->
-      diagnostic_scroll ~key:"model.catalog.unavailable"
-        ~style:(Theme.Palette.error_style palette)
-        (Theme.problem ^ message ^ " · set by name or press ctrl+r to retry")
+      [
+        diagnostic_scroll ~key:"model.catalog.unavailable"
+          ~style:(Theme.Palette.error_style palette)
+          (Theme.problem ^ message ^ " · set by name or press ctrl+r to retry");
+      ]
   | Available { value; refreshing; refresh_error } ->
       let rows = matching_entries t.input value in
       let route_count = List.length (Readiness.routes value) in
@@ -679,13 +695,12 @@ let readiness_content ~palette ~gap t =
             "No models are currently reported by the catalog."
           else "No model matches the filter."
         in
-        content_column
-          ((summary :: refreshing)
-          @ [
-              diagnostic_scroll ~key:"model.catalog.empty"
-                ~style:(Theme.Palette.muted_style palette)
-                message;
-            ])
+        (summary :: refreshing)
+        @ [
+            diagnostic_scroll ~key:"model.catalog.empty"
+              ~style:(Theme.Palette.muted_style palette)
+              message;
+          ]
       else
         let failure =
           match refresh_error with
@@ -709,10 +724,9 @@ let readiness_content ~palette ~gap t =
           | Some (_, entry) -> [ effort_line ~palette t (Entry.model entry) ]
           | None -> []
         in
-        content_column ~gap
-          ((summary :: refreshing) @ failure
-          @ [ readiness_table ~palette t rows ]
-          @ effort)
+        (summary :: refreshing) @ failure
+        @ [ readiness_table ~palette t rows ]
+        @ effort
 
 let selector_input ~palette t =
   let value = normalize_inline t.input in
@@ -773,18 +787,18 @@ let issue_content ~palette = function
           ];
       ]
 
-(* Below [compact_rows] screen rows the panel sheds its air: the inter-block
-   gaps and the Current line (the footer carries the live model and effort) go,
-   so the picker table keeps enough rows to browse. The panel's share of a
-   32-row screen otherwise leaves the flex table a single scrolling row. *)
+(* Below [compact_rows] screen rows the panel drops the Current line — the
+   footer carries the live model and effort — so the picker table keeps enough
+   rows to browse. The panel's share of a 32-row screen otherwise leaves the
+   flex table a single scrolling row. *)
 let compact_rows = 36
 
 let content ~palette ~rows t =
   let compact = rows < compact_rows in
-  let gap = if compact then 0 else 1 in
   let current = if compact then [] else [ current_line ~palette t.snapshot ] in
-  content_column ~key:"model.content" ~gap
-    ((current @ [ readiness_content ~palette ~gap t ])
+  content_column ~key:"model.content"
+    (current
+    @ readiness_blocks ~palette t
     @ issue_content ~palette t.issue
     @ [ selector_input ~palette t ])
 

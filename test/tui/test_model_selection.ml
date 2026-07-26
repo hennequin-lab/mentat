@@ -486,12 +486,12 @@ let%expect_test "model catalog loading keeps set-by-name visible" =
 20 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
 21 |    model
 22 |
-23 | Current  openai/gpt-5.5 medium
+23 | ⠋ loading the live model catalog… You can set a model by name below.
 24 |
-25 | ⠋ loading the live model catalog… You can set a model by name below.
+25 |
 26 |
-27 |
-28 | Filter or set by name
+27 | Filter or set by name
+28 |
 29 |
 30 ||}];
   Tui.finish_settings_queries t;
@@ -527,12 +527,12 @@ let%expect_test "model catalog failure keeps set-by-name available" =
 20 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
 21 |    model
 22 |
-23 | Current  openai/gpt-5.5 medium
+23 | ! live model catalog is temporarily unavailable · set by name or press ctrl+r to retry
 24 |
-25 | ! live model catalog is temporarily unavailable · set by name or press ctrl+r to retry
+25 |
 26 |
-27 |
-28 | Filter or set by name
+27 | Filter or set by name
+28 |
 29 |
 30 ||}]
 
@@ -674,9 +674,9 @@ let%expect_test "effort control walks the selected model's reasoning levels" =
 16 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
 17 |    model
 18 |
-19 | Current  openai/gpt-5.5
+19 | 1 providers · 1 models
 20 |
-21 | 1 providers · 1 models
+21 |  ❯   OpenAI               GPT-5.5                                                                 ✓
 22 |
 23 |
 24 | ◐ Medium effort (default) ← → adjust
@@ -709,9 +709,9 @@ let%expect_test "effort control walks the selected model's reasoning levels" =
 16 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
 17 |    model
 18 |
-19 | Current  openai/gpt-5.5
+19 | 1 providers · 1 models
 20 |
-21 | 1 providers · 1 models
+21 |  ❯   OpenAI               GPT-5.5                                                                 ✓
 22 |
 23 |
 24 | ● High effort ← → adjust
@@ -744,9 +744,9 @@ let%expect_test "effort control walks the selected model's reasoning levels" =
 16 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
 17 |    model
 18 |
-19 | Current  openai/gpt-5.5
+19 | 1 providers · 1 models
 20 |
-21 | 1 providers · 1 models
+21 |  ❯   OpenAI               GPT-5.5                                                                 ✓
 22 |
 23 |
 24 | ○ Low effort ← → adjust
@@ -842,8 +842,8 @@ let%expect_test "refresh keeps rows visible and retains a structured failure" =
 32 |
 33 |
 34 | ○ Reasoning effort is not adjustable for this model
-35 | Filter or set by name
-36 |
+35 |
+36 | Filter or set by name
 37 |
 38 ||}];
   Tui.finish_settings_queries t;
@@ -882,10 +882,10 @@ let%expect_test "refresh keeps rows visible and retains a structured failure" =
 30 |
 31 | ! refresh could not reach the provider catalog
 32 |
-33 | ○ Reasoning effort is not adjustable for this model
-34 |
-35 | Filter or set by name
-36 |
+33 |
+34 | ○ Reasoning effort is not adjustable for this model
+35 |
+36 | Filter or set by name
 37 |
 38 ||}]
 
@@ -912,7 +912,7 @@ let%expect_test "Mosaic allocates the complete catalog in narrow short frames" =
 14 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
 15 |    model
 16 |
-17 | Current  openai/gpt-5.5 medium
+17 | 4 providers · 7 models
 18 ||}];
   Tui.resize t ~width:42 ~height:14;
   Tui.settle t;
@@ -960,9 +960,9 @@ let%expect_test
 17 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
 18 |    model
 19 |
-20 | Current  openai/gpt-5.5 medium
+20 | 1 providers · 0 models
 21 |
-22 | 1 providers · 0 models
+22 | No models are currently reported by the catalog.
 23 |
 24 ||}]
 
@@ -994,13 +994,13 @@ let%expect_test "escape from a settings-opened model panel restores settings" =
 13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
 14 |    model
 15 |
-16 | Current  openai/gpt-5.5
+16 | ! model readiness unavailable in the visual harness · set by name or press ctrl+r to retry
 17 |
-18 | ! model readiness unavailable in the visual harness · set by name or press ctrl+r to retry
+18 |
 19 |
-20 |
+20 | Filter or set by name
 21 |
-22 | Filter or set by name
+22 | ❯ provider/model
 23 |
 24 |   ↵ choose/set · ctrl+r refresh · type filter or provider/model · esc close|}];
   Tui.keys t Key.escape;
@@ -1061,13 +1061,13 @@ let%expect_test "model panel preserves a short transcript when it closes" =
 13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
 14 |    model
 15 |
-16 | Current  openai/gpt-5.5
-17 |
-18 | ! model readiness unavailable in the visual harness · set by name or press
-19 | ctrl+r to retry
-20 |
+16 | ! model readiness unavailable in the visual harness · set by name or press
+17 | ctrl+r to retry
+18 |
+19 |
+20 | Filter or set by name
 21 |
-22 | Filter or set by name
+22 | ❯ provider/model
 23 |
 24 |   ↵ choose/set · ctrl+r refresh · type filter or provider/model · esc close|}];
   Tui.keys t Key.escape;
@@ -1138,17 +1138,17 @@ let%expect_test "wide model panel preserves the overflowing transcript tail" =
 17 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
 18 |    model
 19 |
-20 | Current  openai/gpt-5.5
+20 | ! model readiness unavailable in the visual harness · set by name or press ctrl+r to retry
 21 |
-22 | ! model readiness unavailable in the visual harness · set by name or press ctrl+r to retry
+22 |
 23 |
 24 |
 25 |
 26 |
 27 |
-28 |
-29 | Filter or set by name
-30 |
+28 | Filter or set by name
+29 |
+30 | ❯ provider/model
 31 |
 32 |   ↵ choose/set · ctrl+r refresh · type filter or provider/model · esc close|}];
   Tui.keys t Key.escape;
@@ -1286,15 +1286,15 @@ let%expect_test
 12 |                                                                                 │
 13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
 14 |    model   openai/gpt-6
-15 | 
-16 | Current  openai/gpt-5.5 medium
-17 | 
-18 | ! model readiness unavailable in the visual harness · set by name or press ctrl+r to retry
-19 | 
-20 | 
-21 | model selection is still being applied
-22 | Filter or set by name
-23 | 
+15 |
+16 | ! model readiness unavailable in the visual harness · set by name or press ctrl+r to retry
+17 |
+18 | model selection is still being applied
+19 |
+20 | Filter or set by name
+21 |
+22 | ❯ openai/gpt-6
+23 |
 24 |   ↵ choose/set · ctrl+r refresh · type filter or provider/model · esc close|}];
   Tui.keys t Key.escape;
   Tui.settle t;
