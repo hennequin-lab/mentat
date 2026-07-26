@@ -322,7 +322,7 @@ let%expect_test "declaration and provider decoding enforce exact JSON types" =
   [%expect
     {|
     name: shell
-    schema: {"type":"object","properties":{"command":{"type":"string","description":"Non-empty shell command text.","minLength":1},"workdir":{"type":"string","description":"Workspace-relative or workspace-contained absolute working directory. Defaults to the workspace current directory.","minLength":1},"timeout_ms":{"type":"integer","description":"Optional positive command timeout in milliseconds, bounded by host policy.","minimum":1,"maximum":9007199254740991},"description":{"type":"string","description":"Optional reviewer and UI metadata.","minLength":1},"escalate":{"type":"boolean","description":"Request this command outside the enforcing profile. Use only after a sandbox restriction, with the reason in description; separate approval is required."},"background":{"type":"boolean","description":"Run the command in the background and return a handle to poll with shell_output and stop with shell_kill. Use for dev servers, watchers, and long log tails. timeout_ms is ignored for a background command; a background command runs confined and cannot be escalated (escalate a command in the foreground instead)."}},"required":["command"],"additionalProperties":false}
+    schema: {"type":"object","properties":{"command":{"type":"string","description":"Non-empty shell command text.","minLength":1},"workdir":{"type":"string","description":"Workspace-relative or workspace-contained absolute working directory. Defaults to the workspace current directory.","minLength":1},"timeout_ms":{"type":"integer","description":"Optional command timeout in milliseconds, from 1 to 600000. Defaults to 60000.","minimum":1,"maximum":600000},"description":{"type":"string","description":"Optional reviewer and UI metadata.","minLength":1},"escalate":{"type":"boolean","description":"Request this command outside the enforcing profile. Use only after a sandbox restriction, with the reason in description; separate approval is required."},"background":{"type":"boolean","description":"Run the command in the background and return a handle to poll with shell_output and stop with shell_kill. Use for dev servers, watchers, and long log tails. timeout_ms is ignored for a background command; a background command runs confined and cannot be escalated (escalate a command in the foreground instead)."}},"required":["command"],"additionalProperties":false}
     minimal: accepted canonical={"command":"printf ok"}
     full: accepted canonical={"command":"pwd","description":"show subject","escalate":true,"timeout_ms":250,"workdir":"subject"}
     missing command: rejected diagnostic=true
@@ -343,8 +343,20 @@ let%expect_test "declaration and provider decoding enforce exact JSON types" =
     largest safe integer: accepted canonical={"command":"pwd","timeout_ms":9007199254740991}
     unsafe integer: rejected diagnostic=true |}]
 
-let%expect_test "fixed timeout policy accepts 60s and 600s without waiting" =
+let%expect_test "the declared timeout ceiling is the enforced one" =
   with_world "timeouts" @@ fun world ->
+  (* The declaration is what a model plans against, so it must name the bound
+     the run enforces: publishing the JSON safe-integer maximum instead would
+     invite a timeout that is rejected only after the model has committed to
+     it. *)
+  let schema =
+    json_string (Mentat_llm.Tool.input_schema (Tool.declaration world.tool))
+  in
+  Printf.printf "declares the enforced ceiling: %b\n"
+    (Option.is_some
+       (find_substring ~from:0
+          (Printf.sprintf "\"maximum\":%d" Shell.max_timeout_ms)
+          schema));
   let default = run world (input "printf default") in
   print_status default;
   Printf.printf "%s\n"
@@ -364,6 +376,7 @@ let%expect_test "fixed timeout policy accepts 60s and 600s without waiting" =
   Printf.printf "above output: %b\n" (Option.is_some (Tool.Result.output above));
   [%expect
     {|
+    declares the enforced ceiling: true
     status: completed
     Timeout: 60000ms
     status: completed

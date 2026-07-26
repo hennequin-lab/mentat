@@ -102,11 +102,13 @@ module Input = struct
                   [ ("minLength", json_int 1) ] );
               ( "timeout_ms",
                 property "integer"
-                  "Optional positive command timeout in milliseconds, bounded \
-                   by host policy."
+                  (Printf.sprintf
+                     "Optional command timeout in milliseconds, from 1 to %d. \
+                      Defaults to %d."
+                     max_timeout_ms default_timeout_ms)
                   [
                     ("minimum", json_int 1);
-                    ("maximum", Jsont.Json.number max_input_integer);
+                    ("maximum", json_int max_timeout_ms);
                   ] );
               ( "description",
                 property "string" "Optional reviewer and UI metadata."

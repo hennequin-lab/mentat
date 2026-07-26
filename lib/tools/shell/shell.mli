@@ -43,7 +43,9 @@
     paths can represent it faithfully. Numeric strings, fractional timeouts,
     non-positive timeouts, unknown members, and duplicate members are rejected.
     A timeout above {!max_timeout_ms} is well-formed input but fails as
-    [`Invalid_input] before workdir observation or process launch.
+    [`Invalid_input] before workdir observation or process launch. The declared
+    schema publishes that ceiling as the member's maximum, so a caller planning
+    against the declaration plans against the bound that is enforced.
 
     {1 Shell and command boundary}
 
