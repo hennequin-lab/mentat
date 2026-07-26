@@ -140,19 +140,6 @@ let ambient_lookup () =
     bindings;
   fun name -> Hashtbl.find_opt table name
 
-(* Scratch.
-
-   The per-run scratch is minted beneath the canonicalized temp base as an
-   unpredictable fresh child: the base is opened once and
-   retained — as a raw descriptor for identity work and as an Eio capability
-   for parent-relative removal — the child name draws on the platform's
-   secure randomness, its exact 0700 mode is fixed through the open handle
-   (loudly, the umask may have stripped owner bits), and cleanup verifies the
-   parent-relative entry still names the minted directory before recursing:
-   a replacement is never deleted, the leak is deliberate. Disjointness from
-   every admitted root is checked before minting, against the derived policy
-   facts. *)
-
 let open_roots ~sw ~fs ~logical workspace_roots =
   let rec loop acc = function
     | [] -> Ok (List.rev acc)
@@ -245,12 +232,10 @@ let resolve ~sw ~stdenv ~logical ~mode ~read ~readable_roots ~writable_roots
     | Mentat_config.Read.Project -> true
     | Mentat_config.Read.All -> false
   in
-  (* Derivation runs before the scratch is minted so the scratch can be
-     checked disjoint against every root the policy will admit. Its blocking
-     filesystem batch (stat, realpath, getpwuid, git-worktree reads) is a
-     bounded startup batch, moved off the Eio domain into one systhread so a
-     slow filesystem or name service cannot stall the whole domain (B8);
-     opening the capabilities stays on the fiber, below. *)
+  (* Derivation's blocking filesystem batch (stat, realpath, getpwuid,
+     git-worktree reads) is a bounded startup batch, moved off the Eio domain
+     into one systhread so a slow filesystem or name service cannot stall the
+     whole domain (B8); opening the capabilities stays on the fiber, below. *)
   let* derived =
     Eio_unix.run_in_systhread ~label:"workspace_io.derive" (fun () ->
         Derive.run ~scoped ~lookup ~logical ~mentat_dirs
@@ -362,20 +347,20 @@ let discharged t obligation =
       | stat -> stat.Eio.File.Stat.kind = `Directory
       | exception Eio.Exn.Io _ -> false)
 
-let discharge t =
+let discharge t sandbox =
   let rec loop = function
     | [] -> Ok ()
     | obligation :: rest ->
         if discharged t obligation then loop rest
         else Error (Mentat_sandbox.Obligation.path obligation)
   in
-  loop (Mentat_sandbox.obligations t.sandbox)
+  loop (Mentat_sandbox.obligations sandbox)
 
 let check t ~requirement =
   match Mentat_sandbox.admits requirement t.sandbox with
   | Error _ as error -> error
   | Ok () -> (
-      match discharge t with
+      match discharge t t.sandbox with
       | Ok () -> Ok ()
       | Error path ->
           Error
@@ -1169,7 +1154,7 @@ module Command = struct
 
   (* Validate, bind and open the cwd, discharge every obligation, lower — one
      private sequence no caller can reorder or skip. *)
-  let prepare t ~escalated ~cwd argv =
+  let prepare t ~sandbox ~escalated ~cwd argv =
     let cwd_path =
       match cwd with
       | Some path -> path
@@ -1199,7 +1184,7 @@ module Command = struct
       | exception Unix.Unix_error _ -> stale ()
     in
     let* () =
-      match discharge t with
+      match discharge t sandbox with
       | Ok () -> Ok ()
       | Error path ->
           Error (Error.Sandbox (Mentat_sandbox.Error.Stale_policy { path }))
@@ -1208,7 +1193,7 @@ module Command = struct
       if escalated then Mentat_sandbox.lower_escalated_argv
       else Mentat_sandbox.lower_argv
     in
-    match lower t.sandbox ~cwd:bound.abs argv with
+    match lower sandbox ~cwd:bound.abs argv with
     | Error error -> Error (Error.Sandbox error)
     | Ok lowered -> (
         let head =
@@ -1241,11 +1226,12 @@ module Command = struct
         Error.Io (Eio.Exn.X (Eio_unix.Unix_error (code, name, argument)))
     | exn -> raise exn
 
-  let run_route t ~escalated ~cwd ~stdin ~capture ~timeout ~cancelled argv =
-    let* prepared = prepare t ~escalated ~cwd argv in
+  let run_route t ~sandbox ~escalated ~cwd ~stdin ~capture ~timeout ~cancelled
+      argv =
+    let* prepared = prepare t ~sandbox ~escalated ~cwd argv in
     let sandbox_evidence =
-      if escalated then Mentat_sandbox.escalated_evidence t.sandbox
-      else Mentat_sandbox.evidence t.sandbox
+      if escalated then Mentat_sandbox.escalated_evidence sandbox
+      else Mentat_sandbox.evidence sandbox
     in
     match
       Subprocess.run ~proc_mgr:t.proc_mgr ~mono:t.mono ~fs:t.fs
@@ -1278,7 +1264,7 @@ module Command = struct
             duration = result.Subprocess.duration;
             sandbox_evidence;
             confinement =
-              Confinement.observe ~sandbox:t.sandbox ~evidence:sandbox_evidence
+              Confinement.observe ~sandbox ~evidence:sandbox_evidence
                 ~transcript:
                   (Captured.render
                      (captured result.Subprocess.stdout
@@ -1291,14 +1277,29 @@ module Command = struct
     | exception Subprocess.Launch exn -> Error (launch_failure exn)
 
   let run t ?cwd ?stdin ~capture ~timeout ?cancelled argv =
-    run_route t ~escalated:false ~cwd
+    run_route t ~sandbox:t.sandbox ~escalated:false ~cwd
       ~stdin:(Option.map coerce_source stdin)
       ~capture ~timeout ~cancelled argv
 
   let run_escalated t ?cwd ?stdin ~capture ~timeout ?cancelled argv =
-    run_route t ~escalated:true ~cwd
+    run_route t ~sandbox:t.sandbox ~escalated:true ~cwd
       ~stdin:(Option.map coerce_source stdin)
       ~capture ~timeout ~cancelled argv
+
+  (* The widened seal is built here and discarded when the command returns:
+     nothing stores it, which is what makes the grant expire. It lowers through
+     the ordinary confined route, so a granted command is still an enforced one
+     and reports enforced evidence — unlike an escalation, which reports having
+     left the sandbox. Every grant path is an ordinary obligation, so one that
+     does not exist is refused by the discharge already standing in [prepare]
+     rather than conjured into being. *)
+  let run_granted t ?cwd ?stdin ~capture ~timeout ?cancelled ~grants argv =
+    match Mentat_sandbox.grant t.sandbox grants with
+    | Error error -> Error (Error.Sandbox error)
+    | Ok sandbox ->
+        run_route t ~sandbox ~escalated:false ~cwd
+          ~stdin:(Option.map coerce_source stdin)
+          ~capture ~timeout ~cancelled argv
 
   module Session = struct
     (* A bounded in-memory ring over one stream's raw bytes. [total] counts
@@ -1572,7 +1573,7 @@ module Command = struct
   end
 
   let start_session t ~sw ?cwd argv =
-    let* prepared = prepare t ~escalated:false ~cwd argv in
+    let* prepared = prepare t ~sandbox:t.sandbox ~escalated:false ~cwd argv in
     match
       Session.launch ~sw ~proc_mgr:t.proc_mgr ~fs:t.fs
         ~env:prepared.child_environment ~mono:t.mono ~cwd:prepared.cwd

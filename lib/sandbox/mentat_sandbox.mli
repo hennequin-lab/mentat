@@ -30,12 +30,12 @@
     containment decision. The effects live in the single effect twin,
     [mentat.workspace_io] — the one sealed process-spawn boundary. The twin
     owes, in order: probing the platform for an available {!Backend.t};
-    resolving and [realpath]-canonicalizing roots; minting the per-run scratch
-    directory ({!Policy.scratch}); discharging every {!Obligation} — the
-    existence re-checks this library names but cannot perform — before each
-    launch; and launching the lowered argv. A public {!lower_argv} beside a
-    public {!obligations} is safe only because that one boundary discharges the
-    obligations; this library documents the precondition it cannot enforce.
+    resolving and [realpath]-canonicalizing roots; discharging every
+    {!Obligation} — the existence re-checks this library names but cannot
+    perform — before each launch; and launching the lowered argv. A public
+    {!lower_argv} beside a public {!obligations} is safe only because that one
+    boundary discharges the obligations; this library documents the precondition
+    it cannot enforce.
 
     {b Process values live at the launch boundary.} The exact child environment,
     the argv value vocabulary, and the launch plan are process concerns owned by
@@ -67,17 +67,18 @@
     that reads a sealed route into a permission [Access.Command].
 
     {b Identity versus evidence.} Two digests describe an enforced seal, and the
-    distinction is load-bearing. {!Evidence} keeps the {e real} profile digest —
-    including the per-run scratch path — as the run-start audit record.
-    {!Identity} is the durable, secret-free, {e scratch-invariant} fingerprint
-    the session turn contract seals and resume revalidates: it normalizes the
-    per-run scratch out, so a freshly minted scratch directory does not trip
-    resume. It {e does} change when the confinement changes — or when a Mentat
-    binary upgrade alters the generated profile text — so a pending invocation
-    never runs under an old approval once the lowering shifts; resume
-    re-approves under the new profile, fail-closed. Because generation is pure
-    and deterministic, both digests are reproducible and profiles are
-    golden-testable on any platform, through {!lower_argv}. *)
+    distinction is what each answers for, not what each contains. {!Evidence} is
+    the run-start audit record of the profile one command actually ran under —
+    so a command run on a {!grant}-widened seal reports the widened profile.
+    {!Identity} is the durable, secret-free fingerprint the session turn
+    contract seals and resume revalidates, and it belongs to the seal the
+    session holds, which a per-command widening never becomes. It changes when
+    the confinement changes — or when a Mentat binary upgrade alters the
+    generated profile text — so a pending invocation never runs under an old
+    approval once the lowering shifts; resume re-approves under the new profile,
+    fail-closed. Because generation is pure and deterministic, both digests are
+    reproducible and profiles are golden-testable on any platform, through
+    {!lower_argv}. *)
 
 module Error = Error
 (** Structured sandbox errors. *)
@@ -127,8 +128,8 @@ module Evidence : sig
     | Enforced of {
         backend : Backend.t;  (** The backend that guarded the command. *)
         profile : Mentat_digest.t;
-            (** The digest of the generated profile used for this run, including
-                its real per-run scratch path. *)
+            (** The digest of the generated profile used for this run — the
+                widened one when the command ran on a {!grant}. *)
       }
         (** The command ran through the named backend and generated profile.
             Only a successfully sealed confined route mints this audit claim. *)
@@ -168,7 +169,7 @@ module Evidence : sig
 end
 
 module Identity = Identity
-(** Durable, scratch-invariant confinement identities. *)
+(** Durable confinement identities. *)
 
 type t
 (** A sealed command sandbox: the route commands are lowered through, the
@@ -239,6 +240,42 @@ val confined :
     {b Law (evidence fixed at seal).} {!evidence} is [Enforced] for [Ok],
     [Refused] for [Error] — and never changes across {!lower_argv} calls. *)
 
+val grant : t -> (Lpath.Abs.t * Policy.Access.t) list -> (t, Error.t) result
+(** [grant t entries] is [t] widened by [entries] for {e one} command, or
+    {!Error.Grant_denied} naming the first entry a denied path would have
+    defeated.
+
+    A grant is the narrow answer to the question escalation answers totally. A
+    command refused one path today can only be retried unconfined, which trades
+    the whole posture for one lock file; a grant buys back exactly the path,
+    keeps every other clause, and expires when the command does because nothing
+    stores the result.
+
+    The value it returns is an ordinary sealed route: {!lower_argv},
+    {!evidence}, {!obligations} and every other observer apply to it unchanged,
+    and each answers for the widened policy rather than the one it was made
+    from. That is the whole mechanism — {!Policy.grant} already resolves a
+    widening by the ordinary law, so a grant needs no route of its own. In
+    particular the deny set still wins beneath a granted tree, and a grant at or
+    beneath a denied path is refused rather than silently lost.
+
+    A grant of {!Policy.Access.Write} is a mutation, so it answers to the same
+    promise {!escalation} does: a route whose stance is [Denied] refuses it,
+    with that stance's own error. The gate is here rather than in a caller
+    because the promise belongs to the seal — a no-mutation route must refuse
+    every way of asking. A {!Policy.Access.Read} grant widens nothing that
+    promise covers and stays available on every route.
+
+    An unconfined or externally declared route is returned unchanged: it already
+    admits what the grant asks for. A refused route keeps refusing.
+
+    {b The session's seal does not move.} A caller lowers one command through
+    the returned value and discards it. {!identity} does differ — it
+    fingerprints a lowering, and this lowering differs — which is exactly why
+    the granted value must not be stored as the session's: the turn contract
+    belongs to the seal the session resumed under, and a widening that expires
+    with a command may not change it. *)
+
 val direct : t
 (** [direct] is the intentionally unconfined route (for example
     danger-full-access): Mentat applies no filesystem or network confinement.
@@ -273,10 +310,11 @@ val identity : t -> Identity.t
 val obligations : t -> Obligation.t list
 (** [obligations t] are the existence checks the twin must discharge before
     launching any lowered command: each resolved readable and protected path
-    ([Exists]) and each writable root and the private scratch ([Directory]).
-    Deduplicated by path keeping the strongest kind, in canonical path order.
-    [[]] for direct, external, and refused routes. A failing check is reported
-    as [Evidence.refused (Stale_policy _)] naming the exact path, and nothing
+    ([Exists]) and each writable root ([Directory]). A denied path carries none:
+    denying a path that is absent is still correct. Deduplicated by path keeping
+    the strongest kind, in canonical path order. [[]] for direct, external, and
+    refused routes. A failing check is reported as
+    [Evidence.refused (Stale_policy _)] naming the exact path, and nothing
     launches. *)
 
 val lower_argv :

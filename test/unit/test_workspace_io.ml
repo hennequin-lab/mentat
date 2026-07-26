@@ -2133,6 +2133,78 @@ let escalation_escapes_the_profile_never_the_environment () =
         (stdout_str confined_env) (stdout_str escalated)
   | Error e -> failf "escalated env probe failed: %a" Command.Error.pp e
 
+(* The narrow widening, end to end: a path the posture refuses is granted for
+   one command, the command writes it, and the sandbox is still in force
+   everywhere else — including for the very next command, because nothing
+   stored the grant. *)
+let a_grant_widens_one_command_and_no_more () =
+  with_capability "grant" @@ fun w ->
+  require_enforced w.io;
+  let outside = Filename.concat w.out_dir "granted.txt" in
+  let write file = sh (Printf.sprintf {|printf g > "%s"|} file) in
+  let refused = run_ok w.io (write outside) in
+  is_false ~msg:"the path is outside the writable roots to begin with"
+    (exit_status refused = `Exited 0);
+  let grants = [ (abs w.out_dir, Sandbox.Policy.Access.Write) ] in
+  (match
+     Command.run_granted w.io ~capture:Command.All
+       ~timeout:Eio.Time.Timeout.none ~grants (write outside)
+   with
+  | Ok outcome ->
+      equal status_value ~msg:"the granted write succeeds" (`Exited 0)
+        (exit_status outcome);
+      equal string ~msg:"the bytes landed" "g" (read_file outside);
+      (* Unlike an escalation, a grant never left the sandbox. *)
+      (match outcome.Command.sandbox_evidence with
+      | Sandbox.Evidence.Enforced _ -> ()
+      | _ -> fail "a granted command is still an enforced one")
+  | Error e -> failf "granted run failed: %a" Command.Error.pp e);
+  Sys.remove outside;
+  let after = run_ok w.io (write outside) in
+  is_false ~msg:"the grant expired with the command it was made for"
+    (exit_status after = `Exited 0)
+
+(* A grant the posture would defeat is refused, not quietly dropped: the deny
+   set outranks every grant, so admitting it would look like it worked. *)
+let a_grant_of_a_denied_path_is_refused () =
+  with_capability "grant-denied" @@ fun w ->
+  require_enforced w.io;
+  match Wio.policy w.io with
+  | None -> skip ~reason:"no sealed policy to read a denied path from" ()
+  | Some policy -> (
+      match Sandbox.Policy.denied_paths policy with
+      | [] -> skip ~reason:"this host derived no denied paths" ()
+      | denied :: _ -> (
+          match
+            Command.run_granted w.io ~capture:Command.All
+              ~timeout:Eio.Time.Timeout.none
+              ~grants:[ (denied, Sandbox.Policy.Access.Write) ]
+              (sh "exit 0")
+          with
+          | Error
+              (Command.Error.Sandbox (Sandbox.Error.Grant_denied { path; _ }))
+            ->
+              equal abs_value ~msg:"the refusal names the path asked for" denied
+                path
+          | Ok _ -> fail "a grant of a denied path must be refused"
+          | Error e -> failf "wrong error: %a" Command.Error.pp e))
+
+(* A write grant is a mutation, so the posture that refuses an escalation
+   refuses it too — the two are one promise, not two knobs. *)
+let read_only_refuses_a_write_grant () =
+  with_capability "grant-read-only" ~mode:Mode.Read_only @@ fun w ->
+  require_enforced w.io;
+  match
+    Command.run_granted w.io ~capture:Command.All
+      ~timeout:Eio.Time.Timeout.none
+      ~grants:[ (abs w.out_dir, Sandbox.Policy.Access.Write) ]
+      (sh (Printf.sprintf {|printf n > "%s/x.txt"|} w.out_dir))
+  with
+  | Ok outcome ->
+      is_false ~msg:"a read-only route grants no write, however it is asked"
+        (exit_status outcome = `Exited 0)
+  | Error _ -> ()
+
 let read_only_escalation_is_denied () =
   with_capability "escalate-denied" ~mode:Mode.Read_only @@ fun w ->
   match run_escalated_res w.io (sh "exit 0") with
@@ -2337,6 +2409,11 @@ let () =
         confined_commands_are_enforced_by_the_backend;
       test "escalation escapes the profile, never the environment"
         escalation_escapes_the_profile_never_the_environment;
+      test "a grant widens one command and no more"
+        a_grant_widens_one_command_and_no_more;
+      test "a grant of a denied path is refused"
+        a_grant_of_a_denied_path_is_refused;
+      test "read-only refuses a write grant" read_only_refuses_a_write_grant;
       test "read-only escalation is denied" read_only_escalation_is_denied;
       test "a direct capability runs unconfined" direct_mode_runs_unconfined;
       test "a stale policy refuses before launch and at the gate"

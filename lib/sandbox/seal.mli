@@ -47,6 +47,10 @@ val confined :
     {!Mentat_sandbox.confined}. [Ok] lowers the profile from [policy]; [Error]
     refuses every command. Pure and total. *)
 
+val grant : t -> (Lpath.Abs.t * Policy.Access.t) list -> (t, Error.t) result
+(** [grant t entries] widens [t] for one command; see {!Mentat_sandbox.grant}.
+    Pure. *)
+
 val direct : t
 (** The intentionally unconfined route. *)
 

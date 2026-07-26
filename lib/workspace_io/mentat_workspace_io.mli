@@ -34,16 +34,14 @@
 
     {b Resolution binds everything together.} {!resolve} — the only constructor
     — canonicalizes each admitted root once and opens it as an Eio directory
-    capability under the resolve switch, mints the mode-0700 per-run scratch
-    directory (an unpredictable fresh child of the canonicalized temp base,
-    verified disjoint from every admitted root and removed identity-verified on
-    switch release), constructs the exact child environment (allow-list
-    inheritance; ambient secrets and agent sockets stripped; scratch as
-    [HOME]/[TMPDIR]), and — for a confined mode — probes the platform backend
-    once and seals the {!Mentat_sandbox.t} with the probe outcome injected; an
-    unconfined mode seals the direct or declared-external route and probes
-    nothing. Resume is resolution: a resumed session resolves again and compares
-    {!identity} with {!Mentat_sandbox.Identity.equal}.
+    capability under the resolve switch, constructs the exact child environment
+    (allow-list inheritance; ambient secrets and agent sockets stripped; nothing
+    rewritten, so every variable a root is derived from is the one the child
+    reads), and — for a confined mode — probes the platform backend once and
+    seals the {!Mentat_sandbox.t} with the probe outcome injected; an unconfined
+    mode seals the direct or declared-external route and probes nothing. Resume
+    is resolution: a resumed session resolves again and compares {!identity}
+    with {!Mentat_sandbox.Identity.equal}.
 
     {b Paths bind to opened roots.} Every workspace path — read target, edit
     target, command cwd — is re-bound to the {e most-specific opened root}
@@ -92,12 +90,12 @@ module File_error = File_error
 type t
 (** A resolved workspace capability. Binds, privately and inseparably: the
     logical {!Mentat_workspace.t}; one opened Eio directory capability per
-    admitted root, opened once under the resolve switch; the per-run scratch
-    directory; the exact child environment; and the sealed {!Mentat_sandbox.t}
-    with its identity. The only constructor is {!resolve}. No accessor returns
-    an opened root, a physical root inventory, the child environment, a lowered
-    command, or the sealed sandbox value itself — only projections of it — so
-    the sandbox's lowering bridges are unreachable from a holder. *)
+    admitted root, opened once under the resolve switch; the exact child
+    environment; and the sealed {!Mentat_sandbox.t} with its identity. The only
+    constructor is {!resolve}. No accessor returns an opened root, a physical
+    root inventory, the child environment, a lowered command, or the sealed
+    sandbox value itself — only projections of it — so the sandbox's lowering
+    bridges are unreachable from a holder. *)
 
 val resolve :
   sw:Eio.Switch.t ->
@@ -114,39 +112,33 @@ val resolve :
      ~mentat_dirs ~network] resolves the capability, in one fallible call.
 
     [mentat_dirs] are Mentat's own user directories. They are denied to every
-    confined command on every route and in every mode — including the read-only
-    route, which grants no writable or protected paths at all — because the
-    session store they hold carries the very confinement identity a resume
-    revalidates against.
+    confined command on every route and in every mode, because the session store
+    they hold carries the very confinement identity a resume revalidates
+    against. The read-only route is included: it grants no configured or
+    toolchain writes and carves out no protected paths, but it is still granted
+    shared scratch space, so a denial is what keeps Mentat's own state out of
+    it.
 
     It owns: root canonicalization (each configured spelling canonicalized once;
     broad roots — [/], the account home, a workspace ancestor — rejected),
     capability opening (each admitted root opened once as an Eio subtree under
     [sw]), toolchain/platform/git-worktree read-root derivation,
     existence-filtered protected-meta resolution (only existing protected paths
-    enter the policy), scratch creation, exact child-environment construction
-    (the ambient environment is read once, here), and — for a confined [mode] —
-    the bounded backend probe and the sealing of the sandbox with the probe
-    outcome injected; an unconfined [mode] seals the direct or declared-external
-    route and probes nothing.
-
-    The scratch is minted after derivation so it can be {e proved} disjoint: a
-    temp base placing it inside any admitted root — workspace, configured,
-    protected — is refused as [Broad_root] naming [TMPDIR] (the disjointness the
-    sandbox's identity normalization assumes). The child name draws on the
-    platform's secure randomness; its exact 0700 mode is set through the open
-    handle, loudly. Removal verifies the parent-relative entry still names the
-    minted directory and runs beneath the retained opened base — a replaced
-    entry is never deleted.
+    enter the policy), exact child-environment construction (the ambient
+    environment is read once, here), and — for a confined [mode] — the bounded
+    backend probe and the sealing of the sandbox with the probe outcome
+    injected; an unconfined [mode] seals the direct or declared-external route
+    and probes nothing.
 
     [mode] is mandatory: there is no default posture, so a caller cannot resolve
     a writable capability by omission. [readable_roots] is consulted only when
     [read] is [Project] under a confined [mode]; [writable_roots] is validated
     on every route. The labels reuse the config and sandbox domain vocabulary;
     this library mints no second [mode], [read], or [network] type. Opened roots
-    and the scratch live until [sw] is released; the scratch is removed on
-    release, or immediately when a later resolution step fails — a failed
-    constructor leaves no disk state. *)
+    live until [sw] is released. Resolution creates only the directories it
+    owns, each guarded against being handed a symlink or another user's
+    directory, so a failed constructor leaves nothing a later run must clean up.
+*)
 
 val identity : t -> Mentat_sandbox.Identity.t
 (** [identity t] is the durable confinement identity the session seals into the
@@ -191,11 +183,10 @@ val describe_roots : t -> (string * Lpath.Abs.t) list
     the one status consumer, [mentat sandbox status]/[explain]. Labels are
     stable diagnostic spellings — ["project"], ["user-configured"],
     ["platform"], ["executable:PATH"], ["executable:PATH runtime"],
-    ["toolchain:<name>"], ["git-worktree"], in that display order — and the
-    scratch root is omitted. Only roots the sealed policy actually reads appear,
-    so an unscoped route lists nothing. This is a rendering projection sized to
-    that surface — not a programmatic root inventory. No caller may branch on
-    it. *)
+    ["toolchain:<name>"], ["git-worktree"], in that display order. Only roots
+    the sealed policy actually reads appear, so an unscoped route lists nothing.
+    This is a rendering projection sized to that surface — not a programmatic
+    root inventory. No caller may branch on it. *)
 
 val resolve_path :
   t ->
@@ -565,6 +556,38 @@ module Command : sig
       the sealed {!Mentat_sandbox.escalation} is [Available]. The resulting
       {!outcome.sandbox_evidence} reports {!Mentat_sandbox.escalated_evidence}.
       Ordinary producers receive a closure over {!run} and never see this entry.
+
+      Raises [Invalid_argument] if a [capture] bound is negative — a programmer
+      error, never a run outcome. *)
+
+  val run_granted :
+    t ->
+    ?cwd:Mentat_workspace.Path.t ->
+    ?stdin:_ Eio.Flow.source ->
+    capture:capture ->
+    timeout:Eio.Time.Timeout.t ->
+    ?cancelled:(unit -> bool) ->
+    grants:(Lpath.Abs.t * Mentat_sandbox.Policy.Access.t) list ->
+    string list ->
+    (outcome, Error.t) result
+  (** [run_granted t ~capture ~timeout ~grants argv] is {!run} on a seal widened
+      by [grants] for this command alone — the narrow answer to what
+      {!run_escalated} answers by leaving the sandbox entirely.
+
+      The command stays confined. Every clause the posture derived still
+      applies, the deny set still wins beneath a granted tree, and
+      {!outcome.sandbox_evidence} reports enforced evidence naming the profile
+      that actually ran — not {!Mentat_sandbox.escalated_evidence}, because
+      nothing was escaped. The widening lives exactly as long as the call: the
+      capability's own seal is untouched, so no grant accumulates and the
+      session's {!Mentat_sandbox.identity} never moves.
+
+      A grant at or beneath a denied path fails with
+      {!Mentat_sandbox.Error.Grant_denied} rather than being silently lost, and
+      a grant naming a path that does not exist fails the ordinary obligation
+      discharge — grants are admitted, never materialized. Like {!run_escalated}
+      this exists for the engine's permission decision to inject; ordinary
+      producers receive a closure over {!run}.
 
       Raises [Invalid_argument] if a [capture] bound is negative — a programmer
       error, never a run outcome. *)

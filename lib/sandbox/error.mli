@@ -37,7 +37,8 @@ type t =
           Retryable with a different working directory. *)
   | Escalation_denied
       (** the sealed posture promises no mutation: a read-only sandbox admits no
-          approval-shaped exception. *)
+          approval-shaped exception, neither a total escalation nor a write
+          grant. A {e read} grant is not one and stays available. *)
   | Escalation_irrelevant
       (** escalation asks for what is already true on an unconfined or
           declared-external route. *)
@@ -48,9 +49,15 @@ type t =
       (** token [index] of the lowered argv contains a NUL byte, which OS argv
           cannot represent. Index [0] is the program. *)
   | Stale_policy of { path : Lpath.Abs.t }
-      (** the resolved root or protected path [path] disappeared or changed kind
-          after sealing. Transient — re-resolve and re-seal. Minted by the
+      (** a path some clause of the sealed policy names, [path], disappeared or
+          changed kind after sealing. Transient — re-resolve and re-seal. Minted by the
           effect twin when discharging an obligation fails. *)
+  | Grant_denied of { path : Lpath.Abs.t; denied : Lpath.Abs.t }
+      (** a per-command grant named [path], which lies at or beneath the
+          policy's denied path [denied]. Refused rather than obliged: the
+          resolution law would let the denial win in silence, and a caller must
+          learn that the access it asked for is one the posture does not sell.
+      *)
 
 val message : t -> string
 (** [message t] is the human-readable diagnostic. It is not a stable matching
@@ -67,8 +74,9 @@ val to_json : t -> Jsont.json
 (** [to_json t] is the canonical JSON projection, built from the constructor: an
     object with ["kind"] (["unavailable"], ["cwd_outside_scope"],
     ["escalation_denied"], ["escalation_irrelevant"], ["empty_program"],
-    ["nul_in_argv"], or ["stale_policy"]) and ["message"], plus the
-    constructor's structured fields — ["path"] for {!Cwd_outside_scope} and
-    {!Stale_policy}, ["index"] for {!Nul_in_argv}. It is encode-only — one
+    ["nul_in_argv"], ["stale_policy"], or ["grant_denied"]) and ["message"],
+    plus the constructor's structured fields — ["path"] for
+    {!Cwd_outside_scope}, {!Stale_policy} and {!Grant_denied}, ["denied"] for
+    {!Grant_denied}, ["index"] for {!Nul_in_argv}. It is encode-only — one
     spelling for every product JSON surface so the class cannot drift between
     contracts. *)

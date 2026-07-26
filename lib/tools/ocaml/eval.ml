@@ -220,7 +220,9 @@ let command_error_message error =
 
 let command_error_failure = function
   | Mentat_workspace_io.Command.Error.Sandbox
-      (Mentat_sandbox.Error.Empty_program | Mentat_sandbox.Error.Nul_in_argv _)
+      ( Mentat_sandbox.Error.Empty_program
+      | Mentat_sandbox.Error.Nul_in_argv _
+      | Mentat_sandbox.Error.Grant_denied _ )
   | Mentat_workspace_io.Command.Error.Unknown_cwd_root _ ->
       `Invalid_input
   | Mentat_workspace_io.Command.Error.Sandbox
@@ -278,7 +280,7 @@ let result_of_output output =
       Mentat_tool.Result.failed ~output `Failed
         (Printf.sprintf "OCaml eval %s exited with status %d"
            (stage_name output.stage) code
-        ^ Confinement.denial_note output.confinement)
+        ^ Confinement.denial_note ~widening:`Through_shell output.confinement)
   | Signaled signal ->
       Mentat_tool.Result.failed ~output `Failed
         (Printf.sprintf "OCaml eval %s terminated by signal %d"

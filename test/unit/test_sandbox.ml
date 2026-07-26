@@ -668,6 +668,86 @@ let denials_are_unfiltered_and_identified () =
     (Mentat_sandbox.Identity.equal (identity policy)
        (identity (confined ~writable_roots:[ abs "/work" ] ())))
 
+(* A grant is a policy widening, so the resolution law is the whole mechanism:
+   it must reach the lowering, it must not disturb the clauses already there,
+   and — the part a caller depends on — the deny set must keep winning beneath
+   it, because that is what stops a grant over a tree from buying back a path
+   the posture removed. *)
+let a_grant_widens_without_defeating_a_denial () =
+  let policy =
+    confined ~reads:[ abs "/work" ] ~writable_roots:[ abs "/work" ]
+      ~denied_paths:[ abs "/work/.mentat" ] ()
+  in
+  let granted =
+    match Policy.grant policy [ (abs "/cache/dune", Policy.Access.Write) ] with
+    | Ok granted -> granted
+    | Error (path, denied) ->
+        failf "granting %a was refused by %a" Abs.pp path Abs.pp denied
+  in
+  is_true ~msg:"the granted path is writable"
+    (List.exists (Abs.equal (abs "/cache/dune")) (Policy.writable_roots granted));
+  equal (list abs_value) ~msg:"the denial is untouched by a grant elsewhere"
+    [ abs "/work/.mentat" ]
+    (Policy.denied_paths granted);
+  is_true ~msg:"the clauses already present survive"
+    (List.exists (Abs.equal (abs "/work")) (Policy.writable_roots granted));
+  (* A grant over the tree that contains a denial is admitted, and the deeper
+     denial still resolves inside it. *)
+  match Policy.grant policy [ (abs "/work/sub", Policy.Access.Write) ] with
+  | Error (path, _) -> failf "a grant containing no denial was refused: %a" Abs.pp path
+  | Ok wider ->
+      equal (list abs_value) ~msg:"a grant beside a denial leaves it standing"
+        [ abs "/work/.mentat" ]
+        (Policy.denied_paths wider)
+
+(* The one case the resolution law would answer silently: [Deny] outranks a
+   grant, so a grant at or beneath a denied path would be admitted and then lost.
+   It is refused instead, and the refusal is directional — only the containment
+   that would be defeated. *)
+let a_grant_under_a_denial_is_refused () =
+  let denied = abs "/home/user/.config/mentat" in
+  let policy = confined ~writable_roots:[ abs "/work" ] ~denied_paths:[ denied ] () in
+  (match Policy.grant policy [ (abs "/home/user/.config/mentat/auth", Policy.Access.Write) ] with
+  | Ok _ -> fail "a grant beneath a denied path was admitted"
+  | Error (path, root) ->
+      equal abs_value ~msg:"the refusal names the grant"
+        (abs "/home/user/.config/mentat/auth") path;
+      equal abs_value ~msg:"the refusal names the denial that defeats it" denied root);
+  (match Policy.grant policy [ (denied, Policy.Access.Write) ] with
+  | Ok _ -> fail "a grant of the denied path itself was admitted"
+  | Error _ -> ());
+  match Policy.grant policy [ (abs "/home/user/.config", Policy.Access.Write) ] with
+  | Error (path, _) ->
+      failf "a grant containing a denial should be admitted, refused %a" Abs.pp path
+  | Ok wider ->
+      equal (list abs_value) ~msg:"the denial still wins inside the granted tree"
+        [ denied ] (Policy.denied_paths wider)
+
+(* A grant is a route, not a stored posture: the sealed value it returns lowers
+   and reports as an enforced confined command — never as an escape — and the
+   seal it was made from is unchanged. *)
+let a_granted_seal_still_confines () =
+  let policy = confined ~reads:[ abs "/work" ] ~writable_roots:[ abs "/work" ] () in
+  let sandbox = sealed policy in
+  let granted =
+    match Mentat_sandbox.grant sandbox [ (abs "/work/deep", Policy.Access.Write) ] with
+    | Ok granted -> granted
+    | Error error -> fail (Error.message error)
+  in
+  (match Mentat_sandbox.evidence granted with
+  | Evidence.Enforced _ -> ()
+  | _ -> fail "a granted command reports enforced evidence, not an escape");
+  is_false ~msg:"the widened lowering differs from the one it widened"
+    (Mentat_digest.equal
+       (Mentat_sandbox.Identity.digest (Mentat_sandbox.identity granted))
+       (Mentat_sandbox.Identity.digest (Mentat_sandbox.identity sandbox)));
+  equal policy_value ~msg:"the seal the grant was made from is untouched" policy
+    (Option.get (Mentat_sandbox.policy sandbox));
+  (* An unconfined route already admits what a grant asks for. *)
+  match Mentat_sandbox.grant Mentat_sandbox.direct [ (abs "/x", Policy.Access.Write) ] with
+  | Ok _ -> ()
+  | Error error -> fail (Error.message error)
+
 (* Both backends must put the denial last, or a read or write root emitted
    after it would win. *)
 let denials_are_lowered_last () =
@@ -999,7 +1079,7 @@ let lower_escalated_refuses_denied_and_ignored () =
          --sandbox flag hint leaks from the library. *)
       equal string ~msg:"read-only escalation refusal message"
         "the sealed posture promises no mutation: a read-only sandbox admits \
-         no escalation"
+         neither an escalation nor a write grant"
         (Error.message Error.Escalation_denied)
   | _ -> fail "read-only escalation must be Escalation_denied");
   match
@@ -1368,6 +1448,10 @@ let () =
       (* Policy *)
       test "policy distinguishes network state" policy_distinguishes_network;
       test "policy keeps every clause" policy_keeps_every_clause;
+      test "a grant widens without defeating a denial"
+        a_grant_widens_without_defeating_a_denial;
+      test "a grant under a denial is refused" a_grant_under_a_denial_is_refused;
+      test "a granted seal still confines" a_granted_seal_still_confines;
       test "policy collapses only duplicate paths"
         policy_collapses_only_duplicate_paths;
       policy_entries_are_ordered_shallowest_first ();

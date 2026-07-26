@@ -13,13 +13,17 @@ Usage:
 - For a long-lived command — a dev server, a file watcher, a log tail — set
   background=true. The call returns a handle immediately instead of waiting;
   read new output with shell_output and stop it with shell_kill. A background
-  command runs confined (it cannot be escalated) and its timeout is the
-  session, not timeout_ms.
+  command runs confined (the sandbox cannot be widened for it) and its
+  timeout is the session, not timeout_ms.
 - Quote paths that contain spaces. Keep commands non-interactive; anything
   that prompts for input will hang until the timeout.
 - Do not sleep, poll, or retry a failing command unchanged — diagnose the
   failure first.
 - The host selects the shell, sandbox, environment, and timeout and output
-  bounds. If a command fails because of sandbox restrictions, retry that
-  one command with escalate=true and the reason in description; escalation
-  needs explicit user approval and is unavailable in read-only runs.
+  bounds. If a command fails because of a sandbox restriction, read the
+  message for the path it names and retry that one command with
+  grant_write=["/that/path"]: the sandbox stays in force everywhere else and
+  the widening lasts only for that command. Reach for escalate=true only when
+  the access is genuinely broader than a set of paths, and say why in
+  description. Both need explicit user approval, both are unavailable in
+  read-only runs, and they cannot be combined.

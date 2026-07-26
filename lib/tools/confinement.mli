@@ -42,12 +42,23 @@ val custom_access :
     command text. OCaml intelligence tools use this fact alongside their read
     scope. *)
 
-val denial_note : Mentat_workspace_io.Confinement.t option -> string
-(** [denial_note observation] is the advisory to append to a failed command's
-    message, or [""] when nothing guarded the command or nothing in its output
-    looks like the guard refusing something.
+val denial_note :
+  widening:[ `Here | `Through_shell ] ->
+  Mentat_workspace_io.Confinement.t option ->
+  string
+(** [denial_note ~widening observation] is the advisory to append to a failed
+    command's message, or [""] when nothing guarded the command or nothing in
+    its output looks like the guard refusing something.
 
-    Every spawn site renders through here, so a tool that cannot be escalated
-    never advises an escalation, an unscoped route never names a read field the
-    resolver discards, and a backend that cannot distinguish a denied read from
-    a missing file says so rather than asserting a refusal. *)
+    [widening] is whether the calling tool carries the sandbox parameters
+    itself. Only the foreground shell does, so every other site passes
+    [`Through_shell] and is told to route the command there rather than being
+    handed a parameter it does not accept. It is separate from whether a
+    widening exists at all, which is the sealed posture's answer and is read
+    from [observation] — a route that promised no mutation is offered neither.
+
+    Every spawn site renders through here, so the advice is always a move that
+    exists: the narrow grant is offered before the total escalation, an unscoped
+    route never names a read field the resolver discards, and a backend that
+    cannot distinguish a denied read from a missing file says so rather than
+    asserting a refusal. *)

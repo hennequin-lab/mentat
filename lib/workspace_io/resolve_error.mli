@@ -29,8 +29,8 @@ type root_reason =
 type t =
   | Invalid_root of { spelling : string; reason : root_reason }
       (** A configured or derived root spelling ([sandbox.readable_roots],
-          [sandbox.writable_roots], a [PATH] or toolchain-variable segment, or
-          a git-worktree metadata target) could not be admitted. *)
+          [sandbox.writable_roots], a [PATH] or toolchain-variable segment, or a
+          git-worktree metadata target) could not be admitted. *)
   | Broad_root of { field : string; spelling : string }
       (** A root is too broad to admit: [/], the account home, an ancestor of a
           workspace root — or, for [sandbox.writable_roots], a spelling that

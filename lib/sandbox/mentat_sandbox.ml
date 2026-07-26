@@ -16,6 +16,7 @@ type escalation = Seal.escalation = Available | Denied of Error.t | Ignored
 module Obligation = Seal.Obligation
 
 let confined = Seal.confined
+let grant = Seal.grant
 let direct = Seal.direct
 let external_ = Seal.external_
 let policy = Seal.policy

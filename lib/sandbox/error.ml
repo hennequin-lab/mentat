@@ -11,6 +11,7 @@ type t =
   | Empty_program
   | Nul_in_argv of { index : int }
   | Stale_policy of { path : Lpath.Abs.t }
+  | Grant_denied of { path : Lpath.Abs.t; denied : Lpath.Abs.t }
 
 let kind_string = function
   | Unavailable _ -> "unavailable"
@@ -20,6 +21,7 @@ let kind_string = function
   | Empty_program -> "empty_program"
   | Nul_in_argv _ -> "nul_in_argv"
   | Stale_policy _ -> "stale_policy"
+  | Grant_denied _ -> "grant_denied"
 
 let message = function
   | Unavailable diagnostic -> diagnostic
@@ -28,8 +30,8 @@ let message = function
         "working directory %s is outside the confined readable roots"
         (Lpath.Abs.to_string cwd)
   | Escalation_denied ->
-      "the sealed posture promises no mutation: a read-only sandbox admits no \
-       escalation"
+      "the sealed posture promises no mutation: a read-only sandbox admits \
+       neither an escalation nor a write grant"
   | Escalation_irrelevant ->
       "sandbox escalation is not meaningful for this execution route"
   | Empty_program -> "program must not be empty"
@@ -39,6 +41,10 @@ let message = function
       Printf.sprintf
         "resolved sandbox path %s disappeared or changed kind after sealing"
         (Lpath.Abs.to_string path)
+  | Grant_denied { path; denied } ->
+      Printf.sprintf "%s cannot be granted: it lies under the denied path %s"
+        (Lpath.Abs.to_string path)
+        (Lpath.Abs.to_string denied)
 
 let equal a b =
   match (a, b) with
@@ -49,9 +55,11 @@ let equal a b =
   | Empty_program, Empty_program -> true
   | Nul_in_argv a, Nul_in_argv b -> Int.equal a.index b.index
   | Stale_policy a, Stale_policy b -> Lpath.Abs.equal a.path b.path
+  | Grant_denied a, Grant_denied b ->
+      Lpath.Abs.equal a.path b.path && Lpath.Abs.equal a.denied b.denied
   | ( ( Unavailable _ | Cwd_outside_scope _ | Escalation_denied
       | Escalation_irrelevant | Empty_program | Nul_in_argv _ | Stale_policy _
-        ),
+      | Grant_denied _ ),
       _ ) ->
       false
 
@@ -64,6 +72,11 @@ let to_json t =
     match t with
     | Cwd_outside_scope path | Stale_policy { path } ->
         [ string_mem "path" (Lpath.Abs.to_string path) ]
+    | Grant_denied { path; denied } ->
+        [
+          string_mem "path" (Lpath.Abs.to_string path);
+          string_mem "denied" (Lpath.Abs.to_string denied);
+        ]
     | Nul_in_argv { index } -> [ mem "index" (Jsont.Json.int index) ]
     | Unavailable _ | Escalation_denied | Escalation_irrelevant | Empty_program
       ->

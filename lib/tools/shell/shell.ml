@@ -10,6 +10,7 @@ let max_timeout_ms = 600_000
 let capture_head_bytes = max_output_bytes / 2
 let capture_tail_bytes = max_output_bytes - capture_head_bytes
 let escalation_access_name = "shell.escalate"
+let grant_access_name = "shell.grant"
 let json_string value = Jsont.Json.string value
 let json_int value = Jsont.Json.int value
 let json_bool value = Jsont.Json.bool value
@@ -22,6 +23,7 @@ module Input = struct
     description : string option;
     escalate : bool;
     background : bool;
+    grant_write : Lpath.Abs.t list;
   }
 
   let validate_string member value =
@@ -29,7 +31,8 @@ module Input = struct
     if String.contains value '\000' then
       invalid_arg (member ^ " must not contain NUL")
 
-  let make command workdir timeout_ms description escalate background =
+  let make command workdir timeout_ms description escalate background
+      grant_write =
     Mentat_tool.Codec.decode_invalid_arg @@ fun () ->
     validate_string "shell command" command;
     Option.iter (validate_string "workdir") workdir;
@@ -39,6 +42,17 @@ module Input = struct
         invalid_arg
           ("timeout_ms must be positive, got " ^ string_of_int timeout_ms)
     | Some _ | None -> ());
+    let grant_write =
+      List.map
+        (fun spelling ->
+          validate_string "grant_write path" spelling;
+          match Lpath.Abs.of_string spelling with
+          | Ok path -> path
+          | Error _ ->
+              invalid_arg
+                ("grant_write path must be an absolute path, got " ^ spelling))
+        (Option.value grant_write ~default:[])
+    in
     {
       command;
       workdir;
@@ -46,6 +60,7 @@ module Input = struct
       description;
       escalate = Option.value escalate ~default:false;
       background = Option.value background ~default:false;
+      grant_write;
     }
 
   let max_input_integer =
@@ -75,6 +90,12 @@ module Input = struct
         if input.escalate then Some true else None)
     |> Jsont.Object.opt_mem "background" Jsont.bool ~enc:(fun input ->
         if input.background then Some true else None)
+    |> Jsont.Object.opt_mem "grant_write"
+         (Jsont.list Jsont.string)
+         ~enc:(fun input ->
+           match input.grant_write with
+           | [] -> None
+           | paths -> Some (List.map Lpath.Abs.to_string paths))
     |> Jsont.Object.error_unknown |> Jsont.Object.finish
 
   let codec = Codec.strict_object ~kind:"strict shell input" object_codec
@@ -127,6 +148,20 @@ module Input = struct
                    confined and cannot be escalated (escalate a command in the \
                    foreground instead)."
                   [] );
+              ( "grant_write",
+                Codec.obj
+                  [
+                    ("type", json_string "array");
+                    ("items", Codec.obj [ ("type", json_string "string") ]);
+                    ( "description",
+                      json_string
+                        "Absolute paths to make writable for this one command, \
+                         leaving the rest of the sandbox in force. Prefer this \
+                         over escalate after a refused write: name the exact \
+                         path the output reported. Separate approval is \
+                         required, the widening lasts only for this command, \
+                         and a path Mentat denies outright is refused." );
+                  ] );
             ] );
         ("required", Jsont.Json.list [ json_string "command" ]);
         ("additionalProperties", json_bool false);
@@ -138,26 +173,41 @@ module Input = struct
     Option.value input.timeout_ms ~default:default_timeout_ms
 end
 
-type route = Ordinary | Escalated | Escalation_denied
+type route =
+  | Ordinary
+  | Escalated
+  | Granted of Lpath.Abs.t list
+  | Mutation_denied
+  | Both_requested
 
-(* [route] is the escalation route decision, and also drives the permission
-   projection. A background command is supervised through
-   [Command.start_session], which has no escalated variant: a plain background
-   command runs [Ordinary] (its permission is the ordinary shell fact), while a
-   background command that {e requests} escalation cannot have it — it is
-   refused with a steering message at launch ({!run}) and projected as needing no
-   request here, so [route] answers [Escalation_denied] to yield no permission.
-   [run] dispatches a background command before this match, so the value never
-   selects a foreground path. *)
+(* [route] is the widening decision, and also drives the permission projection.
+
+   Escalation and a grant answer the same question at two scales — leave the
+   sandbox, or admit these paths and keep it — so they share the posture that
+   gates them. [Mentat_sandbox.Denied] is the sealed answer to whether this route
+   may change the filesystem at all, and a write grant is a change, so a
+   no-mutation route refuses both. Asking for both at once is refused rather than
+   ranked: an escalated command has no policy left for a grant to widen, so
+   honouring one silently discards the other.
+
+   A background command is supervised through [Command.start_session], which has
+   neither variant: a plain one runs [Ordinary] (its permission is the ordinary
+   shell fact), while one that requests a widening cannot have it — it is refused
+   with a steering message at launch ({!run}) and projected as needing no request
+   here, so [route] yields no permission. [run] dispatches a background command
+   before this match, so the value never selects a foreground path. *)
 let route escalation input =
+  let granted = input.Input.grant_write in
   if input.Input.background then
-    if input.Input.escalate then Escalation_denied else Ordinary
-  else if not input.Input.escalate then Ordinary
+    if input.Input.escalate || granted <> [] then Mutation_denied else Ordinary
+  else if input.Input.escalate && granted <> [] then Both_requested
+  else if (not input.Input.escalate) && granted = [] then Ordinary
   else
     match escalation with
-    | Mentat_sandbox.Available -> Escalated
-    | Mentat_sandbox.Denied _ -> Escalation_denied
+    | Mentat_sandbox.Denied _ -> Mutation_denied
     | Mentat_sandbox.Ignored -> Ordinary
+    | Mentat_sandbox.Available ->
+        if input.Input.escalate then Escalated else Granted granted
 
 let shell_argv shell command =
   let executable = String.lowercase_ascii (Filename.basename shell) in
@@ -201,13 +251,24 @@ let permissions workspace_io ~ordinary_execution ~escalation input =
       in
       let accesses =
         match route escalation input with
-        | Escalation_denied -> []
+        | Mutation_denied | Both_requested -> []
         | Ordinary -> [ command_access ordinary_execution ]
         | Escalated ->
             [
               command_access Confinement.escalated;
               Mentat_permission.Access.custom ~subject:input.Input.command
                 escalation_access_name;
+            ]
+        (* The command stays confined, so the ordinary execution fact still
+           describes it; the widening is the separate reviewable claim, and the
+           paths are its subject because they are what the approval is for. *)
+        | Granted paths ->
+            [
+              command_access ordinary_execution;
+              Mentat_permission.Access.custom
+                ~subject:
+                  (String.concat ", " (List.map Lpath.Abs.to_string paths))
+                grant_access_name;
             ]
       in
       match accesses with
@@ -337,7 +398,7 @@ let command_error_failure = function
       ( Mentat_sandbox.Error.Escalation_denied
       | Mentat_sandbox.Error.Escalation_irrelevant
       | Mentat_sandbox.Error.Empty_program | Mentat_sandbox.Error.Nul_in_argv _
-        ) ->
+      | Mentat_sandbox.Error.Grant_denied _ ) ->
       `Invalid_input
   | Mentat_workspace_io.Command.Error.Unknown_cwd_root _ -> `Invalid_input
   | Mentat_workspace_io.Command.Error.Sandbox
@@ -351,7 +412,8 @@ let command_error_failure = function
 let result_of_output output =
   let outcome = output.Output.outcome in
   let note =
-    Confinement.denial_note outcome.Mentat_workspace_io.Command.confinement
+    Confinement.denial_note ~widening:`Here
+      outcome.Mentat_workspace_io.Command.confinement
   in
   match outcome.Mentat_workspace_io.Command.termination with
   | Mentat_workspace_io.Command.Exited (`Exited 0) ->
@@ -391,12 +453,20 @@ let run_command workspace_io ~clock ~shell ~escalation ~cancelled input workdir
   in
   let result =
     match route escalation input with
-    | Ordinary ->
+    | Ordinary | Mutation_denied | Both_requested ->
         Mentat_workspace_io.Command.run workspace_io ~cwd:workdir ~capture
           ~timeout ~cancelled argv
-    | Escalated | Escalation_denied ->
+    | Escalated ->
         Mentat_workspace_io.Command.run_escalated workspace_io ~cwd:workdir
           ~capture ~timeout ~cancelled argv
+    | Granted paths ->
+        Mentat_workspace_io.Command.run_granted workspace_io ~cwd:workdir
+          ~capture ~timeout ~cancelled
+          ~grants:
+            (List.map
+               (fun path -> (path, Mentat_sandbox.Policy.Access.Write))
+               paths)
+          argv
   in
   match result with
   | Error error ->
@@ -430,15 +500,16 @@ let background_receipt ~handle ~pid ~command ~workdir =
   in
   Mentat_tool.Output.make ~text ~json ()
 
-(* A background command that requests escalation is refused with a message that
-   steers the model to a route that works, rather than silently confining it: an
-   escalated profile that outlives the turn is the open sandbox question v1 does
-   not pre-empt. *)
-let background_escalation_refused () =
+(* A background command that requests a widening is refused with a message that
+   steers the model to a route that works, rather than silently confining it: a
+   widened profile that outlives the turn is the open sandbox question v1 does
+   not pre-empt, and it applies to a grant for the same reason it applies to an
+   escalation. *)
+let background_widening_refused () =
   Mentat_tool.Result.failed `Invalid_input
-    "background commands run confined in this version. To use escalation, \
+    "background commands run confined in this version. To widen the sandbox, \
      either run this command in the foreground (background=false) with \
-     escalate=true, or start it in the background without escalate."
+     escalate or grant_write, or start it in the background without them."
 
 (* A background start is a short call: resolve the workdir, spawn through the
    registry under the ordinary confined route, and return a receipt at once.
@@ -478,14 +549,25 @@ let run_background workspace_io ~registry ~shell input =
 
 let interrupted () = Mentat_tool.Result.cancelled ()
 
-let escalation_denied () =
+let mutation_denied () =
   Mentat_tool.Result.failed `Invalid_input
     (Mentat_sandbox.Error.message Mentat_sandbox.Error.Escalation_denied)
+
+(* Both at once is a contradiction, not a preference to resolve: escalation
+   leaves the sandbox, so there is no policy left for the grant to widen, and
+   honouring either one silently discards the other's intent. *)
+let both_requested () =
+  Mentat_tool.Result.failed `Invalid_input
+    "escalate and grant_write cannot be combined: escalate leaves the sandbox \
+     entirely, so a per-path grant would have nothing to widen. Ask for \
+     grant_write with the exact paths, or escalate without it."
+
 
 let run workspace_io ~clock ~shell ~registry ~escalation ~cancelled input =
   if cancelled () then interrupted ()
   else if input.Input.background then
-    if input.Input.escalate then background_escalation_refused ()
+    if input.Input.escalate || input.Input.grant_write <> [] then
+      background_widening_refused ()
     else run_background workspace_io ~registry ~shell input
   else
     let timeout_ms = Input.effective_timeout_ms input in
@@ -494,8 +576,9 @@ let run workspace_io ~clock ~shell ~registry ~escalation ~cancelled input =
         ("timeout_ms must be <= " ^ string_of_int max_timeout_ms)
     else
       match route escalation input with
-      | Escalation_denied -> escalation_denied ()
-      | Ordinary | Escalated -> (
+      | Mutation_denied -> mutation_denied ()
+      | Both_requested -> both_requested ()
+      | Ordinary | Escalated | Granted _ -> (
           match resolve_workdir workspace_io input with
           | Error message -> Mentat_tool.Result.failed `Invalid_input message
           | Ok workdir ->

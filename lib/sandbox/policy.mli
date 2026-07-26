@@ -49,9 +49,15 @@ module Access : sig
     | Deny  (** neither, whichever clause would otherwise admit it *)
 
   val compare : t -> t -> int
-  (** [compare a b] orders by how much each takes away, [Read < Write < Deny].
-      It is the tie-break when two clauses name one path, so the stronger
-      survives. *)
+  (** [compare a b] orders by precedence, [Read < Write < Deny]: a write
+      outranks a read, and a denial outranks both. It is the tie-break when two
+      clauses name one path, so the outranking one survives.
+
+      It is deliberately {e not} an ordering by permissiveness — {!Write} is the
+      most permissive of the three and still outranks {!Read} — because what a
+      tie must resolve to is the clause the posture meant, not the narrower
+      one. A path derived as both a read root and a writable root is writable;
+      only a denial takes it back. *)
 
   val equal : t -> t -> bool
   (** [equal a b] is [true] iff [a] and [b] are the same access. *)
@@ -112,6 +118,25 @@ val readable_roots : t -> Lpath.Abs.t list
 
 val denied_paths : t -> Lpath.Abs.t list
 (** [denied_paths t] are the denied paths, in emission order. *)
+
+val grant :
+  t -> (Lpath.Abs.t * Access.t) list -> (t, Lpath.Abs.t * Lpath.Abs.t) result
+(** [grant t entries] is [t] widened by [entries], or [Error (path, denied)]
+    naming the first granted [path] a denied path [denied] would have defeated.
+
+    Widening needs no rule of its own: an added clause takes part in the
+    resolution law like any other, so a grant deeper than an existing clause
+    wins inside it and a grant that repeats a path collapses to the stronger
+    access. What that law would do {e silently} is lose a grant to a denied
+    path, since {!Access.Deny} outranks both grants. That case is refused
+    instead — a caller asking for access it will not get must be told, not
+    quietly obliged.
+
+    The refusal is directional, matching the containment rule the deny set is
+    built on: a grant {e at or beneath} a denied path is refused, and a grant
+    {e containing} one is admitted with the denial still winning inside it. So a
+    grant over a whole tree cannot be used to reach a path the deny set removed.
+*)
 
 val equal : t -> t -> bool
 (** [equal a b] is [true] iff [a] and [b] describe the same confinement. *)

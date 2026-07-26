@@ -26,8 +26,11 @@ end
 module Access = struct
   type t = Read | Write | Deny
 
-  (* Ordered by how much each takes away, so the strongest wins a tie between
-     two clauses naming the same path. *)
+  (* The precedence a tie between two clauses on one path is settled by: a
+     write outranks a read, and a denial outranks both. Not an ordering by
+     permissiveness — a write is the {e most} permissive of the three and still
+     outranks a read — but by which clause the posture meant, which is the
+     reference implementation's rule. *)
   let rank = function Read -> 0 | Write -> 1 | Deny -> 2
   let compare a b = Int.compare (rank a) (rank b)
   let equal a b = rank a = rank b
@@ -43,9 +46,16 @@ type t = {
   network : Network.t;
 }
 
+(* Specificity is the component count, not the separator count: the two agree
+   everywhere except at the root, which is spelled ["/"] and so carries a
+   separator without naming a component. Counting separators would tie the root
+   with every single-component path — the one tie where the answer matters,
+   since the root contains them all. *)
 let depth path =
-  Lpath.Abs.to_string path
-  |> String.fold_left (fun n c -> if Char.equal c '/' then n + 1 else n) 0
+  if Lpath.Abs.is_root path then 0
+  else
+    Lpath.Abs.to_string path
+    |> String.fold_left (fun n c -> if Char.equal c '/' then n + 1 else n) 0
 
 (* Emission order is resolution order read backwards. Both backends let the
    last clause touching a path win — SBPL by rule order, bubblewrap by mount
@@ -90,6 +100,24 @@ let readable_roots t =
       | Access.Read | Access.Write -> Some path
       | Access.Deny -> None)
     t.entries
+
+(* A grant only ever widens, and normalization already keeps the stronger of two
+   clauses on one path — so a grant beneath an existing clause resolves by the
+   ordinary law and needs no special case. A denied path is the exception: it
+   would win that tie silently, and a grant answered by doing nothing is worse
+   than one that is refused, so the containment is checked here and reported.
+   Only the direction that would be defeated is refused. A grant *containing* a
+   denied path is admitted and the deeper denial keeps winning inside it, which
+   is how the deny set survives a grant made over a whole tree. *)
+let grant t entries =
+  let denied = denied_paths t in
+  let defeated (path, _) =
+    List.find_opt (fun root -> Lpath.Abs.is_within ~root path) denied
+    |> Option.map (fun root -> (path, root))
+  in
+  match List.find_map defeated entries with
+  | Some defeat -> Error defeat
+  | None -> Ok { t with entries = normalize (t.entries @ entries) }
 
 let reads_default_equal a b =
   match (a, b) with

@@ -320,28 +320,27 @@ let%expect_test "declaration and provider decoding enforce exact JSON types" =
          ("timeout_ms", Json.number 9_007_199_254_740_992.);
        ]);
   [%expect
-    {|
-    name: shell
-    schema: {"type":"object","properties":{"command":{"type":"string","description":"Non-empty shell command text.","minLength":1},"workdir":{"type":"string","description":"Workspace-relative or workspace-contained absolute working directory. Defaults to the workspace current directory.","minLength":1},"timeout_ms":{"type":"integer","description":"Optional command timeout in milliseconds, from 1 to 600000. Defaults to 60000.","minimum":1,"maximum":600000},"description":{"type":"string","description":"Optional reviewer and UI metadata.","minLength":1},"escalate":{"type":"boolean","description":"Request this command outside the enforcing profile. Use only after a sandbox restriction, with the reason in description; separate approval is required."},"background":{"type":"boolean","description":"Run the command in the background and return a handle to read with shell_output and stop with shell_kill. Use for dev servers, watchers, and long log tails. timeout_ms is ignored for a background command; a background command runs confined and cannot be escalated (escalate a command in the foreground instead)."}},"required":["command"],"additionalProperties":false}
-    minimal: accepted canonical={"command":"printf ok"}
-    full: accepted canonical={"command":"pwd","description":"show subject","escalate":true,"timeout_ms":250,"workdir":"subject"}
-    missing command: rejected diagnostic=true
-    unknown member: rejected diagnostic=true
-    non-object input: rejected diagnostic=true
-    duplicate command: rejected diagnostic=true
-    duplicate escalation: rejected diagnostic=true
-    empty command: rejected diagnostic=true
-    nul command: rejected diagnostic=true
-    empty workdir: rejected diagnostic=true
-    nul workdir: rejected diagnostic=true
-    empty description: rejected diagnostic=true
-    nul description: rejected diagnostic=true
-    zero timeout: rejected diagnostic=true
-    negative timeout: rejected diagnostic=true
-    fractional timeout: rejected diagnostic=true
-    string timeout: rejected diagnostic=true
-    largest safe integer: accepted canonical={"command":"pwd","timeout_ms":9007199254740991}
-    unsafe integer: rejected diagnostic=true |}]
+    {|name: shell
+schema: {"type":"object","properties":{"command":{"type":"string","description":"Non-empty shell command text.","minLength":1},"workdir":{"type":"string","description":"Workspace-relative or workspace-contained absolute working directory. Defaults to the workspace current directory.","minLength":1},"timeout_ms":{"type":"integer","description":"Optional command timeout in milliseconds, from 1 to 600000. Defaults to 60000.","minimum":1,"maximum":600000},"description":{"type":"string","description":"Optional reviewer and UI metadata.","minLength":1},"escalate":{"type":"boolean","description":"Request this command outside the enforcing profile. Use only after a sandbox restriction, with the reason in description; separate approval is required."},"background":{"type":"boolean","description":"Run the command in the background and return a handle to read with shell_output and stop with shell_kill. Use for dev servers, watchers, and long log tails. timeout_ms is ignored for a background command; a background command runs confined and cannot be escalated (escalate a command in the foreground instead)."},"grant_write":{"type":"array","items":{"type":"string"},"description":"Absolute paths to make writable for this one command, leaving the rest of the sandbox in force. Prefer this over escalate after a refused write: name the exact path the output reported. Separate approval is required, the widening lasts only for this command, and a path Mentat denies outright is refused."}},"required":["command"],"additionalProperties":false}
+minimal: accepted canonical={"command":"printf ok"}
+full: accepted canonical={"command":"pwd","description":"show subject","escalate":true,"timeout_ms":250,"workdir":"subject"}
+missing command: rejected diagnostic=true
+unknown member: rejected diagnostic=true
+non-object input: rejected diagnostic=true
+duplicate command: rejected diagnostic=true
+duplicate escalation: rejected diagnostic=true
+empty command: rejected diagnostic=true
+nul command: rejected diagnostic=true
+empty workdir: rejected diagnostic=true
+nul workdir: rejected diagnostic=true
+empty description: rejected diagnostic=true
+nul description: rejected diagnostic=true
+zero timeout: rejected diagnostic=true
+negative timeout: rejected diagnostic=true
+fractional timeout: rejected diagnostic=true
+string timeout: rejected diagnostic=true
+largest safe integer: accepted canonical={"command":"pwd","timeout_ms":9007199254740991}
+unsafe integer: rejected diagnostic=true|}]
 
 let%expect_test "the declared timeout ceiling is the enforced one" =
   with_world "timeouts" @@ fun world ->
@@ -474,30 +473,29 @@ let%expect_test "confined permissions and escalation match the selected route" =
   print_permissions missing;
   print_status (run_call missing);
   [%expect
-    {|
-    -- ordinary --
-    requests: 1
-    source: shell display: dune build
-    shell: command="dune build" cwd=. execution=enforced(all,workspace,restricted)
-    -- escalated --
-    requests: 1
-    source: shell display: dune build
-    shell: command="dune build" cwd=. execution=direct
-    custom: name=shell.escalate subject=dune build
-    -- read-only ordinary --
-    requests: 1
-    source: shell display: dune build
-    shell: command="dune build" cwd=. execution=enforced(all,read-only,restricted)
-    -- read-only escalation --
-    requests: 0
-    status: failed invalid_input
-    message: the sealed posture promises no mutation: a read-only sandbox admits no escalation
-    metadata: false
-    -- read-only escalation with missing cwd --
-    requests: 0
-    status: failed invalid_input
-    message: the sealed posture promises no mutation: a read-only sandbox admits no escalation
-    metadata: false |}]
+    {|-- ordinary --
+requests: 1
+source: shell display: dune build
+shell: command="dune build" cwd=. execution=enforced(all,workspace,restricted)
+-- escalated --
+requests: 1
+source: shell display: dune build
+shell: command="dune build" cwd=. execution=direct
+custom: name=shell.escalate subject=dune build
+-- read-only ordinary --
+requests: 1
+source: shell display: dune build
+shell: command="dune build" cwd=. execution=enforced(all,read-only,restricted)
+-- read-only escalation --
+requests: 0
+status: failed invalid_input
+message: the sealed posture promises no mutation: a read-only sandbox admits neither an escalation nor a write grant
+metadata: false
+-- read-only escalation with missing cwd --
+requests: 0
+status: failed invalid_input
+message: the sealed posture promises no mutation: a read-only sandbox admits neither an escalation nor a write grant
+metadata: false|}]
 
 let%expect_test
     "configured shell cwd null stdin and stripped environment are real" =
@@ -874,23 +872,22 @@ let%expect_test "sandbox denial is explained and escalation uses run_escalated"
     (read_disk escalated_file) stdout
     (evidence_kind (output_exn escalated));
   [%expect
-    {|
-    -- ordinary confinement --
-    status: failed failed
-    message: command exited with status 7
+    {|-- ordinary confinement --
+status: failed failed
+message: command exited with status 7
 
-    This command ran inside a sandbox that confines filesystem access, and its output looks like a refused read or write. This is a policy restriction, not a transient error: retry the exact command with escalate=true only if the access is genuinely needed, or ask the user to add the path to sandbox.writable_roots for a standing grant.
-    metadata: false
-    outside exists: false evidence: enforced
-    -- network denial diagnostic --
-    policy note: true
-    -- escalation --
-    requests: 1
-    source: shell display: printf escaped > '<outside>/escalated.txt'; printf 'secret=%s\n' "${MENTAT_SHELL_EXPECT_SECRET-unset}"
-    shell: command="printf escaped > '<outside>/escalated.txt'; printf 'secret=%s\\n' \"${MENTAT_SHELL_EXPECT_SECRET-unset}\"" cwd=. execution=direct
-    custom: name=shell.escalate subject=printf escaped > '<outside>/escalated.txt'; printf 'secret=%s\n' "${MENTAT_SHELL_EXPECT_SECRET-unset}"
-    status: completed
-    outside: "escaped" stdout: "secret=unset\n" evidence: not_requested |}]
+This command ran inside a sandbox that confines filesystem access, and its output looks like a refused read or write. This is a policy restriction, not a transient error: retry with grant_write naming the exact path the message reports, which widens the sandbox to that path alone for one command, or escalate=true if the access is genuinely broader than a path. For a standing grant instead of a one-command one, ask the user to add the path to sandbox.writable_roots.
+metadata: false
+outside exists: false evidence: enforced
+-- network denial diagnostic --
+policy note: true
+-- escalation --
+requests: 1
+source: shell display: printf escaped > '<outside>/escalated.txt'; printf 'secret=%s\n' "${MENTAT_SHELL_EXPECT_SECRET-unset}"
+shell: command="printf escaped > '<outside>/escalated.txt'; printf 'secret=%s\\n' \"${MENTAT_SHELL_EXPECT_SECRET-unset}\"" cwd=. execution=direct
+custom: name=shell.escalate subject=printf escaped > '<outside>/escalated.txt'; printf 'secret=%s\n' "${MENTAT_SHELL_EXPECT_SECRET-unset}"
+status: completed
+outside: "escaped" stdout: "secret=unset\n" evidence: not_requested|}]
 
 let%expect_test "a confined read denial is explained with the escalate path" =
   with_world ~mode:Mentat_config.Mode.Workspace_write

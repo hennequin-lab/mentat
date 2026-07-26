@@ -24,7 +24,8 @@
     - [description], optional non-empty reviewer metadata with no execution
       semantics;
     - [escalate], an optional boolean that defaults to [false];
-    - [background], an optional boolean that defaults to [false].
+    - [background], an optional boolean that defaults to [false];
+    - [grant_write], an optional array of absolute paths, empty by default.
 
     When [background] is [true] the command is started as a supervised
     background process and the call returns {e immediately} with a handle to
@@ -32,10 +33,10 @@
     running across turns until it exits or is killed. [timeout_ms] is ignored —
     a background process's lifetime is the session, not a turn-bounded timeout.
     A background command runs the ordinary confined route and {e cannot} be
-    escalated: [background:true] with [escalate:true] fails [`Invalid_input]
-    with a message steering the caller to foreground escalation or to dropping
-    the escalation — an escalated profile outliving the turn is the open sandbox
-    question v1 does not pre-empt. A background start needs a [registry] (see
+    widened: [background:true] with either [escalate:true] or a non-empty
+    [grant_write] fails [`Invalid_input] with a message steering the caller to
+    the foreground or to dropping the request — a widened profile outliving the
+    turn is the open sandbox question v1 does not pre-empt. A background start needs a [registry] (see
     {!make}): without one it fails [`Unavailable]. Background execution is
     unavailable to subagents, whose catalog omits [shell] entirely.
 
@@ -63,10 +64,20 @@
 
     Execution goes exclusively through {!Mentat_workspace_io.Command.run} or,
     for an available and separately approved request,
-    {!Mentat_workspace_io.Command.run_escalated}. Both routes use the
-    capability's private stripped environment. Escalation drops the enforcing
-    profile, never restores ambient secrets or agent sockets, and the returned
-    sandbox evidence reports the route that actually ran.
+    {!Mentat_workspace_io.Command.run_granted} or
+    {!Mentat_workspace_io.Command.run_escalated}. Every route uses the
+    capability's private stripped environment, and none restores ambient secrets
+    or agent sockets. The two widenings differ in what survives them: a grant
+    keeps the enforcing profile and adds the named paths for this command only,
+    so the command is still confined and its evidence still enforced; an
+    escalation drops the profile entirely. The returned sandbox evidence reports
+    the route that actually ran.
+
+    [grant_write] and [escalate] cannot be combined: an escalated command has no
+    policy left for a grant to widen, so the pair fails [`Invalid_input] rather
+    than resolving to one of them. A grant naming a path Mentat denies outright
+    is refused, and a grant naming a path that does not exist fails the ordinary
+    obligation discharge — grants are admitted, never created.
 
     The command receives null stdin. Its stdout and stderr are drained
     concurrently by the workspace capability with a
@@ -85,13 +96,19 @@
 
     Under workspace-write confinement, [escalate = true] changes that command
     fact to the direct execution route and adds the reviewable [shell.escalate]
-    custom fact. Under read-only confinement escalation is denied and produces
-    no request; under direct or declared-external execution it is ignored
-    because the requested authority already exists. Permission planning is pure
-    and performs no filesystem I/O. A workdir that cannot be lexically resolved
-    produces no request and fails before launch. A denied escalation fails
-    before workdir observation: a request that cannot run does not inspect a
-    path merely to rediscover the sealed read-only posture.
+    custom fact. A non-empty [grant_write] instead {e keeps} the confined
+    command fact — the command really does stay confined — and adds a reviewable
+    [shell.grant] custom fact whose subject is the paths, because the paths are
+    what the approval is for.
+
+    Read-only confinement denies both and produces no request: the sealed
+    posture promises no mutation, and a write grant is a mutation. Under direct
+    or declared-external execution both are ignored because the requested
+    authority already exists. Permission planning is pure and performs no
+    filesystem I/O. A workdir that cannot be lexically resolved produces no
+    request and fails before launch. A denied widening fails before workdir
+    observation: a request that cannot run does not inspect a path merely to
+    rediscover the sealed read-only posture.
 
     {1 Results, output, and cancellation}
 

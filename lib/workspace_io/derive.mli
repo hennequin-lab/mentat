@@ -13,10 +13,13 @@
     {!Mentat_workspace_io.describe_roots}.
 
     Every spelling is canonicalized exactly once, here; broad roots — [/], the
-    account home, a workspace ancestor — are rejected at admission. The module
-    performs resolution-time filesystem observation only ([stat], [realpath],
-    reading git worktree metadata); it opens no capability and launches nothing.
-*)
+    account home, a workspace ancestor — are rejected at admission. The module's
+    effects are resolution-time and bounded: filesystem observation ([stat],
+    [realpath], reading git worktree metadata), and the creation of the
+    directories Mentat itself owns, which must exist to be denied and are minted
+    here under a guard that refuses a symlink, a non-directory, or another
+    user's directory rather than adopting one. It opens no capability and
+    launches nothing. *)
 
 type derived = {
   workspace_roots : (Mentat_workspace.Root.t * Lpath.Abs.t) list;
@@ -57,8 +60,9 @@ type derived = {
           independent of machine state and a planted symlink cannot relocate the
           exclusion; entries whose parent Mentat does not own are dropped rather
           than created. Unlike {!protected}, these are not filtered against the
-          writable roots — a denial is meaningful wherever it lies, and all of
-          these lie outside. *)
+          writable roots: a denial is meaningful wherever it lies, and one that
+          falls {e inside} a writable root is exactly the case worth keeping —
+          see {!run} for the containment that is refused instead. *)
   path : string;
       (** The derived child [PATH] value. Scoped, it is rebuilt from the
           toolchain bin directory followed by the admitted executable roots,

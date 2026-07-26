@@ -114,7 +114,9 @@ let command_error_message error =
 
 let command_error_failure = function
   | Mentat_workspace_io.Command.Error.Sandbox
-      (Mentat_sandbox.Error.Empty_program | Mentat_sandbox.Error.Nul_in_argv _)
+      ( Mentat_sandbox.Error.Empty_program
+      | Mentat_sandbox.Error.Nul_in_argv _
+      | Mentat_sandbox.Error.Grant_denied _ )
   | Mentat_workspace_io.Command.Error.Unknown_cwd_root _ ->
       `Invalid_input
   | Mentat_workspace_io.Command.Error.Sandbox
@@ -193,7 +195,7 @@ let run_describe workspace_io ~clock ~program ~cwd ~label ~args ~cancelled =
             (* This spawns dune, so it is the cold-cache case: a confined
                refusal here reached the model as an unexplained nonzero exit. *)
             let note =
-              Confinement.denial_note
+              Confinement.denial_note ~widening:`Through_shell
                 outcome.Mentat_workspace_io.Command.confinement
             in
             Error

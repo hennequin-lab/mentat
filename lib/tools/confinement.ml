@@ -59,24 +59,42 @@ let custom_access execution =
 
 (* One renderer for every spawn site. The boundary states what guarded a
    command; this turns that into the sentence its audience — the model — can act
-   on, and the advice is only ever a move the route actually admits.
+   on, and the advice is only ever a move that is actually available.
 
-   Three things it must not do. It must not name [sandbox.readable_roots] on an
-   unscoped route, where the resolver discards that field. It must not advise
-   [escalate=true] where the route will refuse the escalation, which is every
-   site but the foreground shell. And it must not claim a refused read on a
-   backend that cannot tell one from a missing file. *)
-let denial_note observation =
+   Availability has two halves, and conflating them is how this went wrong
+   before. The {e posture} decides whether any widening exists: a route that
+   promised no mutation refuses both a grant and an escalation, so neither may
+   be suggested. The {e tool} decides who can ask: only the foreground shell
+   carries the parameters, so every other site must be told to go through it
+   rather than handed a parameter it does not have.
+
+   Where a widening is available, the narrow one leads. A grant names the path
+   and keeps the rest of the sandbox; an escalation drops all of it to write one
+   file. Steering to the total move first is how a lock file ends up costing the
+   whole posture.
+
+   Two further things it must not do: name [sandbox.readable_roots] on an
+   unscoped route, where the resolver discards that field, and claim a refused
+   read on a backend that cannot tell one from a missing file. *)
+let denial_note ~widening observation =
   match observation with
   | None -> ""
   | Some observation -> (
       let recovery =
-        if Mentat_workspace_io.Confinement.escalatable observation then
-          "retry the exact command with escalate=true only if the access is \
-           genuinely needed"
+        if not (Mentat_workspace_io.Confinement.escalatable observation) then
+          "this sandbox promises no mutation, so neither a grant nor an \
+           escalation is available; the access has to come from configuration"
         else
-          "this tool cannot be escalated; run the equivalent command through \
-           shell with escalate=true if the access is genuinely needed"
+          match widening with
+          | `Here ->
+              "retry with grant_write naming the exact path the message \
+               reports, which widens the sandbox to that path alone for one \
+               command, or escalate=true if the access is genuinely broader \
+               than a path"
+          | `Through_shell ->
+              "this tool takes no sandbox parameters; run the equivalent \
+               command through shell with grant_write naming the exact path, \
+               or escalate=true if the access is genuinely broader than a path"
       in
       let standing =
         if Mentat_workspace_io.Confinement.reads_scoped observation then
@@ -105,5 +123,5 @@ let denial_note observation =
           "\n\n\
            This command ran inside a sandbox that confines filesystem access, \
            and " ^ what ^ ": " ^ recovery
-          ^ ", or ask the user to add the path to " ^ standing
-          ^ " for a standing grant.")
+          ^ ". For a standing grant instead of a one-command one, ask the user \
+             to add the path to " ^ standing ^ ".")

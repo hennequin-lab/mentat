@@ -20,7 +20,12 @@ end
 type route =
   | Unconfined
   | Declared_external
-  | Confine of { policy : Policy.t; profile : Profile.t; evidence : Evidence.t }
+  | Confine of {
+      backend : Backend.t;
+      policy : Policy.t;
+      profile : Profile.t;
+      evidence : Evidence.t;
+    }
   | Refuse of { policy : Policy.t; error : Error.t }
 
 type t = { route : route; escalation : escalation; identity : Identity.t }
@@ -56,12 +61,68 @@ let confined ~backend ~mutates policy =
         Evidence.enforced ~backend ~profile:(Profile.digest profile)
       in
       {
-        route = Confine { policy; profile; evidence };
+        route = Confine { backend; policy; profile; evidence };
         escalation;
         identity =
           Identity.enforced ~backend
             ~profile:(Profile.identity_digest backend policy);
       }
+
+(* Widen one sealed route for a single command. The result is an ordinary
+   sealed value, so lowering, evidence, obligation discharge and every observer
+   apply to it unchanged — a grant needs no route of its own, only a policy that
+   already knows how to be widened.
+
+   An unconfined or externally declared route is returned as it stands: it
+   already admits everything the grant asks for, so the request is satisfied
+   rather than ignored. A refusing route keeps refusing.
+
+   The identity moves, and should: it fingerprints the lowering, and this
+   lowering differs. Nothing publishes it, because the granted value belongs to
+   one command — the session keeps the seal it resumed under, which is the
+   contract a grant must not move. *)
+let escalation_denied t =
+  match t.escalation with
+  | Denied error -> Some error
+  | Available | Ignored -> None
+
+let grants_write entries =
+  List.exists
+    (fun (_, access) -> Policy.Access.equal access Policy.Access.Write)
+    entries
+
+let grant t entries =
+  match t.route with
+  | Unconfined | Declared_external | Refuse _ -> Ok t
+  (* A write grant is a mutation, so it answers to the same promise an
+     escalation does. Gating it here rather than in a caller is the point: the
+     stance lives on the seal, and a route that promised no mutation must refuse
+     every way of asking, not every way a particular tool asks. A read grant
+     widens nothing that promise covers and stays available. *)
+  | Confine _ when grants_write entries && escalation_denied t <> None ->
+      Error (Option.get (escalation_denied t))
+  | Confine { backend; policy; _ } -> (
+      match Policy.grant policy entries with
+      | Error (path, denied) -> Error (Error.Grant_denied { path; denied })
+      | Ok policy ->
+          let profile = Profile.prepare backend policy in
+          Ok
+            {
+              t with
+              route =
+                Confine
+                  {
+                    backend;
+                    policy;
+                    profile;
+                    evidence =
+                      Evidence.enforced ~backend
+                        ~profile:(Profile.digest profile);
+                  };
+              identity =
+                Identity.enforced ~backend
+                  ~profile:(Profile.identity_digest backend policy);
+            })
 
 let policy t =
   match t.route with
