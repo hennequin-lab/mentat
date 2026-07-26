@@ -81,27 +81,21 @@ let confined ~backend ~mutates policy =
    lowering differs. Nothing publishes it, because the granted value belongs to
    one command — the session keeps the seal it resumed under, which is the
    contract a grant must not move. *)
-let escalation_denied t =
-  match t.escalation with
-  | Denied error -> Some error
-  | Available | Ignored -> None
-
 let grants_write entries =
   List.exists
     (fun (_, access) -> Policy.Access.equal access Policy.Access.Write)
     entries
 
 let grant t entries =
-  match t.route with
-  | Unconfined | Declared_external | Refuse _ -> Ok t
+  match (t.route, t.escalation) with
+  | (Unconfined | Declared_external | Refuse _), _ -> Ok t
   (* A write grant is a mutation, so it answers to the same promise an
      escalation does. Gating it here rather than in a caller is the point: the
      stance lives on the seal, and a route that promised no mutation must refuse
      every way of asking, not every way a particular tool asks. A read grant
      widens nothing that promise covers and stays available. *)
-  | Confine _ when grants_write entries && escalation_denied t <> None ->
-      Error (Option.get (escalation_denied t))
-  | Confine { backend; policy; _ } -> (
+  | Confine _, Denied error when grants_write entries -> Error error
+  | Confine { backend; policy; _ }, (Available | Denied _ | Ignored) -> (
       match Policy.grant policy entries with
       | Error (path, denied) -> Error (Error.Grant_denied { path; denied })
       | Ok policy ->
