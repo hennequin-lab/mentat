@@ -21,10 +21,12 @@ sealed write root.
   $ mkdir -p ws/.git outside
   $ mentat trust ws >/dev/null
 
-The resolved posture selects the bubblewrap backend (the digest is per-run, and
-`sandbox status` lists no roots — those appear in `sandbox explain`).
+The resolved posture selects the bubblewrap backend. The digest is per-run, and
+the trailing `root=` listing names this host's platform, PATH and toolchain
+directories, so only the posture header is pinned here; the roots themselves are
+covered by `sandbox explain` against workspace-relative fixtures.
 
-  $ MENTAT_SANDBOX_MODE=workspace-write mentat sandbox status | censor
+  $ MENTAT_SANDBOX_MODE=workspace-write mentat sandbox status | grep -v '^root=' | censor
   mode=workspace-write
   read=project
   network=restricted
