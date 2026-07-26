@@ -17,8 +17,9 @@
    an enforcing backend can prove (OS-level write refusal, escalation
    dropping the profile, obligation staleness, the startup gate) run on the
    confined route and skip gracefully when the resolved evidence is not
-   [Enforced]. Cleanup is leader-only by maintainer ruling: nothing here
-   asserts descendant quiescence. *)
+   [Enforced]. Cleanup signals the child's process group and reaps only the
+   child, so descendant liveness is asserted through what a descendant does to
+   an inherited pipe — never through a pid the OS may still be reaping. *)
 
 open Windtrap
 module Wio = Mentat_workspace_io
@@ -225,7 +226,9 @@ let run_escalated_res ?cwd ?stdin ?(capture = Command.All)
 
 (* The direct child (and nothing else this process spawned) carries [name];
    a clean [pgrep] proves it was terminated and reaped before the run
-   returned. Descendants are deliberately not scanned (leader-only ruling).
+   returned. Descendants are deliberately not scanned: they are reparented
+   away from this process the moment their own leader dies, so [pgrep -P] can
+   say nothing about them either way.
 
    [pgrep] is spawned directly rather than through [Sys.command]: the C library
    runs a shell command as a real [/bin/sh] child of this process, so a
@@ -2027,9 +2030,9 @@ let session_self_exit_flips_to_exited () =
     | Session.Exited status -> status
     | _ -> fail "status must be Exited after a self-exit")
 
-(* [signal] is our kill: it flips [Running -> Terminated] leader-only, reaps
-   the direct child, and is idempotent — a second signal is a no-op that keeps
-   the recorded status. *)
+(* [signal] is our kill: it flips [Running -> Terminated], reaps the child,
+   and is idempotent — a second signal is a no-op that keeps the recorded
+   status. *)
 let session_signal_terminates_and_is_idempotent () =
   with_direct "bg-signal" @@ fun w ->
   Eio.Switch.run @@ fun sw ->
@@ -2048,6 +2051,33 @@ let session_signal_terminates_and_is_idempotent () =
     | Session.Terminated -> true
     | _ -> false)
 
+(* A background command's workers stop with it: [signal] reaches the process
+   group the session leads, not the session's own process alone. The worker
+   here exists only to prove that — it announces itself a second after being
+   forked, on the stdout it inherited, so its output is a marker that can only
+   appear if it outlived the kill. The read after the kill consumes the settled
+   tail; anything appended past that is the worker still running. *)
+let session_signal_reaches_the_forked_workers () =
+  with_direct "bg-group" @@ fun w ->
+  let mono = mono_of w in
+  Eio.Switch.run @@ fun sw ->
+  let session =
+    start_bg w ~sw
+      [ "/bin/sh"; "-c"; "(sleep 1; printf late) & printf ready; sleep 30" ]
+  in
+  let ready =
+    poll_read ~mono session ~ready:(fun c ->
+        String.equal c.Session.stdout "ready")
+  in
+  Session.signal session;
+  let settled = Session.read session ~from:ready.Session.next in
+  Eio.Time.Mono.sleep mono 1.5;
+  let after = Session.read session ~from:settled.Session.next in
+  equal string
+    ~msg:"the worker the session forked is signalled with it and never speaks"
+    ""
+    (settled.Session.stdout ^ after.Session.stdout)
+
 (* A SIGTERM-ignoring child is escalated to SIGKILL after the bounded grace, so
    [signal] still terminates and reaps it — teardown stays bounded. *)
 let session_signal_escalates_past_sigterm () =
@@ -2055,8 +2085,9 @@ let session_signal_escalates_past_sigterm () =
   let mono = mono_of w in
   Eio.Switch.run @@ fun sw ->
   (* The shell ignores SIGTERM, announces readiness, then blocks; only SIGKILL
-     can stop the leader. Its [sleep] child inherits the ignore and survives
-     leader-only — the kill reaches the direct child alone. *)
+     can stop it. Its [sleep] child inherits the ignored disposition across the
+     exec, so the group's SIGTERM passes over both and the escalation is what
+     ends them. *)
   let session =
     start_bg w ~sw [ "/bin/sh"; "-c"; "trap '' TERM; printf ready; sleep 5" ]
   in
@@ -2078,7 +2109,9 @@ let session_signal_escalates_past_sigterm () =
   assert_session_gone session
 
 (* The session's lifetime is its switch: releasing it kills and reaps every
-   registered child leader-only, promptly, without an explicit signal. *)
+   registered child, promptly, without an explicit signal. Release is Eio's own
+   teardown and stays on the child; only {!Session.signal} widens to the
+   group. *)
 let sessions_die_on_switch_release () =
   with_direct "bg-release" @@ fun w ->
   let mono = Eio.Stdenv.mono_clock w.stdenv in
@@ -2349,8 +2382,10 @@ let () =
         session_captures_raw_bytes;
       test "a self-exit flips the session to Exited via the waiter"
         session_self_exit_flips_to_exited;
-      test "signal terminates leader-only and is idempotent"
+      test "signal terminates the session and is idempotent"
         session_signal_terminates_and_is_idempotent;
+      test "signal reaches the workers the session forked"
+        session_signal_reaches_the_forked_workers;
       test "signal escalates past a SIGTERM-ignoring child"
         session_signal_escalates_past_sigterm;
       test "sessions die on switch release" sessions_die_on_switch_release;

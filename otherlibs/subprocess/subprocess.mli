@@ -6,15 +6,22 @@
 (** One bounded, supervised child process, run over Eio.
 
     {!run} spawns a single child, drains its stdout and stderr into bounded
-    {!Capture} state, and resolves to exactly one {!outcome}. It is Eio-native
-    and leader-only: the child is owned by an internal switch scoped to the
-    call, and exit, timeout, cooperative stop, and output limit linearize
-    through a single promise — exactly one terminal cause wins (a single
-    linearization point). On any non-exit cause the {e direct child only} is
-    terminated (SIGTERM, a bounded grace, then SIGKILL) and reaped under
-    [Eio.Cancel.protect] (leader-only reap); descendants may survive. Parent
-    cancellation propagates as cancellation after Eio's own switch-release
-    kill-and-reap — it is never translated into a termination.
+    {!Capture} state, and resolves to exactly one {!outcome}. It is Eio-native:
+    the child is owned by an internal switch scoped to the call, and exit,
+    timeout, cooperative stop, and output limit linearize through a single
+    promise — exactly one terminal cause wins (a single linearization point). On
+    any non-exit cause the child is terminated (SIGTERM, a bounded grace, then
+    SIGKILL) and reaped under [Eio.Cancel.protect]. Parent cancellation
+    propagates as cancellation after Eio's own switch-release kill-and-reap — it
+    is never translated into a termination.
+
+    {b Every child leads its own process group} ({!spawn_leader}), and
+    {!terminate} signals that group before the child, so workers a child forked
+    are taken down with it. Only the child itself is reaped; a descendant is
+    signalled, never waited for, and one that outlives a SIGTERM its own leader
+    obeys survives — see {!terminate}. A child that leads its own group is also
+    outside this process's group, so a terminal-wide interrupt no longer reaches
+    it; the supervised termination paths are the way it is stopped.
 
     Once the child is spawned, every terminal cause is a {!termination} carrying
     the captured bytes, never a launch error that erases them (bytes retained on
@@ -72,8 +79,10 @@ end
 type termination =
   | Exited of Eio.Process.exit_status
       (** the child exited on its own; both streams are drained to EOF unless a
-          surviving descendant held a pipe open past the bounded grace, in which
-          case that stream is reported not complete *)
+          descendant that outlived it held a pipe open past the bounded grace,
+          in which case that stream is reported not complete. A child that exits
+          on its own is never signalled, so its group is never signalled either.
+      *)
   | Timed_out  (** the timeout won the race *)
   | Stopped  (** the cooperative stop predicate reported true *)
   | Output_limit of { stream : [ `Stdout | `Stderr ]; limit : int }
@@ -100,17 +109,48 @@ exception Launch of exn
     the pipes, or spawning — fails, carrying the underlying failure. Raised
     before any supervision starts; cancellation is never wrapped. *)
 
+val spawn_leader :
+  sw:Eio.Switch.t ->
+  proc_mgr:_ Eio_unix.Process.mgr ->
+  cwd:Eio.Fs.dir_ty Eio.Path.t ->
+  env:string array ->
+  executable:string ->
+  stdin:_ Eio.Resource.t ->
+  stdout:_ Eio.Resource.t ->
+  stderr:_ Eio.Resource.t ->
+  string list ->
+  Eio_unix.Process.ty Eio.Std.r
+(** [spawn_leader ~sw ~proc_mgr ~cwd ~env ~executable ~stdin ~stdout ~stderr
+     argv] spawns [argv] as the leader of a new process group, with the three
+    given streams as its standard descriptors. It is {!run}'s own spawn, exposed
+    so a caller that supervises a child itself — a long-lived session, rather
+    than one bounded run — establishes the same group {!terminate} relies on.
+
+    Each stream must be backed by an OS file descriptor; passing one that is not
+    raises [Invalid_argument]. It raises the same launch failures as
+    [Eio.Process.spawn], unwrapped: {!exception:Launch} is {!run}'s own
+    classification, not this function's. *)
+
 val terminate :
   mono:_ Eio.Time.Mono.t -> ?grace:float -> _ Eio.Process.t -> unit
-(** [terminate ~mono ?grace child] signals [child] (SIGTERM, a bounded [grace]
-    in seconds, then SIGKILL) and reaps it — the {e direct child only},
-    leader-only — under [Eio.Cancel.protect] so a pending parent cancellation
+(** [terminate ~mono ?grace child] signals [child]'s process group and then
+    [child] itself (SIGTERM, a bounded [grace] in seconds, then SIGKILL) and
+    reaps [child], under [Eio.Cancel.protect] so a pending parent cancellation
     cannot interrupt the bounded cleanup. It is the cooperative-stop sequence
     {!run} performs on a preemptive cause, exposed for a supervised session's
-    explicit kill. [grace] defaults to the same bound {!run} uses. *)
+    explicit kill. [grace] defaults to the same bound {!run} uses.
+
+    The group signal reaches every descendant [child] did not detach from its
+    group — the workers a shell or build driver forks. Two cases stay outside
+    it. A child not spawned by {!spawn_leader} leads no group, and the signal
+    narrows to the child alone rather than widening to this process's own group.
+    And escalation to SIGKILL happens only when [child] itself outlives the
+    grace: a descendant that ignores a SIGTERM its leader obeys is left running,
+    because once [child] is reaped its pid no longer reliably names the group.
+    Only [child] is waited for; a signalled descendant is never reaped here. *)
 
 val run :
-  proc_mgr:_ Eio.Process.mgr ->
+  proc_mgr:_ Eio_unix.Process.mgr ->
   mono:_ Eio.Time.Mono.t ->
   fs:Eio.Fs.dir_ty Eio.Path.t ->
   cwd:Eio.Fs.dir_ty Eio.Path.t ->
@@ -133,9 +173,9 @@ val run :
     before a concurrent exit is finalized, so an over-limit child that exits at
     once is deterministically {!Output_limit}, never a silently truncated
     {!Exited} (output-limit before exit). After the terminal cause, draining is
-    given a short bounded grace — an orphaned descendant that keeps the pipes
-    open cannot stall the return, and its stream is reported not complete rather
-    than silently short.
+    given a short bounded grace — a descendant that keeps the pipes open cannot
+    stall the return, and its stream is reported not complete rather than
+    silently short.
 
     The timing bounds are all in seconds: [grace] is how long a signalled child
     may take to die before SIGKILL; [drain_grace] is how long the drains may

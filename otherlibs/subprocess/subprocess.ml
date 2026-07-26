@@ -120,10 +120,10 @@ exception Launch of exn
 let default_grace = 0.2
 
 (* Default time the drains may keep reading after the terminal cause resolved.
-   Bounded so an orphaned descendant holding the pipes open cannot stall the
-   return (leader-only cleanup: descendants may survive). A stream still
-   reading when the grace expires is reported not complete, never silently
-   short. *)
+   Bounded so a descendant holding the pipes open cannot stall the return: only
+   the child is reaped, and a descendant the group signal did not reach may
+   still hold a write end. A stream still reading when the grace expires is
+   reported not complete, never silently short. *)
 let default_drain_grace = 0.2
 
 (* Default cooperative-stop poll period. The predicate is a cheap read owned by
@@ -136,19 +136,69 @@ let launch fn =
   | exception (Eio.Exn.Io _ as exn) -> raise (Launch exn)
   | exception (Unix.Unix_error _ as exn) -> raise (Launch exn)
 
-(* Leader-only termination: SIGTERM, a bounded grace, then SIGKILL, and reap —
-   exactly once, under [Cancel.protect] so a pending parent cancellation
-   cannot interrupt the bounded cleanup.
+(* The three streams a spawn wires are always this library's own descriptors —
+   its pipes and its [/dev/null] — so a resource without one is a construction
+   error here, never a runtime condition a caller can provoke. *)
+let child_fd stream =
+  match Eio_unix.Resource.fd_opt stream with
+  | Some fd -> fd
+  | None -> invalid_arg "a child stream is not an OS file descriptor"
 
-   The reach is the direct child and no further. Widening it to the child's
-   process group would mean signalling [-pid], and a pid only names our group
-   while the child is unreaped: Eio reaps on its own and publishes no liveness
-   a caller can test — a promise we resolve ourselves settles strictly after
-   its reap — so the handle can go stale and name a stranger's group. Probing
-   the pid first does not close that: a reused pid is live, so the probe passes
-   and the signal lands on the wrong group. *)
+let spawn_leader ~sw ~proc_mgr ~cwd ~env ~executable ~stdin ~stdout ~stderr argv
+    =
+  let fds =
+    [
+      (0, child_fd stdin, `Blocking);
+      (1, child_fd stdout, `Blocking);
+      (2, child_fd stderr, `Blocking);
+    ]
+  in
+  Eio_unix.Process.spawn_unix ~sw proc_mgr ~cwd ~pgid:0 ~fds ~env ~executable
+    argv
+
+(* Widen a signal from the child to the process group it leads, reporting
+   whether a group answered.
+
+   A group is named by its leader's pid, so [kill (-pid)] asks the kernel for
+   the group whose leader is the child. It answers [ESRCH] — and this reports
+   [false] — in exactly the two cases where widening would be wrong: the child
+   never led a group (it was not spawned by {!spawn_leader}, so [pid] names no
+   group and the signal must not fall back to this process's own group), and
+   the group has emptied, which is also when nothing is left to reach. A group
+   that still holds a descendant keeps its leader's pid allocated even after
+   the leader is reaped, so the name stays ours for as long as it names
+   anything.
+
+   What that cannot rule out is a pid recycled onto a fresh group leader
+   between the reap and this call, which would take the signal. It requires the
+   group to have emptied first and the pid to be reissued in that window.
+
+   [pid] is checked against the two values the kernel reads as a broadcast: [0]
+   is the caller's own group and [-1] is every process it may signal. Eio never
+   reports either for a spawned child; the guard is here so a widened signal can
+   never become one. *)
+let signal_group child signal =
+  let pid = Eio.Process.pid child in
+  if pid <= 1 then false
+  else
+    match Unix.kill (-pid) signal with
+    | () -> true
+    | exception Unix.Unix_error _ -> false
+
+(* Termination: SIGTERM, a bounded grace, then SIGKILL, and reap — exactly
+   once, under [Cancel.protect] so a pending parent cancellation cannot
+   interrupt the bounded cleanup.
+
+   Each signal reaches the group first and the leader second, so a child that
+   forked workers takes the whole tree down with it. The leader signal is not
+   redundant: it is the one that lands when the group is unavailable, and it is
+   the only one Eio itself guards against a stale pid. A leader that obeys
+   SIGTERM within the grace ends the sequence there, so a descendant that
+   ignores SIGTERM and outlives its own leader is not escalated — after the
+   reap the group has no name we can trust. *)
 let terminate ~mono ?(grace = default_grace) child =
   Eio.Cancel.protect @@ fun () ->
+  ignore (signal_group child Sys.sigterm : bool);
   Eio.Process.signal child Sys.sigterm;
   match
     Eio.Time.Timeout.run (Eio.Time.Timeout.seconds mono grace) (fun () ->
@@ -156,6 +206,7 @@ let terminate ~mono ?(grace = default_grace) child =
   with
   | Ok _ -> ()
   | Error `Timeout ->
+      ignore (signal_group child Sys.sigkill : bool);
       Eio.Process.signal child Sys.sigkill;
       ignore (Eio.Process.await child : Eio.Process.exit_status)
 
@@ -216,8 +267,8 @@ let run ~proc_mgr ~mono ~fs ~cwd ~env ~executable ?stdin ~capture ~timeout
     let err_r, err_w = launch (fun () -> Eio.Process.pipe ~sw proc_mgr) in
     let spawn_child stdin =
       launch (fun () ->
-          Eio.Process.spawn ~sw proc_mgr ~cwd ~stdin ~stdout:out_w ~stderr:err_w
-            ~env ~executable argv)
+          spawn_leader ~sw ~proc_mgr ~cwd ~env ~executable ~stdin ~stdout:out_w
+            ~stderr:err_w argv)
     in
     (* The single linearization point: the first [settle] wins, every later
        cause is a lost race. Natural completion carries the exit status; every
@@ -260,8 +311,8 @@ let run ~proc_mgr ~mono ~fs ~cwd ~env ~executable ?stdin ~capture ~timeout
     in
     Eio.Flow.close out_w;
     Eio.Flow.close err_w;
-    (* Drains are daemons so an orphaned descendant holding a pipe open cannot
-       block switch completion; each records completeness and resolves its
+    (* Drains are daemons so a descendant holding a pipe open cannot block
+       switch completion; each records completeness and resolves its
        done-promise once. An excess settles [Output_limit] before it resolves
        done, so a pending excess in the pipe is always observed before natural
        completion can finalize [Exited]: output-limit before exit. *)

@@ -6,8 +6,9 @@
 (** Model-facing terminator for a background [shell] command.
 
     [shell_kill] takes a handle returned by a background [shell] call, signals
-    the process (SIGTERM, a bounded grace, then SIGKILL — the direct child only,
-    leader-only), drains its final tail, and returns the final status.
+    the process group it leads and then the process itself (SIGTERM, a bounded
+    grace, then SIGKILL), drains its final tail, and returns the final
+    status.
 
     {1 Input contract}
 
@@ -28,8 +29,11 @@
     engine that did not survive a restart — fails [`Not_found] naming the
     handle.
 
-    A background command that forked its own workers or process group leaves
-    descendants this leader-only kill cannot reap; the result states this. *)
+    The result states what the kill reached, narrowed to the case: a signalled
+    process reports that its group went with it and names the two survivors the
+    group signal misses — a worker that left the group, and one that ignores
+    SIGTERM and outlives the process. A handle that had already settled reports
+    that nothing was signalled at all. *)
 
 val name : string
 (** [name] is ["shell_kill"]. *)

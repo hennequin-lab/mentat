@@ -72,10 +72,16 @@
     escalated command's [Command.outcome.sandbox_evidence] is
     {!Mentat_sandbox.escalated_evidence}.
 
-    {b Cleanup is leader-only.} Cancellation, timeout, and switch release
-    terminate the direct child this library spawned — never a process group.
-    {b Descendants that outlive the child may survive} and may keep writing the
-    workspace; no caller may assume descendant quiescence. *)
+    {b Cleanup reaches the child's process group.} Every child is spawned as
+    the leader of a new process group, and cancellation, timeout, and an
+    explicit kill signal that group before the child, so the workers a command
+    forks are stopped with it. Only the child is reaped. {b Two descendants
+    still survive}: one that put itself in another process group or session, and
+    one that ignores a SIGTERM its own leader obeys — after the leader is reaped
+    the group has no name this library will trust, so nothing escalates it. A
+    survivor may keep writing the workspace; no caller may assume descendant
+    quiescence. Switch release is Eio's own kill-and-reap and stays on the child
+    alone. *)
 
 module Resolve_error = Resolve_error
 (** Workspace capability resolution errors. *)
@@ -404,9 +410,9 @@ module Command : sig
           (** bytes were dropped. [omitted = Some n] is a [Head_tail] elision
               with a known [n]-byte gap between [head] and [tail];
               [omitted = None] means an unknown-length suffix was lost — a
-              [Limit] stop, or a surviving descendant still writing when the
-              drain grace expired. A [Limit] or [All] truncation has an empty
-              [tail]. *)
+              [Limit] stop, or a descendant that outlived the child still
+              writing when the drain grace expired. A [Limit] or [All]
+              truncation has an empty [tail]. *)
 
     val render : t -> string
     (** [render t] flattens the bytes. A truncated stream renders with the
@@ -423,12 +429,15 @@ module Command : sig
       the captured bytes (B6b); only a pre-spawn refusal is an {!Error.t}. *)
   type termination =
     | Exited of Eio.Process.exit_status
-        (** the child exited on its own. Both streams are {!Captured.Complete}
-            unless a surviving descendant held a pipe open past the bounded
-            drain grace, which marks that stream {!Captured.Truncated}. *)
+        (** the child exited on its own — so nothing was signalled, and its
+            process group was left alone. Both streams are
+            {!Captured.Complete} unless a descendant held a pipe open past the
+            bounded drain grace, which marks that stream {!Captured.Truncated}.
+        *)
     | Timed_out
-        (** the timeout won the race; the direct child was terminated and
-            reaped. [duration] is the measured elapsed time. *)
+        (** the timeout won the race; the child's process group was signalled
+            and the child terminated and reaped. [duration] is the measured
+            elapsed time. *)
     | Stopped
         (** the cooperative stop predicate won the race. Distinct from parent
             fiber cancellation, which propagates as cancellation and never
@@ -519,10 +528,10 @@ module Command : sig
       capability, with the inode witness recheck the facade documents. Omitted
       [stdin] is an explicit null source, never the parent's stdin. [cancelled]
       is the engine-owned cooperative stop predicate, polled during the run —
-      when it reports [true], the direct child is terminated and the outcome is
+      when it reports [true], the child is terminated and the outcome is
       {!Stopped}. Parent fiber cancellation is the other, distinct signal: it
-      propagates as cancellation after the same bounded leader-only cleanup and
-      never appears as an outcome. The child runs in the private environment on
+      propagates as cancellation after the same bounded cleanup and never
+      appears as an outcome. The child runs in the private environment on
       every route.
 
       Raises [Invalid_argument] if a [capture] bound is negative — a programmer
@@ -551,8 +560,9 @@ module Command : sig
   (** A live, sandboxed, long-lived child with two live-readable capture buffers
       — the supervised shape behind background terminals (a dev server, a
       watcher, a log tail). Spawned under a caller switch by {!start_session};
-      leader-only teardown on switch release: releasing the switch kills and
-      reaps the direct child, its drain daemons, and its pipes.
+      teardown on switch release is Eio's own and stays on the child: releasing
+      the switch kills and reaps the child, its drain daemons, and its pipes,
+      without widening to the group {!Session.signal} reaches.
 
       Unlike {!run}, no tool callback is long-lived — {!start_session} returns
       the handle at once and the process outlives the call, and its output is
@@ -587,7 +597,7 @@ module Command : sig
     type status =
       | Running
       | Exited of Eio.Process.exit_status
-      | Terminated  (** killed by us: SIGTERM→SIGKILL, leader-only *)
+      | Terminated  (** killed by us: SIGTERM→SIGKILL, group then child *)
 
     type chunk = {
       stdout : string;
@@ -621,13 +631,19 @@ module Command : sig
 
     val signal : t -> unit
     (** [signal t] cooperatively terminates the child: SIGTERM, a bounded grace,
-        then SIGKILL — the direct child only (leader-only) — reaps it under
-        [Eio.Cancel.protect], drains the final tail within a bounded grace, and
-        settles {!status} to [Terminated]. Idempotent: signalling an
-        already-settled session is a no-op that leaves its recorded status. *)
+        then SIGKILL, each sent to the child's process group before the child,
+        reaps the child under [Eio.Cancel.protect], drains the final tail within
+        a bounded grace, and settles {!status} to [Terminated]. Idempotent:
+        signalling an already-settled session is a no-op that leaves its
+        recorded status — including a child that already exited on its own,
+        whose descendants are therefore never signalled.
+
+        The workers a command forked go with it; a descendant that left the
+        group, or that ignores a SIGTERM the child itself obeys, does not. *)
 
     val pid : t -> int
-    (** [pid t] is the direct child's process id. *)
+    (** [pid t] is the child's process id, and the id of the process group it
+        leads. *)
 
     val status : t -> status
     (** [status t] is the liveness recorded so far, without blocking. It is
@@ -650,9 +666,10 @@ module Command : sig
       under [sw] and returns at once with a live {!Session.t} — the same
       validate/bind/discharge/lower/launch sequence as {!run}, on the ordinary
       confined route. Stdin is an explicit [/dev/null]; stdout and stderr are
-      captured into the session's live rings, never inherited. Two drain daemons
+      captured into the session's live rings, never inherited. The child leads
+      a new process group, which {!Session.signal} reaches. Two drain daemons
       and a waiter fiber run under [sw]; releasing [sw] kills and reaps the
-      child leader-only — the session's lifetime {e is} [sw].
+      child — the session's lifetime {e is} [sw].
 
       The waiter and reaper are cancellation-safe fibers on Eio's own
       [Process.await]/[signal], never a systhread [waitpid] — a systhread

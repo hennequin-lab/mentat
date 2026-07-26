@@ -513,9 +513,9 @@ let background_receipt ~handle ~pid ~command ~workdir =
        Handle: %s (pid %d)\n\
        Output is polled, not streamed: read new output with \
        shell_output(handle=\"%s\") and stop it with shell_kill(handle=\"%s\"). \
-       It keeps running across turns until it exits or is killed. Only this \
-       process is stopped on kill; a command that forks its own workers may \
-       leave them running."
+       It keeps running across turns until it exits or is killed. The kill \
+       reaches this process and the workers it forked; one that ignores the \
+       graceful signal and outlives it may keep running."
       command
       (Mentat_workspace.Path.display workdir)
       handle pid handle handle

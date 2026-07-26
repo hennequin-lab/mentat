@@ -89,10 +89,11 @@ val read :
 
 val kill :
   t -> handle:string -> Mentat_workspace_io.Command.Session.chunk option
-(** [kill t ~handle] signals the process (SIGTERM→SIGKILL, leader-only), drains
-    its final tail, advances the cursor, and returns the final chunk.
-    Idempotent: killing an already-settled handle drains no more and returns its
-    recorded status. [None] for an unknown handle, as {!read}. *)
+(** [kill t ~handle] signals the process group and then the process
+    (SIGTERM→SIGKILL), drains its final tail, advances the cursor, and returns
+    the final chunk. Idempotent: killing an already-settled handle signals
+    nothing, drains no more, and returns its recorded status. [None] for an
+    unknown handle, as {!read}. *)
 
 (** {1 Glance} *)
 

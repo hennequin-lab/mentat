@@ -721,8 +721,8 @@ let%test "the step interpreter names no Stdlib effect" =
    through Eio's File API (Cstruct buffers for pread/pwrite, Optint.Int63 for
    file sizes). [nofollow] is the symlink-refusing openat-family primitives the
    native-write path traverses with, extracted to the standalone otherlibs
-   member; [subprocess] is the bounded, leader-only Eio child supervision this
-   leaf's spawn choke point drives, extracted to the same space. The
+   member; [subprocess] is the bounded, group-terminating Eio child supervision
+   this leaf's spawn choke point drives, extracted to the same space. The
    review-projection ruling has landed: the review projection
    (feature computation, CR scanning, fingerprinting) is now the executable-side
    [Review_git] adapter in bin/, so this leaf carries no review domain. Neither

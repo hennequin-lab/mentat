@@ -28,9 +28,10 @@
     [Ambiguous] settlement for a claim a dead process left open, and a live
     callback exception also settles [Ambiguous] — an exception does not prove
     the callback produced no effects. Fence release never proves effect
-    quiescence: workspace cleanup is leader-only, so descendants of a cancelled
-    or crashed tool may survive it, and recovery treats an open workspace claim
-    as possibly still mutating. A tool's [Returned] outcome proves only that its
+    quiescence: workspace cleanup signals a cancelled tool's process group but
+    reaps only the process, so a descendant that left that group or outlived the
+    signal may survive it, and recovery treats an open workspace claim as
+    possibly still mutating. A tool's [Returned] outcome proves only that its
     callback returned and an [Interrupted] one that its worker scope closed;
     neither proves a spawned tree exited. {!shutdown} is stop admission, cancel
     active effects and child waits, then await quiescence — it may block forever

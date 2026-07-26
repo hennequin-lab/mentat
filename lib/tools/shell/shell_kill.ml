@@ -56,22 +56,33 @@ module Input = struct
   let contract = Mentat_tool.Input.make codec ~schema
 end
 
-(* The leader-only caveat: the kill signals the direct child only, so a
-   command that forked its own workers or a process group may leave descendants
-   running. Stated in the result, consistent with the start receipt, never
-   papered over. *)
+(* What the kill reached, narrowed to what actually happened. [Terminated] is
+   the only status the registry produces by signalling; every other status is a
+   process that had already settled, which the kill left alone — so the two
+   cases carry different residues and neither may borrow the other's sentence.
+   Stated in the result, consistent with the start receipt, never papered
+   over. *)
+let reach = function
+  | Session.Terminated ->
+      "The signal reached this process and the group it leads, so the workers \
+       it forked stopped with it; one that left that group, or that ignored \
+       the graceful signal, may still be running."
+  | Session.Running | Session.Exited _ ->
+      "This command had already settled, so nothing was signalled; workers it \
+       left behind are still running."
+
 let text ~handle ~status ~dropped ~stdout ~stderr =
   Printf.sprintf
     "Killed background process %s.\n\
      Final status: %s\n\
-     Only this process was signalled; a command that forked its own workers or \
-     a process group may leave descendants running.\n\
+     %s\n\
      %sstdout:\n\
      %s\n\
      stderr:\n\
      %s"
     handle
     (Bg_render.status_line status)
+    (reach status)
     (Bg_render.dropped_note dropped)
     stdout stderr
 

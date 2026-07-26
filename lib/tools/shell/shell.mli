@@ -117,11 +117,12 @@
     inspecting tool output.
 
     Cancellation is polled before workdir resolution and by the command
-    supervisor. A cooperative stop terminates and reaps the direct child and
-    returns its retained bytes. Parent-fiber cancellation remains Eio
-    cancellation after bounded cleanup and is not converted into a tool result.
-    Cleanup is leader-only: descendants that outlive the direct child may
-    survive and may keep writing after timeout, stop, or parent cancellation.
+    supervisor. A cooperative stop terminates and reaps the child and returns
+    its retained bytes. Parent-fiber cancellation remains Eio cancellation after
+    bounded cleanup and is not converted into a tool result. Cleanup signals the
+    child's process group, so the workers a command forks stop with it; a worker
+    that left the group, or that ignores a SIGTERM the command itself obeys, may
+    survive and keep writing after timeout, stop, or parent cancellation.
     Callers must not infer descendant quiescence from the terminal result. *)
 
 val name : string

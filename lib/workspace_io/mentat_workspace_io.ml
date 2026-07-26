@@ -1545,8 +1545,8 @@ module Command = struct
     }
 
     (* How long the drains may flush a signalled child's final tail before
-       [signal] settles. Bounded so a surviving descendant holding a pipe past
-       the grace cannot stall the settle (leader-only). *)
+       [signal] settles. Bounded so a descendant holding a pipe past the grace
+       cannot stall the settle. *)
     let signal_drain_grace = 0.2
 
     (* Spawn [argv] with captured stdout/stderr and a null stdin, then wire the
@@ -1558,13 +1558,12 @@ module Command = struct
       let err_r, err_w = Eio.Process.pipe ~sw proc_mgr in
       let null = Eio.Path.open_in ~sw (Eio.Path.( / ) fs "/dev/null") in
       let child =
-        Eio.Process.spawn ~sw proc_mgr ~cwd
-          ~stdin:(null :> Eio.Flow.source_ty Eio.Std.r)
-          ~stdout:out_w ~stderr:err_w ~env ~executable argv
+        Subprocess.spawn_leader ~sw ~proc_mgr ~cwd ~env ~executable ~stdin:null
+          ~stdout:out_w ~stderr:err_w argv
       in
       (* The parent's copies of the child-held ends close right after spawn, so
-         a drain reaches EOF only when the child (and any surviving descendant)
-         has released the last write end — leader-only. *)
+         a drain reaches EOF only when the child, and any descendant the group
+         signal did not reach, has released the last write end. *)
       Eio.Flow.close null;
       Eio.Flow.close out_w;
       Eio.Flow.close err_w;

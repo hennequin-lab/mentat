@@ -145,6 +145,30 @@ let timeout_kills_the_leader () =
     "partial"
     (whole outcome.Subprocess.stdout)
 
+(* A preemptive cause reaches the whole process group the child leads, not the
+   child alone. The forked worker inherits stdout, so its liveness is read off
+   the stream rather than off a pid the OS may still be reaping: a survivor
+   holds the write end past the bounded drain grace and leaves the stream
+   reported not complete, while a stream that drained to EOF is the worker
+   having released it. *)
+let a_timeout_reaches_the_forked_workers () =
+  Eio_main.run @@ fun env ->
+  let timeout = Eio.Time.Timeout.seconds (Eio.Stdenv.mono_clock env) 0.15 in
+  let outcome =
+    run_child env ~capture:Capture.All ~timeout ~executable:"/bin/sh"
+      [ "/bin/sh"; "-c"; "printf partial; sleep 5 & sleep 5" ]
+  in
+  (match outcome.Subprocess.termination with
+  | Subprocess.Timed_out -> ()
+  | _ -> fail "a sleeping child must time out");
+  is_true ~msg:"the run returns on its budget, not after the sleeps"
+    (Mtime.Span.to_float_ns outcome.Subprocess.duration < 1.5e9);
+  is_true ~msg:"the worker released the pipe, so stdout drained to EOF"
+    outcome.Subprocess.stdout_complete;
+  equal string ~msg:"the bytes written before the timeout are preserved"
+    "partial"
+    (whole outcome.Subprocess.stdout)
+
 let cooperative_stop_yields_stopped () =
   Eio_main.run @@ fun env ->
   let outcome =
@@ -239,6 +263,8 @@ let () =
       test "both streams are captured" both_streams_captured;
       test "output limit beats a fast exit" output_limit_beats_a_fast_exit;
       test "a timeout kills the leader" timeout_kills_the_leader;
+      test "a timeout reaches the child's forked workers"
+        a_timeout_reaches_the_forked_workers;
       test "a cooperative stop yields Stopped" cooperative_stop_yields_stopped;
       test "stdin EPIPE is tolerated" stdin_epipe_is_tolerated;
       test "a caller source feeds the child" stdin_feeds_the_child;
