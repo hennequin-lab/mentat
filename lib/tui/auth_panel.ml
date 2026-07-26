@@ -305,10 +305,24 @@ let rank t declaration =
         | Some (Discovery.Resolution_failed _) -> 1
         | None -> 3)
 
+(* A provider that declares neither a login method nor an environment variable
+   has nothing the login picker can offer: it cannot be selected, and naming
+   the absence tells the reader nothing they can act on. Local inference is the
+   case in the builtin catalog, and it authenticates nothing. A provider
+   configured through the environment stays listed, because naming the variable
+   explains why it needs no login. *)
+let listed t declaration =
+  match t.mode with
+  | Mode.Login ->
+      not
+        (List.is_empty (logins declaration)
+        && List.is_empty (env_names declaration))
+  | Mode.Logout -> true
+
 let base_declarations t =
   List.stable_sort
     (fun first second -> Int.compare (rank t first) (rank t second))
-    t.declarations
+    (List.filter (listed t) t.declarations)
 
 let contains ~needle haystack =
   String.includes
