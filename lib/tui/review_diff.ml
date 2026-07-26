@@ -448,7 +448,8 @@ let file_node ~palette ~file_reviewed ~dimmed ~focused ~cursor_line
 (* A CR anchored outside any hunk: a context-only window around the anchor line,
    line numbers on, no add/del backgrounds, always stacked. The anchor line
    keeps its cursor. Without a fetched body (an unchanged file) only the CR text
-   is shown. *)
+   is shown. Dimming applies as it does to a file body, but a context window has
+   no reviewed coverage to quiet, so its theme is a two-way choice. *)
 let cr_context_body ~palette ~focused ~dimmed ~compose_line ~on_line_click c fd
     =
   let line = cr_line c in
@@ -505,7 +506,9 @@ let cr_context_body ~palette ~focused ~dimmed ~compose_line ~on_line_click c fd
       in
       [
         diff_node ~palette ~layout:Mosaic.Diff.Unified
-          ~theme:(Theme.Palette.diff_theme palette)
+          ~theme:
+            (if dimmed then Theme.Palette.diff_theme_dimmed palette
+             else Theme.Palette.diff_theme palette)
           ~text_style:
             (if dimmed then dimmed_text_style palette
              else diff_text_style palette)
