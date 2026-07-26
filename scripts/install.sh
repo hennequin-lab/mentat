@@ -43,6 +43,33 @@ need() {
   command -v "$1" > /dev/null 2>&1 || err "required command not found: $1"
 }
 
+# curl is preferred; wget keeps the installer usable on images that ship only
+# BusyBox. BusyBox wget can fetch a known URL but cannot report a redirect
+# target or refuse a plaintext redirect, so the GNU build is detected once and
+# the difference is raised where it matters instead of producing a bad URL.
+select_downloader() {
+  if command -v curl > /dev/null 2>&1; then
+    downloader=curl
+  elif command -v wget > /dev/null 2>&1; then
+    downloader=wget
+    if wget --help 2>&1 | grep -q -- '--https-only'; then
+      wget_gnu=1
+    fi
+  else
+    err "neither curl nor wget found; install one and re-run"
+  fi
+}
+
+fetch() {
+  if [ "$downloader" = curl ]; then
+    curl -fsSL --proto '=https' --tlsv1.2 -o "$2" "$1"
+  elif [ "$wget_gnu" = 1 ]; then
+    wget -q --https-only -O "$2" "$1"
+  else
+    wget -q -O "$2" "$1"
+  fi
+}
+
 sha256_of() {
   if command -v sha256sum > /dev/null 2>&1; then
     sha256sum "$1" | awk '{print $1}'
@@ -51,6 +78,18 @@ sha256_of() {
   else
     err "neither sha256sum nor shasum found; cannot verify download"
   fi
+}
+
+# A version becomes part of a download URL, so accept only the shape a release
+# tag can have: the X.Y.Z prefix the release workflow enforces, plus an
+# optional suffix. This also rejects the HTML a captive portal or a blocked
+# region returns in place of the redirect that names the latest release.
+version_ok() {
+  case "$1" in
+  *[!A-Za-z0-9.+-]*) return 1 ;;
+  [0-9]*.[0-9]*.[0-9]*) return 0 ;;
+  esac
+  return 1
 }
 
 detect_target() {
@@ -70,6 +109,8 @@ detect_target() {
     esac
     ;;
   Linux)
+    # The Linux binaries are fully static, so the C library on the host does
+    # not select the archive.
     case "$arch" in
     x86_64 | amd64) target=linux-x64 ;;
     aarch64 | arm64) target=linux-arm64 ;;
@@ -93,13 +134,22 @@ resolve_version() {
     printf '%s' "$version"
     return
   fi
-  location="$(curl -fsSLI -o /dev/null -w '%{url_effective}' \
-    "$GITHUB/$REPO/releases/latest")" \
-    || err "cannot reach $GITHUB/$REPO/releases/latest"
+  url="$GITHUB/$REPO/releases/latest"
+  if [ "$downloader" = curl ]; then
+    location="$(curl -fsSLI -o /dev/null -w '%{url_effective}' \
+      --proto '=https' --tlsv1.2 "$url")" || err "cannot reach $url"
+  else
+    [ "$wget_gnu" = 1 ] || err "this wget cannot report the latest release;
+pass --version X.Y.Z, or install curl or GNU wget"
+    location="$(wget -S --spider "$url" 2>&1 \
+      | sed -n 's/^[[:space:]]*[Ll]ocation:[[:space:]]*//p' | tail -n 1)"
+    # GNU wget prints the redirect it is about to take as "URL [following]".
+    location="${location%% *}"
+  fi
   tag="${location##*/}"
-  case "$tag" in
-  latest | '') err "no published release found for $REPO" ;;
-  esac
+  version_ok "$tag" || err "cannot determine the latest release of $REPO
+$url resolved to \"$tag\", which is not a version tag. Pass --version X.Y.Z
+to install a known release."
   printf '%s' "$tag"
 }
 
@@ -136,7 +186,10 @@ modify_path() {
   zsh) rc="${ZDOTDIR:-$HOME}/.zshrc" ;;
   bash)
     for f in "$HOME/.bashrc" "$HOME/.bash_profile" "$HOME/.profile"; do
-      [ -f "$f" ] && rc="$f" && break
+      if [ -f "$f" ]; then
+        rc="$f"
+        break
+      fi
     done
     rc="${rc:-$HOME/.bashrc}"
     ;;
@@ -155,10 +208,49 @@ modify_path() {
   say "Added $install_dir to PATH in $rc; restart your shell to pick it up."
 }
 
+# Under sudo, $HOME is usually root's: the binary would land in
+# /root/.local/bin and the shell that asked for it would never see the
+# command. An explicit install directory states where the binary goes, so
+# only the home-directory default is refused. Plain root, as in a container
+# or CI, sets no SUDO_USER and is unaffected.
+check_sudo() {
+  [ "$(id -u)" = 0 ] || return 0
+  case "${SUDO_USER:-}" in
+  '' | root) return 0 ;;
+  esac
+
+  if [ "$dir_given" = 0 ] && [ -z "${MENTAT_INSTALL_ALLOW_SUDO:-}" ]; then
+    err "refusing to install under sudo
+
+mentat installs into your home directory and does not need root. Re-run
+without sudo:
+
+  curl -fsSL https://raw.githubusercontent.com/invariant-hq/mentat/main/scripts/install.sh | sh
+
+To install for everyone on the machine, name the directory instead:
+
+  curl -fsSL https://raw.githubusercontent.com/invariant-hq/mentat/main/scripts/install.sh | \\
+    sudo sh -s -- --dir /usr/local/bin
+
+To install for the root user anyway, set MENTAT_INSTALL_ALLOW_SUDO=1."
+  fi
+
+  # Startup files reachable from here are root's, not those of the user who
+  # asked for the install.
+  no_modify_path=1
+}
+
 main() {
   version="${MENTAT_VERSION:-}"
   install_dir="${MENTAT_INSTALL_DIR:-$HOME/.local/bin}"
   no_modify_path=0
+  downloader=""
+  wget_gnu=0
+  if [ -n "${MENTAT_INSTALL_DIR:-}" ]; then
+    dir_given=1
+  else
+    dir_given=0
+  fi
 
   while [ $# -gt 0 ]; do
     case "$1" in
@@ -170,6 +262,7 @@ main() {
     -d | --dir)
       [ $# -ge 2 ] || err "$1 requires an argument"
       install_dir="$2"
+      dir_given=1
       shift 2
       ;;
     --no-modify-path)
@@ -187,9 +280,19 @@ main() {
   done
 
   need uname
-  need curl
+  need id
   need tar
   need mktemp
+  need awk
+  select_downloader
+  check_sudo
+
+  # Release tags carry no leading "v"; accept the habit rather than failing
+  # the download with a bare 404.
+  version="${version#v}"
+  if [ -n "$version" ]; then
+    version_ok "$version" || err "invalid version: $version (expected X.Y.Z)"
+  fi
 
   target="$(detect_target)"
   version="$(resolve_version)"
@@ -203,15 +306,22 @@ main() {
     exit 0
   fi
 
+  # Fail before spending a download on a directory we cannot publish into.
+  mkdir -p "$install_dir" || err "cannot create install directory: $install_dir"
+  [ -w "$install_dir" ] || err "install directory is not writable: $install_dir
+Pick another with --dir, or re-run under sudo with an explicit --dir."
+
   say "Installing mentat $version ($target) to $install_dir"
 
   tmp="$(mktemp -d)"
-  trap 'rm -rf "$tmp"' EXIT INT TERM
+  staged="$install_dir/.mentat.$$"
+  trap 'rm -rf "$tmp"; rm -f "$staged"' EXIT INT TERM
 
-  curl -fsSL --proto '=https' --tlsv1.2 -o "$tmp/$archive" "$base/$archive" \
-    || err "download failed: $base/$archive"
-  curl -fsSL --proto '=https' --tlsv1.2 -o "$tmp/SHA256SUMS" "$base/SHA256SUMS" \
-    || err "download failed: $base/SHA256SUMS"
+  fetch "$base/$archive" "$tmp/$archive" || err "cannot download $base/$archive
+Check that release $version exists and publishes a $target archive, and that
+this network reaches github.com."
+  fetch "$base/SHA256SUMS" "$tmp/SHA256SUMS" \
+    || err "cannot download $base/SHA256SUMS"
 
   expected="$(awk -v f="$archive" '$2 == f { print $1 }' "$tmp/SHA256SUMS")"
   [ -n "$expected" ] || err "no checksum for $archive in SHA256SUMS"
@@ -226,14 +336,21 @@ The download may be corrupted or tampered with; not installing."
   tar -xzf "$tmp/$archive" -C "$tmp"
   [ -f "$tmp/mentat" ] || err "archive did not contain a mentat binary"
 
-  # Copy into the destination directory first so the final rename is atomic
-  # even when $tmp is on another filesystem.
-  mkdir -p "$install_dir"
+  # Stage inside the destination directory first so the final rename is
+  # atomic even when $tmp is on another filesystem, and so a running mentat
+  # keeps the executable it started from.
   chmod 755 "$tmp/mentat"
-  cp -f "$tmp/mentat" "$installed.tmp.$$"
-  mv -f "$installed.tmp.$$" "$installed"
+  cp -f "$tmp/mentat" "$staged"
 
-  say "Installed $("$installed" --version) -> $installed"
+  # Run the staged copy before publishing it. It sits on the destination
+  # filesystem, so this is the exec check the final path would get, and a
+  # binary that cannot run here never replaces a working install.
+  reported="$("$staged" --version 2> /dev/null || true)"
+  [ -n "$reported" ] || err "the $target binary does not run on this machine
+Nothing was installed. Please report this with the output of: uname -sm"
+
+  mv -f "$staged" "$installed"
+  say "Installed $reported -> $installed"
   modify_path
 
   say ""

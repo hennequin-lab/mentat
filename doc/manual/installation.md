@@ -12,7 +12,7 @@ may invoke.
 
 | Installation or feature | Needed on the host | Observable behavior when absent |
 | --- | --- | --- |
-| Installer script | POSIX `sh`, `uname`, `curl`, `tar`, `mktemp`, `awk`, and either `sha256sum` or `shasum` | Installation stops before publishing the binary. |
+| Installer script | POSIX `sh`, `uname`, `id`, `tar`, `mktemp`, `awk`, either `curl` or `wget`, and either `sha256sum` or `shasum` | Installation stops before publishing the binary. |
 | Default Linux run | A working Bubblewrap executable at exactly `/usr/bin/bwrap` | The default `sandbox.require=enforced` startup gate fails before credentials are loaded or a session is created. A different `bwrap` on `PATH` is not used. |
 | Source search on any platform | `rg` (ripgrep) on `PATH` | The `search_text` tool reports `ripgrep executable not found`; unrelated tools remain available. |
 | Built-in `local` provider | `llama-server` on `PATH`, or `MENTAT_LOCAL_SERVER_BINARY` naming or resolving to it | Local inference reports that the server binary is unavailable. Hosted providers and an independently configured `ollama` endpoint are unaffected. |
@@ -36,7 +36,23 @@ curl -fsSL https://raw.githubusercontent.com/invariant-hq/mentat/main/scripts/in
 The installer resolves the latest release unless `MENTAT_VERSION=X.Y.Z` is set,
 downloads the archive and `SHA256SUMS` over HTTPS, verifies the archive, and
 atomically installs `mentat` to `~/.local/bin`. Set `MENTAT_INSTALL_DIR` or pass
-`--dir DIR` to select another directory.
+`--dir DIR` to select another directory. The downloaded binary is run once
+before it is published, so an archive that cannot execute on this machine never
+replaces a working installation.
+
+`curl` is used when present and `wget` otherwise. The BusyBox `wget` found on
+minimal images cannot report which release is the latest one; pass
+`--version X.Y.Z` on those hosts.
+
+The installer refuses to run under `sudo` when it would install into a home
+directory, because `sudo` resolves `$HOME` to root's on most systems and the
+invoking shell would never see the command. To install for every user on the
+machine, name the directory, which also leaves shell startup files untouched:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/invariant-hq/mentat/main/scripts/install.sh | \
+  sudo sh -s -- --dir /usr/local/bin
+```
 
 If the install directory is not already present in the current `PATH`, the
 installer appends one line to a shell startup file selected from `$SHELL`:
