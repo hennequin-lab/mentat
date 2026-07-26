@@ -352,6 +352,10 @@ let resume_identity_is_scratch_invariant () =
   let resolve_once ?writable_roots () =
     Eio.Switch.run @@ fun sw ->
     let io = capability_exn ~stdenv ~sw ~tmp_base ?writable_roots logical in
+    (* Without an enforcing backend every seal carries the same profile-free
+       [Refused] identity, so the widening half below could not distinguish a
+       stable identity from an unchanged one. *)
+    require_enforced io;
     (Wio.identity io, scratch_of io)
   in
   let id_a, scratch_a = resolve_once () in
