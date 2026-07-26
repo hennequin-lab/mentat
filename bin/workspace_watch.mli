@@ -60,8 +60,8 @@ val drain : t -> Mentat_workspace.Notice.t list
     most one info notice, plus one warning notice the first drain after the lane
     degrades. The queue is cleared.
 
-    The engine drains to prepare a turn and again as each tool claim settles, so
-    a workspace is walked once more per claim than the two window boundaries
-    already cost. Every drain advances: skipping the walk after a window close
-    would rest on that close always being followed by a drain, which an
-    interrupted or store-failed settlement does not do. *)
+    The engine drains to prepare a turn, as each tool claim settles, and as
+    delegated children deliver, so a workspace is walked once more per claim
+    than the two window boundaries already cost. Every drain advances: skipping
+    the walk after a window close would rest on that close always being followed
+    by a drain, which an interrupted or store-failed settlement does not do. *)

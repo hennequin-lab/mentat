@@ -58,9 +58,9 @@ val make :
     [self_prefix], when the capture store's data home lies inside the workspace,
     is that home's workspace-relative path, pruned from every capture so the
     capture system never captures its own bytes. [notices] is the notice source
-    (default: none); the engine drains it to prepare a turn and again as each
-    tool claim settles. [watch] (default: none) brackets every claim's
-    attribution window with the watch lane's poll boundaries: the window's
-    watched changes flow to {!Mentat_workspace_io.Claim_scope.observe} as
-    observational attribution, and only changes outside every window reach the
-    lane's external-change notices. *)
+    (default: none); the engine drains it to prepare a turn, as each tool claim
+    settles, and as delegated children deliver. [watch] (default: none) brackets
+    every claim's attribution window with the watch lane's poll boundaries: the
+    window's watched changes flow to {!Mentat_workspace_io.Claim_scope.observe}
+    as observational attribution, and only changes outside every window reach
+    the lane's external-change notices. *)

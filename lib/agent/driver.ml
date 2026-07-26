@@ -554,11 +554,19 @@ and try_deliver t w =
   let children = w.Mentat_agent_step.Step.Children_wait.children in
   let settled = t.hooks.settled_children children in
   if List.length settled = List.length children then
-    match
-      Mentat_agent_step.deliver_child (env t) ~wait:w ~settled t.session
-    with
-    | Error e -> fault t (Error.of_step e)
-    | Ok step -> drive t step
+    (* Delegated work is workspace work: children write through the same build
+       workspace, and a parent can wait on them for minutes, so this is where
+       the world is most likely to have moved under the turn. Delivery answers
+       the wait call and the model must be shown the answer, so a request
+       follows exactly as it does from a tool settlement. *)
+    match drain_workspace_notices t with
+    | Error e -> fault t e
+    | Ok () -> (
+        match
+          Mentat_agent_step.deliver_child (env t) ~wait:w ~settled t.session
+        with
+        | Error e -> fault t (Error.of_step e)
+        | Ok step -> drive t step)
 
 (* Admission. *)
 

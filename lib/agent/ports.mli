@@ -333,10 +333,11 @@ type workspace = {
           root; the engine appends the fact through {!STORE.append_mutation}
           before the callback runs. *)
   drain_notices : unit -> Mentat_workspace.Notice.t list;
-      (** Transactional notice intake, at turn preparation and again as each
-          tool claim settles. Each drained notice becomes a durable, turn-scoped
-          [Workspace_notice] fact the engine renders in the transcript and
-          injects into that turn's continuation requests.
+      (** Transactional notice intake, wherever a turn resumes from waiting on
+          the outside world: turn preparation, each tool claim settling, and
+          delegated children delivering. Each drained notice becomes a durable,
+          turn-scoped [Workspace_notice] fact the engine renders in the
+          transcript and injects into that turn's continuation requests.
 
           The drain consumes: a producer hands over its observation and does not
           keep it. The engine calls it at boundaries a request normally follows,

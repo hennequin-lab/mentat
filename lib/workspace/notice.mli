@@ -9,9 +9,10 @@
     dune diagnostic and build-health changes, code-review comments. Producers
     construct notices and own their own deduplication — the port has no queue —
     while {!val:key} is the coalescing identity the surfaces display on; the
-    engine drains them transactionally at turn preparation and again as each
-    tool claim settles, so what the world says while a turn runs reaches that
-    turn rather than the next one.
+    engine drains them transactionally wherever a turn resumes from waiting on
+    the outside world — preparing the turn, settling a tool claim, taking
+    delegated children's answers — so what the world says while a turn runs
+    reaches that turn rather than the next one.
 
     A drained notice is a {e durable, turn-scoped} datum, not an ephemeral
     prelude item. At the drain boundary the engine converts its model-visible

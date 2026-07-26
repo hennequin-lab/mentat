@@ -4367,6 +4367,73 @@ let an_observation_outlives_the_turn_that_could_not_state_it () =
           failf "expected three provider requests, got %d"
             (List.length requests))
 
+(* Delegated work is workspace work, and a parent waits on it for as long as the
+   child runs — the longest a turn ever goes without observing. The delivery
+   that answers the wait is a model boundary like a tool settlement, so the
+   world's observations ride the request carrying the child's answer instead of
+   waiting for a turn the parent has not started yet. *)
+let an_observation_made_while_waiting_reaches_the_parent () =
+  let parent_requests = ref [] in
+  let child = ref None in
+  let waited = ref false in
+  let script =
+    Ports.script @@ fun request ->
+    if request_contains request "PLEASE_SPAWN" then begin
+      parent_requests := request :: !parent_requests;
+      (match !child with
+      | Some _ -> ()
+      | None -> child := receipt_child_of request);
+      match !child with
+      | None ->
+          Ok
+            (tool_call_response ~name:"spawn"
+               ~input:(json_object [ ("task", Json.string "child works") ])
+               "spawning")
+      | Some id ->
+          if !waited then Ok (plain_response "done")
+          else begin
+            waited := true;
+            Ok
+              (tool_call_response ~name:"wait"
+                 ~input:
+                   (json_object [ ("children", json_array [ Json.string id ]) ])
+                 "waiting")
+          end
+    end
+    else Ok (plain_response "child done")
+  in
+  let workspace =
+    workspace_noticing_on_drain ~on_drain:2
+      [
+        workspace_notice ~source:"dune"
+          ~severity:Mentat_workspace.Notice.Severity.Error
+          ~title:"Build failing (1 diagnostic)";
+      ]
+  in
+  (* The notice lane belongs to the root driver alone, as composition wires it:
+     a child shares the write capability without touching the producers, so the
+     parent's drains are the only ones. *)
+  let delegated =
+    ( catalog,
+      { workspace with Ports.drain_notices = (fun () -> []) },
+      Mentat_permission.Policy.default )
+  in
+  with_engine ~script:(capped_script ~cap:20 script)
+    ~workspace ~delegated_execution:delegated
+    (fun ~sw:_ ~client ~store:_ ~engine:_ ->
+      submit_ok client
+        (prompt ~session:(sid "root") ~turn:(tid "t-spawn") "PLEASE_SPAWN");
+      ignore (drain_committed (follow_ok client (sid "root")));
+      match List.rev !parent_requests with
+      | [ _; second; third ] ->
+          is_false ~msg:"the wait was issued before the observation was made"
+            (request_contains second "Build failing");
+          is_true
+            ~msg:"the request answering the wait carries what the world said"
+            (request_contains third "Build failing")
+      | requests ->
+          failf "expected three parent requests, got %d" (List.length requests))
+
 let mutation_event_value =
   testable ~pp:Mutation.Event.pp ~equal:Mutation.Event.equal ()
 
@@ -5811,6 +5878,8 @@ let () =
             a_turn_states_every_observation_it_made;
           test "an observation outlives the turn that could not state it"
             an_observation_outlives_the_turn_that_could_not_state_it;
+          test "an observation made while waiting reaches the parent"
+            an_observation_made_while_waiting_reaches_the_parent;
         ];
       group "scheduler and subagents"
         [
