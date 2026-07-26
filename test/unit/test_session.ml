@@ -797,6 +797,7 @@ let origin_gen =
       Gen.map (fun s -> Session.Turn.Origin.Queued (queue_id s)) ident_gen;
       Gen.pure Session.Turn.Origin.Plan_build;
       Gen.pure Session.Turn.Origin.Compaction;
+      Gen.pure Session.Turn.Origin.Step_limit_wind_down;
     ]
 
 let outcome_gen =
@@ -1238,6 +1239,8 @@ let turn_group =
               Session.Turn.Origin.Goal_continuation;
               Session.Turn.Origin.Queued (queue_id "q-1");
               Session.Turn.Origin.Plan_build;
+              Session.Turn.Origin.Compaction;
+              Session.Turn.Origin.Step_limit_wind_down;
             ];
           assert_decode_error "unknown origin" Session.Turn.Origin.jsont
             (json_object [ ("type", Json.string "cron") ]);

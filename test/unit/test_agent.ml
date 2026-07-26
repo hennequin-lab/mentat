@@ -1125,7 +1125,7 @@ let config_defaults_are_the_documented_ones () =
   (* [continuation_turn_limit] is mandatory (no default, H1): the caller here
      chooses [None] explicitly, and the field carries exactly that. *)
   let cfg = Agent.Config.make ~model ~continuation_turn_limit:None () in
-  equal int ~msg:"max_steps defaults to 100" 100 cfg.Agent.Config.max_steps;
+  equal int ~msg:"max_steps defaults to 500" 500 cfg.Agent.Config.max_steps;
   equal int ~msg:"max_spawn_depth defaults to 1" 1
     cfg.Agent.Config.max_spawn_depth;
   equal int ~msg:"max_exchanges defaults to 8" 8 cfg.Agent.Config.max_exchanges;
@@ -1201,7 +1201,7 @@ let admission_depends_on_the_continuation_limit_scalar () =
    with
   | Step.Admission.Continuation _ -> ()
   | Step.Admission.Queued _ | Step.Admission.Budget_wind_down _
-  | Step.Admission.Idle ->
+  | Step.Admission.Step_limit_wind_down _ | Step.Admission.Idle ->
       fail "an unbounded active goal should continue");
   match
     Step.next_admission ~continuation_turn_limit:(Some 0)
@@ -1209,7 +1209,7 @@ let admission_depends_on_the_continuation_limit_scalar () =
   with
   | Step.Admission.Idle -> ()
   | Step.Admission.Queued _ | Step.Admission.Continuation _
-  | Step.Admission.Budget_wind_down _ ->
+  | Step.Admission.Budget_wind_down _ | Step.Admission.Step_limit_wind_down _ ->
       fail "an exhausted continuation limit should idle"
 
 (* The shared contract for goal-admission fixtures. *)
@@ -1221,8 +1221,10 @@ let goal_contract () =
     ()
 
 (* The durable events for one turn that starts, is answered by [response], and
-   completes — the shape [next_admission] reads to decide the next turn. *)
-let settled_turn ~contract ~id ~origin ~text ~response =
+   settles on [outcome] — the shape [next_admission] reads to decide the next
+   turn. *)
+let settled_turn ?(outcome = Session.Turn.Outcome.completed) ~contract ~id
+    ~origin ~text ~response () =
   let turn =
     Session.Turn.make ~id:(tid id) ~origin
       ~input:(Session.Turn.Input.user_text text)
@@ -1239,8 +1241,7 @@ let settled_turn ~contract ~id ~origin ~text ~response =
       (Session.Provider_request.Settled.responded
          ~id:(Session.Provider_request.Started.id provider)
          response);
-    Session.Event.turn_finished ~turn:(Session.Turn.id turn)
-      Session.Turn.Outcome.completed;
+    Session.Event.turn_finished ~turn:(Session.Turn.id turn) outcome;
   ]
 
 let append_or_fail ~what events session =
@@ -1260,7 +1261,7 @@ let a_budget_exhausted_goal_winds_down_with_the_budget_notice () =
       ()
     |> append_or_fail ~what:"budget fixture: opening turn"
          (settled_turn ~contract ~id:"t-user" ~origin:Session.Turn.Origin.User
-            ~text:"start" ~response:(plain_response "ready"))
+            ~text:"start" ~response:(plain_response "ready") ())
     |> append_or_fail ~what:"budget fixture: declare"
          [
            Session.Event.goal_updated
@@ -1270,7 +1271,7 @@ let a_budget_exhausted_goal_winds_down_with_the_budget_notice () =
     |> append_or_fail ~what:"budget fixture: continuation"
          (settled_turn ~contract ~id:"t-cont"
             ~origin:Session.Turn.Origin.Goal_continuation ~text:"continue"
-            ~response:(usage_response ~tokens:100 "worked"))
+            ~response:(usage_response ~tokens:100 "worked") ())
   in
   match
     Step.next_admission ~continuation_turn_limit:None (Session.state session)
@@ -1285,8 +1286,157 @@ let a_budget_exhausted_goal_winds_down_with_the_budget_notice () =
         (contains_sub ~sub:"do not call update_goal"
            (Option.value ~default:"" (Session.Turn.Input.text input)))
   | Step.Admission.Continuation _ | Step.Admission.Queued _
-  | Step.Admission.Idle ->
+  | Step.Admission.Step_limit_wind_down _ | Step.Admission.Idle ->
       fail "a budget-exhausted goal should wind down"
+
+(* The step limit is a runaway backstop, not a verdict that the work is over: a
+   turn that reaches it is owed one wrap-up turn, with no goal to continue and
+   with nothing else queued. That wind-down turn carries its own origin, which
+   is what stops a wind-down that spends its own budget from admitting a second
+   one. An interrupted turn is the control: the user stopped the work, so
+   nothing is admitted on their behalf. *)
+let a_step_limited_turn_winds_down_once_with_no_goal () =
+  let contract = goal_contract () in
+  let session =
+    Session.create ~id:(sid "steps") ~cwd
+      ~created_at:(Session.Time.of_unix_ms 1L)
+      ()
+    |> append_or_fail ~what:"step fixture: step-limited turn"
+         (settled_turn ~contract ~id:"t-user" ~origin:Session.Turn.Origin.User
+            ~text:"start" ~response:(plain_response "working")
+            ~outcome:Session.Turn.Outcome.step_limit ())
+  in
+  (match
+     Step.next_admission ~continuation_turn_limit:None (Session.state session)
+   with
+  | Step.Admission.Step_limit_wind_down input ->
+      is_true ~msg:"the wind-down turn carries the step-limit notice"
+        (contains_sub ~sub:"reached its step limit"
+           (Option.value ~default:"" (Session.Turn.Input.text input)));
+      is_true ~msg:"the wind-down turn asks for the work to be parked and stated"
+        (contains_sub ~sub:"summarize where the work stands"
+           (Option.value ~default:"" (Session.Turn.Input.text input)))
+  | Step.Admission.Continuation _ | Step.Admission.Budget_wind_down _
+  | Step.Admission.Queued _ | Step.Admission.Idle ->
+      fail "a step-limited turn with no goal should wind down, not idle");
+  (* The wind-down spends its own budget: the next admission is not another
+     wind-down, so the mechanism cannot ping-pong. *)
+  let wound_down =
+    append_or_fail ~what:"step fixture: the wind-down turn"
+      (settled_turn ~contract ~id:"t-wind"
+         ~origin:Session.Turn.Origin.Step_limit_wind_down ~text:"wrap up"
+         ~response:(plain_response "parked")
+         ~outcome:Session.Turn.Outcome.step_limit ())
+      session
+  in
+  (match
+     Step.next_admission ~continuation_turn_limit:None
+       (Session.state wound_down)
+   with
+  | Step.Admission.Idle -> ()
+  | Step.Admission.Step_limit_wind_down _ | Step.Admission.Continuation _
+  | Step.Admission.Budget_wind_down _ | Step.Admission.Queued _ ->
+      fail "a wind-down turn must not admit a second wind-down");
+  let interrupted =
+    Session.create ~id:(sid "stopped") ~cwd
+      ~created_at:(Session.Time.of_unix_ms 1L)
+      ()
+    |> append_or_fail ~what:"step fixture: interrupted turn"
+         (settled_turn ~contract ~id:"t-int" ~origin:Session.Turn.Origin.User
+            ~text:"start" ~response:(plain_response "working")
+            ~outcome:(Session.Turn.Outcome.interrupted ~cancelled:true ())
+            ())
+  in
+  match
+    Step.next_admission ~continuation_turn_limit:None (Session.state interrupted)
+  with
+  | Step.Admission.Idle -> ()
+  | Step.Admission.Step_limit_wind_down _ | Step.Admission.Continuation _
+  | Step.Admission.Budget_wind_down _ | Step.Admission.Queued _ ->
+      fail "an interrupted turn admits nothing"
+
+(* A goal does not change what the step limit means, only what follows the
+   wrap-up: the wind-down displaces one continuation, the goal stays active, and
+   the continuation resumes on the turn after. An exhausted token budget still
+   wins, because its notice says everything this one does and parks the goal
+   besides. *)
+let a_step_limited_goal_turn_winds_down_then_resumes () =
+  let contract = goal_contract () in
+  let goal_id = Session.Goal.Id.of_string "goal-steps" in
+  let session =
+    Session.create ~id:(sid "goal-steps") ~cwd
+      ~created_at:(Session.Time.of_unix_ms 1L)
+      ()
+    |> append_or_fail ~what:"goal-step fixture: opening turn"
+         (settled_turn ~contract ~id:"t-user" ~origin:Session.Turn.Origin.User
+            ~text:"start" ~response:(plain_response "ready") ())
+    |> append_or_fail ~what:"goal-step fixture: declare"
+         [
+           Session.Event.goal_updated
+             (Session.Goal.Update.declare ~id:goal_id ~objective:"Ship it"
+                ~token_budget:100 ());
+         ]
+    |> append_or_fail ~what:"goal-step fixture: step-limited continuation"
+         (settled_turn ~contract ~id:"t-cont"
+            ~origin:Session.Turn.Origin.Goal_continuation ~text:"continue"
+            ~response:(usage_response ~tokens:10 "worked")
+            ~outcome:Session.Turn.Outcome.step_limit ())
+  in
+  (match
+     Step.next_admission ~continuation_turn_limit:None (Session.state session)
+   with
+  | Step.Admission.Step_limit_wind_down input ->
+      is_true ~msg:"the goal's wind-down carries the step-limit notice"
+        (contains_sub ~sub:"reached its step limit"
+           (Option.value ~default:"" (Session.Turn.Input.text input)))
+  | Step.Admission.Continuation _ | Step.Admission.Budget_wind_down _
+  | Step.Admission.Queued _ | Step.Admission.Idle ->
+      fail "a step-limited goal turn should wind down before continuing");
+  let wound_down =
+    append_or_fail ~what:"goal-step fixture: the wind-down turn"
+      (settled_turn ~contract ~id:"t-wind"
+         ~origin:Session.Turn.Origin.Step_limit_wind_down ~text:"wrap up"
+         ~response:(plain_response "parked") ())
+      session
+  in
+  (match
+     Step.next_admission ~continuation_turn_limit:None
+       (Session.state wound_down)
+   with
+  | Step.Admission.Continuation input ->
+      is_true ~msg:"the goal resumes on the turn after the wind-down"
+        (contains_sub ~sub:"Continue working toward this goal"
+           (Option.value ~default:"" (Session.Turn.Input.text input)))
+  | Step.Admission.Step_limit_wind_down _ | Step.Admission.Budget_wind_down _
+  | Step.Admission.Queued _ | Step.Admission.Idle ->
+      fail "the goal should keep going after its wind-down");
+  (* The same step-limited continuation, but the goal's budget is spent too. *)
+  let spent =
+    Session.create ~id:(sid "goal-spent") ~cwd
+      ~created_at:(Session.Time.of_unix_ms 1L)
+      ()
+    |> append_or_fail ~what:"spent fixture: opening turn"
+         (settled_turn ~contract ~id:"t-user" ~origin:Session.Turn.Origin.User
+            ~text:"start" ~response:(plain_response "ready") ())
+    |> append_or_fail ~what:"spent fixture: declare"
+         [
+           Session.Event.goal_updated
+             (Session.Goal.Update.declare ~id:goal_id ~objective:"Ship it"
+                ~token_budget:100 ());
+         ]
+    |> append_or_fail ~what:"spent fixture: step-limited continuation"
+         (settled_turn ~contract ~id:"t-cont"
+            ~origin:Session.Turn.Origin.Goal_continuation ~text:"continue"
+            ~response:(usage_response ~tokens:100 "worked")
+            ~outcome:Session.Turn.Outcome.step_limit ())
+  in
+  match
+    Step.next_admission ~continuation_turn_limit:None (Session.state spent)
+  with
+  | Step.Admission.Budget_wind_down _ -> ()
+  | Step.Admission.Step_limit_wind_down _ | Step.Admission.Continuation _
+  | Step.Admission.Queued _ | Step.Admission.Idle ->
+      fail "an exhausted budget's wind-down subsumes the step limit's"
 
 (* Editing the objective makes the first following goal turn lead with the
    objective-updated notice and the new objective, while keeping the standing
@@ -1300,7 +1450,7 @@ let an_edited_objective_leads_the_next_goal_turn_with_the_update_notice () =
       ()
     |> append_or_fail ~what:"edit fixture: opening turn"
          (settled_turn ~contract ~id:"t-user" ~origin:Session.Turn.Origin.User
-            ~text:"start" ~response:(plain_response "ready"))
+            ~text:"start" ~response:(plain_response "ready") ())
     |> append_or_fail ~what:"edit fixture: declare then edit"
          [
            Session.Event.goal_updated
@@ -1322,7 +1472,7 @@ let an_edited_objective_leads_the_next_goal_turn_with_the_update_notice () =
       is_true ~msg:"the post-edit turn carries the new objective"
         (contains_sub ~sub:"Port the lexer" text)
   | Step.Admission.Budget_wind_down _ | Step.Admission.Queued _
-  | Step.Admission.Idle ->
+  | Step.Admission.Step_limit_wind_down _ | Step.Admission.Idle ->
       fail "an edited active goal should continue");
   (* Once a goal-continuation turn has re-entered on the edited objective, the
      notice is spent and the next turn is a plain continuation. *)
@@ -1330,7 +1480,7 @@ let an_edited_objective_leads_the_next_goal_turn_with_the_update_notice () =
     append_or_fail ~what:"edit control: re-derivation turn"
       (settled_turn ~contract ~id:"t-cont"
          ~origin:Session.Turn.Origin.Goal_continuation ~text:"re-derive"
-         ~response:(plain_response "done"))
+         ~response:(plain_response "done") ())
       edited
   in
   match
@@ -1343,7 +1493,7 @@ let an_edited_objective_leads_the_next_goal_turn_with_the_update_notice () =
       is_true ~msg:"a later goal turn keeps the plain continuation"
         (contains_sub ~sub:"Continue working toward this goal" text)
   | Step.Admission.Budget_wind_down _ | Step.Admission.Queued _
-  | Step.Admission.Idle ->
+  | Step.Admission.Step_limit_wind_down _ | Step.Admission.Idle ->
       fail "the goal should keep continuing after re-derivation"
 
 let env_rejects_invalid_scalars () =
@@ -2282,7 +2432,8 @@ let plan_approval_reaches_the_build_request context () =
             match Session.Turn.origin turn with
             | Session.Turn.Origin.Plan_build -> true
             | Session.Turn.Origin.User | Session.Turn.Origin.Goal_continuation
-            | Session.Turn.Origin.Queued _ | Session.Turn.Origin.Compaction ->
+            | Session.Turn.Origin.Queued _ | Session.Turn.Origin.Compaction
+            | Session.Turn.Origin.Step_limit_wind_down ->
                 false)
       in
       match admitted with
@@ -2870,7 +3021,8 @@ let an_interrupt_admits_the_queued_correction () =
                  | Session.Turn.Origin.User
                  | Session.Turn.Origin.Goal_continuation
                  | Session.Turn.Origin.Plan_build
-                 | Session.Turn.Origin.Compaction ->
+                 | Session.Turn.Origin.Compaction
+                 | Session.Turn.Origin.Step_limit_wind_down ->
                      false)
              | _ -> false)
            pairs))
@@ -3346,6 +3498,62 @@ let a_budgeted_goal_winds_down_then_stops_budget_limited () =
             (Session.Goal.Status.equal (Session.Goal.status goal)
                Session.Goal.Status.Budget_limited)
       | None -> fail "the budgeted goal vanished")
+
+(* A turn that spends its step budget is wound down rather than dropped where it
+   stood: the engine admits one wrap-up turn carrying the step-limit notice,
+   with no goal in play. Every model answer here is another tool call, so the
+   wind-down spends its own budget too — and the turn after it is the user's,
+   which is what proves the wind-down cannot admit a wind-down of its own. *)
+let a_step_limited_turn_winds_down_once_then_stops () =
+  let saw_notice = ref false in
+  let calls = ref 0 in
+  let script =
+    Ports.script @@ fun request ->
+    incr calls;
+    if request_contains request "reached its step limit" then saw_notice := true;
+    Ok
+      (tool_call_response
+         ~name:(Printf.sprintf "edit-%d" !calls)
+         ~input:(json_object []) "working")
+  in
+  let catalog =
+    match
+      Catalog.make ~verbs:all_verbs
+        (List.init 4 (fun i ->
+             trivial_tool ~name:(Printf.sprintf "edit-%d" (i + 1)) ()))
+    with
+    | Ok c -> c
+    | Error e -> failf "catalog: %a" Catalog.Error.pp e
+  in
+  (* One step per turn: the boundary after the first tool settles ends the turn
+     rather than issuing a second request. *)
+  let config _ ~latest_model:_ =
+    Ok (Agent.Config.make ~model ~max_steps:1 ~continuation_turn_limit:None ())
+  in
+  let origins store =
+    Session.State.turns (Session.state (Hashtbl.find store.sessions "root"))
+    |> List.map (fun turn ->
+        Format.asprintf "%a" Session.Turn.Origin.pp (Session.Turn.origin turn))
+  in
+  with_engine ~script ~catalog ~config (fun ~sw:_ ~client ~store ~engine:_ ->
+      submit_ok client (prompt ~session:(sid "root") ~turn:(tid "t-1") "work");
+      let pairs = drain_n_settled 2 (follow_ok client (sid "root")) in
+      (match settled_outcome pairs with
+      | Some Session.Turn.Outcome.Step_limit -> ()
+      | Some _ | None -> fail "the first turn must end at its step limit");
+      is_true ~msg:"the wind-down turn carried the step-limit notice" !saw_notice;
+      equal (list string) ~msg:"the step-limited turn is wound down exactly once"
+        [ "user"; "step-limit-wind-down" ]
+        (origins store);
+      (* The wind-down settled at the step limit as well. Nothing further is
+         admitted on its own, so the next turn is the one the user submits. *)
+      let feed = follow_ok ~from:`Now client (sid "root") in
+      submit_ok client (prompt ~session:(sid "root") ~turn:(tid "t-2") "again");
+      ignore (drain_n_settled 2 feed);
+      equal (list string)
+        ~msg:"a wind-down that hits the limit itself admits no successor"
+        [ "user"; "step-limit-wind-down"; "user"; "step-limit-wind-down" ]
+        (origins store))
 
 let overflow_recovery_is_bounded_per_turn () =
   (* Every turn request overflows — including the retry after the compaction. The
@@ -4341,28 +4549,28 @@ let an_observation_outlives_the_turn_that_could_not_state_it () =
   with_engine ~script ~catalog ~workspace ~config
     (fun ~sw:_ ~client ~store:_ ~engine:_ ->
       submit_ok client (prompt ~session:(sid "root") ~turn:(tid "t-1") "edit");
-      let first = drain_committed (follow_ok client (sid "root")) in
+      (* Two settlements: the step-limited turn, then the wind-down turn the
+         engine admits behind it — which is the next turn, and therefore the one
+         that inherits what its predecessor could not state. *)
+      let first = drain_n_settled 2 (follow_ok client (sid "root")) in
       (match settled_outcome first with
       | Some Session.Turn.Outcome.Step_limit -> ()
       | Some _ | None -> fail "the first turn must end at its step limit");
       let feed = follow_ok ~from:`Now client (sid "root") in
       submit_ok client (prompt ~session:(sid "root") ~turn:(tid "t-2") "again");
       ignore (drain_committed feed);
-      let feed = follow_ok ~from:`Now client (sid "root") in
-      submit_ok client (prompt ~session:(sid "root") ~turn:(tid "t-3") "more");
-      ignore (drain_committed feed);
       match List.rev !requests with
-      | [ first; second; third ] ->
+      | [ first; wind_down; second ] ->
           is_false
             ~msg:"the step-limited turn never got to state the observation"
             (request_contains first "Build failing");
           is_true ~msg:"the next turn states what its predecessor could not"
-            (request_contains second "Build failing");
+            (request_contains wind_down "Build failing");
           (* Carried once and no further: a turn that has stated an observation
              owes nothing, so it is not recorded again against every turn that
              follows. *)
           is_false ~msg:"a stated observation is not carried on again"
-            (request_contains third "Build failing")
+            (request_contains second "Build failing")
       | requests ->
           failf "expected three provider requests, got %d"
             (List.length requests))
@@ -5730,6 +5938,10 @@ let () =
             admission_depends_on_the_continuation_limit_scalar;
           test "a budget-exhausted goal winds down with the budget notice"
             a_budget_exhausted_goal_winds_down_with_the_budget_notice;
+          test "a step-limited turn winds down once with no goal"
+            a_step_limited_turn_winds_down_once_with_no_goal;
+          test "a step-limited goal turn winds down then resumes"
+            a_step_limited_goal_turn_winds_down_then_resumes;
           test "an edited objective leads the next goal turn with the notice"
             an_edited_objective_leads_the_next_goal_turn_with_the_update_notice;
           test "env rejects invalid scalars" env_rejects_invalid_scalars;
@@ -5868,6 +6080,8 @@ let () =
             the_resume_notice_frames_the_reissued_summary;
           test "a budgeted goal winds down then stops budget-limited"
             a_budgeted_goal_winds_down_then_stops_budget_limited;
+          test "a step-limited turn winds down once then stops"
+            a_step_limited_turn_winds_down_once_then_stops;
           test "context overflow recovery is bounded per turn"
             overflow_recovery_is_bounded_per_turn;
           test "context pressure compaction records the before projection"

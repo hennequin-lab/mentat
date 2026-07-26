@@ -378,10 +378,13 @@ let user_input_blocks turn =
       (Session.Turn.Input.Continue | Session.Turn.Input.Plan_build _) )
   | ( Session.Turn.Origin.Compaction,
       ( Session.Turn.Input.Continue | Session.Turn.Input.User _
+      | Session.Turn.Input.Plan_build _ ) )
+  | ( Session.Turn.Origin.Step_limit_wind_down,
+      ( Session.Turn.Input.Continue | Session.Turn.Input.User _
       | Session.Turn.Input.Plan_build _ ) ) ->
       (* Cross-origin/input validity is owned by session replay. Do not render
-         internal continuation, canonical plan-build, or compaction turns as user
-         speech. *)
+         internal continuation, canonical plan-build, compaction, or wind-down
+         turns as user speech. *)
       []
 
 let first_nonempty_line text =
@@ -595,7 +598,9 @@ let outcome_blocks ~provider_failure_reported outcome =
   | Session.Turn.Outcome.Step_limit ->
       [
         Transcript.notice
-          (Notice.Event "Step limit reached — send another message to continue.");
+          (Notice.Event
+             "The turn stopped at its step limit — the cap on model \
+              responses.");
       ]
   | Session.Turn.Outcome.Interrupted _ -> [ Transcript.notice Notice.Interrupt ]
   | Session.Turn.Outcome.Failed { message } ->

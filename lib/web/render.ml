@@ -636,7 +636,7 @@ let outcome_blocks ~id ~provider_failure_reported outcome =
   | Turn.Outcome.Step_limit ->
       [
         notice_event ~id
-          "Step limit reached — send another message to continue.";
+          "The turn stopped at its step limit — the cap on model responses.";
       ]
   | Turn.Outcome.Interrupted _ -> [ notice_event ~id "Interrupted." ]
   | Turn.Outcome.Failed { message } ->

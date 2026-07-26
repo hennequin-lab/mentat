@@ -1497,7 +1497,8 @@ let consume_queued turn queue =
           not (Session.Queue.Id.equal admitted (Session.Queue.Entry.id entry)))
         queue
   | Session.Turn.Origin.User | Session.Turn.Origin.Goal_continuation
-  | Session.Turn.Origin.Plan_build | Session.Turn.Origin.Compaction ->
+  | Session.Turn.Origin.Plan_build | Session.Turn.Origin.Compaction
+  | Session.Turn.Origin.Step_limit_wind_down ->
       queue
 
 let find_child child children =
@@ -1644,7 +1645,7 @@ let turn_origin_of ~now ~prefix ~index turn =
             }
       | Some _ | None -> None)
   | Session.Turn.Origin.Goal_continuation | Session.Turn.Origin.Plan_build
-  | Session.Turn.Origin.Compaction ->
+  | Session.Turn.Origin.Compaction | Session.Turn.Origin.Step_limit_wind_down ->
       None
 
 (* Every turn of any origin advances [turn_count]; a user turn additionally

@@ -183,6 +183,7 @@ let turn_origin_string = function
   | Turn.Origin.Queued _ -> "queued"
   | Turn.Origin.Plan_build -> "plan_build"
   | Turn.Origin.Compaction -> "compaction"
+  | Turn.Origin.Step_limit_wind_down -> "step_limit_wind_down"
 
 (* The goal and queue facts are single journal arms; the wire tag is the
    transition the update records (the "per-transition tags derive at the headless

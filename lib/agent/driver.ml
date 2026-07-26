@@ -626,6 +626,9 @@ and admission t =
                 | Ok () ->
                     start_build_turn t cfg ~input
                       ~origin:Mentat_session.Turn.Origin.Goal_continuation)
+            | Mentat_agent_step.Admission.Step_limit_wind_down input ->
+                start_build_turn t cfg ~input
+                  ~origin:Mentat_session.Turn.Origin.Step_limit_wind_down
             | Mentat_agent_step.Admission.Idle ->
                 t.execution <- None;
                 t.phase <- Idle))

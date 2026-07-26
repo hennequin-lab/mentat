@@ -27,6 +27,7 @@ module Origin = struct
     | Queued of Queue.Id.t
     | Plan_build
     | Compaction
+    | Step_limit_wind_down
 
   let equal a b =
     match (a, b) with
@@ -35,7 +36,10 @@ module Origin = struct
     | Queued a, Queued b -> Queue.Id.equal a b
     | Plan_build, Plan_build -> true
     | Compaction, Compaction -> true
-    | (User | Goal_continuation | Queued _ | Plan_build | Compaction), _ ->
+    | Step_limit_wind_down, Step_limit_wind_down -> true
+    | ( ( User | Goal_continuation | Queued _ | Plan_build | Compaction
+        | Step_limit_wind_down ),
+        _ ) ->
         false
 
   let pp ppf = function
@@ -44,6 +48,7 @@ module Origin = struct
     | Queued id -> Format.fprintf ppf "queued(%a)" Queue.Id.pp id
     | Plan_build -> Format.pp_print_string ppf "plan-build"
     | Compaction -> Format.pp_print_string ppf "compaction"
+    | Step_limit_wind_down -> Format.pp_print_string ppf "step-limit-wind-down"
 
   let jsont =
     let user_case =
@@ -60,7 +65,9 @@ module Origin = struct
       Jsont.Object.map ~kind:"queued origin" (fun id -> Queued id)
       |> Jsont.Object.mem "entry" Queue.Id.jsont ~enc:(function
         | Queued id -> id
-        | User | Goal_continuation | Plan_build | Compaction -> assert false)
+        | User | Goal_continuation | Plan_build | Compaction
+        | Step_limit_wind_down ->
+            assert false)
       |> Jsont.Object.error_unknown |> Jsont.Object.finish
       |> Jsont.Object.Case.map "queued" ~dec:Fun.id
     in
@@ -74,9 +81,21 @@ module Origin = struct
       |> Jsont.Object.error_unknown |> Jsont.Object.finish
       |> Jsont.Object.Case.map "compaction" ~dec:Fun.id
     in
+    let step_limit_case =
+      Jsont.Object.map ~kind:"step-limit wind-down origin" Step_limit_wind_down
+      |> Jsont.Object.error_unknown |> Jsont.Object.finish
+      |> Jsont.Object.Case.map "step_limit_wind_down" ~dec:Fun.id
+    in
     let cases =
       List.map Jsont.Object.Case.make
-        [ user_case; goal_case; queued_case; plan_case; compaction_case ]
+        [
+          user_case;
+          goal_case;
+          queued_case;
+          plan_case;
+          compaction_case;
+          step_limit_case;
+        ]
     in
     let enc_case = function
       | User as origin -> Jsont.Object.Case.value user_case origin
@@ -84,6 +103,8 @@ module Origin = struct
       | Queued _ as origin -> Jsont.Object.Case.value queued_case origin
       | Plan_build as origin -> Jsont.Object.Case.value plan_case origin
       | Compaction as origin -> Jsont.Object.Case.value compaction_case origin
+      | Step_limit_wind_down as origin ->
+          Jsont.Object.Case.value step_limit_case origin
     in
     Jsont.Object.map ~kind:"turn origin" Fun.id
     |> Jsont.Object.case_mem "type" Jsont.string ~enc:Fun.id ~enc_case cases

@@ -1404,7 +1404,8 @@ let install_summary env id ~summary ~reason ?usage session =
       | Mentat_session.Turn.Origin.User
       | Mentat_session.Turn.Origin.Goal_continuation
       | Mentat_session.Turn.Origin.Queued _
-      | Mentat_session.Turn.Origin.Plan_build ->
+      | Mentat_session.Turn.Origin.Plan_build
+      | Mentat_session.Turn.Origin.Step_limit_wind_down ->
           normalize env session [ installed ])
   | Some _ | None ->
       Error
@@ -1902,34 +1903,61 @@ module Admission = struct
         goal : Mentat_session.Goal.Id.t;
         input : Mentat_session.Turn.Input.t;
       }
+    | Step_limit_wind_down of Mentat_session.Turn.Input.t
     | Idle
 end
 
+(* A manual compaction turn is transparent to what follows it: it is not work,
+   so it neither triggers an admission nor suppresses one. The last real turn is
+   the last one that is not a compaction. *)
+let last_work_turn state =
+  List.rev (Mentat_session.State.turns state)
+  |> List.find_opt (fun turn ->
+      not
+        (Mentat_session.Turn.Origin.equal
+           (Mentat_session.Turn.origin turn)
+           Mentat_session.Turn.Origin.Compaction))
+
+let last_work_outcome state =
+  Option.bind (last_work_turn state) (fun last ->
+      Mentat_session.State.turn_outcome (Mentat_session.Turn.id last) state)
+
 let last_settle_clean state =
-  (* A manual compaction turn is transparent to goal continuation: it is not
-     work on the goal, so it neither triggers a continuation nor suppresses one.
-     Read the last real turn's outcome, skipping compaction turns. *)
-  let last_work_turn =
-    List.rev (Mentat_session.State.turns state)
-    |> List.find_opt (fun turn ->
-        not
-          (Mentat_session.Turn.Origin.equal
-             (Mentat_session.Turn.origin turn)
-             Mentat_session.Turn.Origin.Compaction))
-  in
-  match last_work_turn with
+  match last_work_outcome state with
+  | Some Mentat_session.Turn.Outcome.Completed
+  | Some Mentat_session.Turn.Outcome.Step_limit ->
+      true
+  | Some (Mentat_session.Turn.Outcome.Interrupted _)
+  | Some (Mentat_session.Turn.Outcome.Failed _)
+  | None ->
+      false
+
+(* A turn that spent its step budget stopped mid-work with nothing said about
+   where it stands. One wrap-up turn is owed, whatever the goal state — the step
+   limit is a runaway backstop, not a decision that the work is over. The
+   wind-down turn carries [Step_limit_wind_down], which is what stops a
+   wind-down that spends its own budget from admitting another one. *)
+let step_limit_wind_down_due state =
+  match last_work_turn state with
   | None -> false
   | Some last -> (
       match
         Mentat_session.State.turn_outcome (Mentat_session.Turn.id last) state
       with
-      | Some Mentat_session.Turn.Outcome.Completed
       | Some Mentat_session.Turn.Outcome.Step_limit ->
-          true
+          not
+            (Mentat_session.Turn.Origin.equal
+               (Mentat_session.Turn.origin last)
+               Mentat_session.Turn.Origin.Step_limit_wind_down)
+      | Some Mentat_session.Turn.Outcome.Completed
       | Some (Mentat_session.Turn.Outcome.Interrupted _)
       | Some (Mentat_session.Turn.Outcome.Failed _)
       | None ->
           false)
+
+let step_limit_wind_down =
+  Admission.Step_limit_wind_down
+    (Mentat_session.Turn.Input.user_text Mentat_prompts.Turn.step_limit)
 
 let next_admission ~continuation_turn_limit state =
   match Mentat_session.State.active_turn state with
@@ -1961,6 +1989,10 @@ let next_admission ~continuation_turn_limit state =
                         Mentat_session.Turn.Input.user_text
                           Mentat_prompts.Goals.budget_limit;
                     }
+              | Some _ | None when step_limit_wind_down_due state ->
+                  (* The goal outlives the wind-down: it stays active and its
+                     continuation resumes on the turn after. *)
+                  step_limit_wind_down
               | Some _ | None ->
                   let continuation =
                     Mentat_prompts.Goals.continuation ^ " "
@@ -1978,4 +2010,6 @@ let next_admission ~continuation_turn_limit state =
                   in
                   Admission.Continuation
                     (Mentat_session.Turn.Input.user_text text))
-          | Some _ | None -> Admission.Idle))
+          | Some _ | None ->
+              if step_limit_wind_down_due state then step_limit_wind_down
+              else Admission.Idle))

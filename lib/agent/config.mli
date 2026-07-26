@@ -22,7 +22,12 @@ type t = private {
           are layered over it by replay, never stored here. *)
   review : Mentat_permission.Review_behavior.t;
       (** The review behaviour the contract freezes. *)
-  max_steps : int;  (** Model-response limit per turn; positive. *)
+  max_steps : int;
+      (** Model-response limit per turn; positive. A backstop against a turn
+          that has stopped making progress, not a bound on how much work one
+          turn may do: reaching it settles the turn
+          {!Mentat_session.Turn.Outcome.Step_limit}, which the engine answers
+          with one wrap-up turn rather than a stop. *)
   compaction_pressure_tokens : int option;
       (** Projected replay tokens above which a request boundary compacts;
           [None] disables automatic compaction. *)
@@ -56,7 +61,7 @@ val make :
     deliberate choice, never a default. [options] defaults to
     {!Mentat_llm.Request.Options.default}; [policy] to
     {!Mentat_permission.Policy.default}; [review] to
-    {!Mentat_permission.Review_behavior.Enforce}; [max_steps] to [100];
+    {!Mentat_permission.Review_behavior.Enforce}; [max_steps] to [500];
     [compaction_pressure_tokens] to [None]; [max_spawn_depth] to [1];
     [max_exchanges] to [8].
 

@@ -572,7 +572,8 @@ let goal_objective_edit_pending t =
                   match Turn.origin r.turn with
                   | Turn.Origin.Goal_continuation -> false
                   | Turn.Origin.User | Turn.Origin.Queued _
-                  | Turn.Origin.Plan_build | Turn.Origin.Compaction ->
+                  | Turn.Origin.Plan_build | Turn.Origin.Compaction
+                  | Turn.Origin.Step_limit_wind_down ->
                       true)
               | None -> true))
 
@@ -657,7 +658,8 @@ let apply_turn_started turn t =
           | Turn.Origin.Plan_build, (Turn.Input.User _ | Turn.Input.Continue) ->
               turn_error (Error.Turn.Plan_build_mismatch id)
           | ( ( Turn.Origin.User | Turn.Origin.Goal_continuation
-              | Turn.Origin.Queued _ | Turn.Origin.Compaction ),
+              | Turn.Origin.Queued _ | Turn.Origin.Compaction
+              | Turn.Origin.Step_limit_wind_down ),
               Turn.Input.Plan_build _ ) ->
               turn_error (Error.Turn.Unexpected_plan_build_input id)
           | Turn.Origin.Compaction, Turn.Input.Continue -> Ok t
@@ -679,7 +681,8 @@ let apply_turn_started turn t =
                         t.queue;
                   }
               else turn_error (Error.Turn.Unknown_queue_entry entry)
-          | ( (Turn.Origin.User | Turn.Origin.Goal_continuation),
+          | ( ( Turn.Origin.User | Turn.Origin.Goal_continuation
+              | Turn.Origin.Step_limit_wind_down ),
               (Turn.Input.User _ | Turn.Input.Continue) ) ->
               Ok t
         in

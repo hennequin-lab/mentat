@@ -212,25 +212,36 @@ module Admission : sig
             and then admits one final goal-continuation wind-down turn with
             [input]; the now budget-limited goal admits no further continuation.
         *)
+    | Step_limit_wind_down of Mentat_session.Turn.Input.t
+        (** The last turn settled {!Mentat_session.Turn.Outcome.Step_limit}.
+            The driver admits one wrap-up turn with [input] under the
+            {!Mentat_session.Turn.Origin.Step_limit_wind_down} origin, which is
+            what keeps a wind-down that spends its own budget from admitting
+            another. Independent of the goal: it is admitted with no goal, with
+            a goal whose continuation is exhausted, and between two turns of a
+            goal that then continues normally. *)
     | Idle  (** Nothing to admit; park. *)
 end
 
 val next_admission :
   continuation_turn_limit:int option -> Mentat_session.State.t -> Admission.t
 (** [next_admission ~continuation_turn_limit state] is what the driver admits at
-    an idle boundary: Queued beats a goal turn beats Idle. The driver consumes a
-    pending exact plan approval as a [Plan_build] Build turn before consulting
-    this, so the effective admission order is Plan_build, then Queued, then a
-    goal turn, then Idle. A goal turn is admissible only when the state is idle
+    an idle boundary: Queued beats a goal turn beats a step-limit wind-down
+    beats Idle. The driver consumes a pending exact plan approval as a
+    [Plan_build] Build turn before consulting this, so the effective admission
+    order is Plan_build, then Queued, then a goal turn, then a step-limit
+    wind-down, then Idle. A goal turn is admissible only when the state is idle
     with an empty queue, the last settle was clean ([Completed] or
     [Step_limit]), the goal is active, and [continuation_turn_limit] allows. The
     goal turn is [Budget_wind_down] when the goal's budget is exhausted (a final
     wind-down), otherwise [Continuation]; a continuation whose objective was
     edited since the last goal turn carries the objective-updated notice
-    ({!Mentat_session.State.goal_objective_edit_pending}). Pure; the driver
-    enacts it by calling {!start} with the [Goal_continuation] origin and a
-    host-minted id, recording the budget-limited transition first for a
-    [Budget_wind_down]. *)
+    ({!Mentat_session.State.goal_objective_edit_pending}). A
+    [Step_limit_wind_down] displaces that continuation for exactly one turn and
+    is also admitted where no goal turn is: the goal's own budget notice, which
+    subsumes it and parks the goal, still wins. Pure; the driver enacts it by
+    calling {!start} with the origin the arm names and a host-minted id,
+    recording the budget-limited transition first for a [Budget_wind_down]. *)
 
 (** {1:entry Entry points} *)
 

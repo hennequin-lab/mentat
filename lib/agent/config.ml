@@ -17,7 +17,7 @@ type t = {
 
 let make ~model ?(options = Mentat_llm.Request.Options.default)
     ?(policy = Mentat_permission.Policy.default)
-    ?(review = Mentat_permission.Review_behavior.Enforce) ?(max_steps = 100)
+    ?(review = Mentat_permission.Review_behavior.Enforce) ?(max_steps = 500)
     ?compaction_pressure_tokens ~continuation_turn_limit ?(max_spawn_depth = 1)
     ?(max_exchanges = 8) () =
   let positive name v =

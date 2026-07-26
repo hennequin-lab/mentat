@@ -69,6 +69,13 @@ module Origin : sig
             facts are not projected (only its [Compaction] fact is). Automatic
             compaction never uses this origin: it is a prelude within the
             requesting turn. *)
+    | Step_limit_wind_down
+        (** The one wrap-up turn the engine admits after a turn settled
+            {!Outcome.Step_limit}: it asks the model to park what is in flight
+            and state where the work stands. A turn carrying this origin never
+            admits another wind-down, so the mechanism cannot repeat, and it is
+            not a goal turn — it neither spends the goal's budget nor consumes
+            its continuation allowance. *)
 
   val equal : t -> t -> bool
   (** [equal a b] is [true] iff [a] and [b] are the same origin. *)
