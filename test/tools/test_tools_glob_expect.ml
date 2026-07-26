@@ -365,15 +365,17 @@ let with_cwd dir fn =
   Unix.chdir dir;
   Fun.protect ~finally:(fun () -> Unix.chdir previous) fn
 
+(* A child reaped under an installed SIGCHLD handler interrupts the wait before
+   the handler runs: its own exit is the signal that arrives. *)
+let rec waitpid_nointr pid =
+  match Unix.waitpid [] pid with
+  | result -> result
+  | exception Unix.Unix_error (Unix.EINTR, _, _) -> waitpid_nointr pid
+
 let ensure_git_repository root =
   let argv = [| "git"; "-C"; root; "init"; "--quiet" |] in
   let pid = Unix.create_process "git" argv Unix.stdin Unix.stdout Unix.stderr in
-  let rec wait () =
-    match Unix.waitpid [] pid with
-    | _, status -> status
-    | exception Unix.Unix_error (Unix.EINTR, _, _) -> wait ()
-  in
-  match wait () with
+  match snd (waitpid_nointr pid) with
   | Unix.WEXITED 0 -> ()
   | Unix.WEXITED code -> failf "git init for rg oracle exited %d" code
   | Unix.WSIGNALED signal -> failf "git init for rg oracle signalled %d" signal
@@ -417,7 +419,7 @@ let rg_paths world pattern =
     in
     let paths = lines [] in
     In_channel.close channel;
-    match snd (Unix.waitpid [] pid) with
+    match snd (waitpid_nointr pid) with
     | Unix.WEXITED 0 | Unix.WEXITED 1 -> Ok paths
     | Unix.WEXITED 2 -> Error "rejected by the ripgrep globset"
     | Unix.WEXITED code -> failf "rg oracle exited %d" code
