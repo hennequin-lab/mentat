@@ -360,18 +360,6 @@ let encode_thinking options =
           (Jsont.Json.object' [ string_member "effort" (encode_effort effort) ])
       )
 
-let thinking_enabled options =
-  match Llm.Request.Options.reasoning_effort options with
-  | None | Some Llm.Request.Options.Reasoning_effort.Disabled -> false
-  | Some
-      ( Llm.Request.Options.Reasoning_effort.Minimal
-      | Llm.Request.Options.Reasoning_effort.Low
-      | Llm.Request.Options.Reasoning_effort.Medium
-      | Llm.Request.Options.Reasoning_effort.High
-      | Llm.Request.Options.Reasoning_effort.Extra_high
-      | Llm.Request.Options.Reasoning_effort.Max ) ->
-      true
-
 (* Sampling parameters are removed on current Claude models, which run adaptive
    thinking whether [thinking] is absent or explicitly [adaptive]. Absence
    therefore proves nothing, and the earlier "omit while thinking is enabled"
@@ -382,14 +370,6 @@ let sampling_supported options =
   match Llm.Request.Options.reasoning_effort options with
   | Some Llm.Request.Options.Reasoning_effort.Disabled -> true
   | Some _ | None -> false
-
-let check_thinking_options options =
-  if thinking_enabled options then
-    match Llm.Request.Options.tool_choice options with
-    | Llm.Request.Options.Required | Llm.Request.Options.Tool _ ->
-        invalid_request "Anthropic thinking does not support forced tool_choice"
-    | Llm.Request.Options.Auto | Llm.Request.Options.No_tools -> Ok ()
-  else Ok ()
 
 let encode_response_format = function
   | Llm.Request.Options.Text -> Ok ()
@@ -456,46 +436,43 @@ let encode_request request =
     let max_tokens =
       Option.value (Llm.Request.Options.max_output_tokens options) ~default:4096
     in
-    match check_thinking_options options with
+    match
+      encode_response_format (Llm.Request.Options.response_format options)
+    with
     | Error error -> Error error
     | Ok () -> (
-        match
-          encode_response_format (Llm.Request.Options.response_format options)
-        with
+        match split_messages (Llm.Request.messages request) with
         | Error error -> Error error
-        | Ok () -> (
-            match split_messages (Llm.Request.messages request) with
-            | Error error -> Error error
-            | Ok (system, messages) ->
-                let thinking, output_config = encode_thinking options in
-                let tools =
-                  match Llm.Request.Options.tool_choice options with
-                  | Llm.Request.Options.No_tools -> []
-                  | Llm.Request.Options.Auto | Llm.Request.Options.Required
-                  | Llm.Request.Options.Tool _ ->
-                      List.map encode_tool (Llm.Request.tools request)
-                in
-                let tools = mark_last with_cache_control tools in
-                let system = mark_last with_cache_control system in
-                let messages = mark_last mark_last_content_block messages in
-                Ok
-                  {
-                    Api.Messages.model = Llm.Model.id model;
-                    system;
-                    messages;
-                    tools;
-                    tool_choice =
-                      encode_tool_choice tools
-                        (Llm.Request.Options.tool_choice options);
-                    thinking;
-                    output_config;
-                    max_tokens;
-                    temperature =
-                      (if sampling_supported options then
-                         Llm.Request.Options.temperature options
-                       else None);
-                    stream = true;
-                  }))
+        | Ok (system, messages) ->
+            let thinking, output_config = encode_thinking options in
+            let tools =
+              match Llm.Request.Options.tool_choice options with
+              | Llm.Request.Options.No_tools -> []
+              | Llm.Request.Options.Auto | Llm.Request.Options.Required
+              | Llm.Request.Options.Tool _ ->
+                  List.map encode_tool (Llm.Request.tools request)
+            in
+            let tools = mark_last with_cache_control tools in
+            let system = mark_last with_cache_control system in
+            let messages = mark_last mark_last_content_block messages in
+            Ok
+              {
+                Api.Messages.model = Llm.Model.id model;
+                system;
+                messages;
+                tools;
+                tool_choice =
+                  encode_tool_choice tools
+                    (Llm.Request.Options.tool_choice options);
+                thinking;
+                output_config;
+                max_tokens;
+                temperature =
+                  (if sampling_supported options then
+                     Llm.Request.Options.temperature options
+                   else None);
+                stream = true;
+              })
 
 let usage_of_json json =
   let input = Option.value (int_field "input_tokens" json) ~default:0 in

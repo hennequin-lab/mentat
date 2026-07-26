@@ -703,18 +703,6 @@ let unsupported_requests_do_not_touch_transport () =
     in
     request ~options ()
   in
-  let forced_thinking =
-    let tool =
-      Llm.Tool.make ~name:"read_file" ~description:"Read a file."
-        ~input_schema:schema ()
-    in
-    let options =
-      Llm.Request.Options.make ~tool_choice:Llm.Request.Options.Required
-        ~max_output_tokens:2048
-        ~reasoning_effort:Llm.Request.Options.Reasoning_effort.High ()
-    in
-    request ~tools:[ tool ] ~options ()
-  in
   List.iter
     (fun (name, kind, request) ->
       let result, requests =
@@ -736,8 +724,38 @@ let unsupported_requests_do_not_touch_transport () =
         Llm.Error.Invalid_request,
         unresolved_reference );
       ("json schema", Llm.Error.Unsupported, json_schema);
-      ("forced thinking", Llm.Error.Invalid_request, forced_thinking);
     ]
+
+(* Forced tool choice used to be refused before transport whenever thinking was
+   on, a restriction manual extended thinking carried. Adaptive thinking accepts
+   the combination, so the request reaches the wire carrying both an [any] tool
+   choice and adaptive thinking. *)
+let forced_tool_choice_travels_with_thinking () =
+  let tool =
+    Llm.Tool.make ~name:"read_file" ~description:"Read a file."
+      ~input_schema:schema ()
+  in
+  let options =
+    Llm.Request.Options.make ~tool_choice:Llm.Request.Options.Required
+      ~max_output_tokens:2048
+      ~reasoning_effort:Llm.Request.Options.Reasoning_effort.High ()
+  in
+  let result, requests =
+    with_anthropic_server
+      (fun index request ->
+        ignore index;
+        ignore request;
+        text_stream "ok")
+      (fun port -> run_stream port (request ~tools:[ tool ] ~options ()))
+  in
+  ignore (expect_stream_ok "forced tool choice" result);
+  let body = request_body (only_request requests) in
+  equal string ~msg:"tool choice type" "any"
+    (string_field "tool_choice" "type" (field "body" "tool_choice" body));
+  equal string ~msg:"thinking type" "adaptive"
+    (string_field "thinking" "type" (field "body" "thinking" body));
+  equal string ~msg:"effort" "high"
+    (string_field "output_config" "effort" (field "body" "output_config" body))
 
 let http_errors_are_classified () =
   let cases =
@@ -1589,6 +1607,8 @@ let () =
       test "reasoning effort encoding" reasoning_effort_encoding;
       test "unsupported requests do not touch transport"
         unsupported_requests_do_not_touch_transport;
+      test "forced tool choice travels with thinking"
+        forced_tool_choice_travels_with_thinking;
       test "HTTP errors are classified" http_errors_are_classified;
       test "non-json HTTP error body is not a log payload"
         non_json_http_error_body_is_not_a_log_payload;

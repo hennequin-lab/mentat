@@ -86,8 +86,9 @@ val model : string -> Mentat_llm.Model.t
 
     [temperature] is sent only alongside an explicitly disabled thinking, since
     current Anthropic models reject sampling parameters and treat an absent
-    [thinking] as adaptive. Forced tool choice with thinking is rejected because
-    Anthropic does not support that combination. *)
+    [thinking] as adaptive. Forced tool choice travels beside thinking of any
+    kind: the combination that manual extended thinking refused is accepted
+    under adaptive thinking. *)
 
 (** {1:clients Clients} *)
 
