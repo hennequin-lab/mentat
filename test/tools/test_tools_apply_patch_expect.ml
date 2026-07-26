@@ -1183,6 +1183,10 @@ let%expect_test
 
 let%expect_test
     "a commit failure reports its applied prefix only through claim evidence" =
+  (* The commit failure is provoked by a mode-0555 parent directory, and uid 0
+     writes below it regardless of its mode bits. *)
+  if Unix.geteuid () = 0 then
+    skip ~reason:"the superuser writes below a mode-0555 directory" ();
   with_world @@ fun world ->
   let protected_parent = primary world "readonly-parent" in
   let scope = Wio.open_claim_scope world.io in

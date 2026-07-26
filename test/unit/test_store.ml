@@ -866,6 +866,11 @@ let stale_release_never_frees_a_successor_fence () =
    exactly once per persisted batch. The reachable injection point through
    the facade is an unopenable ledger. *)
 let failed_appends_retry_without_duplication () =
+  (* The only injection point through the facade is an unopenable ledger, and
+     uid 0 opens a mode-000 file regardless of its mode bits, so the failure
+     this test recovers from cannot be provoked as the superuser. *)
+  if Unix.geteuid () = 0 then
+    skip ~reason:"the superuser opens a mode-000 ledger" ();
   with_fenced "retry"
   @@ fun ~sw:_ ~base ~session:_ ~mutation ~id ~guard ~document ->
   let e1 = observed_event ~claim:"claim-1" [ "a.ml" ] in

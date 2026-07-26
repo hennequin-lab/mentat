@@ -653,6 +653,10 @@ let%expect_test
 
 let%expect_test
     "coverage records every legacy skip reason without hiding valid files" =
+  (* [read_error] is one of the five reasons this coverage listing pins, and its
+     only fixture is a mode-000 source the superuser reads anyway. *)
+  if Unix.geteuid () = 0 then
+    skip ~reason:"the superuser reads a mode-000 fixture file" ();
   with_world @@ fun world ->
   let coverage = Filename.concat world.ws_dir "coverage" in
   write_disk (Filename.concat coverage "binary.ml") "let x = \000bad\n";

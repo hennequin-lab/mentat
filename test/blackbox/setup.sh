@@ -46,11 +46,18 @@ use_untrusted_workspace () { mkdir -p .git; }
 
 # Plant a store fault BEFORE any store-open so the lazy build_base create is the
 # first thing to touch it and fails closed. STORE-1 (#14), DOCTOR-2 (#15).
+# The unopenable variant is a self-referential symlink rather than a mode-000
+# directory: mode bits do not constrain uid 0, so a chmod fault silently
+# succeeds whenever the suite runs as root, whereas a symlink loop is refused
+# for every identity on both Linux and macOS.
 use_broken_store () {
-  mkdir -p "$XDG_DATA_HOME/mentat"
   case "$1" in
-    nondir)     : > "$XDG_DATA_HOME/mentat/sessions" ;;   # a file where the dir belongs
-    unwritable) chmod 000 "$XDG_DATA_HOME/mentat" ;;      # EACCES on lazy create
+    nondir)
+      mkdir -p "$XDG_DATA_HOME/mentat"
+      : > "$XDG_DATA_HOME/mentat/sessions" ;;             # a file where the dir belongs
+    unopenable)
+      rm -rf "$XDG_DATA_HOME/mentat"
+      ln -s mentat "$XDG_DATA_HOME/mentat" ;;             # the open resolves onto itself
   esac
 }
 

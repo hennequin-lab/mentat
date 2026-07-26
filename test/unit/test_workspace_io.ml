@@ -181,6 +181,15 @@ let require_enforced io =
   if not (enforced io) then
     skip ~reason:"no enforcing sandbox backend on this host" ()
 
+(* POSIX mode bits do not constrain the superuser: uid 0 reads a mode-000 file
+   and writes below a mode-0500 directory on both Linux (CAP_DAC_OVERRIDE) and
+   macOS. A refusal fixture built from mode bits therefore has no precondition
+   to assert against when the suite runs as root, so those cases are skipped
+   with their reason rather than weakened into something root cannot deny. *)
+let require_denying_mode_bits () =
+  if Unix.geteuid () = 0 then
+    skip ~reason:"the superuser bypasses POSIX mode bits" ()
+
 let sh script = [ "/bin/sh"; "-c"; script ]
 
 (* [capture] and [timeout] are mandatory on the library surface; the test
@@ -755,6 +764,7 @@ let missing_and_foreign_targets_are_structured () =
   | Error e -> failf "wrong error: %a" File_error.pp e
 
 let permission_refusals_keep_their_io_class () =
+  require_denying_mode_bits ();
   with_capability "file-io" @@ fun w ->
   let file = Filename.concat w.ws_dir "noperm.txt" in
   write_file file "secret\n";
@@ -903,6 +913,9 @@ let permission_denied_classifier_is_backend_pinned () =
   | Error e ->
       failf "an escape must classify as Escapes_workspace, got %a" File_error.pp
         e);
+  (* The escape half above holds for every identity; only the EACCES half needs
+     mode bits the kernel will honour. *)
+  require_denying_mode_bits ();
   let locked = Filename.concat w.ws_dir "locked.txt" in
   write_file locked "in-root\n";
   Unix.chmod locked 0o000;
@@ -1274,6 +1287,7 @@ let edits_outside_a_scope_are_not_attributed () =
    window retains the confirmed prefix and marks the stopping commit target
    uncertain, exactly as [Mentat_edit.Apply_error] classifies them. *)
 let failed_applies_leave_their_committed_evidence () =
+  require_denying_mode_bits ();
   with_capability "claim-failed" @@ fun w ->
   let locked_dir = Filename.concat w.ws_dir "locked" in
   Unix.mkdir locked_dir 0o500;
@@ -1326,6 +1340,7 @@ let failed_applies_leave_their_committed_evidence () =
    the applies list records all three in the order they occurred, so netting
    reads the true occurrence order across successes and failures alike. *)
 let a_claim_scope_records_successes_and_failures_in_one_order () =
+  require_denying_mode_bits ();
   with_capability "claim-interleave" @@ fun w ->
   let locked_dir = Filename.concat w.ws_dir "locked" in
   Unix.mkdir locked_dir 0o500;

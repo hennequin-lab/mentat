@@ -702,6 +702,10 @@ json: {"version":1,"disposition":"applied","files":1,"additions":1,"deletions":1
 pages/f1000.ml: "let boundary = fresh value\n"|}]
 
 let%expect_test "skip taxonomy is complete and valid files still apply" =
+  (* [read_error] is one of the five skip reasons this taxonomy pins, and its
+     only fixture is a mode-000 source the superuser reads anyway. *)
+  if Unix.geteuid () = 0 then
+    skip ~reason:"the superuser reads a mode-000 fixture file" ();
   with_world @@ fun world ->
   write_disk (relative world "skips/good.ml") "let good = old value\n";
   write_disk (relative world "skips/binary.ml") "let x = \000payload\n";

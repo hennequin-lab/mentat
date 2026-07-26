@@ -907,12 +907,6 @@ let%expect_test "binary invalid UTF-8 and special files fail structurally" =
     (not (String.contains (Tool.Output.text late_nul_output) '\000'));
   Printf.printf "truncated: %b\n" (Tool.Output.truncated late_nul_output);
   run_case world "FIFO" (input "fifo");
-  let unreadable = relative world "unreadable.txt" in
-  Unix.chmod unreadable 0o000;
-  Fun.protect
-    ~finally:(fun () -> Unix.chmod unreadable 0o600)
-    (fun () ->
-      run_case world "unreadable regular file" (input "unreadable.txt"));
   [%expect
     {|
       -- NUL-bearing binary --
@@ -938,7 +932,23 @@ let%expect_test "binary invalid UTF-8 and special files fail structurally" =
       -- FIFO --
       status: failed invalid_input
       message: fifo: not a readable file or directory
-      metadata: false
+      metadata: false |}]
+
+(* The unreadable-file classification stands apart from the structural
+   failures above because its precondition is a mode bit the kernel must
+   honour, and uid 0 reads a mode-000 file regardless. *)
+let%expect_test "an unreadable regular file fails as filesystem I/O" =
+  if Unix.geteuid () = 0 then
+    skip ~reason:"the superuser reads a mode-000 fixture file" ();
+  with_world @@ fun world ->
+  let unreadable = relative world "unreadable.txt" in
+  Unix.chmod unreadable 0o000;
+  Fun.protect
+    ~finally:(fun () -> Unix.chmod unreadable 0o600)
+    (fun () ->
+      run_case world "unreadable regular file" (input "unreadable.txt"));
+  [%expect
+    {|
       -- unreadable regular file --
       status: failed failed
       message: unreadable.txt: filesystem I/O error
