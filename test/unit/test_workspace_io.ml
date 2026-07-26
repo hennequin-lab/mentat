@@ -402,7 +402,25 @@ let describe_roots_carries_user_toolchain_dirs () =
     Unix.mkdir dir 0o755;
     Unix.realpath dir
   in
+  let mk_path sub =
+    let dir = Filename.concat home sub in
+    let rec create path =
+      if not (Sys.file_exists path) then (
+        create (Filename.dirname path);
+        Unix.mkdir path 0o755)
+    in
+    create dir;
+    Unix.realpath dir
+  in
   let opam = mk ".opam" and cache = mk ".cache" and config = mk ".config" in
+  let config_dune = mk_path (Filename.concat ".config" "dune")
+  and data = mk_path (Filename.concat ".local" "share")
+  and state = mk_path (Filename.concat ".local" "state")
+  and cache_db =
+    mk_path (Filename.concat ".cache" (Filename.concat "dune" "db"))
+  and cache_toolchains =
+    mk_path (Filename.concat ".cache" (Filename.concat "dune" "toolchains"))
+  in
   let primary = Workspace.Root.of_dir (abs ws_dir) in
   let logical = Workspace.make ~primary ~read_only:[] () |> Result.get_ok in
   Eio.Switch.run @@ fun sw ->
@@ -443,8 +461,62 @@ let describe_roots_carries_user_toolchain_dirs () =
     (admitted "toolchain:OPAMROOT" opam);
   is_true ~msg:"the real XDG cache is admitted, labeled XDG_CACHE_HOME"
     (admitted "toolchain:XDG_CACHE_HOME" cache);
-  is_true ~msg:"the real XDG config is admitted, labeled XDG_CONFIG_HOME"
-    (admitted "toolchain:XDG_CONFIG_HOME" config)
+  is_true
+    ~msg:"dune's own config directory is admitted, labeled XDG_CONFIG_HOME"
+    (admitted "toolchain:XDG_CONFIG_HOME" config_dune);
+  (* The variable still binds to the base directory the tool resolves against,
+     but the read scope stops at the subdirectory the build reads. The base is
+     shared with every other tool on the machine, Mentat's own credentials among
+     them, and none of it is a build input. *)
+  let read_roots =
+    match Wio.policy io with
+    | Some policy -> (
+        match Sandbox.Policy.reads policy with
+        | Sandbox.Policy.Only roots -> roots
+        | Sandbox.Policy.All -> fail "expected a project-scoped read policy")
+    | None -> fail "expected a confined seal carrying a policy"
+  in
+  let readable dir = List.exists (Abs.equal (abs dir)) read_roots in
+  is_true ~msg:"the narrowed config subpath is a read root"
+    (readable config_dune);
+  is_false
+    ~msg:
+      "the shared XDG config base is not a read root, so neighbouring tools' \
+       credentials stay outside the read scope"
+    (readable config);
+  is_false ~msg:"the session store is not a read root" (readable data);
+  is_false ~msg:"the log directory is not a read root" (readable state);
+  (* The carry decides an access per variable, and the sealed policy must agree
+     with what the child environment names: the cache the build writes is a
+     writable root, and the directories holding Mentat's own durable state are
+     not. A carried directory that is named but not usable for what the tool
+     needs it for is the defect this pairing exists to make unrepresentable. *)
+  let writable =
+    match Wio.policy io with
+    | Some policy -> Sandbox.Policy.writable_roots policy
+    | None -> fail "expected a confined seal carrying a policy"
+  in
+  let grants dir = List.exists (Abs.equal (abs dir)) writable in
+  is_true ~msg:"the carried XDG cache is writable, so dune can take its locks"
+    (grants cache);
+  is_false ~msg:"the carried opam root stays read-only" (grants opam);
+  is_false ~msg:"the carried XDG config stays read-only" (grants config);
+  (* The XDG state and data directories are not carried at all: no build tool
+     resolves them and they hold Mentat's own session store and logs. *)
+  is_false ~msg:"the session store is not writable" (grants data);
+  is_false ~msg:"the log directory is not writable" (grants state);
+  (* Dune's shared cache and downloaded toolchains are replayed and executed by
+     builds outside the sandbox, so the lock grant does not reach them. *)
+  let protected =
+    match Wio.policy io with
+    | Some policy -> Sandbox.Policy.protected_paths policy
+    | None -> fail "expected a confined seal carrying a policy"
+  in
+  let carved dir = List.exists (Abs.equal (abs dir)) protected in
+  is_true ~msg:"the dune build cache is carved out of the cache grant"
+    (carved cache_db);
+  is_true ~msg:"the dune toolchains are carved out of the cache grant"
+    (carved cache_toolchains)
 
 let toolchain_placeholder_is_skipped_not_fatal () =
   in_dirs "toolchain-placeholder"

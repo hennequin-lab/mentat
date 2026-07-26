@@ -408,12 +408,14 @@ let resolve ~sw ~stdenv ~logical ~mode ~read ~readable_roots ~writable_roots
     List.map snd derived.Derive.workspace_roots
     @ derived.Derive.writable @ derived.Derive.readable
     @ derived.Derive.protected
+    @ Derive.carried_writable derived
   in
   let* scratch = create_scratch ~sw ~fs ~stdenv ~lookup ~avoid in
   let capability () =
     let env =
       Child_env.make ~path:derived.Derive.path ~scratch:scratch.scratch_path
-        ~carried_dirs:derived.Derive.carried_dirs ~lookup
+        ~carried_dirs:(Derive.carried_bindings derived)
+        ~lookup
     in
     let sandbox =
       match mode with
@@ -430,7 +432,8 @@ let resolve ~sw ~stdenv ~logical ~mode ~read ~readable_roots ~writable_roots
             match mode with
             | Mentat_config.Mode.Read_only -> ([], [])
             | _ ->
-                ( derived.Derive.writable @ derived.Derive.platform_writable,
+                ( derived.Derive.writable @ derived.Derive.platform_writable
+                  @ Derive.carried_writable derived,
                   derived.Derive.protected )
           in
           let policy =

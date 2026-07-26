@@ -11,6 +11,8 @@ let log_src =
 
 module Log = (val Logs.src_log log_src : Logs.LOG)
 
+type access = Read | Read_subpaths of string list | Read_write of string list
+
 type derived = {
   workspace_roots : (Mentat_workspace.Root.t * Lpath.Abs.t) list;
   writable : Lpath.Abs.t list;
@@ -18,7 +20,7 @@ type derived = {
   readable : Lpath.Abs.t list;
   protected : Lpath.Abs.t list;
   path : string;
-  carried_dirs : (string * Lpath.Abs.t) list;
+  carried_dirs : (string * Lpath.Abs.t * access) list;
   describe : (string * Lpath.Abs.t) list;
 }
 
@@ -176,17 +178,43 @@ let existing_auto_root path =
    [$HOME]-derived default — and carried on the child environment so the tool
    resolves the same directory it would from a login shell, with HOME still
    confined to the scratch. Only an existing directory is recovered: no state is
-   invented, and a scoped route admits each as a read root. *)
+   invented, and a scoped route admits each as a read root.
+
+   Access is decided per variable against what the tool does with the directory
+   and who else owns it, never defaulted: carrying all five read-only is what
+   pointed a build at a cache it could not write, and carrying all five writable
+   would hand the workspace-write posture directories no build ever touches.
+   Only the cache is written by the tool the carry exists for — dune reaches
+   [Xdg.cache_dir] for its shared build cache and for the revision store whose
+   lock a pinned-source build must take — so only the cache is [Read_write]. Its
+   own [db] and [toolchains] subdirectories are carved back out: a build cache
+   entry is replayed into the user's unsandboxed builds and a downloaded
+   toolchain is executed by them, so neither may be reachable through a grant
+   taken for a lock file. The XDG state and data directories are not carried at
+   all: no tool in the OCaml toolchain resolves them — dune reaches only
+   [Xdg.cache_dir] and [Xdg.config_dir] — while they hold Mentat's own session
+   store, snapshots, and logs, including the durable confinement identity a
+   resume revalidates against. Left uncarried they fall back to the scratch, so
+   a tool that does want them gets a private one.
+
+   The read scope narrows the same way the write grant does. [XDG_CONFIG_HOME]
+   names a base directory shared by every tool on the machine — credentials for
+   version-control forges and cloud CLIs among them — while the only thing a
+   build reads under it is dune's own configuration, so only that subdirectory
+   is admitted. The variable still binds to the base directory, because that is
+   what the tool resolves against; the generators grant ancestor metadata for
+   each admitted root, so the descent still works. *)
 let home_relative_dirs =
   [
-    ("OPAMROOT", ".opam");
-    ("XDG_CACHE_HOME", ".cache");
-    ("XDG_CONFIG_HOME", ".config");
-    ("XDG_STATE_HOME", Filename.concat ".local" "state");
-    ("XDG_DATA_HOME", Filename.concat ".local" "share");
+    ("OPAMROOT", ".opam", Read);
+    ( "XDG_CACHE_HOME",
+      ".cache",
+      Read_write
+        [ Filename.concat "dune" "db"; Filename.concat "dune" "toolchains" ] );
+    ("XDG_CONFIG_HOME", ".config", Read_subpaths [ "dune" ]);
   ]
 
-let carried_user_dirs ~lookup =
+let carried_user_dirs ~lookup ~workspace_roots =
   let home =
     match lookup "HOME" with
     | Some home when not (String.equal home "") -> Some home
@@ -201,17 +229,67 @@ let carried_user_dirs ~lookup =
         | _ -> None
         | exception Unix.Unix_error _ -> None)
   in
-  List.filter_map
-    (fun (var, default) ->
-      let spelling =
-        match lookup var with
-        | Some value when not (String.equal value "") -> Some value
-        | _ -> Option.map (fun home -> Filename.concat home default) home
-      in
-      match Option.bind spelling existing_dir with
-      | Some dir -> Some (var, dir)
-      | None -> None)
-    home_relative_dirs
+  (* Every sibling derivation refuses a root that resolves to [/] or [$HOME];
+     a carried variable is ambient too, and an environment that sets one of them
+     to the home directory would otherwise widen the posture silently. A [Read]
+     entry only ever added a read root, so it is dropped with a warning like a
+     stray toolchain value; a [Read_write] entry would widen the write grant to
+     everything under it and fails the resolution closed. *)
+  let rec loop carried = function
+    | [] -> Ok (List.rev carried)
+    | (var, default, access) :: rest -> (
+        let spelling =
+          match lookup var with
+          | Some value when not (String.equal value "") -> Some value
+          | _ -> Option.map (fun home -> Filename.concat home default) home
+        in
+        match Option.bind spelling existing_dir with
+        | None -> loop carried rest
+        | Some dir -> (
+            if not (broad_root ~lookup ~workspace_roots dir) then
+              loop ((var, dir, access) :: carried) rest
+            else
+              let spelling = Lpath.Abs.to_string dir in
+              match access with
+              | Read_write _ ->
+                  Error (Resolve_error.Broad_root { field = var; spelling })
+              | Read | Read_subpaths _ ->
+                  Log.warn (fun m ->
+                      m "ignoring carried directory %s=%S: broad root" var
+                        spelling);
+                  loop carried rest))
+  in
+  loop [] home_relative_dirs
+
+let carried_subpath dir sub =
+  existing_auto_root (Filename.concat (Lpath.Abs.to_string dir) sub)
+
+(* The read roots a carried entry contributes, each still labelled by the
+   variable that admitted it. A narrowed entry contributes its existing
+   subdirectories instead of the base directory it binds. *)
+let carried_read_roots carried =
+  List.concat_map
+    (fun (var, dir, access) ->
+      match access with
+      | Read | Read_write _ -> [ (var, dir) ]
+      | Read_subpaths subs ->
+          List.filter_map
+            (fun sub ->
+              Option.map (fun p -> (var, p)) (carried_subpath dir sub))
+            subs)
+    carried
+
+(* Subpaths of a carried writable directory that the write grant must not
+   reach. Existence-filtered like every other carveout, because a strict
+   read-only bind over a missing source aborts the spawn — so a cache that has
+   not yet grown one of them is not protected against its first creation. *)
+let carried_carveouts carried =
+  List.concat_map
+    (fun (_, dir, access) ->
+      match access with
+      | Read | Read_subpaths _ -> []
+      | Read_write excluded -> List.filter_map (carried_subpath dir) excluded)
+    carried
 
 let platform_roots ~lookup ~workspace_roots =
   let candidates =
@@ -338,6 +416,15 @@ let executable_env ~lookup ~project_root =
       bindings
     |> Option.fold ~none:(lookup name) ~some:Option.some
 
+(* An executable on [PATH] usually reads runtime data beside itself, so a
+   [bin]/[sbin] entry also admits the sibling directories that hold it. Only
+   those siblings: admitting the whole prefix would make the read scope a
+   function of the launcher's [PATH], which is exactly the wrong thing to derive
+   authority from — a per-user tool installed under [$HOME] would contribute its
+   entire tree, so [~/.local/bin] on [PATH] admits [~/.local] and with it every
+   application's data, Mentat's own session store included. The prefix of a
+   [PATH] entry is where a tool happens to live, not a statement about what a
+   build needs to read. *)
 let executable_runtime_roots ~lookup ~scope_roots executable_roots =
   List.concat_map
     (fun executable_root ->
@@ -345,28 +432,19 @@ let executable_runtime_roots ~lookup ~scope_roots executable_roots =
         (Lpath.Abs.basename executable_root, Lpath.Abs.parent executable_root)
       with
       | Some ("bin" | "sbin"), Some prefix ->
-          let prefix_string = Lpath.Abs.to_string prefix in
-          if
-            (not (broad_root ~lookup ~workspace_roots:scope_roots prefix))
-            && not
-                 (List.mem prefix_string [ "/usr"; "/usr/local"; "/opt/local" ])
-          then [ prefix ]
-          else
-            List.filter_map
-              (fun component ->
-                match Lpath.Abs.add_component prefix component with
-                | Error _ -> None
-                | Ok candidate -> (
-                    match
-                      existing_auto_root (Lpath.Abs.to_string candidate)
-                    with
-                    | Some root
-                      when not
-                             (broad_root ~lookup ~workspace_roots:scope_roots
-                                root) ->
-                        Some root
-                    | Some _ | None -> None))
-              [ "etc"; "lib"; "libexec"; "share" ]
+          List.filter_map
+            (fun component ->
+              match Lpath.Abs.add_component prefix component with
+              | Error _ -> None
+              | Ok candidate -> (
+                  match existing_auto_root (Lpath.Abs.to_string candidate) with
+                  | Some root
+                    when not
+                           (broad_root ~lookup ~workspace_roots:scope_roots root)
+                    ->
+                      Some root
+                  | Some _ | None -> None))
+            [ "etc"; "lib"; "libexec"; "share" ]
       | _ -> [])
     executable_roots
   |> root_paths
@@ -667,17 +745,20 @@ let run ~scoped ~lookup ~logical ~configured_reads ~configured_writes =
     environment_path ~scoped ~path_roots:executable_roots
       ~toolchain_roots:toolchain ~lookup:exec_lookup
   in
-  let carried_dirs = carried_user_dirs ~lookup in
+  let* carried_dirs = carried_user_dirs ~lookup ~workspace_roots:scope_roots in
   let readable =
     if scoped then
       root_paths
         (scope_roots @ configured_reads @ platform @ executable_roots
        @ runtime_roots @ List.map snd toolchain @ git
-       @ List.map snd carried_dirs)
+        @ List.map snd (carried_read_roots carried_dirs))
     else []
   in
   let protected =
-    protected_meta_paths primary @ read_only @ git |> canonical_paths
+    protected_meta_paths primary
+    @ read_only @ git
+    @ carried_carveouts carried_dirs
+    |> canonical_paths
   in
   let describe =
     if scoped then
@@ -687,7 +768,9 @@ let run ~scoped ~lookup ~logical ~configured_reads ~configured_writes =
       @ List.map (fun p -> ("executable:PATH", p)) executable_roots
       @ List.map (fun p -> ("executable:PATH runtime", p)) runtime_roots
       @ List.map (fun (name, p) -> ("toolchain:" ^ name, p)) toolchain
-      @ List.map (fun (var, p) -> ("toolchain:" ^ var, p)) carried_dirs
+      @ List.map
+          (fun (var, p) -> ("toolchain:" ^ var, p))
+          (carried_read_roots carried_dirs)
       @ List.map (fun p -> ("git-worktree", p)) git
     else []
   in
@@ -702,3 +785,14 @@ let run ~scoped ~lookup ~logical ~configured_reads ~configured_writes =
       carried_dirs;
       describe;
     }
+
+let carried_bindings derived =
+  List.map (fun (var, dir, _) -> (var, dir)) derived.carried_dirs
+
+let carried_writable derived =
+  List.filter_map
+    (fun (_, dir, access) ->
+      match access with
+      | Read | Read_subpaths _ -> None
+      | Read_write _ -> Some dir)
+    derived.carried_dirs
