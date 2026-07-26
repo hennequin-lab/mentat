@@ -125,7 +125,7 @@ let resolve_capability ~stdenv ~sw ~tmp_base ?(env = [])
     ?(writable_roots = []) logical =
   with_env (("TMPDIR", Some tmp_base) :: env) @@ fun () ->
   Wio.resolve ~sw ~stdenv ~logical ~mode ~read ~readable_roots ~writable_roots
-    ~network:Sandbox.Policy.Network.Restricted
+    ~mentat_dirs:[] ~network:Sandbox.Policy.Network.Restricted
 
 let capability_exn ~stdenv ~sw ~tmp_base ?env ?mode ?read ?readable_roots
     ?writable_roots logical =
@@ -1777,7 +1777,7 @@ let executable_resolution_checks_the_exec_bit () =
     @@ fun () ->
     match
       Wio.resolve ~sw ~stdenv ~logical ~mode:Mode.Danger_full_access
-        ~read:Read.All ~readable_roots:[] ~writable_roots:[]
+        ~read:Read.All ~readable_roots:[] ~writable_roots:[] ~mentat_dirs:[]
         ~network:Sandbox.Policy.Network.Restricted
     with
     | Ok io -> io

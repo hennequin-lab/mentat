@@ -19,6 +19,7 @@ type derived = {
   platform_writable : Lpath.Abs.t list;
   readable : Lpath.Abs.t list;
   protected : Lpath.Abs.t list;
+  denied : Lpath.Abs.t list;
   path : string;
   carried_dirs : (string * Lpath.Abs.t * access) list;
   describe : (string * Lpath.Abs.t) list;
@@ -277,6 +278,14 @@ let carried_read_roots carried =
             (fun sub ->
               Option.map (fun p -> (var, p)) (carried_subpath dir sub))
             subs)
+    carried
+
+let carried_writable_dirs carried =
+  List.filter_map
+    (fun (_, dir, access) ->
+      match access with
+      | Read | Read_subpaths _ -> None
+      | Read_write _ -> Some dir)
     carried
 
 (* Subpaths of a carried writable directory that the write grant must not
@@ -646,6 +655,52 @@ let workspace_roots ~scoped ~lookup logical =
 let roots_overlap a b =
   Lpath.Abs.is_within ~root:a b || Lpath.Abs.is_within ~root:b a
 
+(* A directory Mentat owns is created rather than existence-filtered, so the
+   sealed policy is not a function of whether the machine happens to have it
+   yet: a carveout that is skipped when absent protects the machines that
+   already have the directory and nothing on a fresh one, and a denial that is
+   skipped when absent cannot be masked at all, because bubblewrap has to create
+   the mount point inside a new root it may have already sealed.
+
+   Creation is guarded. Both the cache carveouts and the workspace metadata sit
+   under a root the confined agent can write, so an agent that plants a symlink
+   where the directory will go would otherwise redirect the exclusion at its
+   target and leave the real path grantable. [mkdir] refuses to follow a final
+   symlink, and on [EEXIST] the entry is [lstat]ed and rejected unless it is a
+   real directory this account owns. The lexical path is what enters the policy;
+   [realpath] is deliberately not consulted, because a final component the agent
+   can replace must not be able to relocate the exclusion. *)
+let owned_directory path =
+  let spelling = Lpath.Abs.to_string path in
+  let accept () =
+    match Unix.lstat spelling with
+    | { Unix.st_kind = Unix.S_DIR; st_uid; _ } when st_uid = Unix.getuid () ->
+        Ok (Some path)
+    | _ -> Error (invalid ~spelling Resolve_error.Not_a_directory)
+    | exception Unix.Unix_error (error, _, _) ->
+        Error (invalid ~spelling (unix_reason error))
+  in
+  match Unix.mkdir spelling 0o700 with
+  | () -> Ok (Some path)
+  | exception Unix.Unix_error (Unix.EEXIST, _, _) -> accept ()
+  | exception Unix.Unix_error ((Unix.ENOENT | Unix.EACCES | Unix.EPERM), _, _)
+    ->
+      (* A parent that does not exist or is not ours is not Mentat's to make. *)
+      Ok None
+  | exception Unix.Unix_error (error, _, _) ->
+      Error (invalid ~spelling (unix_reason error))
+
+let owned_directories paths =
+  let rec loop kept = function
+    | [] -> Ok (List.rev kept)
+    | path :: rest -> (
+        match owned_directory path with
+        | Error _ as error -> error
+        | Ok None -> loop kept rest
+        | Ok (Some path) -> loop (path :: kept) rest)
+  in
+  loop [] paths
+
 (* [/tmp] is where a command puts a scratch file when it does not consult the
    environment for one, and a literal [/tmp/...] path is common enough in build
    scripts and in model-authored commands that its absence reads as a broken
@@ -707,7 +762,8 @@ let reject_read_only_writes read_only configured =
              spelling = Lpath.Abs.to_string path;
            })
 
-let run ~scoped ~lookup ~logical ~configured_reads ~configured_writes =
+let run ~scoped ~lookup ~logical ~configured_reads ~configured_writes
+    ~mentat_dirs =
   let* roots = workspace_roots ~scoped ~lookup logical in
   let primary, read_only =
     match roots with
@@ -771,6 +827,39 @@ let run ~scoped ~lookup ~logical ~configured_reads ~configured_writes =
     @ carried_carveouts carried_dirs
     |> canonical_paths
   in
+  let* denied = owned_directories mentat_dirs in
+  let writable_lattice =
+    (primary :: configured_writes)
+    @ shared_temp_dirs () @ darwin_user_dirs ~lookup
+    @ carried_writable_dirs carried_dirs
+  in
+  (* Only an overlap in one direction is a problem. A denial nested inside a
+     writable root masks that subtree and leaves the rest of the root intact,
+     which is exactly what a store kept inside the workspace needs. A denial
+     that contains a writable root masks the root itself, and the agent cannot
+     tell an emptied workspace from a deleted one — refuse that at resolution
+     rather than hand back a checkout that looks wiped. *)
+  let* () =
+    match
+      List.find_map
+        (fun denied ->
+          List.find_map
+            (fun writable ->
+              if Lpath.Abs.is_within ~root:denied writable then
+                Some (denied, writable)
+              else None)
+            writable_lattice)
+        denied
+    with
+    | None -> Ok ()
+    | Some (denied, writable) ->
+        Error
+          (Resolve_error.Denied_overlaps_writable
+             {
+               denied = Lpath.Abs.to_string denied;
+               writable = Lpath.Abs.to_string writable;
+             })
+  in
   let describe =
     if scoped then
       [ ("project", primary) ]
@@ -792,6 +881,7 @@ let run ~scoped ~lookup ~logical ~configured_reads ~configured_writes =
       platform_writable = shared_temp_dirs () @ darwin_user_dirs ~lookup;
       readable;
       protected;
+      denied;
       path;
       carried_dirs;
       describe;
@@ -800,10 +890,4 @@ let run ~scoped ~lookup ~logical ~configured_reads ~configured_writes =
 let carried_bindings derived =
   List.map (fun (var, dir, _) -> (var, dir)) derived.carried_dirs
 
-let carried_writable derived =
-  List.filter_map
-    (fun (_, dir, access) ->
-      match access with
-      | Read | Read_subpaths _ -> None
-      | Read_write _ -> Some dir)
-    derived.carried_dirs
+let carried_writable derived = carried_writable_dirs derived.carried_dirs

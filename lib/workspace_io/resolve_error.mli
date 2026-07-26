@@ -40,6 +40,12 @@ type t =
           admitted root. [field] names the surface that supplied it: a
           configuration field, [PATH], [TMPDIR], a toolchain variable, the
           platform set, or the project gitdir. *)
+  | Denied_overlaps_writable of { denied : string; writable : string }
+      (** A path Mentat denies to every confined command overlaps the write
+          lattice. Denials are lowered last, so the overlap would not narrow the
+          sandbox — it would mask the writable root with an empty mount the
+          agent cannot distinguish from a wiped directory. Refused at
+          resolution, loudly, instead. *)
   | Missing_root of Mentat_workspace.Root.t
       (** An admitted logical workspace root does not currently name an existing
           directory, so it cannot be opened. *)

@@ -107,10 +107,17 @@ val resolve :
   read:Mentat_config.Read.t ->
   readable_roots:string list ->
   writable_roots:string list ->
+  mentat_dirs:Lpath.Abs.t list ->
   network:Mentat_sandbox.Policy.Network.t ->
   (t, Resolve_error.t) result
 (** [resolve ~sw ~stdenv ~logical ~mode ~read ~readable_roots ~writable_roots
-     ~network] resolves the capability, in one fallible call.
+     ~mentat_dirs ~network] resolves the capability, in one fallible call.
+
+    [mentat_dirs] are Mentat's own user directories. They are denied to every
+    confined command on every route and in every mode — including the read-only
+    route, which grants no writable or protected paths at all — because the
+    session store they hold carries the very confinement identity a resume
+    revalidates against.
 
     It owns: root canonicalization (each configured spelling canonicalized once;
     broad roots — [/], the account home, a workspace ancestor — rejected),

@@ -30,6 +30,7 @@ type t = {
   reads : reads;
   writable_roots : Lpath.Abs.t list;
   protected_paths : Lpath.Abs.t list;
+  denied_paths : Lpath.Abs.t list;
   network : Network.t;
 }
 
@@ -48,7 +49,8 @@ let normalize_roots roots =
            roots))
     roots
 
-let make ~scratch ~reads ~writable_roots ~protected_paths ~network =
+let make ~scratch ~reads ~writable_roots ~protected_paths ~denied_paths ~network
+    =
   let writable_roots = normalize_roots writable_roots in
   let reads =
     match reads with
@@ -58,12 +60,14 @@ let make ~scratch ~reads ~writable_roots ~protected_paths ~network =
   let protected_paths =
     protected_paths |> List.filter (under writable_roots) |> canonical_paths
   in
-  { scratch; reads; writable_roots; protected_paths; network }
+  let denied_paths = normalize_roots denied_paths in
+  { scratch; reads; writable_roots; protected_paths; denied_paths; network }
 
 let scratch t = t.scratch
 let reads t = t.reads
 let writable_roots t = t.writable_roots
 let protected_paths t = t.protected_paths
+let denied_paths t = t.denied_paths
 let network t = t.network
 
 let reads_equal a b =
@@ -77,6 +81,7 @@ let equal a b =
   && reads_equal a.reads b.reads
   && List.equal Lpath.Abs.equal a.writable_roots b.writable_roots
   && List.equal Lpath.Abs.equal a.protected_paths b.protected_paths
+  && List.equal Lpath.Abs.equal a.denied_paths b.denied_paths
   && Network.equal a.network b.network
 
 let pp_paths ppf paths =
@@ -95,6 +100,7 @@ let pp ppf t =
      reads: %a@,\
      writable: %a@,\
      protected: %a@,\
+     denied: %a@,\
      network: %a@]"
     Lpath.Abs.pp t.scratch pp_reads t.reads pp_paths t.writable_roots pp_paths
-    t.protected_paths Network.pp t.network
+    t.protected_paths pp_paths t.denied_paths Network.pp t.network

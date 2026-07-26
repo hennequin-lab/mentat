@@ -1591,9 +1591,23 @@ let resolve_workspace t ~mode ~network :
   let writable_roots =
     Cfg.Resolved.get Cfg.Field.sandbox_writable_roots t.config
   in
+  (* Mentat's own config, data and state homes. A confined command must not
+     read them — the session store holds every transcript — and must not write
+     them, because that store carries the sealed confinement identity a resume
+     revalidates against, so a command that could rewrite it could approve
+     itself. *)
+  let mentat_dirs =
+    List.filter_map
+      (fun spelling -> Lpath.Abs.of_string spelling |> Result.to_option)
+      [
+        User_dirs.config_home t.shared.dirs;
+        User_dirs.data_home t.shared.dirs;
+        User_dirs.state_home t.shared.dirs;
+      ]
+  in
   match
     Mentat_workspace_io.resolve ~sw:t.switch ~stdenv:t.shared.stdenv ~logical
-      ~mode ~read ~readable_roots ~writable_roots ~network
+      ~mode ~read ~readable_roots ~writable_roots ~mentat_dirs ~network
   with
   | Ok capability -> Ok capability
   | Error e ->

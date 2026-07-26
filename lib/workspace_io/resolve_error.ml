@@ -12,6 +12,7 @@ type root_reason =
 type t =
   | Invalid_root of { spelling : string; reason : root_reason }
   | Broad_root of { field : string; spelling : string }
+  | Denied_overlaps_writable of { denied : string; writable : string }
   | Missing_root of Mentat_workspace.Root.t
   | Io of { operation : string; spelling : string; cause : Eio.Exn.err }
 
@@ -28,6 +29,13 @@ let pp ppf = function
   | Broad_root { field; spelling } ->
       Format.fprintf ppf "%s root %S is too broad; choose a narrower directory"
         field spelling
+  | Denied_overlaps_writable { denied; writable } ->
+      Format.fprintf ppf
+        "Mentat's own directory %S contains the writable root %S; a denial is \
+         applied last, so this would mask the root itself and the workspace \
+         would look wiped. Point MENTAT_CONFIG_HOME, MENTAT_DATA_HOME or \
+         MENTAT_STATE_HOME at a directory that does not contain it."
+        denied writable
   | Missing_root root ->
       Format.fprintf ppf "workspace root %a does not name an existing directory"
         Mentat_workspace.Root.pp root

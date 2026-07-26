@@ -40,9 +40,10 @@ let error_value = testable ~pp:Error.pp ~equal:Error.equal ()
 let json_string s = Json.string s
 
 let confined ?(scratch = abs "/tmp") ?(reads = Policy.All)
-    ?(writable_roots = []) ?(protected_paths = [])
+    ?(writable_roots = []) ?(protected_paths = []) ?(denied_paths = [])
     ?(network = Policy.Network.Restricted) () =
-  Policy.make ~scratch ~reads ~writable_roots ~protected_paths ~network
+  Policy.make ~scratch ~reads ~writable_roots ~protected_paths ~denied_paths
+    ~network
 
 let sealed ?(backend = Backend.Seatbelt) policy =
   Sandbox.confined ~backend:(Ok backend) policy
@@ -643,6 +644,65 @@ let bubblewrap_seals_a_scoped_root () =
     (List.exists
        (String.equal "--remount-ro")
        (bubblewrap_lowered (confined ()) ~cwd:(abs "/tmp") ~program:"true" []))
+
+(* A denial is the one grant that must not be filtered against the write
+   lattice the way a carveout is, must survive a mode that grants nothing else,
+   and must reach the identity — two policies differing only in what they deny
+   are different confinements. *)
+let denials_are_unfiltered_and_identified () =
+  let outside = abs "/elsewhere/mentat" in
+  let policy =
+    confined ~writable_roots:[ abs "/work" ] ~denied_paths:[ outside ] ()
+  in
+  equal (list abs_value)
+    ~msg:"a denied path outside every writable root is kept, unlike a carveout"
+    [ outside ]
+    (Policy.denied_paths policy);
+  equal (list abs_value) ~msg:"the same path as a carveout is dropped" []
+    (Policy.protected_paths
+       (confined
+          ~writable_roots:[ abs "/work" ]
+          ~protected_paths:[ outside ] ()));
+  let identity p =
+    Mentat_sandbox.identity
+      (Mentat_sandbox.confined ~backend:(Ok Backend.Seatbelt) p)
+  in
+  is_false ~msg:"denying a path changes the durable identity"
+    (Mentat_sandbox.Identity.equal (identity policy)
+       (identity (confined ~writable_roots:[ abs "/work" ] ())))
+
+(* Both backends must put the denial last, or a read or write root emitted
+   after it would win. *)
+let denials_are_lowered_last () =
+  let denied = abs "/elsewhere/mentat" in
+  let policy =
+    confined
+      ~reads:(Policy.Only [ abs "/usr" ])
+      ~writable_roots:[ abs "/usr" ]
+      ~denied_paths:[ denied ] ()
+  in
+  let bwrap = bubblewrap_lowered policy ~cwd:(abs "/usr") ~program:"true" [] in
+  let rec index_of needle index = function
+    | [] -> None
+    | x :: _ when String.equal x needle -> Some index
+    | _ :: rest -> index_of needle (index + 1) rest
+  in
+  (match (index_of "/elsewhere/mentat" 0 bwrap, index_of "--bind" 0 bwrap) with
+  | Some mask, Some bind ->
+      is_true ~msg:"the mask follows every bind" (mask > bind)
+  | _ -> fail "a denied path must be masked in the bubblewrap lowering");
+  is_true ~msg:"the mask is remounted read-only, not merely emptied"
+    (List.exists (String.equal "--remount-ro") bwrap);
+  let sbpl, params = seatbelt_sbpl policy in
+  is_true ~msg:"seatbelt denies reads and writes at the denied path"
+    (String.includes ~affix:"(deny file-read* file-write*" sbpl);
+  is_true ~msg:"the denied path is a parameter, never profile text"
+    (List.exists
+       (fun (_, value) -> String.equal value "/elsewhere/mentat")
+       params);
+  is_false ~msg:"a deny-free profile emits no deny section"
+    (String.includes ~affix:"(deny file-read* file-write*"
+       (fst (seatbelt_sbpl (confined ~reads:(Policy.Only [ abs "/usr" ]) ()))))
 
 let bubblewrap_uses_strict_ro_bind () =
   (* Hardening #2: carveouts use strict [--ro-bind], never [--ro-bind-try],
@@ -1404,6 +1464,9 @@ let () =
       test "bubblewrap network-enabled golden" bubblewrap_network_enabled_golden;
       test "bubblewrap uses strict --ro-bind" bubblewrap_uses_strict_ro_bind;
       test "bubblewrap seals a scoped root" bubblewrap_seals_a_scoped_root;
+      test "denials are unfiltered and identified"
+        denials_are_unfiltered_and_identified;
+      test "denials are lowered last" denials_are_lowered_last;
       (* Route constructors *)
       test "route evidence table" route_evidence_table;
       test "route policy projection" route_policy_projection;

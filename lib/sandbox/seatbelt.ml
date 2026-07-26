@@ -327,6 +327,36 @@ let unix_socket_policy policy =
   Printf.sprintf "(allow network-bind network-outbound\n%s\n)"
     (String.concat " " predicates)
 
+let denied_param index = Printf.sprintf "DENIED_PATH_%d" index
+
+(* SBPL is last-match-wins, so a denial emitted after every allow overrides all
+   of them — including the base policy's root-literal read and the blanket
+   read an [All] scope emits. Parameterized like every other root so no path
+   text enters the profile body, and omitted entirely when there is nothing to
+   deny, which keeps a deny-free profile byte-identical to the one this release
+   generated. *)
+let deny_policy policy =
+  match Policy.denied_paths policy with
+  | [] -> ("", [])
+  | roots ->
+      let params =
+        List.mapi
+          (fun index root -> (denied_param index, Lpath.Abs.to_string root))
+          roots
+      in
+      let predicates =
+        List.concat_map
+          (fun (param, _) ->
+            [
+              Printf.sprintf "(literal (param \"%s\"))" param;
+              Printf.sprintf "(subpath (param \"%s\"))" param;
+            ])
+          params
+      in
+      ( Printf.sprintf "(deny file-read* file-write* file-test-existence\n%s\n)"
+          (String.concat " " predicates),
+        params )
+
 let network_section policy =
   match Policy.network policy with
   | Policy.Network.Restricted -> ""
@@ -337,6 +367,7 @@ let network_section policy =
 let sbpl policy =
   let read_policy, read_params = file_read_policy policy in
   let write_policy, write_params = file_write_policy policy in
+  let deny, deny_params = deny_policy policy in
   let sections =
     List.filter
       (fun section -> not (String.equal section ""))
@@ -346,6 +377,7 @@ let sbpl policy =
         write_policy;
         unix_socket_policy policy;
         network_section policy;
+        deny;
       ]
   in
-  (String.concat "\n" sections, read_params @ write_params)
+  (String.concat "\n" sections, read_params @ write_params @ deny_params)

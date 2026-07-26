@@ -375,7 +375,7 @@ let described_roots ~sandbox facts =
           |> List.rev)
 
 let resolve ~sw ~stdenv ~logical ~mode ~read ~readable_roots ~writable_roots
-    ~network =
+    ~mentat_dirs ~network =
   let lookup = ambient_lookup () in
   let fs = Eio.Stdenv.fs stdenv in
   let confined =
@@ -400,7 +400,7 @@ let resolve ~sw ~stdenv ~logical ~mode ~read ~readable_roots ~writable_roots
      opening the capabilities stays on the fiber, below. *)
   let* derived =
     Eio_unix.run_in_systhread ~label:"workspace_io.derive" (fun () ->
-        Derive.run ~scoped ~lookup ~logical
+        Derive.run ~scoped ~lookup ~logical ~mentat_dirs
           ~configured_reads:(if scoped then readable_roots else [])
           ~configured_writes:writable_roots)
   in
@@ -437,8 +437,13 @@ let resolve ~sw ~stdenv ~logical ~mode ~read ~readable_roots ~writable_roots
                   derived.Derive.protected )
           in
           let policy =
+            (* The denials sit outside the mode match: a read-only route zeroes
+               the writable and protected lists, and a deny set that rode in
+               with them would vanish on exactly the route that grants the
+               least. *)
             Mentat_sandbox.Policy.make ~scratch:scratch.scratch_path ~reads
-              ~writable_roots ~protected_paths ~network
+              ~writable_roots ~protected_paths
+              ~denied_paths:derived.Derive.denied ~network
           in
           let backend = Probe.backend ~stdenv ~lookup in
           Mentat_sandbox.confined ~backend policy

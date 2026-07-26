@@ -53,10 +53,11 @@ val make :
   reads:reads ->
   writable_roots:Lpath.Abs.t list ->
   protected_paths:Lpath.Abs.t list ->
+  denied_paths:Lpath.Abs.t list ->
   network:Network.t ->
   t
-(** [make ~scratch ~reads ~writable_roots ~protected_paths ~network] is a
-    confinement policy with normalized lists.
+(** [make ~scratch ~reads ~writable_roots ~protected_paths ~denied_paths
+     ~network] is a confinement policy with normalized lists.
 
     [scratch] is the per-run ephemeral private writable root the resolver mints;
     the generators grant it write access and it is included in [Only] read
@@ -84,12 +85,18 @@ val writable_roots : t -> Lpath.Abs.t list
 val protected_paths : t -> Lpath.Abs.t list
 (** [protected_paths t] is the protected absolute paths in canonical order. *)
 
+val denied_paths : t -> Lpath.Abs.t list
+(** [denied_paths t] is the denied absolute paths in canonical order — neither
+    readable nor writable, whichever read or write root would otherwise admit
+    them. Both generators lower denials last, so a denial beats every other
+    grant in the policy. *)
+
 val network : t -> Network.t
 (** [network t] is the network access. *)
 
 val equal : t -> t -> bool
 (** [equal a b] is [true] iff [a] and [b] describe the same confinement,
-    including the scratch root. *)
+    including the scratch root and the denied paths. *)
 
 val pp : Format.formatter -> t -> unit
 (** [pp ppf t] formats [t] for diagnostics. The output is not stable storage

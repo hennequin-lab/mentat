@@ -112,6 +112,7 @@ let policy_json p =
       ("reads", reads);
       ("writable_roots", json_abs_list (Sandbox.Policy.writable_roots p));
       ("protected_paths", json_abs_list (Sandbox.Policy.protected_paths p));
+      ("denied_paths", json_abs_list (Sandbox.Policy.denied_paths p));
       ( "network",
         Output.Json.string
           (Sandbox.Policy.Network.to_string (Sandbox.Policy.network p)) );
@@ -172,7 +173,11 @@ let explain json cwd =
                   (fun r ->
                     Output.stdout_printf "protected=%s\n"
                       (Lpath.Abs.to_string r))
-                  (Sandbox.Policy.protected_paths p));
+                  (Sandbox.Policy.protected_paths p);
+                List.iter
+                  (fun r ->
+                    Output.stdout_printf "deny=%s\n" (Lpath.Abs.to_string r))
+                  (Sandbox.Policy.denied_paths p));
             List.iter
               (fun (label, path) ->
                 Output.stdout_printf "root=%s %s\n" label

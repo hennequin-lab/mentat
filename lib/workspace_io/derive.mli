@@ -56,6 +56,15 @@ type derived = {
           carried directory. Only existing entries appear, so a carveout naming
           a directory that does not exist yet protects nothing — the strict
           read-only bind a carveout lowers to cannot name a missing source. *)
+  denied : Lpath.Abs.t list;
+      (** Mentat's own user directories — the config, data and state homes —
+          which no confined command may read or write on any route, in any mode.
+          Materialized at resolution under the guard in {!run}, so the set is
+          independent of machine state and a planted symlink cannot relocate the
+          exclusion; entries whose parent Mentat does not own are dropped rather
+          than created. Unlike {!protected}, these are not filtered against the
+          writable roots — a denial is meaningful wherever it lies, and all of
+          these lie outside. *)
   path : string;
       (** The derived child [PATH] value. Scoped, it is rebuilt from the
           toolchain bin directory followed by the admitted executable roots,
@@ -100,12 +109,21 @@ val run :
   logical:Mentat_workspace.t ->
   configured_reads:string list ->
   configured_writes:string list ->
+  mentat_dirs:Lpath.Abs.t list ->
   (derived, Resolve_error.t) result
-(** [run ~scoped ~lookup ~logical ~configured_reads ~configured_writes] derives
-    every policy input for one resolution. [scoped] is [true] iff the route is
-    confined with project-scoped reads; unscoped derivation still canonicalizes
-    the workspace roots and validates the configured writable roots. [lookup]
-    reads the ambient environment. *)
+(** [run ~scoped ~lookup ~logical ~configured_reads ~configured_writes
+     ~mentat_dirs] derives every policy input for one resolution.
+
+    [mentat_dirs] are Mentat's own user directories, which become {!denied}. A
+    denied path that {e contains} a writable root is refused
+    ({!Resolve_error.Denied_overlaps_writable}): denials lower last, so it would
+    mask the root itself and leave the agent unable to tell an emptied workspace
+    from a deleted one. A denial nested {e inside} a writable root is admitted
+    and enforced — that is a store kept inside the workspace, and masking just
+    that subtree is the point. [scoped] is [true] iff the route is confined with
+    project-scoped reads; unscoped derivation still canonicalizes the workspace
+    roots and validates the configured writable roots. [lookup] reads the
+    ambient environment. *)
 
 val carried_bindings : derived -> (string * Lpath.Abs.t) list
 (** [carried_bindings derived] is [derived.carried_dirs] as the

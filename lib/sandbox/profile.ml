@@ -66,6 +66,7 @@ let scratch_normalized policy =
   Policy.make ~scratch:sentinel_scratch ~reads
     ~writable_roots:(Policy.writable_roots policy)
     ~protected_paths:(Policy.protected_paths policy)
+    ~denied_paths:(Policy.denied_paths policy)
     ~network:(Policy.network policy)
 
 let identity_digest backend policy =

@@ -19,6 +19,19 @@ let bind_readable root = [ "--ro-bind"; path root; path root ]
 let bind_protected root = [ "--ro-bind"; path root; path root ]
 let bind_writable root = [ "--bind"; path root; path root ]
 
+(* A denial masks the path with an empty ephemeral mount rather than removing a
+   bind, because the grant it overrides may be any of the binds above and a
+   mask does not have to know which. [--tmpfs] alone would leave the mask
+   writable — the write would be accepted and discarded, the same silent
+   success [seal_root] exists to prevent — so the mount is remounted read-only
+   immediately. [--perms] fixes the mode before the mount so an empty directory
+   is not left world-traversable. Emitted after every bind, since the last
+   operation on a path wins. The effect twin guarantees the path exists: bwrap
+   creates a missing mount point inside the new root, which fails under a
+   read-only read scope. *)
+let mask_denied root =
+  [ "--perms"; "000"; "--tmpfs"; path root; "--remount-ro"; path root ]
+
 let filesystem_args policy =
   let read_args =
     match Policy.reads policy with
@@ -32,6 +45,7 @@ let filesystem_args policy =
   read_args
   @ List.concat_map bind_writable roots
   @ List.concat_map bind_protected carveouts
+  @ List.concat_map mask_denied (Policy.denied_paths policy)
 
 (* An [Only] read scope builds its root as a [--tmpfs], which is writable. A
    write to a path no bind covers therefore lands in that ephemeral mount and
