@@ -64,6 +64,15 @@ let wide_tip =
 
 let wide_diff = [ ("lib/wide.ml", Some wide_base, Some wide_tip) ]
 
+(* File names long enough to exhaust the nav pane's width, at and well past the
+   point where the row runs out of room. *)
+let long_names =
+  [
+    ("lib/short.ml", Some a_base, Some a_tip);
+    ("lib/workspace_adapter_notice.mli", Some a_base, Some a_tip);
+    ("lib/a_considerably_longer_module_name.ml", Some a_base, Some a_tip);
+  ]
+
 let open_review t =
   Tui.paste t "/review";
   Tui.enter t;
@@ -468,6 +477,38 @@ let%expect_test "the side-by-side diff keeps its new side beside a long line" =
 11 |                                 │                                                                  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 12 |                                 │                                                                  xxxxxxxxxxxxxxxxxxxxx"
 13 |                                 │  3 let c = 3                                                 4   let c = 3
+14 |                                 │
+15 |                                 │
+16 |                                 │
+17 |                                 │
+18 |                                 │
+19 |                                 │
+20 |                                 │
+21 |                                 │
+22 |                                 │
+23 |
+24 | tab focus diff · space mark · enter open · c comment · a approve · esc close|}]
+
+(* The status letter is the row's only statement of what happened to the file,
+   so it outranks the tail of a name the reviewer can already see is truncated.
+   However long the name, the letter stays on screen with a space before it. *)
+let%expect_test "a long file name yields to its status letter" =
+  Tui.run ~name:"review-long-names" ~review:long_names @@ fun t ->
+  open_review t;
+  Tui.print t;
+  [%expect {|01 | ────────────────────────────────────────────────────────────────────────────────
+02 | Review  HEAD..worktree                                    0/3 reviewed · pending
+03 |  ▾ lib                          │lib/a_considerably_longer_module_name.ml · unre
+04 |    ❯ [ ] a_considerably_long… M │ 1   let a = 1
+05 |      [ ] short.ml             M │ 2 - let b = 2
+06 |      [ ] workspace_adapter_n… M │ 2 + let b = 22
+07 |                                 │ 3   let c = 3
+08 |                                 │
+09 |                                 │
+10 |                                 │
+11 |                                 │
+12 |                                 │
+13 |                                 │
 14 |                                 │
 15 |                                 │
 16 |                                 │

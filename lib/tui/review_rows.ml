@@ -276,13 +276,22 @@ let render ~palette ~focused ~dimmed ~on_click row =
           Mosaic.text
             ~style:(dim ~palette ~dimmed mark_style)
             ~wrap:`None ~flex_shrink:0. mark;
+          (* The name is what yields when the row runs out of width. [wrap:`None]
+             leaves a text no break opportunity, so its automatic minimum is its
+             whole content and [flex_shrink] alone never makes it give way: a
+             long name keeps its full width and pushes the status letter past
+             the pane's clip, losing the letter rather than the tail of a name
+             the reviewer can already see truncated. The letter carries its own
+             leading space so the two cannot abut once the spacer is spent. *)
           Mosaic.text
             ~style:(dim ~palette ~dimmed name_style)
-            ~wrap:`None ~truncate:true ~flex_shrink:1. (basename f.path);
+            ~wrap:`None ~truncate:true ~flex_shrink:1.
+            ~min_size:{ Mosaic.width = Mosaic.px 0; height = Mosaic.px 0 }
+            (basename f.path);
           spacer;
           Mosaic.text
             ~style:(dim ~palette ~dimmed letter_style)
-            ~wrap:`None ~flex_shrink:0. (letter ^ " ");
+            ~wrap:`None ~flex_shrink:0. (" " ^ letter ^ " ");
         ]
   | Cr c ->
       let malformed = cr_malformed c.cr in
