@@ -14,6 +14,11 @@ let%expect_test
   let swap = Project.path project "swap" in
   let outside = Project.scratch project "outside" in
   Unix.mkdir swap 0o700;
+  (* Completion derives a directory row from the enumerated files beneath it, so
+     [swap] is only completable while it holds one. The file is removed again
+     before the swap, which is what leaves the directory empty enough to
+     replace. *)
+  Project.write project "swap/inside-marker" "must stay inside\n";
   Project.write_scratch project "outside/leak-marker" "must stay outside\n";
   Unix.mkdir (Project.path project ".git") 0o700;
   Unix.mkfifo (Project.path project "pipe-marker") 0o600;
@@ -46,13 +51,23 @@ let%expect_test
 21 |
 22 |
 23 |
-24 |   ! not logged in · /login · /priva… · openai/gpt-5.6-sol… · ! full access ? …|}];
+24 |   ! not logged in · /login · ~/men… · openai/gpt-5.6-sol … · ! full access ? …|}];
   Pty.send terminal "swap";
   Pty.wait terminal (Screen.has "❯ @swap");
+  (* The race: the enumerated directory becomes a symlink out of the workspace
+     while a token that named it is still open. One enumeration serves the whole
+     token, so this cannot retroactively widen the listing already on screen;
+     what it must not do is widen the next one. Retyping the token from scratch
+     is what asks for that next enumeration. *)
+  Unix.unlink (Project.path project "swap/inside-marker");
   Unix.rmdir swap;
   Unix.symlink outside swap;
-  Pty.send terminal Key.tab;
-  Pty.wait terminal (Screen.has "path resolves outside its workspace root");
+  Pty.send terminal (String.concat "" (List.init 5 (fun _ -> Key.backspace)));
+  Pty.wait terminal (Screen.has "❯ message mentat");
+  Pty.send terminal "@";
+  Pty.wait terminal (fun screen ->
+      Screen.contains screen "dune-project"
+      && not (Screen.contains screen "swap/"));
   Screen.print ~project (Pty.screen terminal);
   [%expect
     {|01 |
@@ -67,10 +82,10 @@ let%expect_test
 10 |      ▎ welcome — and thanks for trying mentat this early.
 11 |      ▎ it's experimental: sessions and config may change without migration.
 12 |
-13 |           ! swap: path resolves outside its workspace root
-14 |           ────────────────────────────────────────────────────────────
-15 |           ❯ @swap
-16 |           ────────────────────────────────────────────────────────────
+13 | ❯ +  dune-project
+14 | ────────────────────────────────────────────────────────────────────────────────
+15 | ❯ @
+16 | ────────────────────────────────────────────────────────────────────────────────
 17 |
 18 |                          ! /login — no connected account
 19 |                               ∅ no recent sessions
@@ -78,11 +93,9 @@ let%expect_test
 21 |
 22 |
 23 |
-24 |   ! not logged in · /login · /priva… · openai/gpt-5.6-sol… · ! full access ? …|}];
+24 |   ! not logged in · /login · ~/men… · openai/gpt-5.6-sol … · ! full access ? …|}];
   Pty.send terminal "\003";
-  Pty.wait terminal (fun screen ->
-      Screen.contains screen "❯ message mentat"
-      && not (Screen.contains screen "path resolves outside its workspace root"));
+  Pty.wait terminal (fun screen -> Screen.contains screen "❯ message mentat");
   Pty.quit terminal
 
 (* The TUI owns the terminal, so its always-on log is diverted to a per-run file
