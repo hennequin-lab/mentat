@@ -67,14 +67,16 @@ Keys supported by `get`, `set`, and `unset`:
 | Key | Meaning |
 | --- | --- |
 | `model` | Main model selector, e.g. `openai/gpt-5.6-sol`. |
-| `small_model` | Model used for automatic session titles; an unset, unknown, or unavailable selector falls back to the main model. |
+| `small_model` | Auxiliary model for cheap side calls such as automatic session titles; an unset, unknown, or unavailable selector falls back to the main model. |
 | `reasoning` | Default reasoning effort: `none`, `minimal`, `low`, `medium`, `high`, `xhigh`, or `max`. |
-| `tui.thinking` | Whether the TUI shows thinking summaries. |
+| `tui.thinking` | Whether the TUI shows thinking summaries (default `true`). |
+| `tui.mouse` | Whether the TUI captures terminal mouse events (default `true`; a non-empty `MENTAT_DISABLE_MOUSE` flips the default). |
 | `tui.theme` | TUI color theme: a built-in name, a user theme file basename, or `auto`; defaults to `mentat-dark`. |
 | `tui.theme_dark` | Theme `tui.theme=auto` selects on a dark terminal (default `mentat-dark`). |
 | `tui.theme_light` | Theme `tui.theme=auto` selects on a light terminal (default `mentat-light`). |
+| `tui.diff_layout` | Review diff layout: `auto` (default; side by side once the pane is wide enough, else stacked), `unified`, or `split`. |
 | `notify.enabled` | Enable TUI completion and decision notifications (default `true`). |
-| `notify.channel` | Notification channel: `off`, `bell`, `osc9`, `osc777`, `auto`, or `command`. |
+| `notify.channel` | Notification channel: `off`, `bell`, `osc9`, `osc777`, `auto` (default), or `command`. |
 | `notify.when` | Notify `unfocused` (default) or `always`. |
 | `notify.command` | JSON argv prefix for the `command` notification channel. |
 | `notify.on` | JSON event list containing `turn-done`, `decision`, or both (both by default). |
@@ -85,6 +87,7 @@ Keys supported by `get`, `set`, and `unset`:
 | `run.subagent_max_depth` | Maximum spawn depth; direct children are depth 1 (default `2`). |
 | `run.subagent_max_exchanges` | Per-run limit on model-originated parent/child exchanges (default `8`). |
 | `compaction.auto` | Whether context is compacted automatically when it grows large (default `true`). |
+| `revert.merge` | Whether reverting a superseded selection three-way merges rather than refusing (default `true`). |
 | `permission.unattended` | Headless review policy: `block` (default) or `deny`. |
 | `sandbox.mode` | Build sandbox: `read-only`, `workspace-write` (default), `danger-full-access`, or `external-sandbox`. |
 | `sandbox.require` | Enforcement gate: `enforced` (default), `enforced-or-external`, or `off`. |
@@ -92,7 +95,7 @@ Keys supported by `get`, `set`, and `unset`:
 | `sandbox.readable_roots` | Additional absolute or `~`-relative readable roots for `sandbox.read=project`. |
 | `sandbox.writable_roots` | Additional absolute or `~`-relative writable roots for `workspace-write`. |
 | `sandbox.network` | Confined shell-command network posture: `restricted` (default) or `enabled`. |
-| `shell` | Shell program used for shell commands. |
+| `shell` | Shell program used for shell commands (defaults to `SHELL`, or `COMSPEC` on Windows). |
 | `workspace.tooling` | Whether project-scoped OCaml/Dune tools enter fresh turn catalogs: `auto` (default), `on`, or `off`. |
 | `instructions.global` | Load the global `AGENTS.md` from the config home. |
 | `instructions.project` | Load project instruction files. |
@@ -135,9 +138,10 @@ extra config as `{ "version": 1, "items": [...] }`, inspect it with
 [Permission rules](permission-rules.md) for the matcher JSON, source behavior,
 and evaluation order.
 
-The notification, theme, custom-command, image, and subagent-limit fields are
-user-owned host policy. Workspace and workspace-local files cannot set them;
-put them in user config or an extra config file.
+Only `model`, `small_model`, `reasoning`, `run.max_steps`,
+`permission.unattended`, `workspace.tooling`, and `tools.editor` may come from
+project or project-local config. Every other key above is user-owned host
+policy; put it in user config or an extra config file.
 
 ## Notifications
 
