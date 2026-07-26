@@ -2205,6 +2205,27 @@ let read_only_refuses_a_write_grant () =
         (exit_status outcome = `Exited 0)
   | Error _ -> ()
 
+(* A grant lowers to a writable root, and a writable root is obliged to be a
+   directory — so a grant naming a file must be refused where the caller can act
+   on it, not through the discharge, which would report that something changed
+   after sealing when nothing did. *)
+let a_grant_must_name_a_directory () =
+  with_capability "grant-file" @@ fun w ->
+  require_enforced w.io;
+  let file = Filename.concat w.out_dir "not-a-dir.txt" in
+  write_file file "x";
+  match
+    Command.run_granted w.io ~capture:Command.All ~timeout:Eio.Time.Timeout.none
+      ~grants:[ (abs file, Sandbox.Policy.Access.Write) ]
+      (sh "exit 0")
+  with
+  | Error
+      (Command.Error.Sandbox (Sandbox.Error.Grant_not_a_directory { path })) ->
+      equal abs_value ~msg:"the refusal names the path the caller spelled"
+        (abs file) path
+  | Ok _ -> fail "a grant naming a file must be refused"
+  | Error e -> failf "wrong error: %a" Command.Error.pp e
+
 let read_only_escalation_is_denied () =
   with_capability "escalate-denied" ~mode:Mode.Read_only @@ fun w ->
   match run_escalated_res w.io (sh "exit 0") with
@@ -2414,6 +2435,7 @@ let () =
       test "a grant of a denied path is refused"
         a_grant_of_a_denied_path_is_refused;
       test "read-only refuses a write grant" read_only_refuses_a_write_grant;
+      test "a grant must name a directory" a_grant_must_name_a_directory;
       test "read-only escalation is denied" read_only_escalation_is_denied;
       test "a direct capability runs unconfined" direct_mode_runs_unconfined;
       test "a stale policy refuses before launch and at the gate"

@@ -50,3 +50,20 @@ let config_file t = Filename.concat t.config_home "config.json"
 let auth_file t = Filename.concat t.config_home "auth.json"
 let trust_file t = Filename.concat t.config_home "trust.json"
 let daemon_dir t = Filename.concat t.data_home "daemon"
+
+(* The socket lives under literal [/tmp], not the daemon dir, so a deep checkout
+   or a relocated home cannot overflow [sun_path] (~104 bytes). It is per-user
+   and per-store: the key digests the data home, so a [MENTAT_DATA_HOME]
+   override isolates daemons.
+
+   It lives here rather than with the daemon because two callers need it and
+   they cannot see each other. The daemon binds it; the sandbox has to deny it,
+   since [/tmp] is granted writable and the socket answers any local peer
+   without a token — a confined command that could reach it would be driving
+   Mentat rather than being confined by it. *)
+let daemon_socket_dir t =
+  let key =
+    Mentat_digest.key ~length:12 ~domain:"mentat.daemon-socket.v1"
+      [ t.data_home ]
+  in
+  Printf.sprintf "/tmp/mentat-%d-%s" (Unix.getuid ()) key

@@ -58,6 +58,13 @@ type t =
           resolution law would let the denial win in silence, and a caller must
           learn that the access it asked for is one the posture does not sell.
       *)
+  | Grant_not_a_directory of { path : Lpath.Abs.t }
+      (** a per-command grant named [path], which is not an existing directory.
+          A grant becomes a writable clause and a writable clause is obliged to
+          be one, so this would otherwise surface as {!Stale_policy} — asserting
+          that something changed after sealing, when nothing did. Minted by the
+          effect twin before lowering, so the diagnostic can name the containing
+          directory the caller should have granted instead. *)
 
 val message : t -> string
 (** [message t] is the human-readable diagnostic. It is not a stable matching
@@ -74,9 +81,10 @@ val to_json : t -> Jsont.json
 (** [to_json t] is the canonical JSON projection, built from the constructor: an
     object with ["kind"] (["unavailable"], ["cwd_outside_scope"],
     ["escalation_denied"], ["escalation_irrelevant"], ["empty_program"],
-    ["nul_in_argv"], ["stale_policy"], or ["grant_denied"]) and ["message"],
-    plus the constructor's structured fields — ["path"] for
-    {!Cwd_outside_scope}, {!Stale_policy} and {!Grant_denied}, ["denied"] for
+    ["nul_in_argv"], ["stale_policy"], ["grant_denied"], or
+    ["grant_not_a_directory"]) and ["message"], plus the constructor's
+    structured fields — ["path"] for {!Cwd_outside_scope}, {!Stale_policy},
+    {!Grant_denied} and {!Grant_not_a_directory}, ["denied"] for
     {!Grant_denied}, ["index"] for {!Nul_in_argv}. It is encode-only — one
     spelling for every product JSON surface so the class cannot drift between
     contracts. *)

@@ -22,8 +22,9 @@ Usage:
 - The host selects the shell, sandbox, environment, and timeout and output
   bounds. If a command fails because of a sandbox restriction, read the
   message for the path it names and retry that one command with
-  grant_write=["/that/path"]: the sandbox stays in force everywhere else and
-  the widening lasts only for that command. Reach for escalate=true only when
+  grant_write=["/the/containing/directory"]: the sandbox stays in force
+  everywhere else and the widening lasts only for that command. A grant names
+  a directory, so if the failure names a file, grant the directory it is in. Reach for escalate=true only when
   the access is genuinely broader than a set of paths, and say why in
   description. Both need explicit user approval, both are unavailable in
   read-only runs, and they cannot be combined.

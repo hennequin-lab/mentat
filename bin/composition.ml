@@ -1595,7 +1595,15 @@ let resolve_workspace t ~mode ~network :
      read them — the session store holds every transcript — and must not write
      them, because that store carries the sealed confinement identity a resume
      revalidates against, so a command that could rewrite it could approve
-     itself. *)
+     itself.
+
+     The daemon's socket directory is the fourth, and it is the one that would
+     hurt most. It sits under [/tmp], which is granted writable so ordinary
+     tools have somewhere to work, and the socket authorizes any local peer
+     without a token — so without this denial a confined command could hand the
+     daemon a request and drive Mentat instead of being confined by it. A
+     denial nested inside a writable root is exactly the shape the ordered
+     policy resolves correctly. *)
   let mentat_dirs =
     List.filter_map
       (fun spelling -> Lpath.Abs.of_string spelling |> Result.to_option)
@@ -1603,6 +1611,7 @@ let resolve_workspace t ~mode ~network :
         User_dirs.config_home t.shared.dirs;
         User_dirs.data_home t.shared.dirs;
         User_dirs.state_home t.shared.dirs;
+        User_dirs.daemon_socket_dir t.shared.dirs;
       ]
   in
   match

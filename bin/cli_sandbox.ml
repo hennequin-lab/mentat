@@ -71,17 +71,6 @@ let status json cwd =
             Output.stdout_printf "network=%s\n" network;
             Output.stdout_printf "evidence=%s\n"
               (Format.asprintf "%a" Sandbox.Evidence.pp evidence);
-            (* The enforced profile digest covers the per-run scratch root, so
-                it varies by invocation; identity is the scratch-invariant
-                fingerprint (sandbox explain). *)
-            (match evidence with
-            | Sandbox.Evidence.Enforced _ ->
-                Output.stdout_printf
-                  "note=profile digest is per-invocation; identity is the \
-                   stable fingerprint\n"
-            | Sandbox.Evidence.Not_requested | Sandbox.Evidence.Refused _
-            | Sandbox.Evidence.Declared_external ->
-                ());
             List.iter
               (fun (label, path) ->
                 Output.stdout_printf "root=%s %s\n" label

@@ -114,9 +114,9 @@ let command_error_message error =
 
 let command_error_failure = function
   | Mentat_workspace_io.Command.Error.Sandbox
-      ( Mentat_sandbox.Error.Empty_program
-      | Mentat_sandbox.Error.Nul_in_argv _
-      | Mentat_sandbox.Error.Grant_denied _ )
+      ( Mentat_sandbox.Error.Empty_program | Mentat_sandbox.Error.Nul_in_argv _
+      | Mentat_sandbox.Error.Grant_denied _
+      | Mentat_sandbox.Error.Grant_not_a_directory _ )
   | Mentat_workspace_io.Command.Error.Unknown_cwd_root _ ->
       `Invalid_input
   | Mentat_workspace_io.Command.Error.Sandbox

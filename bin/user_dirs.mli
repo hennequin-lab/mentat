@@ -46,3 +46,15 @@ val daemon_dir : t -> string
     [daemon.lock], and the spawned daemon's log [daemon.log]. Homed under the
     data home so a [MENTAT_DATA_HOME] override isolates a daemon per store. The
     socket does not live here — it lives under [/tmp] to fit [sun_path]. *)
+
+val daemon_socket_dir : t -> string
+(** [daemon_socket_dir t] is [/tmp/mentat-<uid>-<key>], the directory the
+    per-user daemon binds its socket in — under [/tmp] so a deep checkout
+    cannot overflow [sun_path], keyed on the data home so a [MENTAT_DATA_HOME]
+    override isolates daemons.
+
+    Two callers need it and neither can see the other: the daemon binds it, and
+    the sandbox denies it. The denial is not optional. [/tmp] is granted
+    writable, and the socket authorizes any local peer without a token, so a
+    confined command able to reach it would be driving Mentat instead of being
+    confined by it. *)

@@ -1,7 +1,7 @@
 `sandbox status` reports the read scope from the sealed capability. The suite's
 unconfined `danger-full-access` posture keeps this deterministic across
 platforms (real Seatbelt/Bubblewrap enforcement would name a platform backend
-and a per-invocation digest instead). The default read scope is `project`.
+and a machine-dependent digest instead). The default read scope is `project`.
 
   $ use_trusted_workspace
   $ mentat sandbox status

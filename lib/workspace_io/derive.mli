@@ -85,15 +85,17 @@ val run :
      ~mentat_dirs] derives every policy input for one resolution.
 
     [mentat_dirs] are Mentat's own user directories, which become {!denied}. A
-    denied path that {e contains} a writable root is refused
-    ({!Resolve_error.Denied_overlaps_writable}): denials lower last, so it would
-    mask the root itself and leave the agent unable to tell an emptied workspace
-    from a deleted one. A denial nested {e inside} a writable root is admitted
-    and enforced — that is a store kept inside the workspace, and masking just
-    that subtree is the point. [scoped] is [true] iff the route is confined with
-    project-scoped reads; unscoped derivation still canonicalizes the workspace
-    roots and validates the configured writable roots. [lookup] reads the
-    ambient environment. *)
+    denied path that {e contains} a granted root — readable or writable — is
+    refused ({!Resolve_error.Denied_overlaps_grant}): denials lower last, so it
+    would mask the root itself and leave the agent unable to tell an emptied
+    workspace from a deleted one, and bubblewrap cannot mount the nested grant
+    inside a tree the denial has already frozen, so the sandbox would not start
+    at all. A denial nested {e inside} a granted root is admitted and enforced —
+    that is a store kept inside the workspace, and masking just that subtree is
+    the point. [scoped] is [true] iff the route is confined with project-scoped
+    reads; unscoped derivation still canonicalizes the workspace roots and
+    validates the configured writable roots. [lookup] reads the ambient
+    environment. *)
 
 val canonical : Lpath.Abs.t -> Lpath.Abs.t
 (** [canonical path] is [path] resolved through [realpath] where it exists (so

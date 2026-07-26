@@ -1293,13 +1293,45 @@ module Command = struct
      left the sandbox. Every grant path is an ordinary obligation, so one that
      does not exist is refused by the discharge already standing in [prepare]
      rather than conjured into being. *)
+  (* A grant is the one path into the policy that does not come from the
+     resolver, so the two things the resolver would have done for it have to
+     happen here.
+
+     It is canonicalized, because the profile names canonical paths and the
+     backends match by the name in the profile: on macOS a grant spelled
+     [/tmp/x] would never match the [/private/tmp/x] the policy carries, and the
+     command would be refused exactly as if nothing had been granted — the worst
+     shape of failure, a widening that reports success and changes nothing.
+
+     And it is required to be a directory, because a grant becomes a writable
+     clause and a writable clause is obliged to be one. Left to the discharge,
+     granting a file answers [Stale_policy] — "disappeared or changed kind after
+     sealing" — which is untrue and, worse, unactionable: the caller is told
+     something moved rather than that it should have named the containing
+     directory. The refused path is reported as the caller spelled it. *)
+  let admissible_grants t grants =
+    let rec loop acc = function
+      | [] -> Ok (List.rev acc)
+      | (path, access) :: rest -> (
+          let target = Eio.Path.( / ) t.fs (Lpath.Abs.to_string path) in
+          match Eio.Path.stat ~follow:true target with
+          | stat when stat.Eio.File.Stat.kind = `Directory ->
+              loop ((Derive.canonical path, access) :: acc) rest
+          | _ | (exception Eio.Exn.Io _) ->
+              Error (Mentat_sandbox.Error.Grant_not_a_directory { path }))
+    in
+    loop [] grants
+
   let run_granted t ?cwd ?stdin ~capture ~timeout ?cancelled ~grants argv =
-    match Mentat_sandbox.grant t.sandbox grants with
+    match admissible_grants t grants with
     | Error error -> Error (Error.Sandbox error)
-    | Ok sandbox ->
-        run_route t ~sandbox ~escalated:false ~cwd
-          ~stdin:(Option.map coerce_source stdin)
-          ~capture ~timeout ~cancelled argv
+    | Ok grants -> (
+        match Mentat_sandbox.grant t.sandbox grants with
+        | Error error -> Error (Error.Sandbox error)
+        | Ok sandbox ->
+            run_route t ~sandbox ~escalated:false ~cwd
+              ~stdin:(Option.map coerce_source stdin)
+              ~capture ~timeout ~cancelled argv)
 
   module Session = struct
     (* A bounded in-memory ring over one stream's raw bytes. [total] counts

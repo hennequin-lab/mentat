@@ -176,12 +176,20 @@ type t
     evidence they report, and whether escalation is available. Pure: it starts
     no process and touches no filesystem. *)
 
-(** The sealed per-command escalation stance. It is fixed from the policy's
-    writable roots, independent of the enforcement outcome: a confined seal
-    [Refused] for backend unavailability but with writable roots is still
-    [Available] — {!lower_argv} refuses every command, yet
-    {!lower_escalated_argv} returns an unconfined argv, gated by its separate
-    permission approval. *)
+(** The sealed per-command escalation stance, and the same answer a write
+    {!grant} is gated on — both ask the posture whether this route may change
+    the filesystem at all.
+
+    It is the [mutates] value stated at {!confined}, never a property read back
+    off the policy. Reading it off the writable roots is the inference that
+    version of this interface described and that the code has abandoned: a
+    read-only route is granted scratch space, so its writable set is inhabited
+    and the inference now yields [Available] where the seal says [Denied].
+
+    It is independent of the enforcement outcome: a confined seal [Refused] for
+    backend unavailability but sealed as mutating is still [Available] —
+    {!lower_argv} refuses every command, yet {!lower_escalated_argv} returns an
+    unconfined argv, gated by its separate permission approval. *)
 type escalation =
   | Available
       (** the posture may mutate, so one command may run unconfined after a

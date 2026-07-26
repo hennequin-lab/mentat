@@ -167,6 +167,52 @@ let existing_auto_root path =
       | _ -> None
       | exception Unix.Unix_error _ -> None)
 
+(* A directory Mentat owns is created rather than existence-filtered, so the
+   sealed policy is not a function of whether the machine happens to have it
+   yet: a carveout that is skipped when absent protects the machines that
+   already have the directory and nothing on a fresh one, and a denial that is
+   skipped when absent cannot be masked at all, because bubblewrap has to create
+   the mount point inside a new root it may have already sealed.
+
+   Creation is guarded. Both the cache carveouts and the workspace metadata sit
+   under a root the confined agent can write, so an agent that plants a symlink
+   where the directory will go would otherwise redirect the exclusion at its
+   target and leave the real path grantable. [mkdir] refuses to follow a final
+   symlink, and on [EEXIST] the entry is [lstat]ed and rejected unless it is a
+   real directory this account owns. The lexical path is what enters the policy;
+   [realpath] is deliberately not consulted, because a final component the agent
+   can replace must not be able to relocate the exclusion. *)
+let owned_directory path =
+  let spelling = Lpath.Abs.to_string path in
+  let accept () =
+    match Unix.lstat spelling with
+    | { Unix.st_kind = Unix.S_DIR; st_uid; _ } when st_uid = Unix.getuid () ->
+        Ok (Some path)
+    | _ -> Error (invalid ~spelling Resolve_error.Not_a_directory)
+    | exception Unix.Unix_error (error, _, _) ->
+        Error (invalid ~spelling (unix_reason error))
+  in
+  match Unix.mkdir spelling 0o700 with
+  | () -> Ok (Some path)
+  | exception Unix.Unix_error (Unix.EEXIST, _, _) -> accept ()
+  | exception Unix.Unix_error ((Unix.ENOENT | Unix.EACCES | Unix.EPERM), _, _)
+    ->
+      (* A parent that does not exist or is not ours is not Mentat's to make. *)
+      Ok None
+  | exception Unix.Unix_error (error, _, _) ->
+      Error (invalid ~spelling (unix_reason error))
+
+let owned_directories paths =
+  let rec loop kept = function
+    | [] -> Ok (List.rev kept)
+    | path :: rest -> (
+        match owned_directory path with
+        | Error _ as error -> error
+        | Ok None -> loop kept rest
+        | Ok (Some path) -> loop (path :: kept) rest)
+  in
+  loop [] paths
+
 (* Toolchain state a build resolves under [$HOME]. [HOME] is inherited now, so
    the child and the resolver read the same variables and cannot disagree —
    which is what the carry this replaces existed to paper over, one variable at
@@ -220,15 +266,49 @@ let toolchain_home_roots ~lookup ~workspace_roots =
   in
   let cache = home_relative ~lookup ~var:"XDG_CACHE_HOME" ~default:".cache" in
   let dune_config = admit (under config "dune") in
-  let dune_cache = admit (under cache "dune") in
-  let carveouts =
-    match dune_cache with
-    | None -> []
+  (* The cache is materialized rather than merely observed, and the two
+     carveouts with it. Observing was the obvious reading — grant what is there —
+     but it makes the grant a function of machine state in both directions, and
+     both are wrong. A machine that has never run dune has no `~/.cache/dune`,
+     so the write grant this whole campaign added to fix the revision-store lock
+     is simply absent on the one machine that most needs it. Worse, a machine
+     that has the cache but no `db` yet gets the enclosing write grant with no
+     read carveout inside it, and a confined build may then fill the cache a
+     later unconfined build restores from by hardlink, without re-digesting.
+
+     So the directories are created — under the same guard Mentat's own use,
+     which refuses to adopt a symlink, a non-directory, or another user's
+     directory — and the write grant is issued only if both carveouts are in
+     place. If either cannot be secured the cache is not granted at all, which
+     costs a cold build its cache and never trades away the next one. *)
+  let owned_under base sub =
+    Option.bind base (fun base ->
+        match
+          Lpath.Abs.of_string (Filename.concat (Lpath.Abs.to_string base) sub)
+        with
+        | Error _ -> None
+        | Ok path -> (
+            match owned_directory path with
+            | Ok (Some path) -> Some (canonical path)
+            | Ok None -> None
+            | Error _ ->
+                Log.warn (fun m ->
+                    m "ignoring toolchain root %S: not usable"
+                      (Lpath.Abs.to_string path));
+                None))
+  in
+  let dune_cache, carveouts =
+    match admit (owned_under cache "dune") with
+    | None -> (None, [])
     | Some base ->
-        List.filter_map
-          (fun sub ->
-            existing_auto_root (Filename.concat (Lpath.Abs.to_string base) sub))
-          [ "db"; "toolchains" ]
+        let secured =
+          List.map
+            (fun sub -> owned_under (Some base) sub)
+            [ "db"; "toolchains" ]
+        in
+        if List.for_all Option.is_some secured then
+          (Some base, List.filter_map Fun.id secured)
+        else (None, [])
   in
   let describe =
     List.filter_map
@@ -600,52 +680,6 @@ let workspace_roots ~scoped ~lookup logical =
 let roots_overlap a b =
   Lpath.Abs.is_within ~root:a b || Lpath.Abs.is_within ~root:b a
 
-(* A directory Mentat owns is created rather than existence-filtered, so the
-   sealed policy is not a function of whether the machine happens to have it
-   yet: a carveout that is skipped when absent protects the machines that
-   already have the directory and nothing on a fresh one, and a denial that is
-   skipped when absent cannot be masked at all, because bubblewrap has to create
-   the mount point inside a new root it may have already sealed.
-
-   Creation is guarded. Both the cache carveouts and the workspace metadata sit
-   under a root the confined agent can write, so an agent that plants a symlink
-   where the directory will go would otherwise redirect the exclusion at its
-   target and leave the real path grantable. [mkdir] refuses to follow a final
-   symlink, and on [EEXIST] the entry is [lstat]ed and rejected unless it is a
-   real directory this account owns. The lexical path is what enters the policy;
-   [realpath] is deliberately not consulted, because a final component the agent
-   can replace must not be able to relocate the exclusion. *)
-let owned_directory path =
-  let spelling = Lpath.Abs.to_string path in
-  let accept () =
-    match Unix.lstat spelling with
-    | { Unix.st_kind = Unix.S_DIR; st_uid; _ } when st_uid = Unix.getuid () ->
-        Ok (Some path)
-    | _ -> Error (invalid ~spelling Resolve_error.Not_a_directory)
-    | exception Unix.Unix_error (error, _, _) ->
-        Error (invalid ~spelling (unix_reason error))
-  in
-  match Unix.mkdir spelling 0o700 with
-  | () -> Ok (Some path)
-  | exception Unix.Unix_error (Unix.EEXIST, _, _) -> accept ()
-  | exception Unix.Unix_error ((Unix.ENOENT | Unix.EACCES | Unix.EPERM), _, _)
-    ->
-      (* A parent that does not exist or is not ours is not Mentat's to make. *)
-      Ok None
-  | exception Unix.Unix_error (error, _, _) ->
-      Error (invalid ~spelling (unix_reason error))
-
-let owned_directories paths =
-  let rec loop kept = function
-    | [] -> Ok (List.rev kept)
-    | path :: rest -> (
-        match owned_directory path with
-        | Error _ as error -> error
-        | Ok None -> loop kept rest
-        | Ok (Some path) -> loop (path :: kept) rest)
-  in
-  loop [] paths
-
 (* [/tmp] is where a command puts a scratch file when it does not consult the
    environment for one, and a literal [/tmp/...] path is common enough in build
    scripts and in model-authored commands that its absence reads as a broken
@@ -799,30 +833,38 @@ let run ~scoped ~lookup ~logical ~configured_reads ~configured_writes
     @ darwin_user_dirs ~lookup @ toolchain_writes
   in
   (* Only an overlap in one direction is a problem. A denial nested inside a
-     writable root masks that subtree and leaves the rest of the root intact,
+     granted root masks that subtree and leaves the rest of the root intact,
      which is exactly what a store kept inside the workspace needs. A denial
-     that contains a writable root masks the root itself, and the agent cannot
-     tell an emptied workspace from a deleted one — refuse that at resolution
-     rather than hand back a checkout that looks wiped. *)
+     that contains a granted root masks the root itself, and the agent cannot
+     tell an emptied workspace from a deleted one.
+
+     Both kinds of grant are checked, not only the writable ones. A read root
+     inside a denied path is the shape a user reaches by pointing
+     [sandbox.readable_roots] at something under Mentat's own config home, and
+     it is worse than masked: bubblewrap freezes the denied tree read-only
+     before it can mount the nested grant inside it, so the sandbox never
+     starts and every command in the session dies at setup with a raw bwrap
+     message. Refuse it here, where the diagnostic can name both paths. *)
   let* () =
+    let granted_lattice = writable_lattice @ readable in
     match
       List.find_map
         (fun denied ->
           List.find_map
-            (fun writable ->
-              if Lpath.Abs.is_within ~root:denied writable then
-                Some (denied, writable)
+            (fun granted ->
+              if Lpath.Abs.is_within ~root:denied granted then
+                Some (denied, granted)
               else None)
-            writable_lattice)
+            granted_lattice)
         denied
     with
     | None -> Ok ()
-    | Some (denied, writable) ->
+    | Some (denied, granted) ->
         Error
-          (Resolve_error.Denied_overlaps_writable
+          (Resolve_error.Denied_overlaps_grant
              {
                denied = Lpath.Abs.to_string denied;
-               writable = Lpath.Abs.to_string writable;
+               granted = Lpath.Abs.to_string granted;
              })
   in
   let describe =

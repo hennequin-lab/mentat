@@ -80,21 +80,40 @@ let denial_note ~widening observation =
   match observation with
   | None -> ""
   | Some observation -> (
-      let recovery =
-        if not (Mentat_workspace_io.Confinement.escalatable observation) then
+      let escalatable =
+        Mentat_workspace_io.Confinement.escalatable observation
+      in
+      let through_shell =
+        match widening with
+        | `Here -> ""
+        | `Through_shell ->
+            "this tool takes no sandbox parameters, so run the equivalent \
+             command through shell: "
+      in
+      (* The two refusals do not share a remedy. A grant admits a path, which
+         can do nothing about a socket, so steering a blocked connection at
+         [grant_write] spends a turn on a parameter that cannot help. Only the
+         total move reaches the network. *)
+      let filesystem_recovery =
+        if not escalatable then
           "this sandbox promises no mutation, so neither a grant nor an \
            escalation is available; the access has to come from configuration"
         else
-          match widening with
-          | `Here ->
-              "retry with grant_write naming the exact path the message \
-               reports, which widens the sandbox to that path alone for one \
-               command, or escalate=true if the access is genuinely broader \
-               than a path"
-          | `Through_shell ->
-              "this tool takes no sandbox parameters; run the equivalent \
-               command through shell with grant_write naming the exact path, \
-               or escalate=true if the access is genuinely broader than a path"
+          through_shell
+          ^ "retry with grant_write naming the directory that contains the \
+             path the output reports, which widens the sandbox to that \
+             directory alone for one command, or escalate=true if the access \
+             is genuinely broader"
+      in
+      let network_recovery =
+        if not escalatable then
+          "this sandbox promises no mutation, so no escalation is available; \
+           the access has to come from configuration"
+        else
+          through_shell
+          ^ "retry the exact command with escalate=true only if the access is \
+             genuinely needed — a grant admits a path and cannot open the \
+             network"
       in
       let standing =
         if Mentat_workspace_io.Confinement.reads_scoped observation then
@@ -106,14 +125,17 @@ let denial_note ~widening observation =
       | Some Mentat_workspace_io.Confinement.Network ->
           "\n\n\
            This command ran inside a sandbox with network access restricted, \
-           and its output looks like a blocked network request. This is a \
-           policy restriction, not a transient error: " ^ recovery ^ "."
+           and its output looks like a blocked request. If it is one, retrying \
+           unchanged will not help: " ^ network_recovery
+          ^ ". To lift the restriction for the session instead, ask the user \
+             to set sandbox.network to enabled."
       | Some Mentat_workspace_io.Confinement.Filesystem ->
           let what =
             if Mentat_workspace_io.Confinement.reads_attributable observation
             then
-              "its output looks like a refused read or write. This is a policy \
-               restriction, not a transient error"
+              "its output looks like a refused read or write — a resemblance, \
+               not a reading of the policy, so check it against what the \
+               command was doing before acting on it. If it is one"
             else
               "its output looks like a refused write. A denied read is not \
                distinguishable from a missing file under this backend, so if a \
@@ -122,6 +144,6 @@ let denial_note ~widening observation =
           in
           "\n\n\
            This command ran inside a sandbox that confines filesystem access, \
-           and " ^ what ^ ": " ^ recovery
+           and " ^ what ^ ": " ^ filesystem_recovery
           ^ ". For a standing grant instead of a one-command one, ask the user \
              to add the path to " ^ standing ^ ".")

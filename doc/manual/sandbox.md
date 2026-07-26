@@ -36,7 +36,7 @@ enforced command grant cannot approve dropping confinement.
 
 | Mode | Command behavior |
 | --- | --- |
-| `read-only` | Reads follow `sandbox.read`; writes are limited to a private run scratch directory and network is denied. Build retains its interaction verbs, native reads/search, confined `shell`, `ocaml_eval`, enabled web fetch, and applicable non-editing OCaml tools. It omits exactly `write_file`, `edit_file`, `apply_patch`, `ocaml_ast_edit`, `ocaml_replace_expressions`, and `ocaml_rename`. Shell escalation is unavailable. |
+| `read-only` | Reads follow `sandbox.read`; writes are limited to shared scratch space (`/tmp` and the temp-dir variables) and network is denied. Build retains its interaction verbs, native reads/search, confined `shell`, `ocaml_eval`, enabled web fetch, and applicable non-editing OCaml tools. It omits exactly `write_file`, `edit_file`, `apply_patch`, `ocaml_ast_edit`, `ocaml_replace_expressions`, and `ocaml_rename`. Shell escalation is unavailable. |
 | `workspace-write` | Reads follow `sandbox.read`. Writes are allowed only under resolved writable roots, with protected carve-outs. Network is restricted by default. |
 | `danger-full-access` | Commands run without Mentat filesystem or network confinement. They still receive the exact host-constructed child environment. |
 | `external-sandbox` | Mentat records that an external boundary owns confinement. Commands are not wrapped, but still receive the exact host-constructed child environment. |
@@ -100,8 +100,14 @@ not expose arbitrary host-file reads.
 `workspace-write` makes these roots writable:
 
 - every workspace root;
-- a private mode-`0700` home and temporary directory owned by the run;
+- shared scratch space: `/tmp`, and whatever `$TMPDIR`, `$TEMP` and `$TMP` name;
+- toolchain state a build must write — dune's cache directory, and on macOS the
+  per-user Darwin cache bucket Apple's developer-tool shims use;
 - absolute or `~`-relative paths in `sandbox.writable_roots`.
+
+Mentat does not rewrite the child's environment. `$HOME` and the temp-dir
+family are the ones you launched with, so a tool resolves the same directories
+the policy grants — the two cannot disagree.
 
 Existing paths are realpath-canonicalized before the policy is generated, so
 the described path and the backend-enforced path agree across symlinks such as
@@ -118,19 +124,39 @@ The following remain read-only even when nested under a writable root:
 Native mutation tools share the `.git` and `.mentat` protection. They also
 validate workspace containment independently of the command sandbox.
 
-Machine-global toolchain state — the OPAM root and the XDG cache, config, state,
-and data directories — is admitted read-only under the project read scope so
-tools resolve their real locations even though the child `$HOME` is the private
-scratch. It is never writable: command writes stay confined to the workspace and
-that scratch. A confined `dune build` therefore reads but cannot populate the
-shared `~/.cache/dune` cache; dune detects the unwritable cache directory, warns,
-disables the cache, and builds normally into the workspace `_build`. The result
-is a graceful loss of cross-project cache acceleration, not a build error.
-Granting write access to the shared cache is deliberately left to the explicit
-`sandbox.writable_roots` opt-in rather than the default: the cache is a
-machine-global content-addressed store shared by every project, so a confined
-command writing it could influence unrelated projects' later builds — the exact
-out-of-workspace effect the write boundary exists to prevent.
+Machine-global toolchain state — the OPAM root and the dune config directory —
+is admitted read-only under the project read scope so tools resolve their real
+locations.
+
+Dune's cache directory is the exception, and it is writable, because a build
+with git-pinned sources takes a lock under it unconditionally and cannot
+proceed without one. Two directories inside it stay read-only: `db` and
+`toolchains`. That split is the whole point. Dune restores a cache hit by
+hardlinking an entry into `_build` without re-digesting it, so write access to
+`db` is write access to your next *unsandboxed* build — a confined command
+could influence unrelated projects later. The lock lives outside `db`, so the
+build proceeds and the store stays read-only.
+
+## Widening a single command
+
+When a command is refused, the narrow move is to name the directory it needed:
+
+```
+shell(command="dune build", grant_write=["/home/you/.cache/dune"])
+```
+
+`grant_write` adds those directories to the policy **for that one command**.
+Everything else still applies — the read scope, the network policy, and every
+denial — and nothing is remembered: the next command runs under the unmodified
+posture. Each path must be an existing directory, so if a failure names a file,
+grant the directory containing it. A path Mentat denies outright cannot be
+granted.
+
+`escalate=true` remains for access that is genuinely broader than a set of
+directories; it drops the enforcing profile entirely for that command. Both
+need explicit approval, both are unavailable in `read-only` runs, and they
+cannot be combined. Prefer the grant: it costs one directory rather than the
+whole posture.
 
 ## Network policy
 
@@ -182,20 +208,30 @@ before use. Other platforms have no built-in enforcing backend. A restricted
 run fails closed when its applicable requirement is not met. See
 [Installation](installation.md) for the host prerequisite matrix.
 
-## Per-command escalation
+## Per-command widening, reviewed
 
-In a `workspace-write` sandbox, the model can request `escalate:true` on one
-shell call. The request adds a separate `shell.escalate` access whose subject
-is the exact command text. Reaching execution means both the ordinary command
-access and the escalation access were allowed by policy or reviewer.
+In a `workspace-write` sandbox the model can ask for one of two widenings on a
+single shell call, and each adds its own reviewable access beside the ordinary
+command access. Reaching execution means both were allowed by policy or
+reviewer.
 
-An approved escalation:
+`grant_write` adds a `shell.grant` access whose subject is the granted
+directories. An approved grant:
+
+- keeps the enforcing profile and adds those directories for that command;
+- leaves every other clause standing, denials included;
+- records ordinary `enforced` evidence, naming the profile that actually ran;
+- is not remembered — the next command runs under the unmodified posture.
+
+`escalate:true` adds a `shell.escalate` access whose subject is the exact
+command text. An approved escalation:
 
 - runs that one command without filesystem or network confinement;
 - retains the policy's exact child environment;
 - records `not_requested` sandbox evidence;
 - does not broaden to another command, even after an exact-conversation answer.
 
-Read-only mode refuses escalation without opening a permission review. In
-`danger-full-access` and `external-sandbox`, escalation is ignored because the
+Read-only mode refuses both without opening a permission review: the posture
+promises no mutation, and a write grant is a mutation. In
+`danger-full-access` and `external-sandbox` both are ignored because the
 requested lack of Mentat confinement is already the current posture.

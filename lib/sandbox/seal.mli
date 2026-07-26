@@ -15,9 +15,9 @@
 type t
 (** A sealed command sandbox. *)
 
-(** The sealed escalation stance, fixed from the policy's writable roots
-    independent of the enforcement outcome (a refused-but-writable seal is still
-    [Available]). *)
+(** The sealed escalation stance, stated by the caller at {!confined} and
+    independent of the enforcement outcome (a refused seal that was sealed as
+    mutating is still [Available]). *)
 type escalation =
   | Available
       (** workspace-write shaped: escapable after a separate approval *)

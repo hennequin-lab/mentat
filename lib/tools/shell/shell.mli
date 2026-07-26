@@ -36,9 +36,10 @@
     widened: [background:true] with either [escalate:true] or a non-empty
     [grant_write] fails [`Invalid_input] with a message steering the caller to
     the foreground or to dropping the request — a widened profile outliving the
-    turn is the open sandbox question v1 does not pre-empt. A background start needs a [registry] (see
-    {!make}): without one it fails [`Unavailable]. Background execution is
-    unavailable to subagents, whose catalog omits [shell] entirely.
+    turn is the open sandbox question v1 does not pre-empt. A background start
+    needs a [registry] (see {!make}): without one it fails [`Unavailable].
+    Background execution is unavailable to subagents, whose catalog omits
+    [shell] entirely.
 
     String members may not contain NUL, because neither OS argv nor filesystem
     paths can represent it faithfully. Numeric strings, fractional timeouts,

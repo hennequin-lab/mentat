@@ -321,7 +321,7 @@ let%expect_test "declaration and provider decoding enforce exact JSON types" =
        ]);
   [%expect
     {|name: shell
-schema: {"type":"object","properties":{"command":{"type":"string","description":"Non-empty shell command text.","minLength":1},"workdir":{"type":"string","description":"Workspace-relative or workspace-contained absolute working directory. Defaults to the workspace current directory.","minLength":1},"timeout_ms":{"type":"integer","description":"Optional command timeout in milliseconds, from 1 to 600000. Defaults to 60000.","minimum":1,"maximum":600000},"description":{"type":"string","description":"Optional reviewer and UI metadata.","minLength":1},"escalate":{"type":"boolean","description":"Request this command outside the enforcing profile. Use only after a sandbox restriction, with the reason in description; separate approval is required."},"background":{"type":"boolean","description":"Run the command in the background and return a handle to read with shell_output and stop with shell_kill. Use for dev servers, watchers, and long log tails. timeout_ms is ignored for a background command; a background command runs confined and cannot be escalated (escalate a command in the foreground instead)."},"grant_write":{"type":"array","items":{"type":"string"},"description":"Absolute paths to make writable for this one command, leaving the rest of the sandbox in force. Prefer this over escalate after a refused write: name the exact path the output reported. Separate approval is required, the widening lasts only for this command, and a path Mentat denies outright is refused."}},"required":["command"],"additionalProperties":false}
+schema: {"type":"object","properties":{"command":{"type":"string","description":"Non-empty shell command text.","minLength":1},"workdir":{"type":"string","description":"Workspace-relative or workspace-contained absolute working directory. Defaults to the workspace current directory.","minLength":1},"timeout_ms":{"type":"integer","description":"Optional command timeout in milliseconds, from 1 to 600000. Defaults to 60000.","minimum":1,"maximum":600000},"description":{"type":"string","description":"Optional reviewer and UI metadata.","minLength":1},"escalate":{"type":"boolean","description":"Request this command outside the enforcing profile. Use only after a sandbox restriction, with the reason in description; separate approval is required."},"background":{"type":"boolean","description":"Run the command in the background and return a handle to read with shell_output and stop with shell_kill. Use for dev servers, watchers, and long log tails. timeout_ms is ignored for a background command; a background command runs confined and cannot be escalated (escalate a command in the foreground instead)."},"grant_write":{"type":"array","items":{"type":"string"},"description":"Absolute paths to existing directories to make writable for this one command, leaving the rest of the sandbox in force. Prefer this over escalate after a refused write. Each path must be a directory: if the failure names a file, grant the directory that contains it. Separate approval is required, the widening lasts only for this command, and a path Mentat denies outright is refused."}},"required":["command"],"additionalProperties":false}
 minimal: accepted canonical={"command":"printf ok"}
 full: accepted canonical={"command":"pwd","description":"show subject","escalate":true,"timeout_ms":250,"workdir":"subject"}
 missing command: rejected diagnostic=true
@@ -489,12 +489,12 @@ shell: command="dune build" cwd=. execution=enforced(all,read-only,restricted)
 -- read-only escalation --
 requests: 0
 status: failed invalid_input
-message: the sealed posture promises no mutation: a read-only sandbox admits neither an escalation nor a write grant
+message: this sandbox promises no mutation: a read-only run admits neither grant_write nor escalate. Ask the user to switch to workspace-write, or to add the path to sandbox.writable_roots.
 metadata: false
 -- read-only escalation with missing cwd --
 requests: 0
 status: failed invalid_input
-message: the sealed posture promises no mutation: a read-only sandbox admits neither an escalation nor a write grant
+message: this sandbox promises no mutation: a read-only run admits neither grant_write nor escalate. Ask the user to switch to workspace-write, or to add the path to sandbox.writable_roots.
 metadata: false|}]
 
 let%expect_test
@@ -876,11 +876,11 @@ let%expect_test "sandbox denial is explained and escalation uses run_escalated"
 status: failed failed
 message: command exited with status 7
 
-This command ran inside a sandbox that confines filesystem access, and its output looks like a refused read or write. This is a policy restriction, not a transient error: retry with grant_write naming the exact path the message reports, which widens the sandbox to that path alone for one command, or escalate=true if the access is genuinely broader than a path. For a standing grant instead of a one-command one, ask the user to add the path to sandbox.writable_roots.
+This command ran inside a sandbox that confines filesystem access, and its output looks like a refused read or write — a resemblance, not a reading of the policy, so check it against what the command was doing before acting on it. If it is one: retry with grant_write naming the directory that contains the path the output reports, which widens the sandbox to that directory alone for one command, or escalate=true if the access is genuinely broader. For a standing grant instead of a one-command one, ask the user to add the path to sandbox.writable_roots.
 metadata: false
 outside exists: false evidence: enforced
 -- network denial diagnostic --
-policy note: true
+policy note: false
 -- escalation --
 requests: 1
 source: shell display: printf escaped > '<outside>/escalated.txt'; printf 'secret=%s\n' "${MENTAT_SHELL_EXPECT_SECRET-unset}"
@@ -910,7 +910,7 @@ let%expect_test "a confined read denial is explained with the escalate path" =
         && String.includes ~affix:"sandbox.readable_roots" message
         && String.includes ~affix:"sandbox.writable_roots" message)
   | _ -> fail "read-denial-shaped failure unexpectedly completed");
-  [%expect {| policy note: true |}]
+  [%expect {|policy note: false|}]
 
 let%expect_test "a write denial is explained under an unconfined read scope" =
   with_world ~mode:Mentat_config.Mode.Workspace_write
@@ -939,7 +939,7 @@ let%expect_test "a write denial is explained under an unconfined read scope" =
         && String.includes ~affix:"sandbox.writable_roots" message
         && not (String.includes ~affix:"sandbox.readable_roots" message))
   | _ -> fail "write-denial-shaped failure unexpectedly completed");
-  [%expect {| policy note: true |}]
+  [%expect {|policy note: false|}]
 
 let%expect_test "durable replay retains presentation but no mutation authority"
     =

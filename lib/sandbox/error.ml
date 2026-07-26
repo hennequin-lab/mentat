@@ -12,6 +12,7 @@ type t =
   | Nul_in_argv of { index : int }
   | Stale_policy of { path : Lpath.Abs.t }
   | Grant_denied of { path : Lpath.Abs.t; denied : Lpath.Abs.t }
+  | Grant_not_a_directory of { path : Lpath.Abs.t }
 
 let kind_string = function
   | Unavailable _ -> "unavailable"
@@ -22,6 +23,7 @@ let kind_string = function
   | Nul_in_argv _ -> "nul_in_argv"
   | Stale_policy _ -> "stale_policy"
   | Grant_denied _ -> "grant_denied"
+  | Grant_not_a_directory _ -> "grant_not_a_directory"
 
 let message = function
   | Unavailable diagnostic -> diagnostic
@@ -45,6 +47,12 @@ let message = function
       Printf.sprintf "%s cannot be granted: it lies under the denied path %s"
         (Lpath.Abs.to_string path)
         (Lpath.Abs.to_string denied)
+  | Grant_not_a_directory { path } ->
+      Printf.sprintf
+        "%s cannot be granted: a grant names an existing directory; grant %s \
+         instead"
+        (Lpath.Abs.to_string path)
+        (Filename.dirname (Lpath.Abs.to_string path))
 
 let equal a b =
   match (a, b) with
@@ -57,9 +65,11 @@ let equal a b =
   | Stale_policy a, Stale_policy b -> Lpath.Abs.equal a.path b.path
   | Grant_denied a, Grant_denied b ->
       Lpath.Abs.equal a.path b.path && Lpath.Abs.equal a.denied b.denied
+  | Grant_not_a_directory a, Grant_not_a_directory b ->
+      Lpath.Abs.equal a.path b.path
   | ( ( Unavailable _ | Cwd_outside_scope _ | Escalation_denied
       | Escalation_irrelevant | Empty_program | Nul_in_argv _ | Stale_policy _
-      | Grant_denied _ ),
+      | Grant_denied _ | Grant_not_a_directory _ ),
       _ ) ->
       false
 
@@ -70,7 +80,9 @@ let to_json t =
   let string_mem name value = mem name (Jsont.Json.string value) in
   let structured =
     match t with
-    | Cwd_outside_scope path | Stale_policy { path } ->
+    | Cwd_outside_scope path
+    | Stale_policy { path }
+    | Grant_not_a_directory { path } ->
         [ string_mem "path" (Lpath.Abs.to_string path) ]
     | Grant_denied { path; denied } ->
         [

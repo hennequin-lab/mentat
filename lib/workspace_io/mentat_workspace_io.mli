@@ -160,10 +160,12 @@ val escalation : t -> Mentat_sandbox.escalation
 (** [escalation t] is the sealed per-command escalation stance: [Available] when
     a command may run unconfined after a separate approval, [Denied] for the
     read-only posture that admits none, or [Ignored] on an unconfined route
-    where escalation asks for what is already true. It is fixed from the
-    policy's writable roots, independent of the enforcement outcome. A
-    projection, not the seal: a holder reads the stance but can never lower or
-    launch through it. *)
+    where escalation asks for what is already true. It is the posture's own
+    stated answer, not one read back off the writable roots — a read-only route
+    is granted scratch space, so that inference would now report [Available]. It
+    gates a write {!Command.run_granted} for the same reason it gates an
+    escalation. Independent of the enforcement outcome. A projection, not the
+    seal: a holder reads the stance but can never lower or launch through it. *)
 
 val check :
   t ->

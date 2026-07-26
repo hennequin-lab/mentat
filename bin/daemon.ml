@@ -35,17 +35,10 @@ let exit_message = function
 
 (* ---- Path policy ---- *)
 
-(* The socket lives under literal [/tmp] (not the daemon dir) so a deep checkout
-   or sandboxed home cannot overflow [sun_path] (~104 bytes). It is per-user and
-   per-store: the key digests the data home, so a [MENTAT_DATA_HOME] override
-   isolates daemons. Readers never recompute this — they read the socket
-   from [daemon.json] — so it is a default, not a protocol. *)
-let socket_dir_default dirs =
-  let key =
-    Mentat_digest.key ~length:12 ~domain:"mentat.daemon-socket.v1"
-      [ User_dirs.data_home dirs ]
-  in
-  Printf.sprintf "/tmp/mentat-%d-%s" (Unix.getuid ()) key
+(* Readers never recompute the socket path — they read it from [daemon.json] —
+   so this is a default, not a protocol. The path itself is
+   {!User_dirs.daemon_socket_dir}, which the sandbox also has to see. *)
+let socket_dir_default = User_dirs.daemon_socket_dir
 
 let resolve_socket_dir ~socket_override dirs =
   match socket_override with Some dir -> dir | None -> socket_dir_default dirs

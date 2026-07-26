@@ -90,8 +90,7 @@ module Input = struct
         if input.escalate then Some true else None)
     |> Jsont.Object.opt_mem "background" Jsont.bool ~enc:(fun input ->
         if input.background then Some true else None)
-    |> Jsont.Object.opt_mem "grant_write"
-         (Jsont.list Jsont.string)
+    |> Jsont.Object.opt_mem "grant_write" (Jsont.list Jsont.string)
          ~enc:(fun input ->
            match input.grant_write with
            | [] -> None
@@ -155,12 +154,14 @@ module Input = struct
                     ("items", Codec.obj [ ("type", json_string "string") ]);
                     ( "description",
                       json_string
-                        "Absolute paths to make writable for this one command, \
-                         leaving the rest of the sandbox in force. Prefer this \
-                         over escalate after a refused write: name the exact \
-                         path the output reported. Separate approval is \
-                         required, the widening lasts only for this command, \
-                         and a path Mentat denies outright is refused." );
+                        "Absolute paths to existing directories to make \
+                         writable for this one command, leaving the rest of \
+                         the sandbox in force. Prefer this over escalate after \
+                         a refused write. Each path must be a directory: if \
+                         the failure names a file, grant the directory that \
+                         contains it. Separate approval is required, the \
+                         widening lasts only for this command, and a path \
+                         Mentat denies outright is refused." );
                   ] );
             ] );
         ("required", Jsont.Json.list [ json_string "command" ]);
@@ -398,7 +399,8 @@ let command_error_failure = function
       ( Mentat_sandbox.Error.Escalation_denied
       | Mentat_sandbox.Error.Escalation_irrelevant
       | Mentat_sandbox.Error.Empty_program | Mentat_sandbox.Error.Nul_in_argv _
-      | Mentat_sandbox.Error.Grant_denied _ ) ->
+      | Mentat_sandbox.Error.Grant_denied _
+      | Mentat_sandbox.Error.Grant_not_a_directory _ ) ->
       `Invalid_input
   | Mentat_workspace_io.Command.Error.Unknown_cwd_root _ -> `Invalid_input
   | Mentat_workspace_io.Command.Error.Sandbox
@@ -549,9 +551,16 @@ let run_background workspace_io ~registry ~shell input =
 
 let interrupted () = Mentat_tool.Result.cancelled ()
 
+(* Named for the parameters the caller actually sent, not for the one the
+   sealed error happens to mention: a refusal that speaks only of escalation
+   invites the reader to conclude the grant was the acceptable half. The remedy
+   is the frontend's to add, which is why this does not route through
+   [Error.message]. *)
 let mutation_denied () =
   Mentat_tool.Result.failed `Invalid_input
-    (Mentat_sandbox.Error.message Mentat_sandbox.Error.Escalation_denied)
+    "this sandbox promises no mutation: a read-only run admits neither \
+     grant_write nor escalate. Ask the user to switch to workspace-write, or \
+     to add the path to sandbox.writable_roots."
 
 (* Both at once is a contradiction, not a preference to resolve: escalation
    leaves the sandbox, so there is no policy left for the grant to widen, and
@@ -561,7 +570,6 @@ let both_requested () =
     "escalate and grant_write cannot be combined: escalate leaves the sandbox \
      entirely, so a per-path grant would have nothing to widen. Ask for \
      grant_write with the exact paths, or escalate without it."
-
 
 let run workspace_io ~clock ~shell ~registry ~escalation ~cancelled input =
   if cancelled () then interrupted ()

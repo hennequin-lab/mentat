@@ -39,12 +39,19 @@ type t =
           variable, the platform set, or the project gitdir. A broad temp-dir
           variable is dropped from the write set rather than refused, so it
           never reaches here. *)
-  | Denied_overlaps_writable of { denied : string; writable : string }
-      (** A path Mentat denies to every confined command overlaps the write
-          lattice. Denials are lowered last, so the overlap would not narrow the
-          sandbox — it would mask the writable root with an empty mount the
-          agent cannot distinguish from a wiped directory. Refused at
-          resolution, loudly, instead. *)
+  | Denied_overlaps_grant of { denied : string; granted : string }
+      (** A path Mentat denies to every confined command {e contains} a root the
+          policy would grant. Denials are lowered last, so the overlap does not
+          narrow the sandbox: it masks the granted root with an empty mount the
+          agent cannot distinguish from a wiped directory, and under bubblewrap
+          it is worse than that — the denial freezes the tree read-only before
+          the nested grant can be mounted inside it, so the sandbox fails to
+          start and every command in the session dies at setup. Refused at
+          resolution, loudly, instead.
+
+          Only this direction. A denial nested {e inside} a granted root is the
+          case worth keeping: it masks that subtree and leaves the rest of the
+          root intact, which is what a store kept in the workspace needs. *)
   | Missing_root of Mentat_workspace.Root.t
       (** An admitted logical workspace root does not currently name an existing
           directory, so it cannot be opened. *)
