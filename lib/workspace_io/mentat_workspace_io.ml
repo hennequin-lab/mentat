@@ -1296,7 +1296,22 @@ module Command = struct
     lowered : string list;
     executable : string;
     cwd : Eio.Fs.dir_ty Eio.Path.t;
+    child_environment : string array;
   }
+
+  (* [PWD] is the one binding a launch owns rather than the resolution: it names
+     the directory this command actually starts in. It is written on every
+     route because Bubblewrap assigns it itself after entering the sandbox, so
+     leaving it out would give the confined child a binding the escalated and
+     direct children lack — a route-dependent environment the capability
+     promises never to serve. The array stays sorted by name. *)
+  let with_pwd environment directory =
+    let binding = "PWD=" ^ Lpath.Abs.to_string directory in
+    let others =
+      Array.to_list environment
+      |> List.filter (fun item -> not (String.starts_with ~prefix:"PWD=" item))
+    in
+    List.merge String.compare others [ binding ] |> Array.of_list
 
   (* Validate, bind and open the cwd, discharge every obligation, lower — one
      private sequence no caller can reorder or skip. *)
@@ -1348,7 +1363,14 @@ module Command = struct
           | [] -> assert false (* a lowering never returns an empty argv *)
         in
         match resolve_executable t head with
-        | Some executable -> Ok { lowered; executable; cwd = bound_eio bound }
+        | Some executable ->
+            Ok
+              {
+                lowered;
+                executable;
+                cwd = bound_eio bound;
+                child_environment = with_pwd t.environment bound.abs;
+              }
         | None -> Error (Error.Spawn (Eio.Process.Executable_not_found head)))
 
   let coerce_source (source : _ Eio.Flow.source) =
@@ -1373,7 +1395,8 @@ module Command = struct
     in
     match
       Subprocess.run ~proc_mgr:t.proc_mgr ~mono:t.mono ~fs:t.fs
-        ~cwd:prepared.cwd ~env:t.environment ~executable:prepared.executable
+        ~cwd:prepared.cwd ~env:prepared.child_environment
+        ~executable:prepared.executable
         ?stdin ~capture:(capture_policy capture) ~timeout ~cancelled
         prepared.lowered
     with
@@ -1631,8 +1654,9 @@ module Command = struct
   let start_session t ~sw ?cwd argv =
     let* prepared = prepare t ~escalated:false ~cwd argv in
     match
-      Session.launch ~sw ~proc_mgr:t.proc_mgr ~fs:t.fs ~env:t.environment
-        ~mono:t.mono ~cwd:prepared.cwd ~executable:prepared.executable
+      Session.launch ~sw ~proc_mgr:t.proc_mgr ~fs:t.fs
+        ~env:prepared.child_environment ~mono:t.mono ~cwd:prepared.cwd
+        ~executable:prepared.executable
         prepared.lowered
     with
     | session -> Ok session

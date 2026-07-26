@@ -10,7 +10,12 @@
     because inheritance is allow-listed, and the per-run scratch directory
     doubles as [HOME] and the temp-dir family. Construction is total — ambient
     values that cannot be represented (a NUL byte, a malformed path segment) are
-    dropped, never fatal. *)
+    dropped, never fatal.
+
+    [PWD] is deliberately absent here and written by the launch instead: it
+    names the directory a single command starts in, which the resolution does
+    not know, and the external backends assign it themselves once they enter
+    the sandbox. *)
 
 type t = {
   bindings : string array;
