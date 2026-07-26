@@ -21,8 +21,8 @@
     - {b drain_notices} is the optional [notices] producer, or [[]] when none is
       wired — dune build-health (see {!Workspace_notices}) and the filesystem
       watch lane (see {!Workspace_watch}) are the two producers, composed by the
-      executable. Notices are a request-prelude nicety, never durable
-      transcript, so their absence changes no committed fact.
+      executable. Each drained notice becomes a durable [Workspace_notice] fact,
+      so a workspace with no producer wired records none.
 
     The whole claim-window yield crosses the port unchanged: the closer returned
     by [open_scope] yields {!Mentat_edit.Apply_evidence.t}, so a
@@ -57,10 +57,10 @@ val make :
     capability over [capability], taking boundary captures into [store].
     [self_prefix], when the capture store's data home lies inside the workspace,
     is that home's workspace-relative path, pruned from every capture so the
-    capture system never captures its own bytes. [notices] is the
-    turn-preparation notice source (default: none); the engine drains it once
-    per user turn. [watch] (default: none) brackets every claim's attribution
-    window with the watch lane's poll boundaries: the window's watched changes
-    flow to {!Mentat_workspace_io.Claim_scope.observe} as observational
-    attribution, and only changes outside every window reach the lane's
-    external-change notices. *)
+    capture system never captures its own bytes. [notices] is the notice source
+    (default: none); the engine drains it to prepare a turn and again as each
+    tool claim settles. [watch] (default: none) brackets every claim's
+    attribution window with the watch lane's poll boundaries: the window's
+    watched changes flow to {!Mentat_workspace_io.Claim_scope.observe} as
+    observational attribution, and only changes outside every window reach the
+    lane's external-change notices. *)

@@ -4,7 +4,7 @@ override at an executable stub makes the resolved path host-independent and exer
 the found branch. A [dune-project] marker at the root flips the project check to
 present. Neither changes the exit code — a workspace without OCaml tooling is a
 warning, not a failure. (The live dune build-health verdict is deliberately not read
-by doctor; it rides the workspace notice channel at turn preparation.)
+by doctor; it rides the workspace notice channel.)
 
   $ use_trusted_workspace
   $ printf '#!/bin/sh\ntrue\n' > dune-stub

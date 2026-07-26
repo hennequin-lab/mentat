@@ -13,14 +13,13 @@
     window and queue as external changes; {!claim_window} advances as the window
     closes, and its diff is the window's observationally attributed paths —
     handed to {!Mentat_workspace_io.Claim_scope.observe}, never noticed;
-    {!drain} advances at turn preparation and returns the queued external
-    changes as one {!Mentat_workspace.Notice.t}. The watcher's
-    single-consumer-fiber contract holds by construction, and no batch races a
-    window: a change is external or window-observed according to the poll
-    boundaries it falls between, decided synchronously on the driver fiber. A
-    change that both an external writer and the window could claim is attributed
-    to the window — observational attribution states what changed while the
-    claim ran, not who caused it.
+    {!drain} advances and returns the queued external changes as one
+    {!Mentat_workspace.Notice.t}. The watcher's single-consumer-fiber contract
+    holds by construction, and no batch races a window: a change is external or
+    window-observed according to the poll boundaries it falls between, decided
+    synchronously on the driver fiber. A change that both an external writer and
+    the window could claim is attributed to the window — observational
+    attribution states what changed while the claim ran, not who caused it.
 
     Watching is best effort: a construction or scan failure degrades to one
     warning notice and permanently stops the lane; a session never fails because
@@ -57,6 +56,12 @@ val claim_window : t -> string list
     directory itself is not a window path. *)
 
 val drain : t -> Mentat_workspace.Notice.t list
-(** [drain t] advances the baseline at turn preparation and is the queued
-    external changes as at most one info notice, plus one warning notice the
-    first drain after the lane degrades. The queue is cleared. *)
+(** [drain t] advances the baseline and is the queued external changes as at
+    most one info notice, plus one warning notice the first drain after the lane
+    degrades. The queue is cleared.
+
+    The engine drains to prepare a turn and again as each tool claim settles, so
+    a workspace is walked once more per claim than the two window boundaries
+    already cost. Every drain advances: skipping the walk after a window close
+    would rest on that close always being followed by a drain, which an
+    interrupted or store-failed settlement does not do. *)

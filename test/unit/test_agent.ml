@@ -1822,11 +1822,13 @@ let mode_execution_binds_catalog_workspace_and_policy_together () =
         !plan_calls;
       equal int ~msg:"Build made one request before and after its tool" 2
         !build_calls_to_provider;
-      equal int ~msg:"Plan drains only the read workspace" 1 read_calls.drains;
+      (* Each turn drains its own workspace twice: once preparing the turn and
+         once as its single tool claim settles. *)
+      equal int ~msg:"Plan drains only the read workspace" 2 read_calls.drains;
       equal int ~msg:"Plan checkpoints only the read workspace" 1
         read_calls.checkpoints;
       equal int ~msg:"Plan scopes only the read workspace" 1 read_calls.scopes;
-      equal int ~msg:"Build drains only the build workspace" 1
+      equal int ~msg:"Build drains only the build workspace" 2
         build_calls.drains;
       equal int ~msg:"Build checkpoints only the build workspace" 1
         build_calls.checkpoints;
@@ -3655,7 +3657,8 @@ let a_delegated_session_uses_the_fixed_execution () =
       is_true ~msg:"the child seals the delegated workspace identity"
         (Sandbox.Identity.equal delegated_identity
            (Session.Contract.sandbox child_contract));
-      equal int ~msg:"the delegated turn drains its own workspace" 1
+      (* Turn preparation and the child's one tool settlement. *)
+      equal int ~msg:"the delegated turn drains its own workspace" 2
         delegated_calls.drains;
       equal int ~msg:"the delegated tool checkpoints its own workspace" 1
         delegated_calls.checkpoints;
@@ -4172,6 +4175,197 @@ let edit_then_done ~call_id () =
     did := true;
     Ok (edit_call ~call_id "editing")
   end
+
+(* A workspace whose notice producer speaks the [n]th time it is drained: the
+   world says nothing at turn preparation and then something once the turn is
+   under way, which is what a build breaking under the model's own edit looks
+   like from the port. *)
+let workspace_noticing_on_drain ~on_drain notices : Ports.workspace =
+  let drains = ref 0 in
+  {
+    workspace with
+    Ports.drain_notices =
+      (fun () ->
+        incr drains;
+        if Int.equal !drains on_drain then notices else []);
+  }
+
+let workspace_notice ~source ~severity ~title =
+  Mentat_workspace.Notice.make ~source ~severity ~title ~key:(source ^ title) ()
+
+(* A workspace observation made while the turn is running reaches that turn: the
+   drain at tool settlement records it against the active turn, and the request
+   carrying the tool result carries it too. Without mid-turn intake, a build
+   broken by the model's own edit stays invisible until the user speaks
+   again. *)
+let a_mid_turn_notice_rides_the_next_request () =
+  let requests = ref [] in
+  let script =
+    Ports.script @@ fun request ->
+    requests := request :: !requests;
+    if Int.equal (List.length !requests) 1 then
+      Ok (edit_call ~call_id:"edit-1" "editing")
+    else Ok (plain_response "done")
+  in
+  let catalog =
+    match Catalog.make ~verbs:all_verbs [ trivial_tool ~name:"edit" () ] with
+    | Ok c -> c
+    | Error e -> failf "catalog: %a" Catalog.Error.pp e
+  in
+  let workspace =
+    workspace_noticing_on_drain ~on_drain:2
+      [
+        workspace_notice ~source:"dune"
+          ~severity:Mentat_workspace.Notice.Severity.Error
+          ~title:"Build failing (1 diagnostic)";
+      ]
+  in
+  with_engine ~script ~catalog ~workspace
+    (fun ~sw:_ ~client ~store:_ ~engine:_ ->
+      submit_ok client (prompt ~session:(sid "root") ~turn:(tid "t-1") "edit");
+      ignore (drain_committed (follow_ok client (sid "root")));
+      match List.rev !requests with
+      | [ first; second ] ->
+          is_false ~msg:"the turn's first request predates the observation"
+            (request_contains first "Build failing");
+          is_true
+            ~msg:
+              "the request carrying the tool result carries the observation \
+               the turn made"
+            (request_contains second "Build failing")
+      | requests ->
+          failf "expected two provider requests, got %d" (List.length requests))
+
+(* Every observation a turn made is stated, in arrival order. A source may speak
+   twice within one turn, and the port cannot tell a state reading from a delta:
+   a watcher's second batch names the files that changed since its first, so
+   keeping only the latest would drop the earlier names from the model's view
+   while leaving them in the journal. *)
+let a_turn_states_every_observation_it_made () =
+  let requests = ref [] in
+  let script =
+    Ports.script @@ fun request ->
+    requests := request :: !requests;
+    match List.length !requests with
+    | 1 -> Ok (edit_call ~call_id:"edit-1" "editing")
+    | 2 -> Ok (edit_call ~call_id:"edit-2" "editing again")
+    | _ -> Ok (plain_response "done")
+  in
+  let catalog =
+    match Catalog.make ~verbs:all_verbs [ trivial_tool ~name:"edit" () ] with
+    | Ok c -> c
+    | Error e -> failf "catalog: %a" Catalog.Error.pp e
+  in
+  let drains = ref 0 in
+  let workspace =
+    {
+      workspace with
+      Ports.drain_notices =
+        (fun () ->
+          incr drains;
+          match !drains with
+          | 2 ->
+              [
+                workspace_notice ~source:"fswatch"
+                  ~severity:Mentat_workspace.Notice.Severity.Info
+                  ~title:"1 workspace file change since the last scan: alpha.ml";
+              ]
+          | 3 ->
+              [
+                workspace_notice ~source:"fswatch"
+                  ~severity:Mentat_workspace.Notice.Severity.Info
+                  ~title:"1 workspace file change since the last scan: beta.ml";
+              ]
+          | _ -> []);
+    }
+  in
+  with_engine ~script ~catalog ~workspace
+    (fun ~sw:_ ~client ~store:_ ~engine:_ ->
+      submit_ok client (prompt ~session:(sid "root") ~turn:(tid "t-1") "edit");
+      let facts = drain_committed (follow_ok client (sid "root")) in
+      (match List.rev !requests with
+      | [ _; second; third ] ->
+          is_true ~msg:"the first batch reaches the turn when it is observed"
+            (request_contains second "alpha.ml");
+          is_true ~msg:"the second batch reaches the turn when it is observed"
+            (request_contains third "beta.ml");
+          is_true ~msg:"the earlier batch is still stated alongside it"
+            (request_contains third "alpha.ml")
+      | requests ->
+          failf "expected three provider requests, got %d"
+            (List.length requests));
+      let notices =
+        List.filter_map
+          (fun (_, fact) ->
+            match fact with
+            | Protocol.Fact.Workspace_notice notice ->
+                Some (Session.Notice.title notice)
+            | _ -> None)
+          facts
+      in
+      equal int ~msg:"the journal records both observations" 2
+        (List.length notices))
+
+(* A drain consumes its producer, and a tool settlement is not certain to reach
+   another request: a turn at its step cap ends on the settlement that drained.
+   The observation is held and leads the next turn instead of being lost with
+   the turn that consumed it — the producers cannot be asked again, since a
+   watcher has cleared its queue and a build verdict has moved its baseline. *)
+let an_observation_outlives_the_turn_that_could_not_state_it () =
+  let requests = ref [] in
+  let script =
+    Ports.script @@ fun request ->
+    requests := request :: !requests;
+    if Int.equal (List.length !requests) 1 then
+      Ok (edit_call ~call_id:"edit-1" "editing")
+    else Ok (plain_response "done")
+  in
+  let catalog =
+    match Catalog.make ~verbs:all_verbs [ trivial_tool ~name:"edit" () ] with
+    | Ok c -> c
+    | Error e -> failf "catalog: %a" Catalog.Error.pp e
+  in
+  (* One step: the model answers once, and the boundary after its tool settles
+     ends the turn rather than issuing a second request. *)
+  let config _session ~latest_model:_ =
+    Ok (Agent.Config.make ~model ~max_steps:1 ~continuation_turn_limit:None ())
+  in
+  let workspace =
+    workspace_noticing_on_drain ~on_drain:2
+      [
+        workspace_notice ~source:"dune"
+          ~severity:Mentat_workspace.Notice.Severity.Error
+          ~title:"Build failing (1 diagnostic)";
+      ]
+  in
+  with_engine ~script ~catalog ~workspace ~config
+    (fun ~sw:_ ~client ~store:_ ~engine:_ ->
+      submit_ok client (prompt ~session:(sid "root") ~turn:(tid "t-1") "edit");
+      let first = drain_committed (follow_ok client (sid "root")) in
+      (match settled_outcome first with
+      | Some Session.Turn.Outcome.Step_limit -> ()
+      | Some _ | None -> fail "the first turn must end at its step limit");
+      let feed = follow_ok ~from:`Now client (sid "root") in
+      submit_ok client (prompt ~session:(sid "root") ~turn:(tid "t-2") "again");
+      ignore (drain_committed feed);
+      let feed = follow_ok ~from:`Now client (sid "root") in
+      submit_ok client (prompt ~session:(sid "root") ~turn:(tid "t-3") "more");
+      ignore (drain_committed feed);
+      match List.rev !requests with
+      | [ first; second; third ] ->
+          is_false
+            ~msg:"the step-limited turn never got to state the observation"
+            (request_contains first "Build failing");
+          is_true ~msg:"the next turn states what its predecessor could not"
+            (request_contains second "Build failing");
+          (* Carried once and no further: a turn that has stated an observation
+             owes nothing, so it is not recorded again against every turn that
+             follows. *)
+          is_false ~msg:"a stated observation is not carried on again"
+            (request_contains third "Build failing")
+      | requests ->
+          failf "expected three provider requests, got %d"
+            (List.length requests))
 
 let mutation_event_value =
   testable ~pp:Mutation.Event.pp ~equal:Mutation.Event.equal ()
@@ -5611,6 +5805,12 @@ let () =
             overflow_recovery_is_bounded_per_turn;
           test "context pressure compaction records the before projection"
             context_pressure_compaction_records_the_before_projection;
+          test "a mid-turn workspace notice rides the next request"
+            a_mid_turn_notice_rides_the_next_request;
+          test "a turn states every observation it made"
+            a_turn_states_every_observation_it_made;
+          test "an observation outlives the turn that could not state it"
+            an_observation_outlives_the_turn_that_could_not_state_it;
         ];
       group "scheduler and subagents"
         [

@@ -2,15 +2,15 @@ The filesystem watch lane brackets every tool claim's attribution window with
 poll boundaries on the engine's driver fiber: paths that change while a claim
 runs are observationally attributed to that claim as durable `tool_observed`
 mutation evidence, and only changes outside every window queue as
-external-change notices, drained at the next turn preparation. A headless
-one-shot run admits one turn — its drain runs before any change can exist, and
-the watcher's baseline is per-process — so the external-notice half needs a
-live second turn and stays manual: in a TUI session, edit a workspace file
-from another terminal between two prompts and the second request carries a
+external-change notices, drained at turn preparation and again as each claim
+settles. An external change therefore reaches the turn it lands in rather than
+the next one, but producing one under a scripted run means writing a workspace
+file outside every claim window — which no fixture can time deterministically —
+so that half stays manual: in a TUI session, edit a workspace file from another
+terminal while a turn runs and the turn's next request carries a
 `- [info] fswatch: 1 workspace file change since the last scan` notice naming
-the path, recorded as a durable turn-scoped notice. This suite
-pins the in-run halves: window observation, the ignore rules, and the config
-gate.
+the path, recorded as a durable turn-scoped notice. This suite pins the in-run
+halves: window observation, the ignore rules, and the config gate.
 
   $ use_trusted_workspace
 

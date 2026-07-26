@@ -252,11 +252,13 @@ val start :
     replay rejects a missing or altered value before {!Step.Effect.Model} can be
     produced.
 
-    [notices] (default [[]]) are the workspace observations drained at turn
-    preparation. Each is recorded as a durable
-    {!Mentat_session.Event.Workspace_notice} against the new turn, so replay
-    reconstructs the turn's context, and the turn's model request carries them —
-    never a later turn's. *)
+    [notices] (default [[]]) are the workspace observations the turn starts
+    with. Each is recorded as a durable {!Mentat_session.Event.Workspace_notice}
+    against the new turn, so replay reconstructs the turn's context, and the
+    turn's continuation requests carry them — never a later turn's. The driver
+    records further observations against the turn as it runs; every continuation
+    request states all of the turn's observations in the order they arrived. A
+    compaction request carries the environment prelude alone and states none. *)
 
 (** The type for the manual-compaction admission decision. *)
 type compaction_start =

@@ -147,9 +147,15 @@ the method is worth keeping:
 Suspects already cleared, so the next hunt doesn't re-tread them: the
 markdown memo (deltas coalesce to one view pass per frame; cmarkit never
 appeared in profiles), the session step loop (`max_steps`; a no-tool-call
-response completes the turn), google/SSE transport (EOF-safe reader, bounded
-slept retries), and the dune health notice producer (forked and in-flight
-guarded when engaged).
+response completes the turn), and google/SSE transport (EOF-safe reader,
+bounded slept retries).
+
+Not cleared, and worth a measurement before the next hunt: the workspace
+notice drain. It runs on the driver fiber between a tool's result and the
+request reporting it, once per tool claim a turn settles — a bounded dune RPC
+probe (0.5 s worst case, immediate when no watch is registered) plus one full
+workspace tree walk, on top of the two the claim's window boundaries already
+cost.
 
 ## The test-suite cost model
 

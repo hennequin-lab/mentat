@@ -978,7 +978,7 @@ let review_base_spec t =
 
 (* Project-tooling gate: whether a workspace marker file is a regular file, and
    the [trust + workspace.tooling] verdict the dune build-health surfaces key on.
-   Shared by the turn-prep notice producer and the workspace status-glance cone
+   Shared by the notice producer and the workspace status-glance cone
    so they engage on one rule. The marker check reads through the passed
    capability. *)
 let project_marker_is_regular capability marker =
@@ -1307,7 +1307,7 @@ let workspace_cone t capability ~base_spec : Client.Driver.Workspace.t =
             producer := Some p;
             p
       in
-      (* The transition notices are the turn-prep producer's business; here only
+      (* The transition notices are the notice producer's business; here only
          the resulting verdict is wanted, so drain to poll and read it back. *)
       let (_ : Mentat_workspace.Notice.t list) = Workspace_notices.drain p in
       match Workspace_notices.health p with
@@ -1830,7 +1830,7 @@ let build_execution_layer t : (execution_layer, Exit_status.t) result =
   in
   (* The watch lane is attached to the build workspace alone: its poll
      boundaries advance on the root driver's fiber (claim brackets and
-     turn-preparation drains), and the read twin serves concurrent delegated
+     drains), and the read twin serves concurrent delegated
      drivers, which must not touch the single-consumer watcher. *)
   let watch =
     if not (Cfg.Resolved.get Cfg.Field.notices_fswatch t.config) then None

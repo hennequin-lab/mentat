@@ -175,8 +175,9 @@ type t =
           filesystem-watcher batch or a dune build-health change. Structured
           (severity, source, title, multi-line body) so a surface renders the
           whole observation in the transcript, not a truncated one-line dump.
-          The engine injects the same notice into the turn's model request, so
-          this fact is the human-visible half of a model-visible turn datum. *)
+          The engine states the turn's observations in that turn's continuation
+          requests, so this fact is the human-visible half of a model-visible
+          turn datum. *)
   | Undo of {
       update : Mentat_session.Undo.Update.t;
           (** The durable boundary update: {!Mentat_session.Undo.Update.Armed}

@@ -165,6 +165,15 @@ type t = {
       (* The active turn's conservative capture, id present when available. *)
   mutable possibly_mutating : bool;
       (* The possibly-still-mutating recovery condition. *)
+  mutable unstated_notices : Mentat_workspace.Notice.t list;
+      (* Workspace observations taken from their producers that no model request
+         has stated, oldest first. A drain consumes: once taken, an observation
+         cannot be asked for again, so one belonging to a turn that ends before
+         stating it would be lost for good. Held here, the next turn records and
+         states it — at the cost of a second [Workspace_notice] against that
+         turn, which is the honest record of where the model was finally told.
+         Discharged when a turn request is issued, so an observation is carried
+         once and no further. *)
   mutable compaction_pending :
     (Mentat_session.Turn.Id.t
     * (Mentat_client.Driver.compaction_result, Mentat_protocol.Error.t) result
@@ -619,7 +628,10 @@ and start_turn t cfg ~mode ~options ~max_steps ~id ~input ~origin ~output_schema
     select_execution t ~configured:cfg ~model:cfg.Config.model
       ~sealed_declarations:None mode
   in
-  let notices = workspace.Ports.drain_notices () in
+  (* Anything an earlier turn recorded but never stated leads this turn's
+     observations: its producer is already consumed, so this is the only
+     remaining occasion to put it in front of the model. *)
+  let notices = t.unstated_notices @ workspace.Ports.drain_notices () in
   let turn_env =
     build_env t ~context_prelude ~workspace catalog cfg ~max_steps
   in
@@ -644,6 +656,7 @@ and start_turn t cfg ~mode ~options ~max_steps ~id ~input ~origin ~output_schema
       | Ok () ->
           Atomic.set t.flag false;
           t.interrupt_reason <- None;
+          t.unstated_notices <- notices;
           ack (Ok ());
           List.iter
             (fun notice ->
@@ -683,6 +696,15 @@ and exec t eff ~turn ~buffer ~closer =
   | Mentat_agent_step.Step.Effect.Model { request; purpose; _ } ->
       (match purpose with
       | `Turn ->
+          (* This request was built from the turn's recorded notices, so issuing
+             it discharges everything held for want of one. Retiring on the
+             issue rather than on the answer bounds the debt at a single carry:
+             a provider that keeps failing has nothing to do with what the
+             workspace observed, and making retirement wait on it would re-record
+             the same observation against every turn until the provider
+             recovers. A compaction request states none of them and discharges
+             nothing. *)
+          t.unstated_notices <- [];
           pulse t
             (Mentat_protocol.Progress.Model
                { turn; update = Mentat_protocol.Progress.Model.Started })
@@ -953,14 +975,68 @@ and compaction_failed t ~reason ~message =
                Mentat_protocol.Progress.Compaction.Failed { reason; message };
            })
 
+(* Mid-turn workspace intake. The producers are drained again as each tool claim
+   settles, so an observation the world made during the turn — the build verdict
+   that followed the model's own edit, a file the user changed in their editor —
+   reaches the turn that saw it instead of waiting for the next one. A tool
+   settlement is the boundary a turn request all but always follows, since the
+   model must be shown the tool's result; it is not a guarantee, so what a turn
+   records without stating is held in [unstated_notices] for the next turn
+   rather than lost with the turn that consumed it. *)
+and drain_workspace_notices t =
+  match active_turn t with
+  | None -> Ok ()
+  (* A turn under an interrupt admits settlements and nothing else, so recording
+     an observation against it would be refused and the refusal would fault the
+     driver. Nothing is taken either: an undrained producer keeps what it holds
+     for the next turn's preparation, which is both durable and free, whereas
+     draining here would move it into driver memory — lost outright when the
+     interrupt is a shutdown — and would put a build probe and a workspace walk
+     on the path the user is waiting to see stop. *)
+  | Some _ when Mentat_session.State.interrupt_requested (state t) -> Ok ()
+  | Some turn -> (
+      match (workspace t).Ports.drain_notices () with
+      | [] -> Ok ()
+      | notices -> (
+          let events =
+            List.map
+              (fun notice ->
+                Mentat_session.Event.workspace_notice
+                  (session_notice_of_workspace notice))
+              notices
+          in
+          match commit_events t events with
+          | Error e -> Error e
+          | Ok () ->
+              t.unstated_notices <- t.unstated_notices @ notices;
+              let id = Mentat_session.Turn.id turn in
+              List.iter
+                (fun notice ->
+                  pulse t
+                    (Mentat_protocol.Progress.Notice { turn = id; notice }))
+                notices;
+              Ok ()))
+
 and settle_tool_effect t ~id ~turn ~closer outcome =
   let evidence = Option.map (fun close -> close ()) !closer in
   match append_evidence t ~turn ~claim:id evidence with
   | Error e -> Error e
   | Ok () -> (
+      (* An outcome that settles the claim reaches a model boundary on every
+         ordinary path — the model must be shown the result — so the workspace
+         is drained first and rides that same request. The turn can still end at
+         this boundary instead (its step cap, a refused review, an interrupt
+         recorded while the tool ran), which is why what a turn records without
+         stating is held rather than lost. A driver-side interrupt or a store
+         failure ends the turn outright and drains nothing. *)
+      let settling f =
+        match drain_workspace_notices t with
+        | Error e -> Error e
+        | Ok () -> feed_commit t f
+      in
       match outcome with
       | Ok (Tool_work call_outcome) ->
-          feed_commit t (fun s ->
+          settling (fun s ->
               Mentat_agent_step.settle_tool (env t) id call_outcome s)
       | Ok (Model_work _) ->
           Error (internal_error (Failure "tool effect yielded a model outcome"))
@@ -970,7 +1046,7 @@ and settle_tool_effect t ~id ~turn ~closer outcome =
       | Error (Store_failed e) -> Error (Error.Store e)
       | Error _exn ->
           (* The exception does not prove the callback produced no effects. *)
-          feed_commit t (fun s ->
+          settling (fun s ->
               Mentat_agent_step.settle_tool_ambiguous (env t) id s))
 
 and append_evidence t ~turn ~claim evidence =
@@ -1807,6 +1883,7 @@ let create ~sw ~io ~hooks ~resolve ~execution_for_mode ~now ~depth ~session
       interrupt_reason = None;
       turn_checkpoint = None;
       possibly_mutating = false;
+      unstated_notices = [];
       compaction_pending = None;
       quiesced = Eio.Promise.create ();
     }

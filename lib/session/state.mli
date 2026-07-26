@@ -400,9 +400,12 @@ val active_turn_id : t -> Turn.Id.t option
 val active_turn_notices : t -> Notice.t list
 (** [active_turn_notices t] is the active turn's workspace observations
     ({!Event.Workspace_notice}) in record order, or [[]] when no turn is active
-    or the active turn saw none. Each turn start clears it, so this reconstructs
-    exactly the notices the {e current} turn's request must carry — the
-    replay-faithful, windowed replacement for a prelude notice datum. *)
+    or the active turn saw none. Each turn start clears it, so this is every
+    observation the {e current} turn has made and no other turn's — the
+    replay-faithful, windowed replacement for a prelude notice datum. A turn
+    accumulates these as the workspace speaks during it, so one source may
+    appear more than once; what a request states from them belongs to the
+    request's builder, not here. *)
 
 val turn_outcome : Turn.Id.t -> t -> Turn.Outcome.t option
 (** [turn_outcome id t] is the terminal outcome of turn [id], if finished. *)

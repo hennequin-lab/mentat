@@ -973,12 +973,22 @@ let last_provider_failure_is_overflow session turn_id =
     false
     (active_turn_events session turn_id)
 
-(* The active turn's workspace observations, rendered as one trailing system
-   message. Each notice is a durable {!Event.Workspace_notice} the turn saw; the
-   request injects this turn's own and no other's, the windowed, replay-faithful
-   successor to a prelude notice datum. The body is the notice's whole multi-line
-   text — the model reads the full observation, exactly what the transcript
-   renders for the human. *)
+(* The active turn's workspace observations, rendered as one system message
+   leading the request. Each notice is a durable {!Event.Workspace_notice} the
+   turn saw; the request injects this turn's own and no other's, the windowed,
+   replay-faithful record of what the turn was told. The body is the notice's
+   whole multi-line text — the model reads the full observation, exactly what
+   the transcript renders for the human.
+
+   Every one of the turn's observations is stated, in the order they arrived,
+   and none is dropped in favour of a later one from the same producer. A
+   producer is free to report a state ({e the build is failing}) or a delta
+   ({e these six files changed since the last scan}), and the port does not say
+   which: collapsing a source to its latest reading would be right for the first
+   and would silently discard the earlier file lists of the second. Producers
+   that would otherwise repeat themselves suppress their own unchanged readings
+   at the drain, so the sequence a turn accumulates is already the sequence
+   worth reading. *)
 let render_notices notices =
   let render notice =
     let severity =

@@ -7,9 +7,11 @@
 
     A notice is a workspace runtime observation: filesystem watcher batches,
     dune diagnostic and build-health changes, code-review comments. Producers
-    construct notices; the workspace runtime's port adapter owns the bounded
-    queue that coalesces them on {!val:key}; the engine drains them
-    transactionally at turn preparation.
+    construct notices and own their own deduplication — the port has no queue —
+    while {!val:key} is the coalescing identity the surfaces display on; the
+    engine drains them transactionally at turn preparation and again as each
+    tool claim settles, so what the world says while a turn runs reaches that
+    turn rather than the next one.
 
     A drained notice is a {e durable, turn-scoped} datum, not an ephemeral
     prelude item. At the drain boundary the engine converts its model-visible
@@ -17,14 +19,17 @@
     the journal controls, without this type's producer-side coalescing [key] —
     and records it against the turn that saw it (the session's
     [Workspace_notice] event), injecting the active turn's own into that turn's
-    model request. This is the windowed, replay-faithful successor to the old
-    trailing-prelude injection: replay reconstructs exactly the observation a
-    turn saw, and a later turn carries its own and no other's. A notice is an
-    external observation, not a projection of the transcript, so storing it does
-    not violate the derived-facts-are-never-stored law, which binds only
-    genuinely-derived facts. Engine-authored prelude items — goal reminders,
-    subagent parent messages — are {e not} notices: the engine constructs none
-    of these and carries them as the step's own prelude input.
+    continuation requests: replay reconstructs exactly the observation a turn
+    saw, and a later turn carries its own and no other's. Within a turn a
+    producer may speak more than once, and every one of a turn's observations is
+    stated in the order it arrived — a producer is free to report a state or a
+    delta, and nothing here can tell which, so none is dropped in favour of a
+    later one. A notice is an external observation, not a projection of the
+    transcript, so storing it does not violate the
+    derived-facts-are-never-stored law, which binds only genuinely-derived
+    facts. Engine-authored prelude items — goal reminders, subagent parent
+    messages — are {e not} notices: the engine constructs none of these and
+    carries them as the step's own prelude input.
 
     Notices are pure data and live in this pure library because both notice
     consumers are pure: the engine names the type through the [WORKSPACE] port

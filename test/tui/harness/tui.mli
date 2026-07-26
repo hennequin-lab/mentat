@@ -103,14 +103,14 @@ module Turn_script : sig
       whole-board replacements in order with {!next_task_board}. Each [notices]
       value enters as a durable {!Mentat_session.Event.Workspace_notice}
       recorded against the turn immediately after its [Turn_started], exactly as
-      the engine records the observations drained at turn preparation. Each
-      [tools] entry is emitted through the real [Tool_started]/[Tool_returned]
-      lifecycle before the terminal assistant response; {!ambiguous_tool} emits
-      [Tool_ambiguous] instead. [mutations] is an independent mutation-owner
-      script whose call ids must name unique entries in [tools]. It is lowered
-      through the real edit and mutation owners, then joined by the real
-      protocol projection. [text] and [reasoning_summary] become authoritative
-      only at {!finish_turn}. *)
+      the engine records the observations a turn starts with; a script places
+      none later in the turn. Each [tools] entry is emitted through the real
+      [Tool_started]/[Tool_returned] lifecycle before the terminal assistant
+      response; {!ambiguous_tool} emits [Tool_ambiguous] instead. [mutations] is
+      an independent mutation-owner script whose call ids must name unique
+      entries in [tools]. It is lowered through the real edit and mutation
+      owners, then joined by the real protocol projection. [text] and
+      [reasoning_summary] become authoritative only at {!finish_turn}. *)
 
   val fail :
     ?reasoning_deltas:string list ->
