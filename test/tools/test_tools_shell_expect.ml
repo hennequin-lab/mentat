@@ -818,8 +818,12 @@ let%expect_test "sandbox denial is explained and escalation uses run_escalated"
   with_world ~mode:Mentat_config.Mode.Workspace_write "sandbox" @@ fun world ->
   require_enforced world;
   let outside_file = Filename.concat world.out_dir "blocked.txt" in
+  (* The refused redirection is real, but its status is pinned by the script
+     rather than by the host shell: a failed redirection exits 1 under bash and
+     2 under dash, so an unguarded write would make this golden depend on which
+     /bin/sh the platform ships. *)
   let ordinary_command =
-    Printf.sprintf "printf blocked > %s" (Filename.quote outside_file)
+    Printf.sprintf "printf blocked > %s || exit 7" (Filename.quote outside_file)
   in
   let ordinary = run world (input ordinary_command) in
   print_endline "-- ordinary confinement --";
@@ -860,7 +864,7 @@ let%expect_test "sandbox denial is explained and escalation uses run_escalated"
     {|
     -- ordinary confinement --
     status: failed failed
-    message: command exited with status 1
+    message: command exited with status 7
 
     This command ran inside a sandbox that confines writes to the workspace while leaving reads unrestricted, and its output looks like a refused write. This is a policy restriction, not a transient error: retry the exact command with escalate=true only if the write is genuinely needed, or ask the user to add the path to sandbox.writable_roots for a standing grant.
     metadata: false
