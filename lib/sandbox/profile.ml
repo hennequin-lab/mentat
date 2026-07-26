@@ -37,37 +37,6 @@ let wrap { prefix; chdir; _ } ~cwd argv =
   in
   prefix @ argv
 
-(* The per-run scratch path is minted fresh every process, so the real profile
-   digest differs on every resume. [identity_digest] regenerates the profile
-   with the policy's scratch replaced by this fixed sentinel throughout, making
-   the digest invariant under scratch regeneration while still changing on any
-   durable confinement change. The sentinel is a synthetic absolute path that
-   does not interact with real workspace roots.
-
-   Invariance assumes the per-run scratch is disjoint from the policy's root
-   lattice, which the real resolver guarantees (scratch is a fresh [temp_dir]).
-   A scratch that were a lexical ancestor of a confined root would collapse that
-   root under normalization differently from the sentinel, yielding a differing
-   identity — fail-closed (resume re-approves), never a collision. *)
-let sentinel_scratch =
-  Lpath.Abs.of_string_exn "/mentat-sandbox/identity-scratch"
-
-let scratch_normalized policy =
-  let real_scratch = Policy.scratch policy in
-  let reads =
-    match Policy.reads policy with
-    | Policy.All -> Policy.All
-    | Policy.Only roots ->
-        Policy.Only
-          (List.filter
-             (fun root -> not (Lpath.Abs.equal root real_scratch))
-             roots)
-  in
-  Policy.make ~scratch:sentinel_scratch ~reads
-    ~writable_roots:(Policy.writable_roots policy)
-    ~protected_paths:(Policy.protected_paths policy)
-    ~denied_paths:(Policy.denied_paths policy)
-    ~network:(Policy.network policy)
-
-let identity_digest backend policy =
-  digest (prepare backend (scratch_normalized policy))
+(* Nothing in the policy is per-run any more, so the durable identity is the
+   profile digest itself: no sentinel, no regeneration, no normalization. *)
+let identity_digest backend policy = digest (prepare backend policy)

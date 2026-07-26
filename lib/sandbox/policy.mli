@@ -49,20 +49,14 @@ type t
 (** The type for confinement policies. *)
 
 val make :
-  scratch:Lpath.Abs.t ->
   reads:reads ->
   writable_roots:Lpath.Abs.t list ->
   protected_paths:Lpath.Abs.t list ->
   denied_paths:Lpath.Abs.t list ->
   network:Network.t ->
   t
-(** [make ~scratch ~reads ~writable_roots ~protected_paths ~denied_paths
-     ~network] is a confinement policy with normalized lists.
-
-    [scratch] is the per-run ephemeral private writable root the resolver mints;
-    the generators grant it write access and it is included in [Only] read
-    roots. It is {e not} folded into {!writable_roots}, and the durable
-    {!Mentat_sandbox.Identity} normalizes it out.
+(** [make ~reads ~writable_roots ~protected_paths ~denied_paths ~network] is a
+    confinement policy with normalized lists.
 
     {b Normalization law} (upheld as an invariant, so no observer or generator
     re-checks): writable roots and the scratch are included in the [Only] read
@@ -72,15 +66,11 @@ val make :
     module owns no version-control or authority-metadata name and confines
     whatever absolute paths it is handed. *)
 
-val scratch : t -> Lpath.Abs.t
-(** [scratch t] is the ephemeral private writable root. *)
-
 val reads : t -> reads
 (** [reads t] is the read scope. *)
 
 val writable_roots : t -> Lpath.Abs.t list
-(** [writable_roots t] is the writable roots in canonical order. The scratch is
-    not among them; it is a separate field the generators also grant. *)
+(** [writable_roots t] is the writable roots in canonical order. *)
 
 val protected_paths : t -> Lpath.Abs.t list
 (** [protected_paths t] is the protected absolute paths in canonical order. *)
@@ -96,7 +86,7 @@ val network : t -> Network.t
 
 val equal : t -> t -> bool
 (** [equal a b] is [true] iff [a] and [b] describe the same confinement,
-    including the scratch root and the denied paths. *)
+    including the denied paths. *)
 
 val pp : Format.formatter -> t -> unit
 (** [pp ppf t] formats [t] for diagnostics. The output is not stable storage

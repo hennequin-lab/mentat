@@ -170,11 +170,6 @@ let with_capability ?mode ?read ?readable_roots ?(writable = []) ?(aux = [])
   in
   fn { io; stdenv; base; ws_dir; out_dir; tmp_base; primary; aux }
 
-let scratch_of io =
-  match Wio.policy io with
-  | Some policy -> Abs.to_string (Sandbox.Policy.scratch policy)
-  | None -> fail "expected a confined seal carrying a policy"
-
 let enforced io =
   match Wio.evidence io with Sandbox.Evidence.Enforced _ -> true | _ -> false
 
@@ -260,30 +255,6 @@ let assert_session_gone session =
   | () -> failf "the session leader %d survived its termination" pid
   | exception Unix.Unix_error (Unix.ESRCH, _, _) -> ()
 
-(* Resolution. *)
-
-let resolve_binds_scratch_and_policy () =
-  with_capability "happy" @@ fun w ->
-  let scratch = scratch_of w.io in
-  is_true ~msg:"the scratch lives under the resolution TMPDIR"
-    (String.starts_with
-       ~prefix:(Filename.concat w.tmp_base "mentat-sandbox-")
-       scratch);
-  let stat = Unix.stat scratch in
-  is_true ~msg:"the scratch is a directory" (stat.Unix.st_kind = Unix.S_DIR);
-  equal int ~msg:"the scratch is private (0700)" 0o700
-    (stat.Unix.st_perm land 0o777);
-  (match Wio.policy w.io with
-  | None -> fail "a workspace-write mode seals a confined policy"
-  | Some policy ->
-      is_true ~msg:"the canonical primary root is writable in the sealed policy"
-        (List.exists
-           (Abs.equal (abs w.ws_dir))
-           (Sandbox.Policy.writable_roots policy)));
-  equal
-    (list (pair string abs_value))
-    ~msg:"an unscoped route describes no roots" [] (Wio.describe_roots w.io)
-
 let escalation_projects_the_sealed_stance () =
   with_capability "escalation-available" (fun w ->
       match Wio.escalation w.io with
@@ -325,54 +296,6 @@ let resolve_path_uses_the_capability_workspace () =
     ~msg:"an absolute path under no admitted root is refused"
     (Error (Workspace.Resolve_error.Outside_workspace (abs w.out_dir)))
     (Wio.resolve_path w.io w.out_dir)
-
-(* [resolve_path] accepts raw text and delegates to [resolve_string], whose
-   failure taxonomy is only Invalid_input or Outside_workspace. Unknown_root is
-   intentionally unrepresentable here: it belongs to rebinding an already-typed
-   [Workspace.Path.t], covered by the foreign-root File and Command tests. *)
-
-let scratch_is_removed_on_switch_release () =
-  in_dirs "scratch" @@ fun ~stdenv ~base:_ ~ws_dir ~out_dir:_ ~tmp_base ->
-  let primary = Workspace.Root.of_dir (abs ws_dir) in
-  let logical = Workspace.make ~primary ~read_only:[] () |> Result.get_ok in
-  let scratch =
-    Eio.Switch.run @@ fun sw ->
-    let io = capability_exn ~stdenv ~sw ~tmp_base logical in
-    let scratch = scratch_of io in
-    is_true ~msg:"the scratch exists while the capability lives"
-      (Sys.file_exists scratch);
-    scratch
-  in
-  is_false ~msg:"the scratch is removed when the resolve switch is released"
-    (Sys.file_exists scratch);
-  equal (list string) ~msg:"no scratch litter remains under the temp base" []
-    (Array.to_list (Sys.readdir tmp_base))
-
-let resume_identity_is_scratch_invariant () =
-  in_dirs "resume" @@ fun ~stdenv ~base ~ws_dir ~out_dir:_ ~tmp_base ->
-  let primary = Workspace.Root.of_dir (abs ws_dir) in
-  let logical = Workspace.make ~primary ~read_only:[] () |> Result.get_ok in
-  let resolve_once ?writable_roots () =
-    Eio.Switch.run @@ fun sw ->
-    let io = capability_exn ~stdenv ~sw ~tmp_base ?writable_roots logical in
-    (* Without an enforcing backend every seal carries the same profile-free
-       [Refused] identity, so the widening half below could not distinguish a
-       stable identity from an unchanged one. *)
-    require_enforced io;
-    (Wio.identity io, scratch_of io)
-  in
-  let id_a, scratch_a = resolve_once () in
-  let id_b, scratch_b = resolve_once () in
-  is_false ~msg:"the two resolutions minted distinct scratches"
-    (String.equal scratch_a scratch_b);
-  is_true
-    ~msg:"resume compares equal: same inputs, stable identity across scratch"
-    (Sandbox.Identity.equal id_a id_b);
-  let extra = Filename.concat base "extra" in
-  Unix.mkdir extra 0o755;
-  let id_widened, _ = resolve_once ~writable_roots:[ extra ] () in
-  is_false ~msg:"widening a writable root flips the resumed identity"
-    (Sandbox.Identity.equal id_a id_widened)
 
 let describe_roots_labels_scoped_reads () =
   in_dirs "describe" @@ fun ~stdenv ~base ~ws_dir ~out_dir:_ ~tmp_base ->
@@ -701,27 +624,6 @@ let resolve_refuses_invalid_configured_roots () =
         (reason = Resolve_error.Not_a_directory_or_file)
   | Error e ->
       failf "fifo read root: wrong resolve error: %a" Resolve_error.pp e
-
-(* The scratch is a writable sandbox root: minting it inside any admitted
-   root would grant writes the policy denies (and break the disjointness the
-   sandbox's identity normalization assumes), so such a base is refused —
-   before anything touches the disk. *)
-let scratch_inside_an_admitted_root_is_refused () =
-  in_dirs "scratch-overlap"
-  @@ fun ~stdenv ~base:_ ~ws_dir ~out_dir:_ ~tmp_base:_ ->
-  let primary = Workspace.Root.of_dir (abs ws_dir) in
-  let logical = Workspace.make ~primary ~read_only:[] () |> Result.get_ok in
-  Eio.Switch.run @@ fun sw ->
-  (match resolve_capability ~stdenv ~sw ~tmp_base:ws_dir logical with
-  | Ok _ -> fail "a scratch base inside the workspace must refuse resolution"
-  | Error (Resolve_error.Broad_root { field; spelling }) ->
-      equal string ~msg:"the refusal names the TMPDIR surface" "TMPDIR" field;
-      equal string ~msg:"the refusal names the canonical base" ws_dir spelling
-  | Error e -> failf "wrong resolve error: %a" Resolve_error.pp e);
-  equal (list string) ~msg:"no scratch was minted inside the workspace" []
-    (Array.to_list (Sys.readdir ws_dir))
-
-(* File: containment beneath opened roots. *)
 
 let load_and_stat_inside_the_root () =
   with_capability "file-read" @@ fun w ->
@@ -1851,10 +1753,8 @@ let child_environment_is_private_on_every_route () =
       equal string ~msg:"the child HOME is the launcher's own"
         (Option.value (Sys.getenv_opt "HOME") ~default:"")
         home;
-      is_true ~msg:"the child TMPDIR is the private per-run scratch"
-        (String.starts_with
-           ~prefix:(Filename.concat w.tmp_base "mentat-sandbox-")
-           tmpdir);
+      equal string ~msg:"the child TMPDIR is the launcher's own"
+        (Unix.realpath w.tmp_base) (Unix.realpath tmpdir);
       equal string ~msg:"a parent-only ambient variable is stripped" "ABSENT"
         parent_only
   | _ -> fail "unexpected env probe output"
@@ -2168,7 +2068,6 @@ let confined_commands_are_enforced_by_the_backend () =
 let escalation_escapes_the_profile_never_the_environment () =
   with_capability "escalate" @@ fun w ->
   require_enforced w.io;
-  let scratch = scratch_of w.io in
   let outside = Filename.concat w.out_dir "escalated.txt" in
   (match
      run_escalated_res w.io (sh (Printf.sprintf {|printf y > "%s"|} outside))
@@ -2182,9 +2081,11 @@ let escalation_escapes_the_profile_never_the_environment () =
       equal string ~msg:"the escalated write landed" "y" (read_file outside)
   | Error e -> failf "escalated run failed: %a" Command.Error.pp e);
   let confined_env = run_ok w.io [ "/usr/bin/env" ] in
-  is_true ~msg:"the confined child TMPDIR is exactly the scratch"
+  (* Nothing is rewritten any more: the confined child sees the launcher's own
+     temp directory, and the profile is what confines it. *)
+  is_true ~msg:"the confined child TMPDIR is the launcher's own"
     (String.includes
-       ~affix:("TMPDIR=" ^ scratch ^ "\n")
+       ~affix:("TMPDIR=" ^ w.tmp_base ^ "\n")
        (stdout_str confined_env));
   match run_escalated_res w.io [ "/usr/bin/env" ] with
   | Ok escalated ->
@@ -2271,16 +2172,10 @@ let () =
   run "mentat.workspace_io"
     [
       (* Resolution *)
-      test "resolve binds the scratch and the sealed policy"
-        resolve_binds_scratch_and_policy;
       test "escalation projects the sealed stance per mode"
         escalation_projects_the_sealed_stance;
       test "resolve_path is bound to the capability workspace"
         resolve_path_uses_the_capability_workspace;
-      test "the scratch is removed on switch release"
-        scratch_is_removed_on_switch_release;
-      test "resume identity is stable across scratch variation"
-        resume_identity_is_scratch_invariant;
       test "describe_roots labels the scoped read roots"
         describe_roots_labels_scoped_reads;
       test "describe_roots carries the user toolchain directories"
@@ -2293,8 +2188,6 @@ let () =
         resolve_refuses_broad_writable_roots;
       test "resolve refuses invalid configured roots"
         resolve_refuses_invalid_configured_roots;
-      test "a scratch base inside an admitted root is refused"
-        scratch_inside_an_admitted_root_is_refused;
       (* File *)
       test "load and stat observe inside the opened root"
         load_and_stat_inside_the_root;

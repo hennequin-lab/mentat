@@ -133,7 +133,7 @@ let obligations t =
         | Policy.All -> []
       in
       let protected = Policy.protected_paths policy in
-      let directories = Policy.scratch policy :: Policy.writable_roots policy in
+      let directories = Policy.writable_roots policy in
       let is_directory path = List.exists (Lpath.Abs.equal path) directories in
       List.sort_uniq Lpath.Abs.compare (readable @ protected @ directories)
       |> List.map (fun path ->

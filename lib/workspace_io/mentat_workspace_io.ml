@@ -153,154 +153,6 @@ let ambient_lookup () =
    every admitted root is checked before minting, against the derived policy
    facts. *)
 
-type scratch = {
-  scratch_path : Lpath.Abs.t; (* canonical: fresh child of a real base *)
-  scratch_cleanup : unit -> unit; (* identity-verified removal; idempotent *)
-}
-
-let scratch_io ~spelling cause =
-  Resolve_error.Io { operation = "create scratch directory"; spelling; cause }
-
-let scratch_unix_io ~spelling (code, fn, arg) =
-  scratch_io ~spelling (Eio.Exn.X (Eio_unix.Unix_error (code, fn, arg)))
-
-let create_scratch ~sw ~fs ~stdenv ~lookup ~avoid =
-  let* base =
-    match lookup "TMPDIR" with
-    | None -> Ok (Lpath.Abs.of_string_exn "/tmp")
-    | Some spelling -> (
-        match Lpath.Abs.of_string spelling with
-        | Ok base -> Ok base
-        | Error _ ->
-            Error
-              (Resolve_error.Invalid_root
-                 { spelling; reason = Resolve_error.Not_accessible }))
-  in
-  let base = Derive.canonical base in
-  let spelling = Lpath.Abs.to_string base in
-  (* Child-not-base disjointness: the minted child is [base/<fresh>], so it
-     lies within an admitted root iff [base] does (the fresh exclusive name
-     can neither equal an existing root nor contain one). A base that is a
-     common ancestor of roots — [/tmp] above a temp workspace — stays
-     admissible; only a base inside the policy's lattice is refused. *)
-  if List.exists (fun root -> Lpath.Abs.is_within ~root base) avoid then
-    Error (Resolve_error.Broad_root { field = "TMPDIR"; spelling })
-  else
-    let* base_fd =
-      match Nofollow.open_dir spelling with
-      | fd -> Ok fd
-      | exception Unix.Unix_error (code, _, _) ->
-          let reason =
-            match code with
-            | Unix.ENOENT -> Resolve_error.Does_not_exist
-            | Unix.ENOTDIR -> Resolve_error.Not_a_directory
-            | _ -> Resolve_error.Not_accessible
-          in
-          Error (Resolve_error.Invalid_root { spelling; reason })
-    in
-    Eio.Switch.on_release sw (fun () ->
-        match Unix.close base_fd with
-        | () -> ()
-        | exception Unix.Unix_error _ -> ());
-    let* base_eio =
-      match Eio.Path.open_subtree ~sw (Eio.Path.( / ) fs spelling) with
-      | opened -> Ok opened
-      | exception Eio.Exn.Io (cause, _) -> Error (scratch_io ~spelling cause)
-    in
-    let random = Eio.Stdenv.secure_random stdenv in
-    let fresh_name () =
-      let bytes = Cstruct.create 12 in
-      Eio.Flow.read_exact random bytes;
-      let hex = Buffer.create 24 in
-      for i = 0 to Cstruct.length bytes - 1 do
-        Buffer.add_string hex
-          (Printf.sprintf "%02x" (Cstruct.get_uint8 bytes i))
-      done;
-      "mentat-sandbox-" ^ Buffer.contents hex
-    in
-    let rec mint attempt =
-      let name = fresh_name () in
-      match Nofollow.mkdirat base_fd name 0o700 with
-      | () -> Ok name
-      | exception Unix.Unix_error (Unix.EEXIST, _, _) when attempt < 32 ->
-          mint (attempt + 1)
-      | exception Unix.Unix_error (code, fn, arg) ->
-          Error
-            (scratch_unix_io
-               ~spelling:(Filename.concat spelling name)
-               (code, fn, arg))
-    in
-    let* name = mint 0 in
-    let child =
-      match Lpath.Abs.add_component base name with
-      | Ok child -> child
-      | Error _ -> assert false (* [name] is a valid path component *)
-    in
-    let remove_empty () =
-      match Nofollow.unlinkat base_fd name ~dir:true with
-      | () -> ()
-      | exception Unix.Unix_error _ -> ()
-    in
-    (* mkdirat's perm is masked by the umask; the scratch must be exactly
-       private, so the mode is restored through the open handle and a failure
-       is structured, never swallowed. The handle's identity is what cleanup
-       later verifies. *)
-    let* identity =
-      match Nofollow.openat_dir base_fd name with
-      | exception Unix.Unix_error (code, fn, arg) ->
-          remove_empty ();
-          Error
-            (scratch_unix_io
-               ~spelling:(Lpath.Abs.to_string child)
-               (code, fn, arg))
-      | child_fd -> (
-          match
-            Unix.fchmod child_fd 0o700;
-            Unix.fstat child_fd
-          with
-          | stat ->
-              Unix.close child_fd;
-              Ok (stat.Unix.st_dev, stat.Unix.st_ino)
-          | exception Unix.Unix_error (code, fn, arg) ->
-              (try Unix.close child_fd with Unix.Unix_error _ -> ());
-              remove_empty ();
-              Error
-                (scratch_unix_io
-                   ~spelling:(Lpath.Abs.to_string child)
-                   (code, fn, arg)))
-    in
-    let cleanup () =
-      (* Verify the parent-relative entry still names the minted directory
-         before recursing. [openat_dir] is no-follow, so a swapped-in symlink
-         fails [ELOOP] and is skipped, and a vanished entry is already clean;
-         an identity mismatch means a replacement, which is leaked rather
-         than deleted. Removal then runs beneath the retained opened base,
-         never through a recomputed global spelling. *)
-      let dev, ino = identity in
-      let verified =
-        match Nofollow.openat_dir base_fd name with
-        | exception Unix.Unix_error _ -> false
-        | fd -> (
-            match Unix.fstat fd with
-            | stat ->
-                Unix.close fd;
-                stat.Unix.st_dev = dev && stat.Unix.st_ino = ino
-            | exception Unix.Unix_error _ ->
-                (try Unix.close fd with Unix.Unix_error _ -> ());
-                false)
-      in
-      if verified then
-        match
-          Eio.Path.rmtree ~missing_ok:true (Eio.Path.( / ) base_eio name)
-        with
-        | () -> ()
-        | exception Eio.Exn.Io _ -> ()
-    in
-    Eio.Switch.on_release sw cleanup;
-    Ok { scratch_path = child; scratch_cleanup = cleanup }
-
-(* Resolution. *)
-
 let open_roots ~sw ~fs ~logical workspace_roots =
   let rec loop acc = function
     | [] -> Ok (List.rev acc)
@@ -404,17 +256,8 @@ let resolve ~sw ~stdenv ~logical ~mode ~read ~readable_roots ~writable_roots
           ~configured_reads:(if scoped then readable_roots else [])
           ~configured_writes:writable_roots)
   in
-  let avoid =
-    List.map snd derived.Derive.workspace_roots
-    @ derived.Derive.writable @ derived.Derive.readable
-    @ derived.Derive.protected
-  in
-  let* scratch = create_scratch ~sw ~fs ~stdenv ~lookup ~avoid in
   let capability () =
-    let env =
-      Child_env.make ~path:derived.Derive.path ~scratch:scratch.scratch_path
-        ~lookup
-    in
+    let env = Child_env.make ~path:derived.Derive.path ~lookup in
     let sandbox =
       match mode with
       | Mentat_config.Mode.Danger_full_access -> Mentat_sandbox.direct
@@ -450,8 +293,7 @@ let resolve ~sw ~stdenv ~logical ~mode ~read ~readable_roots ~writable_roots
                the writable and protected lists, and a deny set that rode in
                with them would vanish on exactly the route that grants the
                least. *)
-            Mentat_sandbox.Policy.make ~scratch:scratch.scratch_path ~reads
-              ~writable_roots ~protected_paths
+            Mentat_sandbox.Policy.make ~reads ~writable_roots ~protected_paths
               ~denied_paths:derived.Derive.denied ~network
           in
           let backend = Probe.backend ~stdenv ~lookup in
@@ -486,13 +328,7 @@ let resolve ~sw ~stdenv ~logical ~mode ~read ~readable_roots ~writable_roots
         claim_scope = None;
       }
   in
-  (* A failed constructor leaves no disk state waiting on the caller's
-     switch: the scratch minted above is removed now, identity-verified. *)
-  match capability () with
-  | Ok _ as ok -> ok
-  | Error _ as error ->
-      scratch.scratch_cleanup ();
-      error
+  capability ()
 
 (* Accessors.
 

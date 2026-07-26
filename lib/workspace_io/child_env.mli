@@ -27,16 +27,15 @@ type t = {
           resolve an implicit program. *)
 }
 
-val make :
-  path:string -> scratch:Lpath.Abs.t -> lookup:(string -> string option) -> t
-(** [make ~path ~scratch ~lookup] builds the environment.
+val make : path:string -> lookup:(string -> string option) -> t
+(** [make ~path ~lookup] builds the environment.
 
     [path] is the resolver-derived [PATH] value; its segments are normalized
-    (absolute, deduplicated, malformed segments dropped). [scratch] becomes
-    [TEMP], [TMP], and [TMPDIR]. [HOME] is {e inherited}, not rewritten: the
-    resolver derives the toolchain's [$HOME]-relative roots from the same value
-    the child reads, so no directory can be named to a tool without the grant
-    that makes it usable. [lookup] reads the ambient environment for the
-    allow-listed names: [HOME], locale variables verbatim, and the OCaml
+    (absolute, deduplicated, malformed segments dropped). No value is rewritten:
+    [HOME] and the temp-dir family are inherited like every other allow-listed
+    name, so the resolver derives its roots from the same values the child reads
+    and no directory can be named to a tool without the grant that makes it
+    usable. [lookup] reads the ambient environment for the allow-listed names:
+    [HOME], the temp-dir family, locale variables verbatim, and the OCaml
     toolchain variables with their path values normalized. Fixed pager, color,
     and terminal bindings complete the set. *)

@@ -39,11 +39,10 @@ let evidence_value = testable ~pp:Evidence.pp ~equal:Evidence.equal ()
 let error_value = testable ~pp:Error.pp ~equal:Error.equal ()
 let json_string s = Json.string s
 
-let confined ?(scratch = abs "/tmp") ?(reads = Policy.All)
-    ?(writable_roots = []) ?(protected_paths = []) ?(denied_paths = [])
+let confined ?(reads = Policy.All) ?(writable_roots = [])
+    ?(protected_paths = []) ?(denied_paths = [])
     ?(network = Policy.Network.Restricted) () =
-  Policy.make ~scratch ~reads ~writable_roots ~protected_paths ~denied_paths
-    ~network
+  Policy.make ~reads ~writable_roots ~protected_paths ~denied_paths ~network
 
 let sealed ?(backend = Backend.Seatbelt) ?(mutates = true) policy =
   Sandbox.confined ~backend:(Ok backend) ~mutates policy
@@ -63,14 +62,20 @@ let lowered ?cwd sandbox ~program args =
    argv. For Seatbelt the SBPL document is the argv token after
    ["-p"] and each following ["-DKEY=VALUE"] token carries one (key, path)
    parameter; for Bubblewrap the enforcing prefix is the argv verbatim.
-   [seatbelt_sbpl] lowers a probe command with the policy's scratch as cwd
-   (always inside the read scope) and projects the (sbpl, params) pair back
-   out of the argv. *)
+   [seatbelt_sbpl] lowers a probe command with a cwd inside the read scope and
+   projects the (sbpl, params) pair back out of the argv. *)
+(* Any admitted read root serves; lowering re-checks lexical containment. *)
+let cwd_in_scope policy =
+  match Policy.reads policy with
+  | Policy.All -> abs "/tmp"
+  | Policy.Only (root :: _) -> root
+  | Policy.Only [] -> abs "/tmp"
+
 let seatbelt_sbpl policy =
   let tokens =
     lowered
       (sealed ~backend:Backend.Seatbelt policy)
-      ~cwd:(Policy.scratch policy) ~program:"cmd" []
+      ~cwd:(cwd_in_scope policy) ~program:"cmd" []
   in
   match tokens with
   | "/usr/bin/sandbox-exec" :: "-p" :: sbpl :: rest ->
@@ -235,29 +240,25 @@ let policy_protected_paths_are_scoped () =
     [ abs "/private/tmp/ws/.mentat" ]
     (Policy.protected_paths policy)
 
-let policy_folds_writable_and_scratch_into_reads () =
+let policy_folds_writable_into_reads () =
   let policy =
-    confined ~scratch:(abs "/scratch")
+    confined
       ~reads:(Policy.Only [ abs "/data" ])
       ~writable_roots:[ abs "/work" ]
       ()
   in
   equal (list abs_value)
-    ~msg:"Only reads include the read roots, writable roots, and the scratch"
-    [ abs "/data"; abs "/scratch"; abs "/work" ]
+    ~msg:"Only reads include the read roots and the writable roots"
+    [ abs "/data"; abs "/work" ]
     (match Policy.reads policy with
     | Policy.Only roots -> roots
-    | Policy.All -> []);
-  equal abs_value ~msg:"the scratch is an explicit policy field"
-    (abs "/scratch") (Policy.scratch policy);
-  is_false ~msg:"the scratch stays out of the writable-roots observer"
-    (List.exists (Abs.equal (abs "/scratch")) (Policy.writable_roots policy))
+    | Policy.All -> fail "expected Only")
 
-let policy_scratch_participates_in_equality () =
-  is_false ~msg:"policies differing only by scratch are unequal"
+let policy_denials_participate_in_equality () =
+  is_false ~msg:"policies differing only by a denied path are unequal"
     (Policy.equal
-       (confined ~scratch:(abs "/a") ())
-       (confined ~scratch:(abs "/b") ()))
+       (confined ~denied_paths:[ abs "/a" ] ())
+       (confined ~denied_paths:[ abs "/b" ] ()))
 
 (* Generated antichain/coverage law for [Policy.make]'s root normalization
    (RFC L9). The result is strictly sorted, contains no root strictly within
@@ -358,19 +359,14 @@ let network_round_trips () =
 let all_read_section = {|(allow file-read*)
 (allow file-map-executable)|}
 
-let read_only_write_section =
-  {|(allow file-write*
-(subpath (param "WRITABLE_ROOT_0"))
-)|}
-
 let scoped_read_section =
   {|(allow file-read* file-test-existence file-map-executable
-(literal (param "READABLE_ROOT_0")) (subpath (param "READABLE_ROOT_0")) (literal (param "READABLE_ROOT_1")) (subpath (param "READABLE_ROOT_1")) (literal (param "READABLE_ROOT_2")) (subpath (param "READABLE_ROOT_2"))
+(literal (param "READABLE_ROOT_0")) (subpath (param "READABLE_ROOT_0")) (literal (param "READABLE_ROOT_1")) (subpath (param "READABLE_ROOT_1"))
 )|}
 
 let scoped_write_section =
   {|(allow file-write*
-(subpath (param "WRITABLE_ROOT_0")) (subpath (param "WRITABLE_ROOT_1"))
+(subpath (param "WRITABLE_ROOT_0"))
 )|}
 
 (* The Unix-domain socket allow scopes [network-bind]/[network-outbound] to the
@@ -378,14 +374,9 @@ let scoped_write_section =
    socket) work while an INET bind or connect — which carries no pathname — stays
    subject to the network posture. It reuses the [WRITABLE_ROOT_%d] parameters,
    introducing no new [-D] parameter. *)
-let unix_socket_read_only_section =
-  {|(allow network-bind network-outbound
-(subpath (param "WRITABLE_ROOT_0"))
-)|}
-
 let unix_socket_scoped_section =
   {|(allow network-bind network-outbound
-(subpath (param "WRITABLE_ROOT_0")) (subpath (param "WRITABLE_ROOT_1"))
+(subpath (param "WRITABLE_ROOT_0"))
 )|}
 
 let seatbelt_read_only_golden () =
@@ -394,17 +385,15 @@ let seatbelt_read_only_golden () =
     (String.includes ~affix:"(deny default)" text);
   is_true ~msg:"host-wide reads section is exact"
     (String.includes ~affix:all_read_section text);
-  is_true ~msg:"read-only write section permits only the private scratch"
-    (String.includes ~affix:read_only_write_section text);
-  is_true
-    ~msg:
-      "local Unix-socket IPC is admitted under the scratch, restricted or not"
-    (String.includes ~affix:unix_socket_read_only_section text);
-  equal
-    (list (pair string string))
-    ~msg:"read-only binds only the scratch root"
-    [ ("WRITABLE_ROOT_0", "/tmp") ]
-    params;
+  (* A posture that grants no writable root emits no write section and no
+     socket section. The socket guard is the load-bearing half: an allow with
+     an empty predicate list is an unconditional allow, so emitting one here
+     would hand every command full outbound under a restricted network. *)
+  is_false ~msg:"no writable root, so no write section"
+    (String.includes ~affix:"WRITABLE_ROOT_0" text);
+  is_false ~msg:"no writable root, so no unfiltered socket allow"
+    (String.includes ~affix:"(allow network-bind network-outbound" text);
+  equal (list (pair string string)) ~msg:"no roots, no parameters" [] params;
   is_false
     ~msg:"restricted network opens no INET boundary (no blanket outbound rule)"
     (String.includes ~affix:"(allow network-outbound)" text)
@@ -423,17 +412,15 @@ let seatbelt_scoped_reads_golden () =
     (String.includes ~affix:scoped_read_section text);
   is_true ~msg:"scoped write section is exact"
     (String.includes ~affix:scoped_write_section text);
-  is_true ~msg:"the Unix-socket allow spans the scratch and the writable root"
+  is_true ~msg:"the Unix-socket allow spans the writable roots"
     (String.includes ~affix:unix_socket_scoped_section text);
   equal
     (list (pair string string))
     ~msg:"every normalized read and write root is a parameter"
     [
       ("READABLE_ROOT_0", "/opt/ocaml");
-      ("READABLE_ROOT_1", "/tmp");
-      ("READABLE_ROOT_2", "/work");
-      ("WRITABLE_ROOT_0", "/tmp");
-      ("WRITABLE_ROOT_1", "/work");
+      ("READABLE_ROOT_1", "/work");
+      ("WRITABLE_ROOT_0", "/work");
     ]
     params
 
@@ -450,19 +437,18 @@ let seatbelt_carveout_golden () =
     ~msg:"params bind each root and every carveout beneath it, in order"
     [
       ("WRITABLE_ROOT_0", "/tmp");
-      ("WRITABLE_ROOT_1", "/tmp");
-      ("WRITABLE_ROOT_2", "/usr");
-      ("WRITABLE_ROOT_2_EXCLUDED_0", "/usr/bin");
-      ("WRITABLE_ROOT_2_EXCLUDED_1", "/usr/lib");
-      ("WRITABLE_ROOT_2_EXCLUDED_2", "/usr/share");
+      ("WRITABLE_ROOT_1", "/usr");
+      ("WRITABLE_ROOT_1_EXCLUDED_0", "/usr/bin");
+      ("WRITABLE_ROOT_1_EXCLUDED_1", "/usr/lib");
+      ("WRITABLE_ROOT_1_EXCLUDED_2", "/usr/share");
     ]
     params;
   is_true ~msg:"a carved-out root uses a require-all with require-not clauses"
     (String.includes
        ~affix:
-         "(require-all (subpath (param \"WRITABLE_ROOT_2\")) (require-not \
-          (literal (param \"WRITABLE_ROOT_2_EXCLUDED_0\"))) (require-not \
-          (subpath (param \"WRITABLE_ROOT_2_EXCLUDED_0\")))"
+         "(require-all (subpath (param \"WRITABLE_ROOT_1\")) (require-not \
+          (literal (param \"WRITABLE_ROOT_1_EXCLUDED_0\"))) (require-not \
+          (subpath (param \"WRITABLE_ROOT_1_EXCLUDED_0\")))"
        text)
 
 let seatbelt_nested_roots_share_carveouts () =
@@ -479,7 +465,7 @@ let seatbelt_nested_roots_share_carveouts () =
     (List.exists
        (fun (key, value) ->
          String.equal value "/private/tmp/ws/.git"
-         && String.starts_with ~prefix:"WRITABLE_ROOT_1" key)
+         && String.starts_with ~prefix:"WRITABLE_ROOT_0" key)
        params)
 
 let seatbelt_network_enabled_golden () =
@@ -495,11 +481,9 @@ let seatbelt_no_path_enters_the_text () =
   (* Hardening #1: no path byte enters the SBPL text; every resolved path is a
      [-D] parameter. Distinctive paths never present in the fixed base policy
      make the property observable. *)
-  let paths =
-    [ "/data/secret"; "/scratch/xyz"; "/work/project"; "/work/project/.git" ]
-  in
+  let paths = [ "/data/secret"; "/work/project"; "/work/project/.git" ] in
   let policy =
-    confined ~scratch:(abs "/scratch/xyz")
+    confined
       ~reads:(Policy.Only [ abs "/data/secret" ])
       ~writable_roots:[ abs "/work/project" ]
       ~protected_paths:[ abs "/work/project/.git" ]
@@ -547,9 +531,6 @@ let bubblewrap_read_only_golden () =
         "/";
         "--dev";
         "/dev";
-        "--bind";
-        "/tmp";
-        "/tmp";
         "--unshare-net";
         "--proc";
         "/proc";
@@ -577,14 +558,8 @@ let bubblewrap_scoped_reads_golden () =
         "--dev";
         "/dev";
         "--ro-bind";
-        "/tmp";
-        "/tmp";
-        "--ro-bind";
         "/usr";
         "/usr";
-        "--bind";
-        "/tmp";
-        "/tmp";
         "--bind";
         "/usr";
         "/usr";
@@ -1027,12 +1002,12 @@ let obligation_repr o =
     Sandbox.Obligation.path o )
 
 let obligations_enumerate_paths_and_kinds () =
-  (* RFC L10: readable and protected paths are Exists; writable roots and the
-     scratch are Directory; deduplicated by path keeping the strongest kind, in
-     canonical path order. The scratch appears as both a readable root (folded)
-     and a directory, so its single obligation must be Directory. *)
+  (* RFC L10: readable and protected paths are Exists; writable roots are
+     Directory; deduplicated by path keeping the strongest kind, in canonical
+     path order. A writable root is also folded into the read set, so its single
+     obligation must be the stronger Directory. *)
   let policy =
-    confined ~scratch:(abs "/private/scratch")
+    confined
       ~reads:(Policy.Only [ abs "/data" ])
       ~writable_roots:[ abs "/work" ]
       ~protected_paths:[ abs "/work/.git" ]
@@ -1043,11 +1018,9 @@ let obligations_enumerate_paths_and_kinds () =
   in
   equal
     (list (pair string abs_value))
-    ~msg:
-      "obligations enumerate the right paths and kinds, scratch deduped strong"
+    ~msg:"obligations enumerate the right paths and kinds"
     [
       ("exists", abs "/data");
-      ("directory", abs "/private/scratch");
       ("directory", abs "/work");
       ("exists", abs "/work/.git");
     ]
@@ -1240,85 +1213,19 @@ let identity_digest_pins () =
     (Digest.to_hex
        (Identity.digest (Sandbox.identity (refused_sealed workspace_policy))));
   let pinned_policy =
-    confined ~scratch:(abs "/tmp")
+    confined
       ~reads:(Policy.Only [ abs "/data" ])
       ~writable_roots:[ abs "/work" ]
       ~protected_paths:[ abs "/work/.git" ]
       ()
   in
   equal string ~msg:"seatbelt enforced identity digest golden"
-    "297fd640e39e2af77bcd6d7b5f174a07fb6a0dc71e66a1f421bfdfd928fa7496"
+    "fd1101d943019d9676259625bfcdd78c0b8c551bbfe5383c46009fb41aeed662"
     (Digest.to_hex (Identity.digest (identity_of pinned_policy)));
   equal string ~msg:"bubblewrap enforced identity digest golden"
-    "cd4ebac3753b0e1ea3b7906a7e745a5e0cf851db9a088ebf42aef7fa54923d5e"
+    "02abbba5f4501159fbba741ccabea33a4f345344176dfb7f71acce983f4f50b2"
     (Digest.to_hex
        (Identity.digest (identity_of ~backend:Backend.Bubblewrap pinned_policy)))
-
-let identity_is_scratch_invariant () =
-  let policy_with scratch =
-    confined ~scratch:(abs scratch)
-      ~reads:(Policy.Only [ abs "/data" ])
-      ~writable_roots:[ abs "/work" ]
-      ()
-  in
-  let a = policy_with "/scratch/a" in
-  let b = policy_with "/scratch/b" in
-  is_false ~msg:"the two policies genuinely differ by scratch"
-    (Policy.equal a b);
-  is_true ~msg:"identity is invariant under scratch regeneration"
-    (Identity.equal (identity_of a) (identity_of b));
-  (* The audit/identity distinction: Evidence keeps the real profile digest, so
-     it *does* differ across scratch, while the identity does not. *)
-  is_false ~msg:"the real profile digest (evidence) differs across scratch"
-    (Evidence.equal (Sandbox.evidence (sealed a)) (Sandbox.evidence (sealed b)))
-
-(* Roots under [/w]; the scratch paths this property seals with live under
-   [/s], so the scratch is always disjoint from every generated root — no
-   lexical ancestor/descendant relation. That is the precondition under which
-   L8 holds (and the invariant the real resolver upholds: scratch is a fresh
-   empty temp_dir, never an ancestor of a workspace root). The aliasing
-   violation is pinned separately below. *)
-let disjoint_root_gen =
-  Gen.map
-    (fun components -> abs ("/w/" ^ String.concat "/" components))
-    (Gen.list_size (Gen.int_range 1 3) path_component)
-
-let disjoint_root =
-  testable ~pp:Abs.pp ~equal:Abs.equal ~gen:disjoint_root_gen ()
-
-let identity_is_scratch_invariant_property () =
-  prop'
-    "identity is scratch-invariant when the scratch is disjoint from the roots"
-    (list disjoint_root) (fun roots ->
-      let policy scratch =
-        confined ~scratch:(abs scratch) ~reads:(Policy.Only roots)
-          ~writable_roots:roots ()
-      in
-      is_true ~msg:"disjoint scratch regeneration preserves the identity"
-        (Identity.equal
-           (identity_of (policy "/s/one"))
-           (identity_of (policy "/s/two"))))
-
-let identity_scratch_alias_is_a_safe_direction () =
-  (* Known limitation, safe direction. When the per-run scratch is a lexical
-     ancestor of a confined read root that is not itself a writable root,
-     [Policy.make]'s descendant-normalization collapses that read root, so the
-     scratch-normalized profile drops it and two seals differing only in
-     scratch get *different* identities. This is unreachable via the real
-     resolver (scratch is a fresh empty temp_dir, never a root ancestor), and
-     it fails safe: resume refuses and re-approves rather than silently
-     widening. *)
-  let policy scratch =
-    confined ~scratch:(abs scratch)
-      ~reads:(Policy.Only [ abs "/data/sub" ])
-      ~writable_roots:[ abs "/other" ]
-      ()
-  in
-  is_false
-    ~msg:"an ancestor-aliasing scratch differs (refuses) rather than widening"
-    (Identity.equal
-       (identity_of (policy "/data"))
-       (identity_of (policy "/elsewhere")))
 
 let identity_changes_on_confinement_change () =
   let base =
@@ -1449,10 +1356,9 @@ let () =
       test "policy distinguishes network state" policy_distinguishes_network;
       test "policy scopes concrete protected paths"
         policy_protected_paths_are_scoped;
-      test "policy folds writable roots and scratch into reads"
-        policy_folds_writable_and_scratch_into_reads;
-      test "policy scratch participates in equality"
-        policy_scratch_participates_in_equality;
+      test "policy folds writable into reads" policy_folds_writable_into_reads;
+      test "policy denials participate in equality"
+        policy_denials_participate_in_equality;
       policy_root_normalization_is_an_antichain ();
       (* Backend / Requirement / Network *)
       test "backend identity and order" backend_identity;
@@ -1522,10 +1428,6 @@ let () =
       (* Identity *)
       test "identity domain and framing" identity_domain_and_framing;
       test "identity digests are byte-stable pins" identity_digest_pins;
-      test "identity is scratch-invariant" identity_is_scratch_invariant;
-      identity_is_scratch_invariant_property ();
-      test "identity scratch aliasing is a safe direction"
-        identity_scratch_alias_is_a_safe_direction;
       test "identity changes on a confinement change"
         identity_changes_on_confinement_change;
       test "identity separates evidence classes" identity_class_separation;

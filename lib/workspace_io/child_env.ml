@@ -5,21 +5,16 @@
 
 type t = { bindings : string array; path_dirs : string list }
 
-(* [HOME] is inherited. Rewriting it was the only mechanism in the system that
-   could point a child at a directory the policy had not authorized: the child
-   resolved its toolchain state under a scratch, so every real location had to
-   be handed back one variable at a time, and a directory handed back without
-   the matching grant is a tool sent somewhere it cannot work. The child and the
-   resolver now read the same [$HOME], so they cannot disagree.
+(* Nothing in the child environment is rewritten. [HOME] and the temp-dir
+   family are inherited like every other allow-listed name, so the resolver
+   derives its roots from the same values the child reads and the two cannot
+   disagree — which is the whole of the bug class this replaced. A redirect also
+   concealed the absence of the grants it stood in for: [/tmp] was ungranted for
+   the life of the product and nobody noticed, because nothing ever pointed at
+   it. Inheriting makes a missing grant a first-run error instead of a silence.
 
-   The temp family still resolves to the private scratch. That is not the same
-   decision deferred — it is the one the escalation stance is currently coupled
-   to, since a seal infers [Available] from a non-empty writable set
-   ([Seal.confined]), so granting a read-only route a temp root would flip its
-   no-mutation promise as a side effect. Until that stance is stated rather than
-   inferred, the temp redirect stays. *)
-let derived_names = [ "TEMP"; "TMP"; "TMPDIR" ]
-
+   Ambient secrets and agent sockets are still stripped: inheritance is
+   allow-listed, which is the part worth keeping. *)
 let fixed_bindings =
   [
     ("CLICOLOR", "0");
@@ -34,6 +29,9 @@ let fixed_bindings =
 let inherited_names =
   [
     "HOME";
+    "TEMP";
+    "TMP";
+    "TMPDIR";
     "LANG";
     "LANGUAGE";
     "LC_ALL";
@@ -84,13 +82,9 @@ let add_inherited ~normalize lookup names bindings =
           | Some value -> (name, value) :: bindings))
     bindings names
 
-let make ~path ~scratch ~lookup =
+let make ~path ~lookup =
   let path_dirs = normalize_path_list path in
-  let scratch_value = Lpath.Abs.to_string scratch in
-  let bindings =
-    (("PATH", String.concat ":" path_dirs) :: fixed_bindings)
-    @ List.map (fun name -> (name, scratch_value)) derived_names
-  in
+  let bindings = ("PATH", String.concat ":" path_dirs) :: fixed_bindings in
   let bindings =
     add_inherited ~normalize:Option.some lookup inherited_names bindings
   in

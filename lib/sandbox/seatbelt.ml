@@ -261,7 +261,7 @@ let excluded_param index excluded_index =
   Printf.sprintf "WRITABLE_ROOT_%d_EXCLUDED_%d" index excluded_index
 
 let file_write_policy policy =
-  let roots = Policy.scratch policy :: Policy.writable_roots policy in
+  let roots = Policy.writable_roots policy in
   match roots with
   | [] -> ("", [])
   | roots ->
@@ -317,15 +317,22 @@ let file_write_policy policy =
    local build IPC work under a restricted network without opening any INET
    boundary. *)
 let unix_socket_policy policy =
-  let roots = Policy.scratch policy :: Policy.writable_roots policy in
-  let predicates =
-    List.mapi
-      (fun index _root ->
-        Printf.sprintf "(subpath (param \"%s\"))" (writable_param index))
-      roots
-  in
-  Printf.sprintf "(allow network-bind network-outbound\n%s\n)"
-    (String.concat " " predicates)
+  match Policy.writable_roots policy with
+  (* An allow with no filter is an allow, so a posture that grants no writable
+     root must emit no rule at all rather than an empty predicate list — which
+     SBPL reads as unconditional outbound, the one thing a restricted network
+     must never produce. [file_write_policy] guards the same way; this one did
+     not, and was safe only because a scratch was always prepended. *)
+  | [] -> ""
+  | roots ->
+      let predicates =
+        List.mapi
+          (fun index _root ->
+            Printf.sprintf "(subpath (param \"%s\"))" (writable_param index))
+          roots
+      in
+      Printf.sprintf "(allow network-bind network-outbound\n%s\n)"
+        (String.concat " " predicates)
 
 let denied_param index = Printf.sprintf "DENIED_PATH_%d" index
 

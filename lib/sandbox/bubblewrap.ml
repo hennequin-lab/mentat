@@ -40,7 +40,7 @@ let filesystem_args policy =
         [ "--tmpfs"; "/"; "--dev"; "/dev" ]
         @ List.concat_map bind_readable roots
   in
-  let roots = Policy.scratch policy :: Policy.writable_roots policy in
+  let roots = Policy.writable_roots policy in
   let carveouts = Policy.protected_paths policy in
   read_args
   @ List.concat_map bind_writable roots

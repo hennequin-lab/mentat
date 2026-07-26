@@ -26,7 +26,6 @@ end
 type reads = All | Only of Lpath.Abs.t list
 
 type t = {
-  scratch : Lpath.Abs.t;
   reads : reads;
   writable_roots : Lpath.Abs.t list;
   protected_paths : Lpath.Abs.t list;
@@ -49,21 +48,19 @@ let normalize_roots roots =
            roots))
     roots
 
-let make ~scratch ~reads ~writable_roots ~protected_paths ~denied_paths ~network
-    =
+let make ~reads ~writable_roots ~protected_paths ~denied_paths ~network =
   let writable_roots = normalize_roots writable_roots in
   let reads =
     match reads with
     | All -> All
-    | Only roots -> Only (normalize_roots ((scratch :: writable_roots) @ roots))
+    | Only roots -> Only (normalize_roots (writable_roots @ roots))
   in
   let protected_paths =
     protected_paths |> List.filter (under writable_roots) |> canonical_paths
   in
   let denied_paths = normalize_roots denied_paths in
-  { scratch; reads; writable_roots; protected_paths; denied_paths; network }
+  { reads; writable_roots; protected_paths; denied_paths; network }
 
-let scratch t = t.scratch
 let reads t = t.reads
 let writable_roots t = t.writable_roots
 let protected_paths t = t.protected_paths
@@ -77,8 +74,7 @@ let reads_equal a b =
   | (All | Only _), _ -> false
 
 let equal a b =
-  Lpath.Abs.equal a.scratch b.scratch
-  && reads_equal a.reads b.reads
+  reads_equal a.reads b.reads
   && List.equal Lpath.Abs.equal a.writable_roots b.writable_roots
   && List.equal Lpath.Abs.equal a.protected_paths b.protected_paths
   && List.equal Lpath.Abs.equal a.denied_paths b.denied_paths
@@ -96,11 +92,10 @@ let pp_reads ppf = function
 let pp ppf t =
   Format.fprintf ppf
     "@[<v>confined@,\
-     scratch: %a@,\
      reads: %a@,\
      writable: %a@,\
      protected: %a@,\
      denied: %a@,\
      network: %a@]"
-    Lpath.Abs.pp t.scratch pp_reads t.reads pp_paths t.writable_roots pp_paths
-    t.protected_paths pp_paths t.denied_paths Network.pp t.network
+    pp_reads t.reads pp_paths t.writable_roots pp_paths t.protected_paths
+    pp_paths t.denied_paths Network.pp t.network
