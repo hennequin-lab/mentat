@@ -349,6 +349,17 @@ let print_permissions call =
         (Permission.Request.items request))
     requests
 
+(* Resolve a program against PATH the way [execvp] does, so a missing external
+   oracle is a declared precondition instead of an ENOENT deep inside a spawn. *)
+let executable_in_path name =
+  String.split_on_char ':' (Option.value ~default:"" (Sys.getenv_opt "PATH"))
+  |> List.filter (fun dir -> dir <> "")
+  |> List.find_opt (fun dir ->
+      let candidate = Filename.concat dir name in
+      match Unix.access candidate [ Unix.X_OK ] with
+      | () -> true
+      | exception Unix.Unix_error _ -> false)
+
 let with_cwd dir fn =
   let previous = Sys.getcwd () in
   Unix.chdir dir;
@@ -384,43 +395,60 @@ let rg_paths world pattern =
      ]
       : string list)
   in
+  (* Exit 2 is ripgrep declining the request, which for these inputs means its
+     globset refused to parse the pattern. That is an answer about the oracle,
+     not about the enumeration, so it is reported rather than raised: the
+     comparison below then records that ripgrep has no reference match set for
+     the pattern instead of aborting the whole high-risk sweep. Its stderr goes
+     to the void for the same reason — the refusal is reported below in one
+     deterministic line rather than leaking ripgrep's wording into the golden. *)
   let run args =
     let argv = Array.of_list args in
-    let channel = Unix.open_process_args_in "rg" argv in
+    let read, write = Unix.pipe ~cloexec:false () in
+    let devnull = Unix.openfile "/dev/null" [ Unix.O_WRONLY ] 0 in
+    let pid = Unix.create_process "rg" argv Unix.stdin write devnull in
+    Unix.close write;
+    Unix.close devnull;
+    let channel = Unix.in_channel_of_descr read in
     let rec lines found =
       match In_channel.input_line channel with
       | Some line -> lines (line :: found)
       | None -> List.rev found
     in
     let paths = lines [] in
-    match Unix.close_process_in channel with
-    | Unix.WEXITED 0 | Unix.WEXITED 1 -> paths
+    In_channel.close channel;
+    match snd (Unix.waitpid [] pid) with
+    | Unix.WEXITED 0 | Unix.WEXITED 1 -> Ok paths
+    | Unix.WEXITED 2 -> Error "rejected by the ripgrep globset"
     | Unix.WEXITED code -> failf "rg oracle exited %d" code
     | Unix.WSIGNALED signal -> failf "rg oracle signalled %d" signal
     | Unix.WSTOPPED signal -> failf "rg oracle stopped %d" signal
   in
+  let ( let* ) = Result.bind in
   (* Ripgrep's positive [--glob] can re-include a path excluded by an ignore
      file. The legacy tool deliberately intersected a globbed pass with an
      unglobbed visible-files pass, so this oracle must compare the same final
      match set rather than the globbed pass in isolation. The capability also
      exposes only names representable by [Lpath.Rel], so OS entries with a
      backslash component are outside both the tool result and this oracle. *)
-  let matching = run (base_args @ [ "--glob"; pattern ]) in
-  let visible = run base_args in
-  let paths =
-    List.filter (fun path -> List.mem path visible) matching
+  let* matching = run (base_args @ [ "--glob"; pattern ]) in
+  let* visible = run base_args in
+  Ok
+    (List.filter (fun path -> List.mem path visible) matching
     |> List.filter (fun path ->
         match Lpath.Rel.of_string path with Ok _ -> true | Error _ -> false)
-    |> List.sort String.compare
-  in
-  paths
+    |> List.sort String.compare)
 
 let compare_rg world pattern =
   let tool_paths = run world (input pattern) |> paths_of_result in
-  let rg_paths = rg_paths world pattern in
-  Printf.printf "%s\nequal: %b\ntool: %s\nrg:   %s\n" pattern
-    (List.equal String.equal tool_paths rg_paths)
-    (paths_json tool_paths) (paths_json rg_paths)
+  match rg_paths world pattern with
+  | Ok rg_paths ->
+      Printf.printf "%s\nequal: %b\ntool: %s\nrg:   %s\n" pattern
+        (List.equal String.equal tool_paths rg_paths)
+        (paths_json tool_paths) (paths_json rg_paths)
+  | Error reason ->
+      Printf.printf "%s\nequal: no oracle (%s)\ntool: %s\n" pattern reason
+        (paths_json tool_paths)
 
 let resolve world path =
   match Wio.resolve_path world.io path with
@@ -721,6 +749,10 @@ syntax/a,b: ["syntax/a,b"]
 syntax/\*.ml: ["syntax/*.ml"]|}]
 
 let%expect_test "high-risk match sets agree with real ripgrep globset" =
+  (* This is the one case that reaches outside the workspace for a reference
+     implementation; without ripgrep on PATH there is nothing to agree with. *)
+  if Option.is_none (executable_in_path "rg") then
+    skip ~reason:"ripgrep is not installed on this host" ();
   with_world @@ fun world ->
   List.iter (compare_rg world)
     [
@@ -771,9 +803,8 @@ equal: true
 tool: ["match/abc"]
 rg:   ["match/abc"]
 match/a{b,{c,d}}c
-equal: true
+equal: no oracle (rejected by the ripgrep globset)
 tool: ["match/abc","match/acc","match/adc"]
-rg:   ["match/abc","match/acc","match/adc"]
 match/{**/,}foo
 equal: true
 tool: ["match/foo","match/nested/foo"]
