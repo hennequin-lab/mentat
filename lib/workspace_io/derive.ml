@@ -704,13 +704,27 @@ let owned_directories paths =
 (* [/tmp] is where a command puts a scratch file when it does not consult the
    environment for one, and a literal [/tmp/...] path is common enough in build
    scripts and in model-authored commands that its absence reads as a broken
-   sandbox rather than a confined one. It went unnoticed because the temp-dir
+   sandbox rather than a confined one. The launcher's [$TMPDIR] joins it: every
+   libc temp helper consults that variable first, and the child now inherits it,
+   so a launcher that sets it anywhere other than [/tmp] would otherwise hand
+   the child a path no bind covers. A [$TMPDIR] resolving to a broad root is
+   dropped rather than admitted. It went unnoticed because the temp-dir
    family is redirected to the private scratch, so only a path spelled out in
    full ever reaches it. Admitted writable on both platforms, canonicalized
    because macOS resolves it to [/private/tmp]. The scratch may be minted
    beneath it, which is why the whole platform-writable set is exempt from the
    scratch-disjointness guard. *)
-let shared_temp_dirs () = List.filter_map existing_auto_root [ "/tmp" ]
+let shared_temp_dirs ~lookup ~workspace_roots =
+  let ambient =
+    match lookup "TMPDIR" with
+    | None -> []
+    | Some spelling -> (
+        match existing_auto_root spelling with
+        | Some path when not (broad_root ~lookup ~workspace_roots path) ->
+            [ path ]
+        | Some _ | None -> [])
+  in
+  List.filter_map existing_auto_root [ "/tmp" ] @ ambient
 
 (* Apple's developer-tool shims (git, xcrun, clang) cache under the per-user
    confstr [DARWIN_USER_CACHE_DIR] — the [C] sibling of the [T] temp bucket —
@@ -830,7 +844,8 @@ let run ~scoped ~lookup ~logical ~configured_reads ~configured_writes
   let* denied = owned_directories mentat_dirs in
   let writable_lattice =
     (primary :: configured_writes)
-    @ shared_temp_dirs () @ darwin_user_dirs ~lookup
+    @ shared_temp_dirs ~lookup ~workspace_roots:scope_roots
+    @ darwin_user_dirs ~lookup
     @ carried_writable_dirs carried_dirs
   in
   (* Only an overlap in one direction is a problem. A denial nested inside a
@@ -878,7 +893,9 @@ let run ~scoped ~lookup ~logical ~configured_reads ~configured_writes
     {
       workspace_roots = roots;
       writable = primary :: configured_writes;
-      platform_writable = shared_temp_dirs () @ darwin_user_dirs ~lookup;
+      platform_writable =
+        shared_temp_dirs ~lookup ~workspace_roots:scope_roots
+        @ darwin_user_dirs ~lookup;
       readable;
       protected;
       denied;
