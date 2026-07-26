@@ -113,7 +113,7 @@ let%expect_test "current-context approval preserves the restored draft visibly"
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plan-approve51d45841.home/ment…
 04 |
 05 | ❯ draft a plan for the parser
 06 |
@@ -141,7 +141,7 @@ let%expect_test "current-context approval preserves the restored draft visibly"
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plan-approve51d45841.home/ment…
 04 |
 05 | ❯ draft a plan for the parser
 06 |
@@ -171,7 +171,7 @@ let%expect_test "current-context approval preserves the restored draft visibly"
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plan-approve51d45841.home/ment…
 04 |
 05 | ❯ draft a plan for the parser
 06 |
@@ -192,7 +192,7 @@ let%expect_test "current-context approval preserves the restored draft visibly"
 21 |  ⏸ plan ────────────────────────────────────────────────────────────────────────
 22 | ❯ PLAN-FOLLOW-UP
 23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · /private/tmp… · openai/gpt… · ! full access ? fo…|}]
+24 |   ! not logged in · /login · /tmp/mentat-tu… · openai/gpt… · ! full acce… ? f…|}]
 
 let%expect_test
     "revision is editable, validated, cancellable, and absent from history" =
@@ -215,7 +215,7 @@ let%expect_test
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plaf42f409b.home/mentat-tui-pl…
 04 |
 05 | ❯ plan history prompt
 06 |
@@ -243,7 +243,7 @@ let%expect_test
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plaf42f409b.home/mentat-tui-pl…
 04 |
 05 | ❯ plan history prompt
 06 |
@@ -271,7 +271,7 @@ let%expect_test
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plaf42f409b.home/mentat-tui-pl…
 04 |
 05 | ❯ plan history prompt
 06 |
@@ -299,7 +299,7 @@ let%expect_test
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plaf42f409b.home/mentat-tui-pl…
 04 |
 05 | ❯ plan history prompt
 06 |
@@ -327,7 +327,7 @@ let%expect_test
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plaf42f409b.home/mentat-tui-pl…
 04 |
 05 | ❯ plan history prompt
 06 |
@@ -355,7 +355,7 @@ let%expect_test
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plaf42f409b.home/mentat-tui-pl…
 04 |
 05 | ❯ plan history prompt
 06 |
@@ -385,7 +385,7 @@ let%expect_test
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plaf42f409b.home/mentat-tui-pl…
 04 |
 05 | ❯ plan history prompt
 06 |
@@ -413,7 +413,7 @@ let%expect_test
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plaf42f409b.home/mentat-tui-pl…
 04 |
 05 | ❯ plan history prompt
 06 |
@@ -434,14 +434,14 @@ let%expect_test
 21 |  ⏸ plan ────────────────────────────────────────────────────────────────────────
 22 | ❯ PLAN-FOLLOW-UP
 23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · /private/tm… · openai/gpt… · ! full access ? for…|}];
+24 |   ! not logged in · /login · /tmp/mentat-t… · openai/gpt… · ! full access ? f…|}];
   Tui.keys t Key.up;
   Tui.settle t;
   Tui.print t;
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plaf42f409b.home/mentat-tui-pl…
 04 |
 05 | ❯ plan history prompt
 06 |
@@ -462,7 +462,7 @@ let%expect_test
 21 |  ⏸ plan ────────────────────────────────────────────────────────────────────────
 22 | ❯ plan history prompt
 23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · /private/tm… · openai/gpt… · ! full access ? for…|}]
+24 |   ! not logged in · /login · /tmp/mentat-t… · openai/gpt… · ! full access ? f…|}]
 
 let%expect_test
     "long plan expands, collapses, and Escape visibly keeps planning" =
@@ -500,7 +500,7 @@ let%expect_test
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plan-di03d9077b.home/mentat-tu…
 04 |
 05 | ❯ show the complete migration plan
 06 |
@@ -552,7 +552,7 @@ let%expect_test
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plan-di03d9077b.home/mentat-tu…
 04 |
 05 | ❯ show the complete migration plan
 06 |
@@ -604,7 +604,7 @@ let%expect_test
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plan-di03d9077b.home/mentat-tu…
 04 |
 05 | ❯ show the complete migration plan
 06 |
@@ -656,7 +656,7 @@ let%expect_test
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plan-di03d9077b.home/mentat-tu…
 04 |
 05 | ❯ show the complete migration plan
 06 |
@@ -701,7 +701,7 @@ let%expect_test
 45 |  ⏸ plan ────────────────────────────────────────────────────────────────────────
 46 | ❯ queue a message — sends after this turn
 47 | ────────────────────────────────────────────────────────────────────────────────
-48 |   ! not logged in · /login · /private/tm… · openai/gpt-… · ! full acce… ? for…|}]
+48 |   ! not logged in · /login · /tmp/mentat-t… · openai/gpt… · ! full access ? f…|}]
 
 let%expect_test
     "narrow decisions and revision controls remain legible before approval" =
@@ -729,7 +729,7 @@ let%expect_test
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
 03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
 04 |  dev · openai/gpt-5.5 medium
-05 |  $TESTCASE_ROOT
+05 |  /tmp/mentat-tui-plan-narr8c1923d2.home/ment…
 06 |
 07 | ❯ choose a fresh build context
 08 |
@@ -753,7 +753,7 @@ let%expect_test
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
 03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
 04 |  dev · openai/gpt-5.5 medium
-05 |  $TESTCASE_ROOT
+05 |  /tmp/mentat-tui-plan-narr8c1923d2.home/ment…
 06 |
 07 | ❯ choose a fresh build context
 08 |
@@ -780,7 +780,7 @@ let%expect_test
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
 03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
 04 |  dev · openai/gpt-5.5 medium
-05 |  $TESTCASE_ROOT
+05 |  /tmp/mentat-tui-plan-narr8c1923d2.home/ment…
 06 |
 07 | ❯ choose a fresh build context
 08 |
@@ -811,7 +811,7 @@ let%expect_test
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
 03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
 04 |  dev · openai/gpt-5.5 medium
-05 |  $TESTCASE_ROOT
+05 |  /tmp/mentat-tui-plan-narr8c1923d2.home/ment…
 06 |
 07 | ❯ choose a fresh build context
 08 |
@@ -833,7 +833,7 @@ let%expect_test
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
 03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
 04 |  dev · openai/gpt-5.5 medium
-05 |  $TESTCASE_ROOT
+05 |  /tmp/mentat-tui-plan-narr8c1923d2.home/ment…
 06 |
 07 | ❯ choose a fresh build context
 08 |

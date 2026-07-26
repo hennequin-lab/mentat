@@ -496,10 +496,20 @@ let local t client workspace_io shell =
       Log_setup.set_session (Option.map Mentat_session.Id.to_string session))
     ()
 
-let home t =
-  match Composition.getenv t "HOME" with
-  | None -> None
-  | Some path -> Result.to_option (Lpath.Abs.of_string path)
+(* The workspace root reaching the interface has already been canonicalized, so
+   the home boundary must be canonicalized too or a symlinked home (macOS spells
+   [/tmp] as [/private/tmp]) would never contain it and every workspace path
+   would render absolute. *)
+let canonical_home path =
+  let canonical =
+    match Unix.realpath path with
+    | canonical -> canonical
+    | exception Unix.Unix_error _ -> path
+  in
+  Result.to_option (Lpath.Abs.of_string canonical)
+
+let home t = Option.bind (Composition.getenv t "HOME") canonical_home
+let ambient_home () = Option.bind (Sys.getenv_opt "HOME") canonical_home
 
 let snapshot ~version t model =
   let selector = Mentat_provider.Selector.of_model model in
@@ -596,7 +606,7 @@ let resolve_session t session last =
 
 type gate = Run | Reload | Stop
 
-let prompt_for_trust ?notice ~stdenv ~set root =
+let prompt_for_trust ?notice ?home ~stdenv ~set root =
   let decide = function
     | Cli_trust_prompt.Untrusted -> (
         match set Trust_store.Untrusted with
@@ -613,7 +623,7 @@ let prompt_for_trust ?notice ~stdenv ~set root =
               ("Could not save the decision: " ^ Trust_store.Error.message error)
         )
   in
-  match Cli_trust_prompt.run ?notice ~stdenv ~root ~decide () with
+  match Cli_trust_prompt.run ?notice ?home ~stdenv ~root ~decide () with
   | Cli_trust_prompt.Exit_prompt ->
       Output.stdout_printf
         "\nExited without saving a workspace trust decision.\n";
@@ -637,7 +647,7 @@ let trust_gate t =
              (Mentat_tui.Runtime.error_message Mentat_tui.Runtime.No_tty))
       else
         Ok
-          (prompt_for_trust ~stdenv:(Composition.stdenv t) root
+          (prompt_for_trust ?home:(home t) ~stdenv:(Composition.stdenv t) root
              ~set:(fun status -> Trust_store.set ~path ~root:root_text status))
 
 (* [--sandbox] overlays the configured build posture for this interactive
@@ -787,7 +797,8 @@ let rec launch_trusted ~launch_review ~review_base ~version ~attach ~cwd
     | Ok () -> (
         let gate =
           Eio_main.run @@ fun stdenv ->
-          prompt_for_trust ~notice:(activation_notice status) ~stdenv root
+          prompt_for_trust ~notice:(activation_notice status)
+            ?home:(ambient_home ()) ~stdenv root
             ~set:(fun status -> Trust_store.set ~path ~root:root_text status)
         in
         match gate with

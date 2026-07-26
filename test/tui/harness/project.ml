@@ -3,10 +3,12 @@
   SPDX-License-Identifier: ISC
  ---------------------------------------------------------------------------*)
 
-type t = { root : string }
+type t = { root : string; home : string }
 type binding = string * string
 
 let root t = t.root
+let home t = t.home
+let canonical_root t = Filename.concat t.home (Filename.basename t.root)
 let path t local = Filename.concat t.root local
 let scratch t local = Filename.concat (t.root ^ ".xdg") local
 let data t local = scratch t (Filename.concat "data/mentat" local)
@@ -35,7 +37,7 @@ let normalize_bindings bindings =
 let bindings ?openai_base_url ?(unset = []) ?(extra = []) t =
   List.iter validate_name unset;
   let xdg = t.root ^ ".xdg" in
-  let home = Filename.concat xdg "home" in
+  let home = t.home in
   let config = Filename.concat xdg "config" in
   let cache = Filename.concat xdg "cache" in
   let data = Filename.concat xdg "data" in
@@ -204,7 +206,11 @@ let git_baseline t =
 let invalid_fixture_name name =
   String.is_empty name || String.contains name Filename.dir_sep.[0]
 
-let fresh_root name =
+(* The fixture lives one level below a private container that doubles as [HOME],
+   so every surface that formats the workspace against the home boundary renders
+   the same [~/mentat-tui-<token>] on Linux and macOS. The container is the unit
+   of ownership and removal; the workspace and its XDG sibling are inside it. *)
+let fresh_container name =
   if invalid_fixture_name name then
     invalid_arg (Printf.sprintf "Project.with_temp: invalid name %S" name);
   let executable = Filename.basename Sys.executable_name in
@@ -217,22 +223,27 @@ let fresh_root name =
      space to avoid collapsing them into a one-character bucket. *)
   let prefix_width = max 0 (width - 8) in
   let token = String.sub name 0 prefix_width ^ String.sub digest 0 8 in
-  let root = Filename.concat "/tmp" ("mentat-tui-" ^ token) in
-  match Unix.mkdir root 0o700 with
-  | () -> root
+  let container = Filename.concat "/tmp" ("mentat-tui-" ^ token ^ ".home") in
+  match Unix.mkdir container 0o700 with
+  | () -> (container, "mentat-tui-" ^ token)
   | exception Unix.Unix_error (Unix.EEXIST, _, _) ->
       Util.failf
-        "Project.with_temp: deterministic fixture root already exists: %s" root
+        "Project.with_temp: deterministic fixture container already exists: %s"
+        container
 
 let with_temp name f =
-  let root = fresh_root name in
-  let project = { root = Unix.realpath root } in
-  Util.rm_rf (project.root ^ ".xdg");
+  let container, basename = fresh_container name in
+  (* The workspace keeps its logical [/tmp] spelling: macOS resolves [/tmp] to
+     [/private/tmp], and a canonicalized root would change the width of every
+     path an absolute-rendering fixture lays out. [HOME] is the canonical
+     container instead, because a real child canonicalizes its own working
+     directory and must still recognize it as living under that home. *)
+  let root = Filename.concat container basename in
+  Unix.mkdir root 0o700;
+  let project = { root; home = Unix.realpath container } in
   write project "dune-project" "(lang dune 3.0)\n(name fixture)\n";
   Fun.protect
-    ~finally:(fun () ->
-      Util.rm_rf project.root;
-      Util.rm_rf (project.root ^ ".xdg"))
+    ~finally:(fun () -> Util.rm_rf container)
     (fun () -> f project)
 
 let with_git_fixture name f =

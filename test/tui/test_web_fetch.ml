@@ -221,7 +221,7 @@ let%expect_test
 27 | ────────────────────────────────────────────────────────────────────────────────────────────
 28 | ❯ message mentat
 29 | ────────────────────────────────────────────────────────────────────────────────────────────
-30 |   ! not logged in · /login · /private/tmp/menta… · openai/gpt-5… · ! full acce… ? for sho…|}]
+30 |   ! not logged in · /login · /tmp/mentat-tui-1cb1e… · openai/gpt-… · ! full access ? for …|}]
 
 let%expect_test
     "replayed web fetch results preserve summaries and unavailable details" =
@@ -265,6 +265,6 @@ let%expect_test
 27 | ────────────────────────────────────────────────────────────────────────────────────────────
 28 | ❯ message mentat
 29 | ────────────────────────────────────────────────────────────────────────────────────────────
-30 |   ! not logged in · /login · /private/tmp/menta… · openai/gpt-5… · ! full acce… ? for sho…|}]
+30 |   ! not logged in · /login · /tmp/mentat-tui-1cb1e… · openai/gpt-… · ! full access ? for …|}]
 
 [%%run_tests "mentat.tui.web_fetch"]

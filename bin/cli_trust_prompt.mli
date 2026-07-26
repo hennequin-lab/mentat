@@ -28,6 +28,7 @@ type 'a outcome =
 
 val run :
   ?notice:string ->
+  ?home:Lpath.Abs.t ->
   stdenv:Eio_unix.Stdenv.base ->
   root:Lpath.Abs.t ->
   decide:(choice -> ('a, string) result) ->
@@ -35,10 +36,12 @@ val run :
   'a outcome
 (** [run ~stdenv ~root ~decide ()] displays the trust prompt and blocks until
     the user saves a choice or exits. [stdenv] supplies the [Matrix_eio]
-    terminal host. If [notice] is present, the prompt initially displays it as a
-    diagnostic. [decide choice] performs executable-owned persistence and
-    produces the value returned in [Continue]. An [Error] replaces the visible
-    diagnostic and permits a retry.
+    terminal host. [root] is displayed relative to [home] when it lies below it,
+    the same workspace spelling the rest of the interface uses; the value passed
+    to [decide] is unaffected. If [notice] is present, the prompt initially
+    displays it as a diagnostic. [decide choice] performs executable-owned
+    persistence and produces the value returned in [Continue]. An [Error]
+    replaces the visible diagnostic and permits a retry.
 
     [decide] runs synchronously in the caller's existing execution context. It
     should perform only the bounded local trust-store update. *)

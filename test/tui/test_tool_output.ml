@@ -110,7 +110,7 @@ let%expect_test "known built-ins never expand undecodable text as a summary" =
 27 | ────────────────────────────────────────────────────────────────────────────────────────────
 28 | ❯ message mentat
 29 | ────────────────────────────────────────────────────────────────────────────────────────────
-30 |   ! not logged in · /login · /private/tmp/menta… · openai/gpt-5… · ! full acce… ? for sho…|}]
+30 |   ! not logged in · /login · /tmp/mentat-tui-3c9b9… · openai/gpt-… · ! full access ? for …|}]
 
 let%expect_test "read preview clamps rows while typed facts own counts" =
   let text =
@@ -162,7 +162,7 @@ let%expect_test "read preview clamps rows while typed facts own counts" =
 25 | ────────────────────────────────────────────────────────────────────────────────────────────
 26 | ❯ message mentat
 27 | ────────────────────────────────────────────────────────────────────────────────────────────
-28 |   ! not logged in · /login · /private/tmp/menta… · openai/gpt-5… · ! full acce… ? for sho…|}]
+28 |   ! not logged in · /login · /tmp/mentat-tui-3c9b9… · openai/gpt-… · ! full access ? for …|}]
 
 let%expect_test "extension preview clamps rows and truncates wide lines" =
   let row_text =
@@ -211,7 +211,7 @@ let%expect_test "extension preview clamps rows and truncates wide lines" =
 29 | ────────────────────────────────────────────────────────────────────────────────────────────
 30 | ❯ message mentat
 31 | ────────────────────────────────────────────────────────────────────────────────────────────
-32 |   ! not logged in · /login · /private/tmp/menta… · openai/gpt-5… · ! full acce… ? for sho…|}]
+32 |   ! not logged in · /login · /tmp/mentat-tui-3c9b9… · openai/gpt-… · ! full access ? for …|}]
 
 let%expect_test "compact built-in facts retain summaries and Process output" =
   let search =
@@ -281,7 +281,7 @@ let%expect_test "compact built-in facts retain summaries and Process output" =
 31 | ────────────────────────────────────────────────────────────────────────────────────────────
 32 | ❯ message mentat
 33 | ────────────────────────────────────────────────────────────────────────────────────────────
-34 |   ! not logged in · /login · /private/tmp/menta… · openai/gpt-5… · ! full acce… ? for sho…|}]
+34 |   ! not logged in · /login · /tmp/mentat-tui-3c9b9… · openai/gpt-… · ! full access ? for …|}]
 
 (* The shell and eval transcripts a real run stores in {!Mentat_tool.Output}:
    a metadata envelope, then the captured streams under fixed [stdout:] and
@@ -358,7 +358,7 @@ let%expect_test "shell preview shows captured output without envelope or labels"
 27 | ────────────────────────────────────────────────────────────────────────────────────────────
 28 | ❯ message mentat
 29 | ────────────────────────────────────────────────────────────────────────────────────────────
-30 |   ! not logged in · /login · /private/tmp/menta… · openai/gpt-5… · ! full acce… ? for sho…|}]
+30 |   ! not logged in · /login · /tmp/mentat-tui-3c9b9… · openai/gpt-… · ! full access ? for …|}]
 
 let%expect_test
     "preview shows a lone overflow line instead of a plus-one marker" =
@@ -396,7 +396,7 @@ let%expect_test
 19 | ────────────────────────────────────────────────────────────────────────────────────────────
 20 | ❯ message mentat
 21 | ────────────────────────────────────────────────────────────────────────────────────────────
-22 |   ! not logged in · /login · /private/tmp/menta… · openai/gpt-5… · ! full acce… ? for sho…|}]
+22 |   ! not logged in · /login · /tmp/mentat-tui-3c9b9… · openai/gpt-… · ! full access ? for …|}]
 
 let%expect_test "failed and interrupted partial results settle and wrap" =
   let malformed =
@@ -435,7 +435,7 @@ let%expect_test "failed and interrupted partial results settle and wrap" =
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-3c9b9a03.home/mentat-t…
 04 |
 05 | ❯ inspect partial tool outcomes
 06 |
@@ -460,6 +460,6 @@ let%expect_test "failed and interrupted partial results settle and wrap" =
 25 | ────────────────────────────────────────────────────────────────────────
 26 | ❯ message mentat
 27 | ────────────────────────────────────────────────────────────────────────
-28 |   ! not logged in · /login · /priv… · openai/gpt… · ! full access ? f…|}]
+28 |   ! not logged in · /login · /tmp/m… · openai/gpt… · ! full access ? …|}]
 
 [%%run_tests "mentat.tui.tool_output"]

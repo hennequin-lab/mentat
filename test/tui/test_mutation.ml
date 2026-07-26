@@ -96,7 +96,7 @@ let%expect_test
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-mutatic7dd2bcf.home/mentat-tui…
 04 |
 05 | ❯ update the release notes
 06 |
@@ -117,7 +117,7 @@ let%expect_test
 21 | ────────────────────────────────────────────────────────────────────────────────
 22 | ❯ message mentat
 23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · /private/tm… · openai/gpt… · ! full access ? for…|}];
+24 |   ! not logged in · /login · /tmp/mentat-t… · openai/gpt… · ! full access ? f…|}];
   Tui.keys t "please keep this draft";
   Tui.settle t;
   Tui.keys t "\004";
@@ -154,7 +154,7 @@ let%expect_test
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-mutatic7dd2bcf.home/mentat-tui…
 04 |
 05 | ❯ update the release notes
 06 |
@@ -175,7 +175,7 @@ let%expect_test
 21 | ────────────────────────────────────────────────────────────────────────────────
 22 | ❯ please keep this draft
 23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · /private/tm… · openai/gpt… · ! full access ? for…|}]
+24 |   ! not logged in · /login · /tmp/mentat-t… · openai/gpt… · ! full access ? f…|}]
 
 (* An ambiguous callback may have no exact transition while the mutation owner
    still reports paths observed inside its scope. The complete settled frame is
@@ -201,7 +201,7 @@ let%expect_test "ambiguous observed-only mutation evidence stays explicit" =
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-mutation-744e4b13.home/mentat-…
 04 |
 05 | ❯ refresh the generated index
 06 |
@@ -222,7 +222,7 @@ let%expect_test "ambiguous observed-only mutation evidence stays explicit" =
 21 | ────────────────────────────────────────────────────────────────────────────────
 22 | ❯ message mentat
 23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · /private/tmp… · openai/gpt… · ! full access ? fo…|}]
+24 |   ! not logged in · /login · /tmp/mentat-tu… · openai/gp… · ! full access ? f…|}]
 
 let resumed_id = Session.Id.of_string "session-mutation-recovery"
 
@@ -247,7 +247,7 @@ let%expect_test "a resumed possibly-mutating session shows the recovery warning"
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-mutation-0dab18e2.home/mentat-…
 04 |
 05 |
 06 |
@@ -268,6 +268,6 @@ let%expect_test "a resumed possibly-mutating session shows the recovery warning"
 21 | ────────────────────────────────────────────────────────────────────────────────
 22 | ❯ message mentat
 23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · /private… · openai/gpt-5.5 … · ! full access ? f…|}]
+24 |   ! not logged in · /login · /tmp/ment… · openai/gpt-5.5 … · ! full access ? …|}]
 
 [%%run_tests "mentat.tui.mutation"]

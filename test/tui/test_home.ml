@@ -780,7 +780,7 @@ let%expect_test "path spelling follows the injected home boundary" =
 21 |
 22 |
 23 |
-24 |   ! not logged in · /login · /private/tmp/mentat-tui-home-injecte… · openai/gpt-5.5 medi… · ! full access ? for short…|}]
+24 |   ! not logged in · /login · /tmp/mentat-tui-home-injectedc99ae1d6.hom… · openai/gpt-5.5 me… · ! full access ? for sh…|}]
 
 let%expect_test "the absolute root is a valid injected home ancestor" =
   Tui.run ~name:"home-injected-root" ~size:(160, 24) ~home:(fun _ ->
@@ -812,7 +812,7 @@ let%expect_test "the absolute root is a valid injected home ancestor" =
 21 |
 22 |
 23 |
-24 |   ! not logged in · /login · ~$TESTCASE_ROOT · openai/gpt-5.5 medium · ! full access                               ? for shortcuts|}]
+24 |   ! not logged in · /login · ~$TESTCASE_ROOT · openai/gpt-5.5 medium · ! full access    ? for shortcuts|}]
 
 (* Theme palette threading: a user theme recolours the accent role,
    and that resolved colour must reach the frame's bytes — the brand lockup and

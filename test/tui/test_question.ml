@@ -114,7 +114,7 @@ let%expect_test "a numbered choice selects first and resolves only on Enter" =
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-questiof59856ac.home/mentat-tu…
 04 |
 05 | ❯ choose the visual test location
 06 |
@@ -142,7 +142,7 @@ let%expect_test "a numbered choice selects first and resolves only on Enter" =
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-questiof59856ac.home/mentat-tu…
 04 |
 05 | ❯ choose the visual test location
 06 |
@@ -170,7 +170,7 @@ let%expect_test "a numbered choice selects first and resolves only on Enter" =
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-questiof59856ac.home/mentat-tu…
 04 |
 05 | ❯ choose the visual test location
 06 |
@@ -191,7 +191,7 @@ let%expect_test "a numbered choice selects first and resolves only on Enter" =
 21 | ────────────────────────────────────────────────────────────────────────────────
 22 | ❯ queue a message — sends after this turn
 23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · /private/tm… · openai/gpt-… · ! full acce… ? for…|}]
+24 |   ! not logged in · /login · /tmp/mentat-t… · openai/gpt… · ! full access ? f…|}]
 
 let%expect_test
     "a tool result follows the question whose answer resumed the turn" =
@@ -227,7 +227,7 @@ let%expect_test
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /private/tmp/mentat-tui-question-tool-cont5046…
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-question-tool-cont50469e35.hom…
 04 |
 05 | ❯ check the ordered continuation
 06 |
@@ -257,7 +257,7 @@ let%expect_test
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /private/tmp/mentat-tui-question-tool-cont5046…
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-question-tool-cont50469e35.hom…
 04 |
 05 | ❯ check the ordered continuation
 06 |
@@ -278,7 +278,7 @@ let%expect_test
 21 | ────────────────────────────────────────────────────────────────────────────────
 22 | ❯ queue a message — sends after this turn
 23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · /private/tmp… · openai/gpt… · ! full access ? fo…|}]
+24 |   ! not logged in · /login · /tmp/mentat-tu… · openai/gpt… · ! full access ? …|}]
 
 let%expect_test
     "many choices remain whole and keep the selected row visible when narrow" =
@@ -316,7 +316,7 @@ let%expect_test
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 m…
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /private/tmp/mentat-tu…
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-quest8…
 04 |
 05 | ❯ choose checks
 06 |
@@ -340,7 +340,7 @@ let%expect_test
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 m…
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /private/tmp/mentat-tu…
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-quest8…
 04 |
 05 | ❯ choose checks
 06 |
@@ -364,7 +364,7 @@ let%expect_test
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 m…
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /private/tmp/mentat-tu…
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-quest8…
 04 |
 05 | ❯ choose checks
 06 |
@@ -408,7 +408,7 @@ let%expect_test
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-questio523b6bc8.home/mentat-tu…
 04 |
 05 | ❯ choose safely
 06 |
@@ -438,7 +438,7 @@ let%expect_test
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-questio523b6bc8.home/mentat-tu…
 04 |
 05 | ❯ choose safely
 06 |
@@ -466,7 +466,7 @@ let%expect_test
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-questio523b6bc8.home/mentat-tu…
 04 |
 05 | ❯ choose safely
 06 |
@@ -496,7 +496,7 @@ let%expect_test
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-questio523b6bc8.home/mentat-tu…
 04 |
 05 | ❯ choose safely
 06 |
@@ -524,7 +524,7 @@ let%expect_test
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-questio523b6bc8.home/mentat-tu…
 04 |
 05 | ❯ choose safely
 06 |
@@ -545,7 +545,7 @@ let%expect_test
 21 | ────────────────────────────────────────────────────────────────────────────────
 22 | ❯ queue a message — sends after this turn
 23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · /private/tm… · openai/gpt-… · ! full acce… ? for…|}]
+24 |   ! not logged in · /login · /tmp/mentat-t… · openai/gpt… · ! full access ? f…|}]
 
 let%expect_test
     "activating the free-form choice edits inline under a live terminal caret" =
@@ -569,7 +569,7 @@ let%expect_test
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-question-inli805518f9.home/men…
 04 |
 05 | ❯ choose safely
 06 |
@@ -604,7 +604,7 @@ let%expect_test
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-question-inli805518f9.home/men…
 04 |
 05 | ❯ choose safely
 06 |
@@ -634,7 +634,7 @@ let%expect_test
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-question-inli805518f9.home/men…
 04 |
 05 | ❯ choose safely
 06 |
@@ -655,7 +655,7 @@ let%expect_test
 21 | ────────────────────────────────────────────────────────────────────────────────
 22 | ❯ queue a message — sends after this turn
 23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · /private/tmp… · openai/gpt… · ! full access ? fo…|}]
+24 |   ! not logged in · /login · /tmp/mentat-tu… · openai/gpt… · ! full access ? …|}]
 
 let%expect_test "answering a question preserves the visible prompt draft" =
   let draft = "FOLLOW-UP-DRAFT" in
@@ -676,7 +676,7 @@ let%expect_test "answering a question preserves the visible prompt draft" =
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-questi68a2c4e5.home/mentat-tui…
 04 |
 05 | ❯ ask with draft
 06 |
@@ -704,7 +704,7 @@ let%expect_test "answering a question preserves the visible prompt draft" =
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-questi68a2c4e5.home/mentat-tui…
 04 |
 05 | ❯ ask with draft
 06 |
@@ -725,7 +725,7 @@ let%expect_test "answering a question preserves the visible prompt draft" =
 21 | ────────────────────────────────────────────────────────────────────────────────
 22 | ❯ FOLLOW-UP-DRAFT
 23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · /private/tm… · openai/gpt… · ! full access ? for…|}]
+24 |   ! not logged in · /login · /tmp/mentat-t… · openai/gpt… · ! full access ? f…|}]
 
 let%expect_test "custom answers stay out of visible prompt history" =
   let recalled = "history question" in
@@ -752,7 +752,7 @@ let%expect_test "custom answers stay out of visible prompt history" =
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-questionb7ddb6b6.home/mentat-t…
 04 |
 05 | ❯ history question
 06 |
@@ -773,6 +773,6 @@ let%expect_test "custom answers stay out of visible prompt history" =
 21 | ────────────────────────────────────────────────────────────────────────────────
 22 | ❯ history question
 23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · /private/tm… · openai/gpt-… · ! full access ? fo…|}]
+24 |   ! not logged in · /login · /tmp/mentat-t… · openai/gpt… · ! full access ? f…|}]
 
 [%%run_tests "mentat.tui.question"]

@@ -7,7 +7,12 @@ open Mosaic
 
 type choice = Untrusted | Trusted
 type 'a outcome = Continue of 'a | Exit_prompt
-type model = { root : Lpath.Abs.t; selected : int; notice : string option }
+(* [root] is the workspace as the rest of the TUI shows it — home-relative when
+   the repository lives under the user's home — so the trust gate names one
+   workspace the same way the banner, footer and status screens do. The
+   absolute root stays with the caller, which owns trust identity and
+   persistence; nothing here depends on this spelling. *)
+type model = { root : string; selected : int; notice : string option }
 type msg = Move of int | Activate of int | Leave
 
 let accent = Ansi.Color.of_rgb 214 96 60
@@ -94,7 +99,7 @@ let view model =
   in
   let content =
     [
-      text ~wrap:`Word ("Repository root: " ^ Lpath.Abs.to_string model.root);
+      text ~wrap:`Word ("Repository root: " ^ model.root);
       text ~style:selection_style ~wrap:`Word (selected_label model.selected);
     ]
     @ notice
@@ -142,9 +147,16 @@ let view model =
         ];
     ]
 
-let run ?notice ~stdenv ~root ~decide () =
+let run ?notice ?home ~stdenv ~root ~decide () =
   let outcome = ref None in
-  let init () = ({ root; selected = 0; notice }, Cmd.none) in
+  let init () =
+    ( {
+        root = Mentat_tui.Path_display.home_relative ~home root;
+        selected = 0;
+        notice;
+      },
+      Cmd.none )
+  in
   let update message model =
     match message with
     | Move delta ->

@@ -114,7 +114,7 @@ let%expect_test
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permission8b592900.home/mentat…
 04 |
 05 | ❯ inspect the workspace
 06 |
@@ -142,7 +142,7 @@ let%expect_test
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permission8b592900.home/mentat…
 04 |
 05 | ❯ inspect the workspace
 06 |
@@ -170,7 +170,7 @@ let%expect_test
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permission8b592900.home/mentat…
 04 |
 05 | ❯ inspect the workspace
 06 |
@@ -191,7 +191,7 @@ let%expect_test
 21 | ────────────────────────────────────────────────────────────────────────────────
 22 | ❯ queue a message — sends after this turn
 23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · /private/tmp… · openai/gpt… · ! full access ? fo…|}]
+24 |   ! not logged in · /login · /tmp/mentat-tu… · openai/gp… · ! full access ? f…|}]
 
 let%expect_test "decision failure re-enables the exact open dialog" =
   let answer =
@@ -220,7 +220,7 @@ let%expect_test "decision failure re-enables the exact open dialog" =
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /private/tmp/mentat-tui-permission-retry-reb51…
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permission-retry-reb5117737.ho…
 04 |
 05 | ❯ retry exact answer
 06 |
@@ -251,7 +251,7 @@ let%expect_test "decision failure re-enables the exact open dialog" =
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /private/tmp/mentat-tui-permission-retry-reb51…
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permission-retry-reb5117737.ho…
 04 |
 05 | ❯ retry exact answer
 06 |
@@ -272,7 +272,7 @@ let%expect_test "decision failure re-enables the exact open dialog" =
 21 | ────────────────────────────────────────────────────────────────────────────────
 22 | ❯ queue a message — sends after this turn
 23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · /private/tmp… · openai/gpt… · ! full access ? fo…|}]
+24 |   ! not logged in · /login · /tmp/mentat-tu… · openai/gpt… · ! full access ? …|}]
 
 let%expect_test "decision acknowledgement waits for durable resolution" =
   Tui.run ~name:"permission-held-resolution" ~home:no_home
@@ -303,7 +303,7 @@ let%expect_test "decision acknowledgement waits for durable resolution" =
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /private/tmp/mentat-tui-permission-held-rebbaf…
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permission-held-rebbaf9c0c.hom…
 04 |
 05 | ❯ inspect before settling
 06 |
@@ -331,7 +331,7 @@ let%expect_test "decision acknowledgement waits for durable resolution" =
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /private/tmp/mentat-tui-permission-held-rebbaf…
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permission-held-rebbaf9c0c.hom…
 04 |
 05 | ❯ inspect before settling
 06 |
@@ -352,7 +352,7 @@ let%expect_test "decision acknowledgement waits for durable resolution" =
 21 | ────────────────────────────────────────────────────────────────────────────────
 22 | ❯ queue a message — sends after this turn
 23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · /private/tmp… · openai/gpt… · ! full access ? fo…|}]
+24 |   ! not logged in · /login · /tmp/mentat-tu… · openai/gpt… · ! full access ? …|}]
 
 let diff first last =
   let middle =
@@ -400,7 +400,7 @@ let%expect_test
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permiss1f5e42a5.home/mentat-tu…
 04 |
 05 | ❯ apply the parser patch
 06 |
@@ -428,7 +428,7 @@ let%expect_test
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permiss1f5e42a5.home/mentat-tu…
 04 |
 05 | ❯ apply the parser patch
 06 |
@@ -456,7 +456,7 @@ let%expect_test
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permiss1f5e42a5.home/mentat-tu…
 04 |
 05 | ❯ apply the parser patch
 06 |
@@ -484,7 +484,7 @@ let%expect_test
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permiss1f5e42a5.home/mentat-tu…
 04 |
 05 | ❯ apply the parser patch
 06 |
@@ -505,7 +505,7 @@ let%expect_test
 21 | ────────────────────────────────────────────────────────────────────────────────
 22 | ❯ queue a message — sends after this turn
 23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · /private/tm… · openai/gpt-… · ! full acce… ? for…|}]
+24 |   ! not logged in · /login · /tmp/mentat-t… · openai/gpt… · ! full access ? f…|}]
 
 let network_custom_request () =
   let network =
@@ -549,7 +549,7 @@ let%expect_test
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
 03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
 04 |  dev · openai/gpt-5.5 medium
-05 |  /private/tmp/mentat-tui-permission-ne…
+05 |  /tmp/mentat-tui-permission-networ8e2b…
 06 |
 07 | ❯ contact deployment services
 08 |
@@ -575,7 +575,7 @@ let%expect_test
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
 03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
 04 |  dev · openai/gpt-5.5 medium
-05 |  /private/tmp/mentat-tui-permission-ne…
+05 |  /tmp/mentat-tui-permission-networ8e2b…
 06 |
 07 | ❯ contact deployment services
 08 |

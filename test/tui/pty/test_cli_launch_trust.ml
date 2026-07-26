@@ -17,7 +17,7 @@ let%expect_test "unknown workspace shows the complete trust gate" =
     {|01 |
 02 |  Mentat repository activation
 03 |
-04 |  Repository root: $TESTCASE_ROOT
+04 |  Repository root: ~/mentat-tui-cli-trusf18b8278
 05 |  Selection: 1 — continue restricted
 06 |
 07 |  This repository can control config, instructions, skills, Dune rules, local
@@ -74,7 +74,7 @@ let%expect_test "restricted choice is remembered by the next launch" =
 21 |
 22 |
 23 |
-24 |   ! not logged in · /login · /priva… · openai/gpt-5.6-sol… · ! full access ? …|}];
+24 |   ! not logged in · /login · ~/men… · openai/gpt-5.6-sol… · ! full access ? f…|}];
   Pty.quit terminal;
   Pty.run ~trust:false project @@ fun remembered ->
   Pty.settle remembered;
@@ -103,7 +103,7 @@ let%expect_test "restricted choice is remembered by the next launch" =
 21 |
 22 |
 23 |
-24 |   ! not logged in · /login · /priva… · openai/gpt-5.6-sol… · ! full access ? …|}];
+24 |   ! not logged in · /login · ~/men… · openai/gpt-5.6-sol… · ! full access ? f…|}];
   Pty.quit remembered
 
 let%expect_test
@@ -123,7 +123,7 @@ let%expect_test
     {|01 |
 02 |  Mentat repository activation
 03 |
-04 |  Repository root: $TESTCASE_ROOT
+04 |  Repository root: ~/mentat-tui-cli-trust-enter75197b01
 05 |  Selection: 1 — continue restricted
 06 |
 07 |  This repository can control config, instructions, skills, Dune rules, local
@@ -167,7 +167,7 @@ let%expect_test
 21 |
 22 |
 23 |
-24 |   ! not logged in · /login · /priva… · openai/gpt-5.6-sol… · ! full access ? …|}]
+24 |   ! not logged in · /login · ~/men… · openai/gpt-5.6-sol … · ! full acce… ? f…|}]
 
 let fake_dune project =
   let bin = Project.path project "fake-bin" in
@@ -203,7 +203,7 @@ let%expect_test "trusted selection is coherent and starts no project process" =
     {|01 |
 02 |  Mentat repository activation
 03 |
-04 |  Repository root: $TESTCASE_ROOT
+04 |  Repository root: ~/mentat-tui-cli-trust-b8036cc9
 05 |  Selection: 2 — trust and activate this repository
 06 |
 07 |  This repository can control config, instructions, skills, Dune rules, local
@@ -253,7 +253,7 @@ let%expect_test "trusted selection is coherent and starts no project process" =
 21 |
 22 |
 23 |
-24 |   ! not logged in · /login · /priv… · openai/gpt-5.6-sol … · ! full access ? …|}];
+24 |   ! not logged in · /login · ~/men… · openai/gpt-5.6-sol… · ! full access ? f…|}];
   Pty.quit terminal
 
 let exit_prompt name input =
@@ -276,7 +276,7 @@ let%expect_test "Escape and EOF show the complete prompt before exiting" =
     {|01 |
 02 |  Mentat repository activation
 03 |
-04 |  Repository root: $TESTCASE_ROOT
+04 |  Repository root: ~/mentat-tui-cli-trus4d5a9316
 05 |  Selection: 1 — continue restricted
 06 |
 07 |  This repository can control config, instructions, skills, Dune rules, local
@@ -326,7 +326,7 @@ let%expect_test "Escape and EOF show the complete prompt before exiting" =
     {|01 |
 02 |  Mentat repository activation
 03 |
-04 |  Repository root: $TESTCASE_ROOT
+04 |  Repository root: ~/mentat-tui-cli-tdb608bfe
 05 |  Selection: 1 — continue restricted
 06 |
 07 |  This repository can control config, instructions, skills, Dune rules, local
@@ -390,25 +390,25 @@ let%expect_test "a trust-store failure stays visible and permits retry" =
     {|01 |
 02 |  Mentat repository activation
 03 |
-04 |  Repository root: $TESTCASE_ROOT
+04 |  Repository root: ~/mentat-tui-cli-trust-sa74885165
 05 |  Selection: 2 — trust and activate this repository
 06 |
-07 |  Could not save the decision: $TESTCASE_ROOT.xdg/
-08 |  config/mentat/trust.json: $TESTCASE_ROOT.xdg/
-09 |  config/mentat/trust.json.lock: Is a directory
-10 |
-11 |  This repository can control config, instructions, skills, Dune rules, local
-12 |  tools, evaluator, and Build-mode project processes. Activation does not
-13 |  approve operations or widen the selected sandbox.
-14 |
-15 |    1. Continue restricted — remember this choice
-16 |     Native reads, searches, and sandboxed edits remain available. Repository-
-17 |     controlled code will not run. Files edited now may execute if you activate
-18 |     the repository later.
-19 |  ❯ 2. Trust and activate this repository — remember this choice
-20 |     Repository inputs and Build processes activate after reload.
-21 |    3. Exit
-22 |     Save nothing and start no project process.
+07 |  Could not save the decision: /tmp/mentat-tui-cli-trust-sa74885165.home/mentat-
+08 |  tui-cli-trust-sa74885165.xdg/config/mentat/trust.json: /tmp/mentat-tui-cli-
+09 |  trust-sa74885165.home/mentat-tui-cli-trust-sa74885165.xdg/config/mentat/
+10 |  trust.json.lock: Is a directory
+11 |
+12 |  This repository can control config, instructions, skills, Dune rules, local
+13 |  tools, evaluator, and Build-mode project processes. Activation does not
+14 |  approve operations or widen the selected sandbox.
+15 |
+16 |    1. Continue restricted — remember this choice
+17 |     Native reads, searches, and sandboxed edits remain available. Repository-
+18 |     controlled code will not run. Files edited now may execute if you activate
+19 |     the repository later.
+20 |  ❯ 2. Trust and activate this repository — remember this choice
+21 |     Repository inputs and Build processes activate after reload.
+22 |    3. Exit
 23 |  Use ↑/↓ and Enter, or press 1–3. Escape or Ctrl+C exits.
 24 ||}];
   Unix.rmdir lock;
@@ -444,7 +444,7 @@ let%expect_test "a trust-store failure stays visible and permits retry" =
 21 |
 22 |
 23 |
-24 |   ! not logged in · /login · /priva… · openai/gpt-5.6-sol… · ! full access ? …|}];
+24 |   ! not logged in · /login · ~/men… · openai/gpt-5.6-sol… · ! full access ? f…|}];
   Pty.quit terminal
 
 let%expect_test "failed activation rolls back visibly and permits retry" =
@@ -464,7 +464,7 @@ let%expect_test "failed activation rolls back visibly and permits retry" =
     {|01 |
 02 |  Mentat repository activation
 03 |
-04 |  Repository root: $TESTCASE_ROOT
+04 |  Repository root: ~/mentat-tui-cli-trust-activati2b7fc6af
 05 |  Selection: 1 — continue restricted
 06 |
 07 |  Repository activation failed: unknown provider "missing"; known providers:
@@ -515,7 +515,7 @@ let%expect_test "failed activation rolls back visibly and permits retry" =
 21 |
 22 |
 23 |
-24 |   ! not logged in · /login · /priva… · openai/gpt-5.6-sol… · ! full access ? …|}];
+24 |   ! not logged in · /login · ~/men… · openai/gpt-5.6-sol … · ! full access ? …|}];
   Pty.quit terminal
 
 [%%run_tests "mentat.tui.pty.cli_launch_trust"]

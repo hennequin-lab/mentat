@@ -17,7 +17,18 @@ type t
 (** The type for a temporary test project. *)
 
 val root : t -> string
-(** [root project] is the absolute workspace root. *)
+(** [root project] is the absolute workspace root, in the logical [/tmp]
+    spelling every fixture lays out and every golden records. *)
+
+val home : t -> string
+(** [home project] is the canonical private container the workspace lives in.
+    It is the fixture's [HOME], so a workspace path formatted against the home
+    boundary reads [~/mentat-tui-<token>] on every platform. *)
+
+val canonical_root : t -> string
+(** [canonical_root project] is {!root} with its symlinked ancestors resolved —
+    the spelling a real child process reports after canonicalizing its own
+    working directory. It equals {!root} wherever [/tmp] is not a symlink. *)
 
 val path : t -> string -> string
 (** [path project local] resolves [local] below the workspace root. *)
@@ -134,8 +145,8 @@ val with_temp : string -> (t -> 'a) -> 'a
 
     Raises [Invalid_argument] if [name] is empty or contains a path separator.
     Raises [Failure] if another instance of the same executable and fixture
-    identity already owns the deterministic root, or if an earlier owner was not
-    cleaned up. *)
+    identity already owns the deterministic container, or if an earlier owner
+    was not cleaned up. *)
 
 val with_git_fixture : string -> (t -> 'a) -> 'a
 (** [with_git_fixture name f] creates a temporary project containing a small

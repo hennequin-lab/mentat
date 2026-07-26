@@ -35,7 +35,7 @@ let%expect_test "bare invocation opens the complete Home UI and restores it" =
 21 |
 22 |
 23 |
-24 |   ! not logged in · /login · /priv… · openai/gpt-5.6-sol … · ! full access ? …|}];
+24 |   ! not logged in · /login · ~/me… · openai/gpt-5.6-sol … · ! full access ? f…|}];
   Pty.quit terminal;
   Screen.print ~project (Pty.screen terminal);
   [%expect
@@ -92,7 +92,7 @@ let%expect_test
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.6-sol medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-sessioe1bf1dd6
 04 |
 05 | ❯ the older prompt
 06 |
@@ -113,10 +113,10 @@ let%expect_test
 21 | ────────────────────────────────────────────────────────────────────────────────
 22 | ❯ message mentat
 23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · /priv… · openai/gpt-5.6-sol … · ! full access ? …
+24 |   ! not logged in · /login · ~/men… · openai/gpt-5.6-sol… · ! full access ? f…
 01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.6-sol medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-resumf015efc0
 04 |
 05 | ❯ the older prompt
 06 |
@@ -137,10 +137,10 @@ let%expect_test
 21 | ────────────────────────────────────────────────────────────────────────────────
 22 | ❯ message mentat
 23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · /priv… · openai/gpt-5.6-sol … · ! full access ? …
+24 |   ! not logged in · /login · ~/me… · openai/gpt-5.6-sol … · ! full access ? f…
 01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.6-sol medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-res28f41d24
 04 |
 05 | ❯ the newer prompt
 06 |
@@ -161,7 +161,7 @@ let%expect_test
 21 | ────────────────────────────────────────────────────────────────────────────────
 22 | ❯ message mentat
 23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · /priv… · openai/gpt-5.6-sol … · ! full access ? …|}]
+24 |   ! not logged in · /login · ~/me… · openai/gpt-5.6-sol … · ! full access ? f…|}]
 
 let%expect_test "a launch draft is visible in the complete Home screen" =
   Project.with_temp "cli-launch-draft" @@ fun project ->
@@ -200,7 +200,7 @@ let%expect_test "a launch draft is visible in the complete Home screen" =
 21 |
 22 |
 23 |
-24 |   ! not logged in · /login · /priv… · openai/gpt-5.6-sol … · ! full access ? …|}]
+24 |   ! not logged in · /login · ~/me… · openai/gpt-5.6-sol … · ! full access ? f…|}]
 
 let%expect_test
     "a fresh launch prompt visibly starts and settles its first turn" =
@@ -224,7 +224,7 @@ let%expect_test
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.6-sol medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-launca9d0807a
 04 |
 05 | ❯ explain the fresh launch path
 06 |
@@ -245,7 +245,7 @@ let%expect_test
 21 | ────────────────────────────────────────────────────────────────────────────────
 22 | ❯ message mentat
 23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   /private/tmp/mentat-tui-… · openai/gpt-5.6-sol me… · ! full access ? for sh…|}]
+24 |   ~/mentat-tui-cli-laun… · openai/gpt-5.6-sol med… · ! full access ? for shor…|}]
 
 (* A manual /compact is an engine-side model call, so it takes time. While the
    summary response is held, the composer-issued compaction must show the live
@@ -284,7 +284,7 @@ let%expect_test "manual compaction shows a live indicator while it summarizes" =
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.6-sol medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-compact-icdd8c8f1
 04 |
 05 | ❯ summarize the parser investigation
 06 |
@@ -305,7 +305,7 @@ let%expect_test "manual compaction shows a live indicator while it summarizes" =
 21 | ────────────────────────────────────────────────────────────────────────────────
 22 | ❯ message mentat
 23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   /private/tmp/mentat-tui-c… · openai/gpt-5.6-sol me… · ! full acce… ? for sh…|}]
+24 |   ~/mentat-tui-cli-compa… · openai/gpt-5.6-sol med… · ! full access ? for sho…|}]
 
 let%expect_test
     "the live main TUI relayouts as a complete screen after a real PTY resize" =
@@ -325,7 +325,7 @@ let%expect_test
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.6-sol medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-mai91a37260
 04 |
 05 | ❯ This resumed transcript must reflow after a real PTY resize.
 06 |
@@ -346,12 +346,12 @@ let%expect_test
 21 | ────────────────────────────────────────────────────────────────────────────────
 22 | ❯ message mentat
 23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · /priv… · openai/gpt-5.6-sol … · ! full access ? …
+24 |   ! not logged in · /login · ~/me… · openai/gpt-5.6-sol … · ! full access ? f…
 01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
 03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
 04 |  dev · openai/gpt-5.6-sol medium
-05 |  $TESTCASE_ROOT
+05 |  ~/mentat-tui-cli-mai91a37260
 06 |
 07 | ❯ This resumed transcript must reflow after
 08 |   a real PTY resize.
@@ -380,7 +380,7 @@ let%expect_test "an explicit local shell command settles in the complete UI" =
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.6-sol medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-locb399b4ad
 04 |
 05 | ⏺ Shell(printf 'local shell from tui\n')
 06 |   ⎿  Completed in $TIME ms
@@ -401,7 +401,7 @@ let%expect_test "an explicit local shell command settles in the complete UI" =
 21 | ────────────────────────────────────────────────────────────────────────────────
 22 | ❯ message mentat
 23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · /priv… · openai/gpt-5.6-sol … · ! full access ? …|}]
+24 |   ! not logged in · /login · ~/me… · openai/gpt-5.6-sol … · ! full access ? f…|}]
 
 let%expect_test
     "a resumed launch prompt stays visibly editable instead of submitting" =
@@ -421,7 +421,7 @@ let%expect_test
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.6-sol medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-resum6a08e58d
 04 |
 05 | ❯ saved conversation
 06 |
@@ -442,7 +442,7 @@ let%expect_test
 21 | ────────────────────────────────────────────────────────────────────────────────
 22 | ❯ follow up safely
 23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · /priv… · openai/gpt-5.6-sol … · ! full access ? …|}]
+24 |   ! not logged in · /login · ~/me… · openai/gpt-5.6-sol … · ! full access ? f…|}]
 
 let%expect_test
     "a resumed launch paints the session first, never the home stage" =
@@ -466,7 +466,7 @@ let%expect_test
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.6-sol medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-resume-fir22095f55
 04 |
 05 | ❯ resumed first frame
 06 |
@@ -487,7 +487,7 @@ let%expect_test
 21 | ────────────────────────────────────────────────────────────────────────────────
 22 | ❯ message mentat
 23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · /priva… · openai/gpt-5.6-sol… · ! full access ? …|}]
+24 |   ! not logged in · /login · ~/men… · openai/gpt-5.6-sol … · ! full acce… ? f…|}]
 
 let%expect_test
     "quitting an active session leaves a complete farewell with its resume hint"
@@ -509,7 +509,7 @@ let%expect_test
   [%expect
     {|01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.6-sol medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-activecdbca8fc
 04 |
 05 | ❯ keep this conversation
 06 |
@@ -530,7 +530,7 @@ let%expect_test
 21 | ────────────────────────────────────────────────────────────────────────────────
 22 | ❯ message mentat
 23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · /priv… · openai/gpt-5.6-sol … · ! full access ? …
+24 |   ! not logged in · /login · ~/men… · openai/gpt-5.6-sol… · ! full access ? f…
 01 |
 02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
 03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
@@ -576,9 +576,9 @@ let%expect_test
     {|01 |
 02 |  Mentat repository activation
 03 |
-04 |  Repository root: /private/tmp/mentat-tui-
-05 |  cli-trust-narrow-workspace-root-with-a-
-06 |  deliberately-laf3532a1
+04 |  Repository root: ~/mentat-tui-cli-trust-
+05 |  narrow-workspace-root-with-a-deliberately-
+06 |  laf3532a1
 07 |  Selection: 1 — continue restricted
 08 |
 09 |  This repository can control config,
@@ -622,7 +622,7 @@ let%expect_test "the live trust gate relayouts after a real terminal resize" =
     {|01 |
 02 |  Mentat repository activation
 03 |
-04 |  Repository root: $TESTCASE_ROOT
+04 |  Repository root: ~/mentat-tui-cli-trust-liv94277a70
 05 |  Selection: 1 — continue restricted
 06 |
 07 |  This repository can control config, instructions, skills, Dune rules, local
@@ -651,8 +651,8 @@ let%expect_test "the live trust gate relayouts after a real terminal resize" =
     {|01 |
 02 |  Mentat repository activation
 03 |
-04 |  Repository root: /private/tmp/mentat-tui-
-05 |  cli-trust-liv94277a70
+04 |  Repository root: ~/mentat-tui-cli-trust-
+05 |  liv94277a70
 06 |  Selection: 1 — continue restricted
 07 |
 08 |  This repository can control config,
@@ -692,8 +692,8 @@ let%expect_test "the live trust gate relayouts after a real terminal resize" =
     {|01 |
 02 |  Mentat repository activation
 03 |
-04 |  Repository root: /private/tmp/mentat-tui-
-05 |  cli-trust-liv94277a70
+04 |  Repository root: ~/mentat-tui-cli-trust-
+05 |  liv94277a70
 06 |  Selection: 2 — trust and activate this
 07 |  repository
 08 |
