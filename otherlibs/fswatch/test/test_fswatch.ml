@@ -94,11 +94,31 @@ let write_file path contents =
       output_string oc contents;
       flush oc)
 
+(* A snapshot diff can only see what [lstat] reports, and a filesystem stamps
+   mtime and ctime from a coarse clock: two writes landing in the same tick are
+   stamped identically. Any case that mutates a file in place without changing
+   its size, owner, or permissions therefore has to make the stamp itself
+   unmistakable, or it is asserting a distinction the kernel did not record.
+   Pushing the time forward is unambiguous in a way that "later than before"
+   is not. [Unix.utimes] follows symlinks, so this is for entries the caller
+   means to stat directly. *)
 let touch_mtime path =
   let now = Unix.gettimeofday () +. 2.0 in
   Unix.utimes path now now
 
 let rename src dst = Unix.rename src dst
+
+(* Repoint a symlink the way a publisher does: build the replacement beside it
+   and rename over it, so the swap is atomic and the new link is a distinct
+   entry rather than the old one's storage reused. Unlinking and re-creating in
+   place frees the inode before it is claimed again, which lets the filesystem
+   hand the same inode number back — and a link whose target is the same length
+   is then indistinguishable from the original unless the two creations happen
+   to straddle a clock tick. *)
+let relink path ~target =
+  let staged = path ^ ".staged" in
+  Unix.symlink target staged;
+  rename staged path
 
 let with_eio f =
   Eio_main.run @@ fun env ->
@@ -244,6 +264,7 @@ let polling_same_size_rewrite_changes_file () =
   with_eio @@ fun ~sw ~clock ->
   let watcher = make ~backend:`Polling ~sw ~clock root in
   write_file (path root "a") "two";
+  touch_mtime (path root "a");
   events [ ev Event.Changed "a" ] (poll watcher)
 
 let polling_nested_trees () =
@@ -296,8 +317,7 @@ let polling_symlinks_are_not_followed () =
   let watcher = make ~backend:`Polling ~sw ~clock root in
   Unix.symlink "target-a" (path root "link");
   events [ ev Event.Created "link" ] (poll watcher);
-  Unix.unlink (path root "link");
-  Unix.symlink "target-b" (path root "link");
+  relink (path root "link") ~target:"target-b";
   events [ ev Event.Changed "link" ] (poll watcher);
   write_file (path root "target-b") "changed";
   touch_mtime (path root "target-b");
