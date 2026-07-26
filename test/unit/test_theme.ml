@@ -162,6 +162,14 @@ let base_and_extends =
             (appearance_name (Palette.appearance palette)));
     ]
 
+(* An addition reads green and a deletion red before a word of the line is read,
+   so every shipped preset's diff fills lead on the matching channel by a visible
+   margin. Dominance alone is too weak a test: an olive fill can lead on green by
+   one unit and still read brown. The shipped fills clear 20; 16 leaves the light
+   pastels headroom while rejecting the teal, blue, and olive an upstream "add"
+   hue routinely tints toward. *)
+let hue_margin = 16
+
 let presets =
   group "presets"
     [
@@ -217,21 +225,14 @@ let presets =
                 (same dt.Diff.line_number_fg
                    (Palette.diff_gutter_fg preset.Preset.palette)))
             Preset.all);
-      (* An addition reads green and a deletion red before a word of the line is
-         read, so every shipped preset's diff fills lead on the matching channel
-         by a visible margin. Dominance alone is too weak a test: an olive fill
-         can lead on green by one unit and still read brown. The shipped fills
-         clear 20; 16 leaves the light pastels headroom while rejecting the
-         teal, blue, and olive an upstream "add" hue routinely tints toward. *)
-      let margin = 16 in
       test "every preset's diff fills are green and red" (fun () ->
           let green name role palette =
             let r, g, b = Color.to_rgb (role palette) in
-            is_true ~msg:(name ^ " leads on green") (g - max r b >= margin)
+            is_true ~msg:(name ^ " leads on green") (g - max r b >= hue_margin)
           in
           let red name role palette =
             let r, g, b = Color.to_rgb (role palette) in
-            is_true ~msg:(name ^ " leads on red") (r - max g b >= margin)
+            is_true ~msg:(name ^ " leads on red") (r - max g b >= hue_margin)
           in
           List.iter
             (fun (preset : Preset.t) ->
