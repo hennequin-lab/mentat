@@ -50,8 +50,8 @@ type t =
           cannot represent. Index [0] is the program. *)
   | Stale_policy of { path : Lpath.Abs.t }
       (** a path some clause of the sealed policy names, [path], disappeared or
-          changed kind after sealing. Transient — re-resolve and re-seal. Minted by the
-          effect twin when discharging an obligation fails. *)
+          changed kind after sealing. Transient — re-resolve and re-seal. Minted
+          by the effect twin when discharging an obligation fails. *)
   | Grant_denied of { path : Lpath.Abs.t; denied : Lpath.Abs.t }
       (** a per-command grant named [path], which lies at or beneath the
           policy's denied path [denied]. Refused rather than obliged: the

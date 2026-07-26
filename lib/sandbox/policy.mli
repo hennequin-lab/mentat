@@ -55,9 +55,9 @@ module Access : sig
 
       It is deliberately {e not} an ordering by permissiveness — {!Write} is the
       most permissive of the three and still outranks {!Read} — because what a
-      tie must resolve to is the clause the posture meant, not the narrower
-      one. A path derived as both a read root and a writable root is writable;
-      only a denial takes it back. *)
+      tie must resolve to is the clause the posture meant, not the narrower one.
+      A path derived as both a read root and a writable root is writable; only a
+      denial takes it back. *)
 
   val equal : t -> t -> bool
   (** [equal a b] is [true] iff [a] and [b] are the same access. *)
