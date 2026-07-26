@@ -27,6 +27,13 @@ The request carries the environment block naming the run directory.
   $ grep -o '# Environment' capture/request-1.json
   # Environment
 
+The block names the host's real system and machine, not the "Unix" that every
+POSIX host shares: which of them the agent is on decides the commands and paths
+it should reach for.
+
+  $ grep -qF "Platform: $(uname -sm)" capture/request-1.json && echo host || echo other
+  host
+
 The request carries the project AGENTS.md instructions inside the instruction
 block.
 

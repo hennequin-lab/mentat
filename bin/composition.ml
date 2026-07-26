@@ -161,6 +161,28 @@ let toolchain t =
   Mentat_ocaml_toolchain.discover ~env
     ~workspace_root:(Some (Lpath.Abs.to_string t.root))
 
+(* The system and machine this process runs on, as the model-visible
+   environment block reports it. [Sys.os_type] answers "Unix" for Linux and
+   macOS alike, and the difference between them decides which commands, paths,
+   and package manager the agent should reach for — so the block would state a
+   platform while withholding the only part of it worth knowing. [uname -sm] is
+   the portable system/architecture pair; it cannot change while the process
+   lives, so it is read once and shared by every turn. A host that cannot
+   answer falls back to [Sys.os_type] rather than dropping the fact. *)
+let platform =
+  lazy
+    (let uname =
+       match Unix.open_process_in "uname -sm 2>/dev/null" with
+       | channel ->
+           let line = try Some (input_line channel) with End_of_file -> None in
+           ignore (Unix.close_process_in channel);
+           line
+       | exception (Unix.Unix_error _ | Sys_error _) -> None
+     in
+     match Option.map String.trim uname with
+     | Some reported when not (String.equal reported "") -> reported
+     | Some _ | None -> Sys.os_type)
+
 (* Startup staging. *)
 
 let env_snapshot () =
@@ -2074,8 +2096,9 @@ let build_execution_layer t : (execution_layer, Exit_status.t) result =
      than aborting the turn. *)
   (* The environment facts rendered into the workspace fragment. The date reads
      the [MENTAT_NOW]-aware reference clock (deterministic under the env pin);
-     the model label resolves the catalog display name; both are sourced here at
-     the composition root, never inside the engine. *)
+     the model label resolves the catalog display name; the platform is the
+     process-wide {!platform} pair. All are sourced here at the composition
+     root, never inside the engine. *)
   let environment_for ~model =
     let date =
       let ms = Mentat_session.Time.to_unix_ms (now_time t) in
@@ -2102,7 +2125,7 @@ let build_execution_layer t : (execution_layer, Exit_status.t) result =
       | Error _ -> (id, None)
     in
     Mentat_context.Context.Environment.make ~date ~model:model_label
-      ?model_cutoff ~platform:Sys.os_type ()
+      ?model_cutoff ~platform:(Lazy.force platform) ()
   in
   let context_prelude ~model ~mode_fragments =
     let skills = load_skills () in
