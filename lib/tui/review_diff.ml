@@ -4,10 +4,11 @@
  ---------------------------------------------------------------------------*)
 
 (* The review diff pane: the focused file's unified diff with a scope line above
-   it, inside a scroll box. Each hunk is its own node; the cursor's hunk/line
-   carries the gutter cursor (accent when the diff pane holds focus, muted
-   otherwise). A CR anchored outside any hunk gets a synthesized context-only
-   view.
+   it, inside a scroll box. The file's hunks lower to one node, so the gutter
+   sizes to the widest line number in the file and the content column stays put
+   across hunks. The cursor's hunk/line carries the gutter cursor (accent when
+   the diff pane holds focus, muted otherwise). A CR anchored outside any hunk
+   gets a synthesized context-only view.
 
    Rebased onto the thin waist: the pane renders one {!Mentat_review.File_diff.t}
    (fetched by the screen for the cursor's focused path) plus the
