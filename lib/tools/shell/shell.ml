@@ -615,8 +615,8 @@ let make ?registry workspace_io ~clock ~shell =
     match Mentat_workspace_io.policy workspace_io with
     | None -> false
     | Some policy -> (
-        match Mentat_sandbox.Policy.reads policy with
-        | Mentat_sandbox.Policy.Only _ -> true
+        match Mentat_sandbox.Policy.reads_default policy with
+        | Mentat_sandbox.Policy.Denied -> true
         | Mentat_sandbox.Policy.All -> false)
   in
   Mentat_tool.make ~name ~description:Mentat_prompts.Tools.shell

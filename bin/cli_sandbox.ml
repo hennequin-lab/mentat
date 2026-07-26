@@ -102,16 +102,26 @@ let json_abs_list paths =
     (List.map (fun p -> Output.Json.string (Lpath.Abs.to_string p)) paths)
 
 let policy_json p =
-  let reads =
-    match Sandbox.Policy.reads p with
-    | Sandbox.Policy.All -> Output.Json.string "all"
-    | Sandbox.Policy.Only roots -> json_abs_list roots
-  in
   Output.Json.obj
     [
-      ("reads", reads);
+      ( "reads_default",
+        Output.Json.string
+          (match Sandbox.Policy.reads_default p with
+          | Sandbox.Policy.All -> "all"
+          | Sandbox.Policy.Denied -> "denied") );
+      ( "entries",
+        Output.Json.list
+          (List.map
+             (fun (path, access) ->
+               Output.Json.obj
+                 [
+                   ("path", Output.Json.string (Lpath.Abs.to_string path));
+                   ( "access",
+                     Output.Json.string (Sandbox.Policy.Access.to_string access)
+                   );
+                 ])
+             (Sandbox.Policy.entries p)) );
       ("writable_roots", json_abs_list (Sandbox.Policy.writable_roots p));
-      ("protected_paths", json_abs_list (Sandbox.Policy.protected_paths p));
       ("denied_paths", json_abs_list (Sandbox.Policy.denied_paths p));
       ( "network",
         Output.Json.string
@@ -156,28 +166,18 @@ let explain json cwd =
             | Some p ->
                 Output.stdout_printf "network=%s\n"
                   (Sandbox.Policy.Network.to_string (Sandbox.Policy.network p));
-                (match Sandbox.Policy.reads p with
+                (match Sandbox.Policy.reads_default p with
                 | Sandbox.Policy.All -> Output.stdout_printf "read=all\n"
-                | Sandbox.Policy.Only rs ->
-                    List.iter
-                      (fun r ->
-                        Output.stdout_printf "read-root=%s\n"
-                          (Lpath.Abs.to_string r))
-                      rs);
+                | Sandbox.Policy.Denied ->
+                    Output.stdout_printf "read=denied-by-default\n");
+                (* Clauses in resolution order: a later line beneath an earlier
+                   one overrides it, which is how a carveout reads. *)
                 List.iter
-                  (fun r ->
-                    Output.stdout_printf "write-root=%s\n"
-                      (Lpath.Abs.to_string r))
-                  (Sandbox.Policy.writable_roots p);
-                List.iter
-                  (fun r ->
-                    Output.stdout_printf "protected=%s\n"
-                      (Lpath.Abs.to_string r))
-                  (Sandbox.Policy.protected_paths p);
-                List.iter
-                  (fun r ->
-                    Output.stdout_printf "deny=%s\n" (Lpath.Abs.to_string r))
-                  (Sandbox.Policy.denied_paths p));
+                  (fun (path, access) ->
+                    Output.stdout_printf "%s=%s\n"
+                      (Sandbox.Policy.Access.to_string access)
+                      (Lpath.Abs.to_string path))
+                  (Sandbox.Policy.entries p));
             List.iter
               (fun (label, path) ->
                 Output.stdout_printf "root=%s %s\n" label

@@ -39,10 +39,23 @@ let evidence_value = testable ~pp:Evidence.pp ~equal:Evidence.equal ()
 let error_value = testable ~pp:Error.pp ~equal:Error.equal ()
 let json_string s = Json.string s
 
-let confined ?(reads = Policy.All) ?(writable_roots = [])
-    ?(protected_paths = []) ?(denied_paths = [])
-    ?(network = Policy.Network.Restricted) () =
-  Policy.make ~reads ~writable_roots ~protected_paths ~denied_paths ~network
+(* The suites still speak in root lists; this projects them onto clauses so the
+   tests describe a posture rather than an emission order. *)
+let confined ?reads ?(writable_roots = []) ?(protected_paths = [])
+    ?(denied_paths = []) ?(network = Policy.Network.Restricted) () =
+  let reads_default, read_roots =
+    match reads with
+    | None -> (Policy.All, [])
+    | Some roots -> (Policy.Denied, roots)
+  in
+  let clause access = List.map (fun p -> (p, access)) in
+  let entries =
+    clause Policy.Access.Read read_roots
+    @ clause Policy.Access.Write writable_roots
+    @ clause Policy.Access.Read protected_paths
+    @ clause Policy.Access.Deny denied_paths
+  in
+  Policy.make ~entries ~reads_default ~network
 
 let sealed ?(backend = Backend.Seatbelt) ?(mutates = true) policy =
   Sandbox.confined ~backend:(Ok backend) ~mutates policy
@@ -66,10 +79,10 @@ let lowered ?cwd sandbox ~program args =
    projects the (sbpl, params) pair back out of the argv. *)
 (* Any admitted read root serves; lowering re-checks lexical containment. *)
 let cwd_in_scope policy =
-  match Policy.reads policy with
-  | Policy.All -> abs "/tmp"
-  | Policy.Only (root :: _) -> root
-  | Policy.Only [] -> abs "/tmp"
+  match (Policy.reads_default policy, Policy.readable_roots policy) with
+  | Policy.All, _ -> abs "/tmp"
+  | Policy.Denied, root :: _ -> root
+  | Policy.Denied, [] -> abs "/tmp"
 
 let seatbelt_sbpl policy =
   let tokens =
@@ -197,27 +210,6 @@ let error_json_shape () =
           ])
        (Error.to_json Error.Escalation_denied))
 
-(* Policy. *)
-
-let policy_normalizes_writable_roots () =
-  let a =
-    confined ~writable_roots:[ abs "/work"; abs "/tmp"; abs "/work" ] ()
-  in
-  let b = confined ~writable_roots:[ abs "/tmp"; abs "/work" ] () in
-  equal policy_value ~msg:"duplicate roots dedup and order canonically" a b;
-  equal (list abs_value) ~msg:"accessor reports canonical order"
-    [ abs "/tmp"; abs "/work" ]
-    (Policy.writable_roots a)
-
-let policy_collapses_descendant_roots () =
-  (* A root strictly within another is redundant and dropped (RFC L9). *)
-  let policy =
-    confined ~writable_roots:[ abs "/work"; abs "/work/sub"; abs "/other" ] ()
-  in
-  equal (list abs_value) ~msg:"descendant roots collapse into their ancestor"
-    [ abs "/other"; abs "/work" ]
-    (Policy.writable_roots policy)
-
 let policy_distinguishes_network () =
   let restricted = confined () in
   let enabled = confined ~network:Policy.Network.Enabled () in
@@ -228,31 +220,59 @@ let policy_distinguishes_network () =
     | Policy.Network.Restricted -> true
     | Policy.Network.Enabled -> false)
 
-let policy_protected_paths_are_scoped () =
+(* Nothing is discarded any more: a clause is meaningful wherever it lies, and
+   the membership filter that used to drop a carveout outside every writable
+   root is what made the deny set impossible to express as one. *)
+(* Descendants are not collapsed — the ordered model needs them, since a
+   deeper clause is how a carveout overrides the root that contains it. What
+   collapses is two clauses on one path, to the stronger. *)
+let policy_collapses_only_duplicate_paths () =
+  let policy =
+    confined
+      ~writable_roots:[ abs "/work"; abs "/work/sub" ]
+      ~denied_paths:[ abs "/work/sub" ]
+      ()
+  in
+  equal (list abs_value)
+    ~msg:"a nested writable root survives as its own clause"
+    [ abs "/work" ]
+    (Policy.writable_roots policy);
+  equal (list abs_value) ~msg:"the stronger access wins the duplicated path"
+    [ abs "/work/sub" ]
+    (Policy.denied_paths policy)
+
+let policy_keeps_every_clause () =
   let policy =
     confined
       ~writable_roots:[ abs "/private/tmp"; abs "/private/tmp/ws" ]
       ~protected_paths:[ abs "/outside/.mentat"; abs "/private/tmp/ws/.mentat" ]
       ()
   in
-  equal (list abs_value)
-    ~msg:"protected paths outside the writable roots are discarded"
-    [ abs "/private/tmp/ws/.mentat" ]
-    (Policy.protected_paths policy)
+  is_true ~msg:"a carveout outside every writable root survives"
+    (List.exists
+       (fun (path, access) ->
+         Abs.equal path (abs "/outside/.mentat")
+         && Policy.Access.equal access Policy.Access.Read)
+       (Policy.entries policy));
+  is_true ~msg:"a nested carveout is emitted after the root that contains it"
+    (let index p =
+       let rec find i = function
+         | [] -> -1
+         | (path, _) :: _ when Abs.equal path (abs p) -> i
+         | _ :: rest -> find (i + 1) rest
+       in
+       find 0 (Policy.entries policy)
+     in
+     index "/private/tmp/ws/.mentat" > index "/private/tmp/ws")
 
 let policy_folds_writable_into_reads () =
   let policy =
-    confined
-      ~reads:(Policy.Only [ abs "/data" ])
-      ~writable_roots:[ abs "/work" ]
-      ()
+    confined ~reads:[ abs "/data" ] ~writable_roots:[ abs "/work" ] ()
   in
   equal (list abs_value)
     ~msg:"Only reads include the read roots and the writable roots"
     [ abs "/data"; abs "/work" ]
-    (match Policy.reads policy with
-    | Policy.Only roots -> roots
-    | Policy.All -> fail "expected Only")
+    (Policy.readable_roots policy)
 
 let policy_denials_participate_in_equality () =
   is_false ~msg:"policies differing only by a denied path are unequal"
@@ -275,35 +295,30 @@ let abs_path_gen =
 let abs_path = testable ~pp:Abs.pp ~equal:Abs.equal ~gen:abs_path_gen ()
 let root_list = list abs_path
 
-let policy_root_normalization_is_an_antichain () =
-  prop' "normalized writable roots form a sorted, covering antichain" root_list
-    (fun roots ->
-      let normalized =
-        Policy.writable_roots (confined ~writable_roots:roots ())
+(* The property the ordered model upholds: clauses come out shallowest-first,
+   so the deepest clause naming a path is the last one emitted and therefore the
+   one both backends resolve to. *)
+let policy_entries_are_ordered_shallowest_first () =
+  prop' "entries are emitted shallowest-first" root_list (fun roots ->
+      let entries =
+        Policy.entries
+          (Policy.make
+             ~entries:(List.map (fun r -> (r, Policy.Access.Read)) roots)
+             ~reads_default:Policy.Denied ~network:Policy.Network.Restricted)
       in
-      let rec sorted_strict = function
-        | a :: (b :: _ as rest) ->
-            is_true ~msg:"strictly increasing" (Abs.compare a b < 0);
-            sorted_strict rest
+      let depth p =
+        String.fold_left
+          (fun n c -> if Char.equal c '/' then n + 1 else n)
+          0 (Abs.to_string p)
+      in
+      let rec ordered = function
+        | (a, _) :: ((b, _) :: _ as rest) ->
+            is_false ~msg:"a deeper clause never precedes a shallower one"
+              (depth a > depth b);
+            ordered rest
         | _ -> ()
       in
-      sorted_strict normalized;
-      List.iter
-        (fun a ->
-          List.iter
-            (fun b ->
-              if not (Abs.equal a b) then
-                is_false ~msg:"no root is strictly within another"
-                  (Abs.is_strictly_within ~root:a b))
-            normalized)
-        normalized;
-      List.iter
-        (fun input ->
-          is_true ~msg:"every input root is covered by a result root"
-            (List.exists (fun root -> Abs.is_within ~root input) normalized))
-        roots)
-
-(* Backend / Requirement / Network vocabulary. *)
+      ordered entries)
 
 let backend_identity () =
   equal string ~msg:"seatbelt id" "macos-seatbelt" (Backend.id Backend.Seatbelt);
@@ -359,26 +374,6 @@ let network_round_trips () =
 let all_read_section = {|(allow file-read*)
 (allow file-map-executable)|}
 
-let scoped_read_section =
-  {|(allow file-read* file-test-existence file-map-executable
-(literal (param "READABLE_ROOT_0")) (subpath (param "READABLE_ROOT_0")) (literal (param "READABLE_ROOT_1")) (subpath (param "READABLE_ROOT_1"))
-)|}
-
-let scoped_write_section =
-  {|(allow file-write*
-(subpath (param "WRITABLE_ROOT_0"))
-)|}
-
-(* The Unix-domain socket allow scopes [network-bind]/[network-outbound] to the
-   writable roots by pathname, so build tools (dune's [_build/.rpc/dune] RPC
-   socket) work while an INET bind or connect — which carries no pathname — stays
-   subject to the network posture. It reuses the [WRITABLE_ROOT_%d] parameters,
-   introducing no new [-D] parameter. *)
-let unix_socket_scoped_section =
-  {|(allow network-bind network-outbound
-(subpath (param "WRITABLE_ROOT_0"))
-)|}
-
 let seatbelt_read_only_golden () =
   let text, params = seatbelt_sbpl (confined ()) in
   is_true ~msg:"profile starts closed-by-default"
@@ -398,31 +393,53 @@ let seatbelt_read_only_golden () =
     ~msg:"restricted network opens no INET boundary (no blanket outbound rule)"
     (String.includes ~affix:"(allow network-outbound)" text)
 
+(* The profile is one rule per clause in emission order, so what these pin is
+   the resolution law rather than a layout: the clause that decides a path is
+   the last one naming it. *)
+let index_of needle haystack =
+  let n = String.length needle and h = String.length haystack in
+  let rec go i =
+    if i + n > h then -1
+    else if String.equal (String.sub haystack i n) needle then i
+    else go (i + 1)
+  in
+  go 0
+
 let seatbelt_scoped_reads_golden () =
   let policy =
     confined
-      ~reads:(Policy.Only [ abs "/work"; abs "/opt/ocaml" ])
+      ~reads:[ abs "/opt/ocaml" ]
       ~writable_roots:[ abs "/work" ]
+      ~protected_paths:[ abs "/work/.git" ]
       ()
   in
   let text, params = seatbelt_sbpl policy in
   is_false ~msg:"scoped reads drop the host-wide read rule"
     (String.includes ~affix:"(allow file-read*)" text);
-  is_true ~msg:"scoped read section is exact"
-    (String.includes ~affix:scoped_read_section text);
-  is_true ~msg:"scoped write section is exact"
-    (String.includes ~affix:scoped_write_section text);
-  is_true ~msg:"the Unix-socket allow spans the writable roots"
-    (String.includes ~affix:unix_socket_scoped_section text);
   equal
     (list (pair string string))
-    ~msg:"every normalized read and write root is a parameter"
-    [
-      ("READABLE_ROOT_0", "/opt/ocaml");
-      ("READABLE_ROOT_1", "/work");
-      ("WRITABLE_ROOT_0", "/work");
-    ]
-    params
+    ~msg:"every clause is a parameter, shallowest first"
+    [ ("PATH_0", "/work"); ("PATH_1", "/opt/ocaml"); ("PATH_2", "/work/.git") ]
+    params;
+  is_true ~msg:"the writable clause grants writes"
+    (String.includes ~affix:"(allow file-write*\n(subpath (param \"PATH_0\")))"
+       text);
+  is_true ~msg:"the carveout denies writes"
+    (String.includes ~affix:"(deny file-write*\n(subpath (param \"PATH_2\")))"
+       text);
+  is_true
+    ~msg:"the carveout's deny follows the grant it overrides, so it decides"
+    (index_of "(deny file-write*\n(subpath (param \"PATH_2\")))" text
+    > index_of "(allow file-write*\n(subpath (param \"PATH_0\")))" text);
+  is_true
+    ~msg:"local Unix-socket IPC is admitted under the writable clause only"
+    (String.includes
+       ~affix:
+         "(allow network-bind network-outbound\n(subpath (param \"PATH_0\"))\n)"
+       text);
+  is_false
+    ~msg:"restricted network opens no INET boundary (no blanket outbound rule)"
+    (String.includes ~affix:"(allow network-outbound)" text)
 
 let seatbelt_carveout_golden () =
   let policy =
@@ -434,39 +451,54 @@ let seatbelt_carveout_golden () =
   let text, params = seatbelt_sbpl policy in
   equal
     (list (pair string string))
-    ~msg:"params bind each root and every carveout beneath it, in order"
+    ~msg:"roots precede the carveouts beneath them"
     [
-      ("WRITABLE_ROOT_0", "/tmp");
-      ("WRITABLE_ROOT_1", "/usr");
-      ("WRITABLE_ROOT_1_EXCLUDED_0", "/usr/bin");
-      ("WRITABLE_ROOT_1_EXCLUDED_1", "/usr/lib");
-      ("WRITABLE_ROOT_1_EXCLUDED_2", "/usr/share");
+      ("PATH_0", "/tmp");
+      ("PATH_1", "/usr");
+      ("PATH_2", "/usr/bin");
+      ("PATH_3", "/usr/lib");
+      ("PATH_4", "/usr/share");
     ]
     params;
-  is_true ~msg:"a carved-out root uses a require-all with require-not clauses"
-    (String.includes
-       ~affix:
-         "(require-all (subpath (param \"WRITABLE_ROOT_1\")) (require-not \
-          (literal (param \"WRITABLE_ROOT_1_EXCLUDED_0\"))) (require-not \
-          (subpath (param \"WRITABLE_ROOT_1_EXCLUDED_0\")))"
-       text)
+  List.iter
+    (fun param ->
+      is_true
+        ~msg:("the carveout " ^ param ^ " denies writes")
+        (String.includes
+           ~affix:("(deny file-write*\n(subpath (param \"" ^ param ^ "\")))")
+           text);
+      is_true
+        ~msg:("the carveout " ^ param ^ " still reads")
+        (String.includes ~affix:("(subpath (param \"" ^ param ^ "\")))") text))
+    [ "PATH_2"; "PATH_3"; "PATH_4" ]
 
 let seatbelt_nested_roots_share_carveouts () =
   (* A workspace nested under another writable root must not have its protected
-     metadata reachable through the enclosing root (hardening #10). *)
+     metadata reachable through the enclosing root. Depth ordering is what
+     guarantees it: the carveout is deeper than both roots, so it is emitted
+     last and decides. *)
   let policy =
     confined
       ~writable_roots:[ abs "/private/tmp"; abs "/private/tmp/ws" ]
       ~protected_paths:[ abs "/private/tmp/ws/.git" ]
       ()
   in
-  let _text, params = seatbelt_sbpl policy in
-  is_true ~msg:"the enclosing root carves out the nested root's .git"
-    (List.exists
-       (fun (key, value) ->
-         String.equal value "/private/tmp/ws/.git"
-         && String.starts_with ~prefix:"WRITABLE_ROOT_0" key)
-       params)
+  let text, params = seatbelt_sbpl policy in
+  let param_of value =
+    List.find_map
+      (fun (k, v) -> if String.equal v value then Some k else None)
+      params
+  in
+  match (param_of "/private/tmp/ws/.git", param_of "/private/tmp") with
+  | Some carveout, Some enclosing ->
+      is_true ~msg:"the enclosing root's write grant precedes the carveout"
+        (index_of
+           ("(deny file-write*\n(subpath (param \"" ^ carveout ^ "\")))")
+           text
+        > index_of
+            ("(allow file-write*\n(subpath (param \"" ^ enclosing ^ "\")))")
+            text)
+  | _ -> fail "both the enclosing root and its carveout must be parameters"
 
 let seatbelt_network_enabled_golden () =
   let text, _ = seatbelt_sbpl (confined ~network:Policy.Network.Enabled ()) in
@@ -484,7 +516,7 @@ let seatbelt_no_path_enters_the_text () =
   let paths = [ "/data/secret"; "/work/project"; "/work/project/.git" ] in
   let policy =
     confined
-      ~reads:(Policy.Only [ abs "/data/secret" ])
+      ~reads:[ abs "/data/secret" ]
       ~writable_roots:[ abs "/work/project" ]
       ~protected_paths:[ abs "/work/project/.git" ]
       ()
@@ -544,7 +576,7 @@ let bubblewrap_read_only_golden () =
 let bubblewrap_scoped_reads_golden () =
   let policy =
     confined
-      ~reads:(Policy.Only [ abs "/usr" ])
+      ~reads:[ abs "/usr" ]
       ~writable_roots:[ abs "/usr" ]
       ~protected_paths:[ abs "/usr/bin" ]
       ()
@@ -557,9 +589,6 @@ let bubblewrap_scoped_reads_golden () =
         "/";
         "--dev";
         "/dev";
-        "--ro-bind";
-        "/usr";
-        "/usr";
         "--bind";
         "/usr";
         "/usr";
@@ -603,7 +632,7 @@ let bubblewrap_network_enabled_golden () =
 let bubblewrap_seals_a_scoped_root () =
   let scoped =
     bubblewrap_lowered
-      (confined ~reads:(Policy.Only [ abs "/usr" ]) ())
+      (confined ~reads:[ abs "/usr" ] ())
       ~cwd:(abs "/usr") ~program:"true" []
   in
   let rec index_of needle index = function
@@ -620,24 +649,17 @@ let bubblewrap_seals_a_scoped_root () =
        (String.equal "--remount-ro")
        (bubblewrap_lowered (confined ()) ~cwd:(abs "/tmp") ~program:"true" []))
 
-(* A denial is the one grant that must not be filtered against the write
-   lattice the way a carveout is, must survive a mode that grants nothing else,
-   and must reach the identity — two policies differing only in what they deny
-   are different confinements. *)
+(* A denial must survive a posture that grants nothing else, and must reach the
+   identity — two policies differing only in what they deny are different
+   confinements. *)
 let denials_are_unfiltered_and_identified () =
   let outside = abs "/elsewhere/mentat" in
   let policy =
     confined ~writable_roots:[ abs "/work" ] ~denied_paths:[ outside ] ()
   in
   equal (list abs_value)
-    ~msg:"a denied path outside every writable root is kept, unlike a carveout"
-    [ outside ]
+    ~msg:"a denied path outside every writable root is kept" [ outside ]
     (Policy.denied_paths policy);
-  equal (list abs_value) ~msg:"the same path as a carveout is dropped" []
-    (Policy.protected_paths
-       (confined
-          ~writable_roots:[ abs "/work" ]
-          ~protected_paths:[ outside ] ()));
   let identity p =
     Mentat_sandbox.identity
       (Mentat_sandbox.confined ~backend:(Ok Backend.Seatbelt) ~mutates:true p)
@@ -652,7 +674,7 @@ let denials_are_lowered_last () =
   let denied = abs "/elsewhere/mentat" in
   let policy =
     confined
-      ~reads:(Policy.Only [ abs "/usr" ])
+      ~reads:[ abs "/usr" ]
       ~writable_roots:[ abs "/usr" ]
       ~denied_paths:[ denied ] ()
   in
@@ -677,7 +699,7 @@ let denials_are_lowered_last () =
        params);
   is_false ~msg:"a deny-free profile emits no deny section"
     (String.includes ~affix:"(deny file-read* file-write*"
-       (fst (seatbelt_sbpl (confined ~reads:(Policy.Only [ abs "/usr" ]) ()))))
+       (fst (seatbelt_sbpl (confined ~reads:[ abs "/usr" ] ()))))
 
 let bubblewrap_uses_strict_ro_bind () =
   (* Hardening #2: carveouts use strict [--ro-bind], never [--ro-bind-try],
@@ -892,11 +914,7 @@ let lower_argv_enforces_cwd_containment () =
   (* RFC L9 / hardening #8: a confined cwd must be within the readable roots.
      Purely lexical: no filesystem is touched. *)
   let sandbox =
-    sealed
-      (confined
-         ~reads:(Policy.Only [ abs "/work" ])
-         ~writable_roots:[ abs "/work" ]
-         ())
+    sealed (confined ~reads:[ abs "/work" ] ~writable_roots:[ abs "/work" ] ())
   in
   is_ok ~msg:"a cwd inside the read roots is accepted"
     (Sandbox.lower_argv sandbox ~cwd:(abs "/work/sub") [ "true" ]);
@@ -954,10 +972,7 @@ let lower_escalated_drops_containment_never_prefixes () =
      environment as a confined one. It also applies no read-root cwd
      containment: the same out-of-scope cwd lower_argv rejects is accepted. *)
   let policy =
-    confined
-      ~reads:(Policy.Only [ abs "/work" ])
-      ~writable_roots:[ abs "/work" ]
-      ()
+    confined ~reads:[ abs "/work" ] ~writable_roots:[ abs "/work" ] ()
   in
   let sandbox = sealed policy in
   let out_of_scope = abs "/outside" in
@@ -1008,7 +1023,7 @@ let obligations_enumerate_paths_and_kinds () =
      obligation must be the stronger Directory. *)
   let policy =
     confined
-      ~reads:(Policy.Only [ abs "/data" ])
+      ~reads:[ abs "/data" ]
       ~writable_roots:[ abs "/work" ]
       ~protected_paths:[ abs "/work/.git" ]
       ()
@@ -1214,23 +1229,23 @@ let identity_digest_pins () =
        (Identity.digest (Sandbox.identity (refused_sealed workspace_policy))));
   let pinned_policy =
     confined
-      ~reads:(Policy.Only [ abs "/data" ])
+      ~reads:[ abs "/data" ]
       ~writable_roots:[ abs "/work" ]
       ~protected_paths:[ abs "/work/.git" ]
       ()
   in
   equal string ~msg:"seatbelt enforced identity digest golden"
-    "fd1101d943019d9676259625bfcdd78c0b8c551bbfe5383c46009fb41aeed662"
+    "e3566e4638f2f7855d25e85278c6badf57a07fe24f67d934f4e804d32aab8b0e"
     (Digest.to_hex (Identity.digest (identity_of pinned_policy)));
   equal string ~msg:"bubblewrap enforced identity digest golden"
-    "02abbba5f4501159fbba741ccabea33a4f345344176dfb7f71acce983f4f50b2"
+    "67ad848d9e0a7d15ca292f307d6a306d72f90d0a5a8b2fcd6aa6ef60af4a3012"
     (Digest.to_hex
        (Identity.digest (identity_of ~backend:Backend.Bubblewrap pinned_policy)))
 
 let identity_changes_on_confinement_change () =
   let base =
     confined
-      ~reads:(Policy.Only [ abs "/data" ])
+      ~reads:[ abs "/data" ]
       ~writable_roots:[ abs "/work" ]
       ~protected_paths:[ abs "/work/.git" ]
       ~network:Policy.Network.Restricted ()
@@ -1241,25 +1256,25 @@ let identity_changes_on_confinement_change () =
   in
   differs ~msg:"widening a writable root flips the identity"
     (confined
-       ~reads:(Policy.Only [ abs "/data" ])
+       ~reads:[ abs "/data" ]
        ~writable_roots:[ abs "/work"; abs "/extra" ]
        ~protected_paths:[ abs "/work/.git" ]
        ());
   differs ~msg:"flipping the network flips the identity"
     (confined
-       ~reads:(Policy.Only [ abs "/data" ])
+       ~reads:[ abs "/data" ]
        ~writable_roots:[ abs "/work" ]
        ~protected_paths:[ abs "/work/.git" ]
        ~network:Policy.Network.Enabled ());
   differs ~msg:"adding a read root flips the identity"
     (confined
-       ~reads:(Policy.Only [ abs "/data"; abs "/more" ])
+       ~reads:[ abs "/data"; abs "/more" ]
        ~writable_roots:[ abs "/work" ]
        ~protected_paths:[ abs "/work/.git" ]
        ());
   differs ~msg:"changing a protected path flips the identity"
     (confined
-       ~reads:(Policy.Only [ abs "/data" ])
+       ~reads:[ abs "/data" ]
        ~writable_roots:[ abs "/work" ]
        ~protected_paths:[ abs "/work/.mentat" ]
        ());
@@ -1351,15 +1366,14 @@ let () =
         error_messages_carry_fields;
       test "error json is built from the constructors" error_json_shape;
       (* Policy *)
-      test "policy normalizes writable roots" policy_normalizes_writable_roots;
-      test "policy collapses descendant roots" policy_collapses_descendant_roots;
       test "policy distinguishes network state" policy_distinguishes_network;
-      test "policy scopes concrete protected paths"
-        policy_protected_paths_are_scoped;
+      test "policy keeps every clause" policy_keeps_every_clause;
+      test "policy collapses only duplicate paths"
+        policy_collapses_only_duplicate_paths;
+      policy_entries_are_ordered_shallowest_first ();
       test "policy folds writable into reads" policy_folds_writable_into_reads;
       test "policy denials participate in equality"
         policy_denials_participate_in_equality;
-      policy_root_normalization_is_an_antichain ();
       (* Backend / Requirement / Network *)
       test "backend identity and order" backend_identity;
       test "backend of_id round-trips" backend_of_id_round_trips;

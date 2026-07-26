@@ -434,8 +434,8 @@ let describe_roots_carries_user_toolchain_dirs () =
   let read_roots =
     match Wio.policy io with
     | Some policy -> (
-        match Sandbox.Policy.reads policy with
-        | Sandbox.Policy.Only roots -> roots
+        match Sandbox.Policy.reads_default policy with
+        | Sandbox.Policy.Denied -> Sandbox.Policy.readable_roots policy
         | Sandbox.Policy.All -> fail "expected a project-scoped read policy")
     | None -> fail "expected a confined seal carrying a policy"
   in
@@ -477,7 +477,14 @@ let describe_roots_carries_user_toolchain_dirs () =
      builds outside the sandbox, so the lock grant does not reach them. *)
   let protected =
     match Wio.policy io with
-    | Some policy -> Sandbox.Policy.protected_paths policy
+    | Some policy ->
+        (* A carveout is now a [Read] clause; the enclosing grant is [Write]. *)
+        List.filter_map
+          (fun (path, access) ->
+            match access with
+            | Sandbox.Policy.Access.Read -> Some path
+            | Sandbox.Policy.Access.Write | Sandbox.Policy.Access.Deny -> None)
+          (Sandbox.Policy.entries policy)
     | None -> fail "expected a confined seal carrying a policy"
   in
   let carved dir = List.exists (Abs.equal (abs dir)) protected in

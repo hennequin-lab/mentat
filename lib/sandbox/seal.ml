@@ -96,11 +96,13 @@ let validated_argv argv =
       in
       check 0 argv
 
-let cwd_within reads cwd =
-  match reads with
-  | Policy.Only roots ->
-      List.exists (fun root -> Lpath.Abs.is_within ~root cwd) roots
+let cwd_within policy cwd =
+  match Policy.reads_default policy with
   | Policy.All -> true
+  | Policy.Denied ->
+      List.exists
+        (fun root -> Lpath.Abs.is_within ~root cwd)
+        (Policy.readable_roots policy)
 
 let lower_argv t ~cwd argv =
   match validated_argv argv with
@@ -110,8 +112,7 @@ let lower_argv t ~cwd argv =
       | Unconfined | Declared_external -> Ok argv
       | Refuse { error; _ } -> Error error
       | Confine { policy; profile; _ } ->
-          if cwd_within (Policy.reads policy) cwd then
-            Ok (Profile.wrap profile ~cwd argv)
+          if cwd_within policy cwd then Ok (Profile.wrap profile ~cwd argv)
           else Error (Error.Cwd_outside_scope cwd))
 
 let lower_escalated_argv t ~cwd:_ argv =
@@ -127,15 +128,12 @@ let obligations t =
   match t.route with
   | Unconfined | Declared_external | Refuse _ -> []
   | Confine { policy; _ } ->
-      let readable =
-        match Policy.reads policy with
-        | Policy.Only roots -> roots
-        | Policy.All -> []
-      in
-      let protected = Policy.protected_paths policy in
+      (* A denied path needs no existence proof — denying an absent path is
+         still correct — so only the granting clauses are obliged. *)
+      let readable = Policy.readable_roots policy in
       let directories = Policy.writable_roots policy in
       let is_directory path = List.exists (Lpath.Abs.equal path) directories in
-      List.sort_uniq Lpath.Abs.compare (readable @ protected @ directories)
+      List.sort_uniq Lpath.Abs.compare readable
       |> List.map (fun path ->
           let kind =
             if is_directory path then Obligation.Directory

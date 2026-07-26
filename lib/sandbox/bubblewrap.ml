@@ -3,49 +3,30 @@
   SPDX-License-Identifier: ISC
  ---------------------------------------------------------------------------*)
 
-let path path = Lpath.Abs.to_string path
+(* One mount per clause, shallowest first. Bubblewrap applies mounts in order
+   and the last one on a path wins, so emission order is the resolution law:
+   a [Read] clause beneath a [Write] one simply lands after it. Nothing here
+   knows what a carveout is.
 
-(* Every bind uses strict [--ro-bind]/[--bind]: on a missing source [bwrap]
-   aborts the spawn. That is deliberate. Protected carveouts (e.g. [.git]) that
-   may not exist under a writable root — a fresh checkout, or a cache root added
-   by config — are existence-filtered by the effect twin before they reach the
-   policy, so a bound carveout always exists at seal time. The only refused case
-   is a carveout deleted between sealing and launch, which the sealed sandbox's
-   obligations turn into a loud stale-policy refusal. The [--ro-bind-try]
-   variant would instead silently drop the read-only overlay and run the command
-   unprotected — fail-open, the wrong direction for a path bound to prevent
-   writes. *)
-let bind_readable root = [ "--ro-bind"; path root; path root ]
-let bind_protected root = [ "--ro-bind"; path root; path root ]
-let bind_writable root = [ "--bind"; path root; path root ]
-
-(* A denial masks the path with an empty ephemeral mount rather than removing a
-   bind, because the grant it overrides may be any of the binds above and a
-   mask does not have to know which. [--tmpfs] alone would leave the mask
-   writable — the write would be accepted and discarded, the same silent
-   success [seal_root] exists to prevent — so the mount is remounted read-only
-   immediately. [--perms] fixes the mode before the mount so an empty directory
-   is not left world-traversable. Emitted after every bind, since the last
-   operation on a path wins. The effect twin guarantees the path exists: bwrap
-   creates a missing mount point inside the new root, which fails under a
-   read-only read scope. *)
-let mask_denied root =
-  [ "--perms"; "000"; "--tmpfs"; path root; "--remount-ro"; path root ]
+   Every bind is strict — on a missing source [bwrap] aborts the spawn rather
+   than silently dropping the clause and running unprotected. The effect twin
+   materializes every path Mentat owns, so a bound clause always exists at seal
+   time; a path deleted between sealing and launch is a loud stale-policy
+   refusal from the sealed obligations. *)
+let clause (path, access) =
+  let p = Lpath.Abs.to_string path in
+  match access with
+  | Policy.Access.Read -> [ "--ro-bind"; p; p ]
+  | Policy.Access.Write -> [ "--bind"; p; p ]
+  | Policy.Access.Deny -> [ "--perms"; "000"; "--tmpfs"; p; "--remount-ro"; p ]
 
 let filesystem_args policy =
-  let read_args =
-    match Policy.reads policy with
-    | Policy.All -> [ "--ro-bind"; "/"; "/"; "--dev"; "/dev" ]
-    | Policy.Only roots ->
-        [ "--tmpfs"; "/"; "--dev"; "/dev" ]
-        @ List.concat_map bind_readable roots
+  let root =
+    match Policy.reads_default policy with
+    | Policy.All -> [ "--ro-bind"; "/"; "/" ]
+    | Policy.Denied -> [ "--tmpfs"; "/" ]
   in
-  let roots = Policy.writable_roots policy in
-  let carveouts = Policy.protected_paths policy in
-  read_args
-  @ List.concat_map bind_writable roots
-  @ List.concat_map bind_protected carveouts
-  @ List.concat_map mask_denied (Policy.denied_paths policy)
+  root @ [ "--dev"; "/dev" ] @ List.concat_map clause (Policy.entries policy)
 
 (* An [Only] read scope builds its root as a [--tmpfs], which is writable. A
    write to a path no bind covers therefore lands in that ephemeral mount and
@@ -58,9 +39,9 @@ let filesystem_args policy =
    and creates each mount point inside the new root as it goes, so [--proc] and
    [--dev] fail with [EROFS] if the root is sealed before they run. *)
 let seal_root policy =
-  match Policy.reads policy with
+  match Policy.reads_default policy with
   | Policy.All -> []
-  | Policy.Only _ -> [ "--remount-ro"; "/" ]
+  | Policy.Denied -> [ "--remount-ro"; "/" ]
 
 let arguments policy =
   let namespace =

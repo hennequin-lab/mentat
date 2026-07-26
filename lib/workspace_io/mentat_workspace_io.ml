@@ -210,9 +210,10 @@ let described_roots ~sandbox facts =
   match Mentat_sandbox.policy sandbox with
   | None -> []
   | Some policy -> (
-      match Mentat_sandbox.Policy.reads policy with
+      match Mentat_sandbox.Policy.reads_default policy with
       | Mentat_sandbox.Policy.All -> []
-      | Mentat_sandbox.Policy.Only admitted ->
+      | Mentat_sandbox.Policy.Denied ->
+          let admitted = Mentat_sandbox.Policy.readable_roots policy in
           List.fold_left
             (fun acc ((_, path) as fact) ->
               if
@@ -263,23 +264,19 @@ let resolve ~sw ~stdenv ~logical ~mode ~read ~readable_roots ~writable_roots
       | Mentat_config.Mode.Danger_full_access -> Mentat_sandbox.direct
       | Mentat_config.Mode.External_sandbox -> Mentat_sandbox.external_
       | Mentat_config.Mode.Read_only | Mentat_config.Mode.Workspace_write ->
-          let reads =
+          (* One clause per admitted path. Specificity decides the rest:
+             a carveout is a [Read] beneath a [Write], a denial outranks both
+             wherever it lands, and no list has to be filtered against another
+             to say so. *)
+          let reads_default =
             match read with
             | Mentat_config.Read.All -> Mentat_sandbox.Policy.All
-            | Mentat_config.Read.Project ->
-                Mentat_sandbox.Policy.Only derived.Derive.readable
+            | Mentat_config.Read.Project -> Mentat_sandbox.Policy.Denied
           in
-          (* A read-only route still needs somewhere to put a temporary file
-             — every libc temp helper wants one, and denying it breaks tools
-             that mutate nothing. What "read-only" promises is that the
-             *workspace* is not changed, so the platform scratch space is
-             granted and the workspace roots are not. The no-mutation promise
-             is carried by [mutates] rather than inferred from this list being
-             empty, so granting temp cannot silently buy an escalation. *)
           let mutates =
             match mode with Mentat_config.Mode.Read_only -> false | _ -> true
           in
-          let writable_roots, protected_paths =
+          let writable, carveouts =
             match mode with
             | Mentat_config.Mode.Read_only ->
                 (derived.Derive.platform_writable, [])
@@ -288,13 +285,17 @@ let resolve ~sw ~stdenv ~logical ~mode ~read ~readable_roots ~writable_roots
                   @ derived.Derive.toolchain_writable,
                   derived.Derive.protected )
           in
+          let clause access paths =
+            List.map (fun path -> (path, access)) paths
+          in
+          let entries =
+            clause Mentat_sandbox.Policy.Access.Read derived.Derive.readable
+            @ clause Mentat_sandbox.Policy.Access.Write writable
+            @ clause Mentat_sandbox.Policy.Access.Read carveouts
+            @ clause Mentat_sandbox.Policy.Access.Deny derived.Derive.denied
+          in
           let policy =
-            (* The denials sit outside the mode match: a read-only route zeroes
-               the writable and protected lists, and a deny set that rode in
-               with them would vanish on exactly the route that grants the
-               least. *)
-            Mentat_sandbox.Policy.make ~reads ~writable_roots ~protected_paths
-              ~denied_paths:derived.Derive.denied ~network
+            Mentat_sandbox.Policy.make ~entries ~reads_default ~network
           in
           let backend = Probe.backend ~stdenv ~lookup in
           Mentat_sandbox.confined ~backend ~mutates policy

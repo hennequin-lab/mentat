@@ -215,154 +215,88 @@ let network_policy =
   (sysctl-name-regex #"^net.routetable")
 )|}
 
-let writable_param index = Printf.sprintf "WRITABLE_ROOT_%d" index
-let readable_param index = Printf.sprintf "READABLE_ROOT_%d" index
+let clause_param index = Printf.sprintf "PATH_%d" index
 
-let file_read_policy policy =
-  match Policy.reads policy with
-  | Policy.All -> ("(allow file-read*)\n(allow file-map-executable)", [])
-  | Policy.Only roots ->
-      let params =
-        List.mapi
-          (fun index root -> (readable_param index, Lpath.Abs.to_string root))
-          roots
-      in
-      let predicates =
-        List.concat_map
-          (fun (param, _) ->
-            [
-              Printf.sprintf "(literal (param \"%s\"))" param;
-              Printf.sprintf "(subpath (param \"%s\"))" param;
-            ])
-          params
-      in
-      (* [realpath] and path resolution walk every ancestor of a root
-         (e.g. /Applications above an admitted /Applications/Xcode.app), so
-         each root also grants metadata — never data — on its ancestor
-         chain. *)
-      let ancestors =
-        List.map
-          (fun (param, _) ->
-            Printf.sprintf "(path-ancestors (param \"%s\"))" param)
-          params
-      in
-      ( Printf.sprintf
-          "(allow file-read* file-test-existence file-map-executable\n\
-           %s\n\
-           )\n\
-           (allow file-read-metadata file-test-existence\n\
-           %s\n\
-           )"
-          (String.concat " " predicates)
-          (String.concat " " ancestors),
-        params )
+(* One rule per clause, shallowest first. SBPL is last-match-wins, so emission
+   order is the resolution law and a [Read] clause beneath a [Write] one simply
+   overrides it — no [require-not] threading, and no rule has to know which
+   other rule it is carving out of.
 
-let excluded_param index excluded_index =
-  Printf.sprintf "WRITABLE_ROOT_%d_EXCLUDED_%d" index excluded_index
+   Paths are [-D] parameters, never profile text. [file-map-executable] rides
+   with read because a binary must be mappable to run, and [path-ancestors]
+   grants metadata — never data — along each clause's parent chain, which
+   [realpath] and ordinary path resolution walk. *)
+let clause_rules params =
+  List.map
+    (fun (param, _, access) ->
+      match access with
+      | Policy.Access.Read ->
+          (* The read allow does not revoke a shallower write allow: SBPL
+             resolves per operation, so a rule that never mentions
+             [file-write*] cannot override one that does. The explicit write
+             deny is what makes a [Read] clause beneath a [Write] one act as a
+             carveout, and it is harmless where nothing granted the write. *)
+          Printf.sprintf
+            "(allow file-read* file-test-existence file-map-executable\n\
+             (literal (param \"%s\")) (subpath (param \"%s\")))\n\
+             (deny file-write*\n\
+             (subpath (param \"%s\")))"
+            param param param
+      | Policy.Access.Write ->
+          Printf.sprintf
+            "(allow file-read* file-test-existence file-map-executable\n\
+             (literal (param \"%s\")) (subpath (param \"%s\")))\n\
+             (allow file-write*\n\
+             (subpath (param \"%s\")))"
+            param param param
+      | Policy.Access.Deny ->
+          Printf.sprintf
+            "(deny file-read* file-write* file-test-existence\n\
+             (literal (param \"%s\")) (subpath (param \"%s\")))"
+            param param)
+    params
 
-let file_write_policy policy =
-  let roots = Policy.writable_roots policy in
-  match roots with
-  | [] -> ("", [])
-  | roots ->
-      let carveouts = Policy.protected_paths policy in
-      let components, params =
-        List.fold_left
-          (fun (components, params) root ->
-            let index = List.length components in
-            let root_param = writable_param index in
-            let params = (root_param, Lpath.Abs.to_string root) :: params in
-            let excluded =
-              List.filter (fun path -> Lpath.Abs.is_within ~root path) carveouts
-            in
-            let excluded_parts, params =
-              List.fold_left
-                (fun (parts, params) path ->
-                  let param = excluded_param index (List.length parts / 2) in
-                  let params = (param, Lpath.Abs.to_string path) :: params in
-                  ( parts
-                    @ [
-                        Printf.sprintf "(require-not (literal (param \"%s\")))"
-                          param;
-                        Printf.sprintf "(require-not (subpath (param \"%s\")))"
-                          param;
-                      ],
-                    params ))
-                ([], params) excluded
-            in
-            let parts =
-              Printf.sprintf "(subpath (param \"%s\"))" root_param
-              :: excluded_parts
-            in
-            let component =
-              match parts with
-              | [ only ] -> only
-              | parts ->
-                  Printf.sprintf "(require-all %s )" (String.concat " " parts)
-            in
-            (components @ [ component ], params))
-          ([], []) roots
-      in
-      ( Printf.sprintf "(allow file-write*\n%s\n)" (String.concat " " components),
-        List.rev params )
-
-(* dune (and other build tools) serve their RPC over a Unix-domain socket
-   created under the build directory ([_build/.rpc/dune]). Seatbelt governs the
-   [bind()] and [connect()] on such a socket with [network-bind] and
-   [network-outbound] filtered by the socket's pathname; an INET bind or connect
-   carries no pathname and never matches a path filter, so it stays subject to
-   {!network_section}. Admitting these two operations under the writable roots —
-   the same roots [file-write*] already grants, by the same [WRITABLE_ROOT_%d]
-   parameter names and order, so no new [-D] parameter is introduced — lets
-   local build IPC work under a restricted network without opening any INET
-   boundary. *)
-let unix_socket_policy policy =
-  match Policy.writable_roots policy with
-  (* An allow with no filter is an allow, so a posture that grants no writable
-     root must emit no rule at all rather than an empty predicate list — which
-     SBPL reads as unconditional outbound, the one thing a restricted network
-     must never produce. [file_write_policy] guards the same way; this one did
-     not, and was safe only because a scratch was always prepended. *)
+let ancestor_rule params =
+  match
+    List.filter
+      (fun (_, _, access) ->
+        not (Policy.Access.equal access Policy.Access.Deny))
+      params
+  with
   | [] -> ""
-  | roots ->
-      let predicates =
-        List.mapi
-          (fun index _root ->
-            Printf.sprintf "(subpath (param \"%s\"))" (writable_param index))
-          roots
-      in
+  | granted ->
+      Printf.sprintf "(allow file-read-metadata file-test-existence\n%s\n)"
+        (String.concat " "
+           (List.map
+              (fun (param, _, _) ->
+                Printf.sprintf "(path-ancestors (param \"%s\"))" param)
+              granted))
+
+let default_read_rule policy =
+  match Policy.reads_default policy with
+  | Policy.All -> "(allow file-read*)\n(allow file-map-executable)"
+  | Policy.Denied -> ""
+
+(* Local build IPC — dune serves its RPC over a socket under the build
+   directory — is governed by [network-bind]/[network-outbound] filtered by the
+   socket's pathname, which an INET bind carries none of, so admitting it under
+   the writable clauses opens no INET boundary. An allow with an empty predicate
+   list is an allow with no filter, so a posture granting no writable path emits
+   no rule at all. *)
+let unix_socket_policy params =
+  match
+    List.filter
+      (fun (_, _, access) -> Policy.Access.equal access Policy.Access.Write)
+      params
+  with
+  | [] -> ""
+  | writable ->
       Printf.sprintf "(allow network-bind network-outbound\n%s\n)"
-        (String.concat " " predicates)
-
-let denied_param index = Printf.sprintf "DENIED_PATH_%d" index
-
-(* SBPL is last-match-wins, so a denial emitted after every allow overrides all
-   of them — including the base policy's root-literal read and the blanket
-   read an [All] scope emits. Parameterized like every other root so no path
-   text enters the profile body, and omitted entirely when there is nothing to
-   deny, which keeps a deny-free profile byte-identical to the one this release
-   generated. *)
-let deny_policy policy =
-  match Policy.denied_paths policy with
-  | [] -> ("", [])
-  | roots ->
-      let params =
-        List.mapi
-          (fun index root -> (denied_param index, Lpath.Abs.to_string root))
-          roots
-      in
-      let predicates =
-        List.concat_map
-          (fun (param, _) ->
-            [
-              Printf.sprintf "(literal (param \"%s\"))" param;
-              Printf.sprintf "(subpath (param \"%s\"))" param;
-            ])
-          params
-      in
-      ( Printf.sprintf "(deny file-read* file-write* file-test-existence\n%s\n)"
-          (String.concat " " predicates),
-        params )
+        (String.concat " "
+           (List.map
+              (fun (param, _, _) ->
+                Printf.sprintf "(subpath (param \"%s\"))" param)
+              writable))
 
 let network_section policy =
   match Policy.network policy with
@@ -372,19 +306,21 @@ let network_section policy =
         network_policy
 
 let sbpl policy =
-  let read_policy, read_params = file_read_policy policy in
-  let write_policy, write_params = file_write_policy policy in
-  let deny, deny_params = deny_policy policy in
+  let params =
+    List.mapi
+      (fun index (path, access) ->
+        (clause_param index, Lpath.Abs.to_string path, access))
+      (Policy.entries policy)
+  in
   let sections =
     List.filter
       (fun section -> not (String.equal section ""))
-      [
-        base_policy;
-        read_policy;
-        write_policy;
-        unix_socket_policy policy;
-        network_section policy;
-        deny;
-      ]
+      ((base_policy :: default_read_rule policy :: clause_rules params)
+      @ [
+          ancestor_rule params;
+          unix_socket_policy params;
+          network_section policy;
+        ])
   in
-  (String.concat "\n" sections, read_params @ write_params @ deny_params)
+  ( String.concat "\n" sections,
+    List.map (fun (param, value, _) -> (param, value)) params )

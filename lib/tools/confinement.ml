@@ -6,8 +6,8 @@
 let confinement (policy : Mentat_sandbox.Policy.t) :
     Mentat_permission.Access.Command.Confinement.t =
   let read =
-    match Mentat_sandbox.Policy.reads policy with
-    | Mentat_sandbox.Policy.Only _ ->
+    match Mentat_sandbox.Policy.reads_default policy with
+    | Mentat_sandbox.Policy.Denied ->
         Mentat_permission.Access.Command.Confinement.Project
     | Mentat_sandbox.Policy.All ->
         Mentat_permission.Access.Command.Confinement.All
