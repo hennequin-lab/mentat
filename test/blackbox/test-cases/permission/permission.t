@@ -76,7 +76,9 @@ the original turn's terminal outcome.
   "answer":"allow-exact-for-conversation"
 
 Deny consumes the blocked call with the fixed model-visible error and never
-exposes the command output. Custom permission feedback remains invalid input.
+exposes the command output. Custom guidance rides along with the denial without
+changing that fixed error, so the reply needs the provider and is answered by a
+live fake rather than rejected before the turn resumes.
 
   $ cat > permission-deny-first.jsonl <<'JSONL'
   > {"response":{"id":"permission-deny-1","status":"completed","model":"gpt-5.6-sol","output":[{"type":"function_call","id":"permission-deny-item","call_id":"permission-deny-call","name":"shell","arguments":"{\"command\":\"cat reviewed.txt\"}"}]}}
@@ -86,13 +88,11 @@ exposes the command output. Custom permission feedback remains invalid input.
   exit:3
   $ permission_deny=$(grep '"type":"session.waiting"' permission-deny.out | mentat_cram json .decision_id)
   $ wait_fake_server
-  $ mentat run reply permission-deny --decision "$permission_deny" --deny --message custom --cwd "$PWD" >/dev/null 2>&1; echo exit:$?
-  exit:2
   $ cat > permission-denied.jsonl <<'JSONL'
   > {"expect":{"body_contains":["function_call_output","permission-deny-call","The user denied permission to run this command."],"body_not_contains":["permission sentinel"]},"response":{"id":"permission-deny-2","status":"completed","model":"gpt-5.6-sol","output":[{"type":"message","role":"assistant","content":[{"type":"output_text","text":"denial continued"}]}]}}
   > JSONL
   $ start_fake_openai permission-denied.jsonl capture-permission-denied port-permission-denied
-  $ mentat run reply permission-deny --decision "$permission_deny" --deny --cwd "$PWD" 2>/dev/null
+  $ mentat run reply permission-deny --decision "$permission_deny" --deny --message custom --cwd "$PWD" 2>/dev/null
   denial continued
   $ wait_fake_server
 
