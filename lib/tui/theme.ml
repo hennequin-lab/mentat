@@ -296,7 +296,7 @@ module Palette = struct
     port ~diff:mentat_light ~neutral:"#eff1f5" ~ink:"#4c4f69" ~primary:"#7287fd"
       ~info:"#04a5e5" ~accent:"#d20f39" ~success:"#40a02b" ~warning:"#df8e1d"
       ~error:"#d20f39" ~keyword:"#8839ef" ~type_:"#1e66f5" ~string:"#40a02b"
-      ~number:"#ca6702"
+      ~number:"#fe640b"
 
   let tokyonight_dark =
     port ~diff:default ~neutral:"#1a1b26" ~ink:"#c0caf5" ~primary:"#7aa2f7"
