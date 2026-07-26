@@ -506,15 +506,17 @@ type t
 val render : ?limits:Limits.t -> ?context:int -> File_change.t list -> t
 (** [render changes] is a display-safe unified diff for [changes].
 
-    [context] defaults to [3]. Control and bidirectional-formatting bytes in
-    labels and content are escaped (safe for prompts, logs, and terminals); [\t]
-    is kept. Entries render in input order; no-op modifications are omitted;
-    creations and deletions use [/dev/null] on the absent side; empty creations
-    and deletions render headers without hunks; missing final newlines render
-    the standard marker. When [limits] are exceeded, affected content is
-    replaced by display-only omission notes and the returned {!stats} counts the
-    omitted files but not their lines. Without [limits], rendering is exact and
-    may perform unbounded diff work.
+    [context] defaults to [3]. Control and bidirectional-formatting characters
+    in labels and content are escaped (safe for prompts, logs, and terminals)
+    and malformed UTF-8 bytes are hex-escaped, so the rendering is valid UTF-8
+    for any input; printable Unicode is preserved and [\t] is kept. Entries
+    render in input order; no-op modifications are omitted; creations and
+    deletions use [/dev/null] on the absent side; empty creations and deletions
+    render headers without hunks; missing final newlines render the standard
+    marker. When [limits] are exceeded, affected content is replaced by
+    display-only omission notes and the returned {!stats} counts the omitted
+    files but not their lines. Without [limits], rendering is exact and may
+    perform unbounded diff work.
 
     Raises [Invalid_argument] if [context] is negative. *)
 

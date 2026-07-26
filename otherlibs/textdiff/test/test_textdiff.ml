@@ -662,8 +662,12 @@ let limits =
 
 (* Display safety. *)
 
-let forbidden_output_byte b =
-  (b < 0x20 && b <> 0x09 && b <> 0x0A) || b = 0x7F || (b >= 0x80 && b <= 0x9F)
+(* The escaping policy classifies scalars, not bytes, so a continuation byte in
+   the 0x80-0x9F range is only a violation when it is a C1 scalar of its own. *)
+let forbidden_output_scalar code =
+  (code < 0x20 && code <> 0x09 && code <> 0x0A)
+  || code = 0x7F
+  || (code >= 0x80 && code <= 0x9F)
 
 let display_safety =
   group "display safety"
@@ -713,7 +717,19 @@ let display_safety =
                  Diff.File_change.create ~label:(lbl "crlf.txt")
                    ~contents:"a\r\nb\r\n";
                ]));
-      prop' "render output never contains an unescaped control or C1 byte"
+      test "preserves printable Unicode" (fun () ->
+          equal string ~msg:"multi-byte scalars survive display escaping"
+            (String.concat ""
+               [
+                 "--- /dev/null\n+++ caf\195\169.txt\n@@ -0,0 +1,2 @@\n";
+                 "+\230\151\165\230\156\172\232\170\158\n+\195\129\n";
+               ])
+            (render_text
+               [
+                 Diff.File_change.create ~label:(lbl "caf\195\169.txt")
+                   ~contents:"\230\151\165\230\156\172\232\170\158\n\195\129\n";
+               ]));
+      prop' "render output is valid UTF-8 without an unescaped control scalar"
         adversarial_text (fun content ->
           let out =
             render_text
@@ -722,12 +738,18 @@ let display_safety =
                   ~contents:content;
               ]
           in
-          String.iter
-            (fun c ->
-              if forbidden_output_byte (Char.code c) then
-                failf "unescaped byte 0x%02X in render output: %S" (Char.code c)
-                  out)
-            out);
+          if not (String.is_valid_utf_8 out) then
+            failf "render output is not valid UTF-8: %S" out;
+          let len = String.length out in
+          let rec check i =
+            if i < len then
+              let decoded = String.get_utf_8_uchar out i in
+              let code = Uchar.to_int (Uchar.utf_decode_uchar decoded) in
+              if forbidden_output_scalar code then
+                failf "unescaped scalar U+%04X in render output: %S" code out
+              else check (i + Uchar.utf_decode_length decoded)
+          in
+          check 0);
     ]
 
 (* Hunks. *)
