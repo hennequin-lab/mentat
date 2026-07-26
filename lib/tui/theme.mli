@@ -279,7 +279,8 @@ val grain_aloft : string
 (** {1:palette Color palette} *)
 
 module Palette : sig
-  (** The resolved color roles for one run.
+  (** The resolved color roles for one run, over the terminal background they
+      were chosen for.
 
       A user theme overrides colors only; glyphs, layout, and the brand lockup's
       shape are never themable (the lockup renders in {!accent}, so its hue
@@ -291,9 +292,20 @@ module Palette : sig
 
   type t
 
+  type appearance =
+    | Dark  (** The palette assumes a dark terminal background. *)
+    | Light  (** The palette assumes a light terminal background. *)
+
   val default : t
   (** [default] is the [mentat-dark] Melange identity — the brand default and
       the single table the module-level color constants project from. *)
+
+  val appearance : t -> appearance
+  (** [appearance t] is the terminal background [t] assumes. It is fixed by the
+      palette's author and is not a themable role — {!of_json} inherits it from
+      the base and no role name sets it — so {!diff_theme_dimmed} always knows
+      which way to fade and the theme picker can tag every row [dark] or
+      [light]. *)
 
   (* Role accessors, one per themable color. *)
 
@@ -384,8 +396,10 @@ module Palette : sig
 
   val diff_theme_dimmed : t -> Mosaic.Diff.theme
   (** [diff_theme_dimmed t] is the compose-dialog variant: the same picture at
-      half brightness, backgrounds halved and signs greyed to {!faint}, so the
-      diff reads as dimmed rather than losing its colors. *)
+      half brightness, backgrounds faded halfway to the backdrop [t]'s
+      {!appearance} names — black under a dark palette, white under a light one
+      — and signs greyed to {!faint}, so the diff reads as dimmed rather than
+      losing its colors. *)
 
   module Diagnostic : sig
     type t
@@ -420,15 +434,10 @@ module Preset : sig
       user-file path only. Built-in names are the resolution floor: a user file
       overlays a name but never removes it. *)
 
-  type appearance =
-    | Dark
-    | Light
-        (** Whether a preset assumes a dark or light terminal background. The
-            picker tags each row with it. *)
-
-  type t = { name : string; appearance : appearance; palette : Palette.t }
-  (** A named preset: its stable [name], its [appearance] tag, and the resolved
-      [palette]. *)
+  type t = { name : string; palette : Palette.t }
+  (** A named preset: its stable [name] and the resolved [palette], which
+      carries its own {!Palette.appearance} for the picker to tag the row with.
+  *)
 
   val all : t list
   (** [all] is every shipped preset: [mentat-dark] ({!Palette.default}),

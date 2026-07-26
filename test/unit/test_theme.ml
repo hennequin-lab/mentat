@@ -26,6 +26,14 @@ let same a b = Color.equal a b
 let hex s = Option.get (Color.of_hex s)
 let of_default json = Palette.of_json ~base:Palette.default json
 
+let appearance_name = function
+  | Palette.Dark -> "dark"
+  | Palette.Light -> "light"
+
+let brightness color =
+  let r, g, b = Color.to_rgb color in
+  r + g + b
+
 let overlay =
   group "of_json overlay"
     [
@@ -126,6 +134,32 @@ let base_and_extends =
           equal (list string) ~msg:"extends emits no diagnostic" []
             (messages diagnostics);
           is_true (same (Palette.accent palette) (hex "#ff0000")));
+      (* Appearance is a property of the palette, not a role a theme file can
+         write: it decides which way {!Palette.diff_theme_dimmed} fades, so a
+         file that could flip it could make the compose dialog paint dark bands
+         on a pale terminal. It rides on the base for free. *)
+      test "an overlay inherits its base's appearance" (fun () ->
+          let light_base =
+            match Preset.find "mentat-light" with
+            | Some preset -> preset.Preset.palette
+            | None -> Palette.default
+          in
+          let palette, _ =
+            Palette.of_json ~base:light_base (jo [ ("accent", "#ff0000") ])
+          in
+          equal string ~msg:"light base stays light" "light"
+            (appearance_name (Palette.appearance palette)));
+      test "appearance is not a settable role" (fun () ->
+          let palette, diagnostics =
+            of_default (jo [ ("appearance", "light") ])
+          in
+          equal (list string)
+            [
+              {|unknown theme role "appearance" (colors only; glyphs and layout are not themable)|};
+            ]
+            (messages diagnostics);
+          equal string ~msg:"the dark default is unmoved" "dark"
+            (appearance_name (Palette.appearance palette)));
     ]
 
 let presets =
@@ -152,6 +186,20 @@ let presets =
           | None -> is_true ~msg:"mentat-dark present" false);
       test "an unknown name has no preset" (fun () ->
           is_true (Option.is_none (Preset.find "no-such-theme")));
+      (* A port takes its appearance from the mentat diff table it copies, so
+         the tag cannot disagree with the terminal the preset was built for. The
+         name says which that is. *)
+      test "every preset's appearance matches its name" (fun () ->
+          List.iter
+            (fun (preset : Preset.t) ->
+              let expected =
+                if String.ends_with ~suffix:"-light" preset.Preset.name then
+                  "light"
+                else "dark"
+              in
+              equal string ~msg:preset.Preset.name expected
+                (appearance_name (Palette.appearance preset.Preset.palette)))
+            Preset.all);
       (* Reading every preset forces construction of the ported palettes, so a
          malformed compiled hex raises here rather than at TUI launch. Each
          palette is a total 27-role record by construction; the diff projection
@@ -241,6 +289,35 @@ let diff_projections =
           let r, g, b = Color.to_rgb (Palette.diff_added_bg p) in
           is_true ~msg:"added bg halved"
             (same dt.Diff.added_bg (Color.of_rgb (r / 2) (g / 2) (b / 2))));
+      (* Dimming fades toward the terminal's own backdrop, so the compose
+         dialog's diff recedes on either kind of terminal: down toward black
+         under a dark palette, up toward white under a light one. A fill that
+         faded the wrong way would paint dark muddy bands across a pale page. *)
+      test "dimming fades every preset's fills toward its own backdrop"
+        (fun () ->
+          List.iter
+            (fun (preset : Preset.t) ->
+              let p = preset.Preset.palette in
+              let dt = Palette.diff_theme_dimmed p in
+              let fades role fill dimmed =
+                let msg = preset.Preset.name ^ " " ^ role in
+                match Palette.appearance p with
+                | Palette.Dark ->
+                    is_true ~msg:(msg ^ " dims darker")
+                      (brightness dimmed < brightness fill)
+                | Palette.Light ->
+                    is_true ~msg:(msg ^ " dims lighter")
+                      (brightness dimmed > brightness fill)
+              in
+              fades "added_bg" (Palette.diff_added_bg p) dt.Diff.added_bg;
+              fades "removed_bg" (Palette.diff_removed_bg p) dt.Diff.removed_bg;
+              fades "added_gutter_bg"
+                (Palette.diff_added_gutter_bg p)
+                (Option.get dt.Diff.added_line_number_bg);
+              fades "removed_gutter_bg"
+                (Palette.diff_removed_gutter_bg p)
+                (Option.get dt.Diff.removed_line_number_bg))
+            Preset.all);
     ]
 
 let () =

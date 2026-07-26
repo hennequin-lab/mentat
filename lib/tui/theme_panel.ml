@@ -113,8 +113,8 @@ let minimum_size = { width = px 0; height = px 0 }
 let fill_remaining = { width = pct 100; height = px 0 }
 
 let appearance_label = function
-  | Preset.Dark -> "dark"
-  | Preset.Light -> "light"
+  | Theme.Palette.Dark -> "dark"
+  | Theme.Palette.Light -> "light"
 
 (* The picker: a selection cursor, the theme name, its dark/light tag, and the
    current theme's trailing ✓. Selection is marker and accent only — never a
@@ -143,7 +143,7 @@ let table ~palette t rows =
           Table.cell (Prims.normalize_inline preset.Preset.name);
           Table.cell
             ~style:(Theme.Palette.muted_style palette)
-            (appearance_label preset.Preset.appearance);
+            (appearance_label (Theme.Palette.appearance preset.Preset.palette));
           Table.cell
             ~style:(Theme.Palette.success_style palette)
             (if is_current then "✓" else "");

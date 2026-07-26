@@ -79,7 +79,13 @@ let grain_aloft = "·"
    {!Palette.of_json} fills omitted roles from a chosen base, so a partial theme
    is valid. *)
 module Palette = struct
+  type appearance = Dark | Light
+
   type t = {
+    (* The terminal background the palette assumes. Not a themable role: the
+       palette's author fixes it and an overlay inherits it, so a user file
+       cannot flip the direction [dimmed] fades. *)
+    appearance : appearance;
     accent : Ansi.Color.t;
     mode_plan : Ansi.Color.t;
     mode_review : Ansi.Color.t;
@@ -137,6 +143,7 @@ module Palette = struct
      source the module-level color constants below project from. *)
   let default =
     {
+      appearance = Dark;
       accent = hex "#E39A3C";
       mode_plan = hex "#5CA9D6";
       mode_review = hex "#A98BE0";
@@ -169,6 +176,7 @@ module Palette = struct
   (* [mentat-light]: the same brand direction over a light terminal. *)
   let mentat_light =
     {
+      appearance = Light;
       accent = hex "#B4741C";
       mode_plan = hex "#2E6FA6";
       mode_review = hex "#6E54BC";
@@ -213,13 +221,18 @@ module Palette = struct
      the [success] and [error] hues, which already mean green and red, so a
      preset keeps its own [+] and [-]. The gutter foreground stays the port's own
      [faint], so a line number reads against its own text tiers. All nine remain
-     ordinary roles: a user theme can still set any of them. *)
+     ordinary roles: a user theme can still set any of them.
+
+     [diff] also fixes the port's [appearance]: naming the mentat table of the
+     port's own terminal is already naming that terminal, so deriving the tag
+     from it leaves no second source to drift out of agreement. *)
   let port ~diff ~neutral ~ink ~primary ~info ~accent ~success ~warning ~error
       ~keyword ~type_ ~string ~number =
     let neutral = hex neutral in
     let ink = hex ink in
     let faint = blend ink neutral 0.5 in
     {
+      appearance = diff.appearance;
       accent = hex primary;
       mode_plan = hex info;
       mode_review = hex accent;
@@ -315,6 +328,7 @@ module Palette = struct
       ~error:"#e45649" ~keyword:"#a626a4" ~type_:"#c18401" ~string:"#50a14f"
       ~number:"#986801"
 
+  let appearance t = t.appearance
   let accent t = t.accent
   let mode_plan t = t.mode_plan
   let mode_review t = t.mode_review
@@ -367,11 +381,19 @@ module Palette = struct
   let code_string_style t = Ansi.Style.make ~fg:t.code_string ()
   let code_number_style t = Ansi.Style.make ~fg:t.code_number ()
 
-  (* [dimmed color] halves each channel, so a diff background reads as dimmed
-     rather than losing its colour. *)
-  let dimmed color =
+  (* [dimmed appearance color] fades [color] halfway to the terminal's own
+     backdrop — black under a dark palette, white under a light one — so a
+     dimmed fill recedes into the background it sits on rather than losing its
+     colour. The two directions are exact mirrors: halve each channel, or halve
+     each channel's distance from full. *)
+  let dimmed appearance color =
     let r, g, b = Ansi.Color.to_rgb color in
-    Ansi.Color.of_rgb (r / 2) (g / 2) (b / 2)
+    let fade channel =
+      match appearance with
+      | Dark -> channel / 2
+      | Light -> 255 - ((255 - channel) / 2)
+    in
+    Ansi.Color.of_rgb (fade r) (fade g) (fade b)
 
   (* The three finished {!Mosaic.Diff.theme} values review renders, built from
      the diff roles so review never rebuilds one by hand. Every field maps to a
@@ -406,15 +428,17 @@ module Palette = struct
       removed_sign_color = t.muted;
     }
 
-  (* Compose dialog: the same picture at half brightness — backgrounds halved,
-     signs greyed to [faint] — so the diff reads as dimmed, not decolored. *)
+  (* Compose dialog: the same picture at half brightness — backgrounds faded
+     halfway to the terminal's backdrop, signs greyed to [faint] — so the diff
+     reads as dimmed, not decolored. *)
   let diff_theme_dimmed t =
+    let dim = dimmed t.appearance in
     {
       (diff_theme t) with
-      Mosaic.Diff.added_bg = dimmed t.diff_added_bg;
-      removed_bg = dimmed t.diff_removed_bg;
-      added_line_number_bg = Some (dimmed t.diff_added_gutter_bg);
-      removed_line_number_bg = Some (dimmed t.diff_removed_gutter_bg);
+      Mosaic.Diff.added_bg = dim t.diff_added_bg;
+      removed_bg = dim t.diff_removed_bg;
+      added_line_number_bg = Some (dim t.diff_added_gutter_bg);
+      removed_line_number_bg = Some (dim t.diff_removed_gutter_bg);
       line_number_fg = t.faint;
       added_sign_color = t.faint;
       removed_sign_color = t.faint;
@@ -576,26 +600,25 @@ end
    grammar serves the user-file path only. [mentat-dark] is {!Palette.default};
    the six ports carry a light variant where the upstream defines one. *)
 module Preset = struct
-  type appearance = Dark | Light
-  type t = { name : string; appearance : appearance; palette : Palette.t }
+  type t = { name : string; palette : Palette.t }
 
-  let make name appearance palette = { name; appearance; palette }
+  let make name palette = { name; palette }
 
   let all =
     [
-      make "mentat-dark" Dark Palette.default;
-      make "mentat-light" Light Palette.mentat_light;
-      make "solarized" Dark Palette.solarized_dark;
-      make "solarized-light" Light Palette.solarized_light;
-      make "gruvbox" Dark Palette.gruvbox_dark;
-      make "gruvbox-light" Light Palette.gruvbox_light;
-      make "catppuccin" Dark Palette.catppuccin_dark;
-      make "catppuccin-light" Light Palette.catppuccin_light;
-      make "tokyonight" Dark Palette.tokyonight_dark;
-      make "tokyonight-light" Light Palette.tokyonight_light;
-      make "nord" Dark Palette.nord_dark;
-      make "one-dark" Dark Palette.one_dark;
-      make "one-light" Light Palette.one_light;
+      make "mentat-dark" Palette.default;
+      make "mentat-light" Palette.mentat_light;
+      make "solarized" Palette.solarized_dark;
+      make "solarized-light" Palette.solarized_light;
+      make "gruvbox" Palette.gruvbox_dark;
+      make "gruvbox-light" Palette.gruvbox_light;
+      make "catppuccin" Palette.catppuccin_dark;
+      make "catppuccin-light" Palette.catppuccin_light;
+      make "tokyonight" Palette.tokyonight_dark;
+      make "tokyonight-light" Palette.tokyonight_light;
+      make "nord" Palette.nord_dark;
+      make "one-dark" Palette.one_dark;
+      make "one-light" Palette.one_light;
     ]
 
   let find name = List.find_opt (fun t -> String.equal t.name name) all

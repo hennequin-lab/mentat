@@ -257,46 +257,37 @@ let theme_extends json =
         members
   | _ -> None
 
-(* The base a user file overlays, with its appearance, resolved through the
-   built-in floor. An [extends] naming no built-in falls back to [mentat-dark]
-   with a diagnostic; without [extends], the same-named built-in is the base, else
-   [mentat-dark]. *)
+(* The base a user file overlays, resolved through the built-in floor. An
+   [extends] naming no built-in falls back to [mentat-dark] with a diagnostic;
+   without [extends], the same-named built-in is the base, else [mentat-dark].
+   The base also carries the dark/light appearance the overlay inherits. *)
 let theme_base name json =
-  let mentat_dark =
-    (Mentat_tui.Theme.Palette.default, Mentat_tui.Theme.Preset.Dark)
-  in
   match theme_extends json with
   | Some base -> (
       match Mentat_tui.Theme.Preset.find (canonical_theme_name base) with
-      | Some preset ->
-          ( preset.Mentat_tui.Theme.Preset.palette,
-            preset.Mentat_tui.Theme.Preset.appearance )
+      | Some preset -> preset.Mentat_tui.Theme.Preset.palette
       | None ->
           Theme_log.warn (fun log ->
               log "theme %S extends unknown theme %S; using mentat-dark" name
                 base);
-          mentat_dark)
+          Mentat_tui.Theme.Palette.default)
   | None -> (
       match Mentat_tui.Theme.Preset.find (canonical_theme_name name) with
-      | Some preset ->
-          ( preset.Mentat_tui.Theme.Preset.palette,
-            preset.Mentat_tui.Theme.Preset.appearance )
-      | None -> mentat_dark)
+      | Some preset -> preset.Mentat_tui.Theme.Preset.palette
+      | None -> Mentat_tui.Theme.Palette.default)
 
-(* Resolve one theme by name to its palette and appearance: a user file overlays
-   its base, else a built-in preset, else the default. *)
+(* Resolve one theme by name to its palette: a user file overlays its base, else
+   a built-in preset, else the default. *)
 let resolve_theme t name =
   let name = canonical_theme_name name in
   let from_preset () =
     match Mentat_tui.Theme.Preset.find name with
-    | Some preset ->
-        ( preset.Mentat_tui.Theme.Preset.palette,
-          preset.Mentat_tui.Theme.Preset.appearance )
-    | None -> (Mentat_tui.Theme.Palette.default, Mentat_tui.Theme.Preset.Dark)
+    | Some preset -> preset.Mentat_tui.Theme.Preset.palette
+    | None -> Mentat_tui.Theme.Palette.default
   in
   match read_theme_json t name with
   | `Json json ->
-      let base, appearance = theme_base name json in
+      let base = theme_base name json in
       let palette, diagnostics = Mentat_tui.Theme.Palette.of_json ~base json in
       List.iter
         (fun diagnostic ->
@@ -304,7 +295,7 @@ let resolve_theme t name =
               log "theme %S: %s" name
                 (Mentat_tui.Theme.Palette.Diagnostic.message diagnostic)))
         diagnostics;
-      (palette, appearance)
+      palette
   | `Failed -> from_preset ()
   | `Missing ->
       if Option.is_some (Mentat_tui.Theme.Preset.find name) then from_preset ()
@@ -315,8 +306,9 @@ let resolve_theme t name =
       end
 
 (* The catalog the /theme picker previews from: every built-in preset, with a
-   same-named user file overlaid onto it (name and appearance kept), then the
-   user files that introduce a new name. Built-ins come first. *)
+   same-named user file overlaid onto it (the name kept, and the appearance
+   inherited through the overlay's base), then the user files that introduce a
+   new name. Built-ins come first. *)
 let theme_catalog t =
   let user_names = theme_names t in
   let is_builtin name =
@@ -329,18 +321,18 @@ let theme_catalog t =
     List.map
       (fun (preset : Mentat_tui.Theme.Preset.t) ->
         if List.mem preset.Mentat_tui.Theme.Preset.name user_names then
-          let palette, _ =
-            resolve_theme t preset.Mentat_tui.Theme.Preset.name
-          in
-          { preset with Mentat_tui.Theme.Preset.palette }
+          {
+            preset with
+            Mentat_tui.Theme.Preset.palette =
+              resolve_theme t preset.Mentat_tui.Theme.Preset.name;
+          }
         else preset)
       Mentat_tui.Theme.Preset.all
   in
   let novel =
     List.filter (fun name -> not (is_builtin name)) user_names
     |> List.map (fun name ->
-        let palette, appearance = resolve_theme t name in
-        { Mentat_tui.Theme.Preset.name; appearance; palette })
+        { Mentat_tui.Theme.Preset.name; palette = resolve_theme t name })
   in
   builtins @ novel
 
@@ -349,7 +341,7 @@ let theme_name t =
     (Mentat_config.Resolved.get Mentat_config.Field.tui_theme
        (Composition.config t))
 
-let palette t = fst (resolve_theme t (theme_name t))
+let palette t = resolve_theme t (theme_name t)
 
 (* Under [tui.theme = "auto"] the palette follows the terminal's colour scheme
    between the resolved [tui.theme_dark] and [tui.theme_light] members. Resolving
@@ -359,10 +351,8 @@ let palette t = fst (resolve_theme t (theme_name t))
 let theme_auto t =
   let get field = Mentat_config.Resolved.get field (Composition.config t) in
   if String.equal (get Mentat_config.Field.tui_theme) "auto" then
-    let dark = fst (resolve_theme t (get Mentat_config.Field.tui_theme_dark)) in
-    let light =
-      fst (resolve_theme t (get Mentat_config.Field.tui_theme_light))
-    in
+    let dark = resolve_theme t (get Mentat_config.Field.tui_theme_dark) in
+    let light = resolve_theme t (get Mentat_config.Field.tui_theme_light) in
     Some (dark, light)
   else None
 
