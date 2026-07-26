@@ -322,11 +322,15 @@ let openai_auth =
       ~token_endpoint:Openai_auth.oauth_token_endpoint
       ~redirect_uri:Openai_auth.browser_redirect_uri
       ~scope:[ "openid"; "profile"; "email"; "offline_access" ]
+      (* [originator] names the client making the request; the issuer accepts
+         any value and uses it for attribution, so Mentat names itself. The
+         client id above is still Codex CLI's public OAuth client, which
+         Mentat has no registered equivalent of. *)
       ~extra:
         [
           ("id_token_add_organizations", "true");
           ("codex_cli_simplified_flow", "true");
-          ("originator", "opencode");
+          ("originator", "mentat");
         ]
       ()
   in
