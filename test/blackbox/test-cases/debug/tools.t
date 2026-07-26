@@ -25,7 +25,13 @@ mode and model.
   build
   $ mentat_cram json .model tools.json
   openai/gpt-5.6-sol
-  $ mentat_cram json '.tools[].name' tools.json | grep -q '^apply_patch$' && echo present || echo absent
+The name list is materialized before it is searched: `grep -q` stops at its
+first match, and under `pipefail` the producer it kills with SIGPIPE would turn
+a present tool into a failed pipeline — a race that only shows up on hosts where
+the producer is still writing.
+
+  $ mentat_cram json '.tools[].name' tools.json > build-names
+  $ grep -qx apply_patch build-names && echo present || echo absent
   present
 
 Plan is read-only: it drops the file-mutation and shell tools.
@@ -33,9 +39,10 @@ Plan is read-only: it drops the file-mutation and shell tools.
   $ mentat debug tools --mode plan --model openai/gpt-5.6-sol --json > plan.json
   $ mentat_cram json .mode plan.json
   plan
-  $ mentat_cram json '.tools[].name' plan.json | grep -q '^apply_patch$' && echo present || echo absent
+  $ mentat_cram json '.tools[].name' plan.json > plan-names
+  $ grep -qx apply_patch plan-names && echo present || echo absent
   absent
-  $ mentat_cram json '.tools[].name' plan.json | grep -q '^shell$' && echo present || echo absent
+  $ grep -qx shell plan-names && echo present || echo absent
   absent
 
 An unknown provider is a usage error (exit 2).

@@ -23,7 +23,8 @@ another writer committed while contending for the lock.
 
   $ trusted=0
   $ for root in writers/*/; do
-  >   if mentat config show --cwd "$root" | grep -q '^workspace_trust=trusted$'; then
+  >   mentat config show --cwd "$root" > config-show
+  >   if grep -qx workspace_trust=trusted config-show; then
   >     trusted=$((trusted + 1))
   >   fi
   > done

@@ -58,7 +58,8 @@ OCaml tools, and keeps [propose_plan] reserved for Plan mode.
   todo_write
   update_goal
   wait
-  $ if mentat_cram json '.tools[].name' capture-catalog/request-1.json | grep -q '^web_fetch$'; then echo present; else echo absent; fi
+  $ mentat_cram json '.tools[].name' capture-catalog/request-1.json > catalog-names
+  $ grep -qx web_fetch catalog-names && echo present || echo absent
   absent
 
 Both explicit editor overrides win over model capability metadata, and each
