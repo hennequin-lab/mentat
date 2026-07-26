@@ -225,14 +225,37 @@ let run_escalated_res ?cwd ?stdin ?(capture = Command.All)
 
 (* The direct child (and nothing else this process spawned) carries [name];
    a clean [pgrep] proves it was terminated and reaped before the run
-   returned. Descendants are deliberately not scanned (leader-only ruling). *)
+   returned. Descendants are deliberately not scanned (leader-only ruling).
+
+   [pgrep] is spawned directly rather than through [Sys.command]: the C library
+   runs a shell command as a real [/bin/sh] child of this process, so a
+   shell-mediated probe is itself a direct child and would answer questions
+   about process names the shell can carry. *)
 let assert_leader_gone name =
-  let command =
-    Printf.sprintf "pgrep -P %d -x %s >/dev/null 2>&1" (Unix.getpid ()) name
+  let devnull = Unix.openfile "/dev/null" [ Unix.O_RDWR ] 0 in
+  let argv = [| "pgrep"; "-P"; string_of_int (Unix.getpid ()); "-x"; name |] in
+  let status =
+    Fun.protect
+      ~finally:(fun () -> Unix.close devnull)
+      (fun () ->
+        let pid = Unix.create_process "pgrep" argv devnull devnull devnull in
+        snd (Unix.waitpid [] pid))
   in
   equal int
     ~msg:(name ^ ": the direct child is terminated and reaped")
-    1 (Sys.command command)
+    1
+    (match status with
+    | Unix.WEXITED code -> code
+    | Unix.WSIGNALED signal | Unix.WSTOPPED signal -> -signal)
+
+(* The exact leader identity, free of any name collision: the pid the session
+   reported must no longer resolve. A reaped child answers ESRCH; a surviving
+   or unreaped (zombie) one is still signallable and fails here. *)
+let assert_session_gone session =
+  let pid = Session.pid session in
+  match Unix.kill pid 0 with
+  | () -> failf "the session leader %d survived its termination" pid
+  | exception Unix.Unix_error (Unix.ESRCH, _, _) -> ()
 
 (* Resolution. *)
 
@@ -2014,7 +2037,7 @@ let session_signal_terminates_and_is_idempotent () =
     (match Session.status session with
     | Session.Terminated -> true
     | _ -> false);
-  assert_leader_gone "sleep";
+  assert_session_gone session;
   Session.signal session;
   is_true ~msg:"a second signal is a no-op that keeps the status"
     (match Session.status session with
@@ -2048,7 +2071,7 @@ let session_signal_escalates_past_sigterm () =
     (match Session.status session with
     | Session.Terminated -> true
     | _ -> false);
-  assert_leader_gone "sh"
+  assert_session_gone session
 
 (* The session's lifetime is its switch: releasing it kills and reaps every
    registered child leader-only, promptly, without an explicit signal. *)
