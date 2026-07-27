@@ -120,8 +120,10 @@ Keys supported by `get`, `set`, and `unset`:
 | `image.max_count` | Maximum images in one input (default `20`). |
 
 The full configuration surface is larger; `mentat config show --json` prints
-every effective key but omits unset optional keys and replaces secret-bearing
-values with `[REDACTED]`. `config get KEY` still returns the selected value.
+every effective key but omits unset optional keys and withholds credentials: an
+API key reads `[REDACTED]`, and a provider `base_url` keeps the endpoint it
+names while losing any `user:password@` it carries. `config get KEY` still
+returns the selected value verbatim.
 Additional groups accepted by `get`, `set`, and `unset` include:
 
 - `notices.*` — host notice producers: `fswatch`, `cr_comments`,

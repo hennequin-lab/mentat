@@ -119,7 +119,7 @@ let%expect_test "successful configuration shows values and origins" =
 06 | Session controls below apply to the next turn only.
 07 |
 08 |      setting                    value                                    source
-09 |  ›   providers.openai.base...   [REDACTED]                               user /user.json
+09 |  ›   providers.openai.base...   https://[REDACTED]@api.example.test/v1   user /user.json
 10 |
 11 |
 12 |

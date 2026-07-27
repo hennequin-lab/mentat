@@ -982,14 +982,52 @@ module Field = struct
 
   let equal a b = String.equal (name a) (name b)
 
-  (* Whether a field's value can carry credential material and must be withheld
-     from the diagnostic values-with-origins view. Enumerated in full — never a
-     wildcard default — so adding a field is a compile-time obligation to
-     classify it, keeping "never emit a secret" a construction fact rather than a
-     forgotten default. Today only the provider base URL family qualifies: a base
-     URL can embed userinfo (https://user:token@host). *)
-  let secret_bearing : type a d. (a, d) t -> bool = function
-    | Provider_base_url _ | Web_exa_api_key | Web_parallel_api_key -> true
+  (* [scheme://userinfo@host/…] with the credential-bearing userinfo replaced.
+     The scan is deliberately narrow — the authority is what follows ["://"] up
+     to the next ['/'], ['?'] or ['#'], and the credential a URL can carry lives
+     only before that authority's last ['@'] — so a value that is not a URL, or
+     one that carries no userinfo, renders verbatim. *)
+  let without_userinfo url =
+    let len = String.length url in
+    let rec authority_start i =
+      if i + 2 >= len then None
+      else if url.[i] = ':' && url.[i + 1] = '/' && url.[i + 2] = '/' then
+        Some (i + 3)
+      else authority_start (i + 1)
+    in
+    match authority_start 0 with
+    | None -> url
+    | Some start ->
+        let rec authority_end i =
+          if i >= len then i
+          else
+            match url.[i] with '/' | '?' | '#' -> i | _ -> authority_end (i + 1)
+        in
+        let stop = authority_end start in
+        let rec last_at i found =
+          if i >= stop then found
+          else last_at (i + 1) (if url.[i] = '@' then Some i else found)
+        in
+        (match last_at start None with
+        | None -> url
+        | Some at ->
+            String.sub url 0 start ^ "[REDACTED]" ^ String.sub url at (len - at))
+
+  (* What the diagnostic values-with-origins view may show of a value. [None]
+     withholds it entirely. Enumerated in full — never a wildcard default — so
+     adding a field is a compile-time obligation to classify it, keeping "never
+     emit a secret" a construction fact rather than a forgotten default.
+
+     An API key shows nothing. A provider base URL shows its endpoint with any
+     userinfo stripped: the credential a URL can carry
+     ([https://user:token@host]) lives only there, while the host is the whole
+     answer to "which endpoint is this talking to" — and withholding the answer
+     to that is how a wrong endpoint stays invisible. *)
+  let shown : type a d. (a, d) t -> a -> a option =
+   fun field value ->
+    match field with
+    | Web_exa_api_key | Web_parallel_api_key -> None
+    | Provider_base_url _ -> Some (without_userinfo value)
     | Model | Small_model | Reasoning | Tui_thinking | Tui_mouse
     | Notify_enabled | Notify_channel | Notify_when | Notify_command | Notify_on
     | Tui_theme | Tui_theme_dark | Tui_theme_light | Tui_diff_layout
@@ -1008,7 +1046,7 @@ module Field = struct
     | Web_output_max_chars | Web_timeout_ms | Web_max_timeout_ms
     | Web_search_provider | Image_max_bytes | Image_max_dimension
     | Image_max_count ->
-        false
+        Some value
 
   (* The non-provider-family fields, in the stable order exposed by {!all}. The
      provider base URL family is a parameterized field spliced in after
@@ -1144,9 +1182,10 @@ module Field = struct
      defaultedness, so a [defaulted] field cannot omit its default and an
      [optional] field cannot smuggle one in — the table is compiler-checked
      row by row. Adding a config field touches six sites here — the [t]
-     constructor, its lowercase value binding, its [name] case, its
-     [secret_bearing] classification (the security arm: whether the value can
-     carry a credential), its [all] entry, and its [spec] row — plus the value's
+     constructor, its lowercase value binding, its [name] case, its [shown]
+     classification (the security arm: what a diagnostic view may show of a
+     value that can carry a credential), its [all] entry, and its [spec] row —
+     plus the value's
      [val] in the .mli. [of_string] is not among them: it derives from [all] and
      [name]. *)
   type ('a, 'd) default =
@@ -2357,24 +2396,26 @@ module Resolved = struct
   end
 
   (* Redaction happens here, at the owner, before the value reaches the codec:
-     a secret-bearing field's entry is [Redacted], which carries no slot for the
-     value, so no wire form can leak a credential embedded in it. *)
+     a withheld field's entry is [Redacted], which carries no slot for the
+     value, and a partly-shown one reaches the codec already stripped, so no
+     wire form can leak a credential embedded in it. *)
   let view t =
     let entries =
       origins t
       |> List.map (fun (Field.Any field, origin) ->
           let value =
-            if Field.secret_bearing field then View.Value.Redacted
-            else
-              match find field t with
-              | Some v ->
-                  View.Value.Shown
-                    {
-                      text = (Field.codec field).to_text v;
-                      json = (Field.codec field).encode_json v;
-                    }
-              (* [origins] lists only fields with an effective value. *)
-              | None -> assert false
+            match find field t with
+            (* [origins] lists only fields with an effective value. *)
+            | None -> assert false
+            | Some v -> (
+                match Field.shown field v with
+                | None -> View.Value.Redacted
+                | Some v ->
+                    View.Value.Shown
+                      {
+                        text = (Field.codec field).to_text v;
+                        json = (Field.codec field).encode_json v;
+                      })
           in
           { View.Entry.key = Field.name field; value; origin })
     in

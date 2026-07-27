@@ -1654,18 +1654,23 @@ let codecs =
             warnings);
     ]
 
-(* The values-with-origins view. A base URL is the one config
-   value that can embed userinfo credentials; the sentinel stands in for such a
-   secret so a leak would be visible on the wire. *)
+(* The values-with-origins view. A base URL is the one config value that can
+   embed userinfo credentials; the sentinel stands in for such a secret so a
+   leak would be visible on the wire. *)
 
 let sentinel = "https://tok3n-SECRET-sentinel@api.example.test/v1"
 
-(* A resolved config carrying a secret-bearing [base_url] and a plain scalar, so
-   the view has both a redacted and a shown entry. *)
+(* A resolved config carrying a credential-bearing [base_url], a plain [base_url]
+   with nothing to hide, an API key, and a plain scalar, so the view has a
+   withheld entry, a partly-shown one, and two verbatim ones. *)
 let secret_resolved () =
   let user =
     C.empty
     |> set_exn (C.Field.provider_base_url (Provider.make "openai")) sentinel
+    |> set_exn
+         (C.Field.provider_base_url (Provider.make "ollama"))
+         "http://127.0.0.1:11434"
+    |> set_exn C.Field.web_exa_api_key "exa-SECRET-sentinel"
     |> set_exn C.Field.run_max_steps "7"
   in
   resolve_exn ~user:(user_path, user) ()
@@ -1766,26 +1771,30 @@ let resolved_view =
                     ("source", source_json user_src);
                     ("presentation", js "remove");
                   ])));
-      test "a secret-bearing field is redacted, never emitted" (fun () ->
+      test "a credential is never emitted; the endpoint carrying it is"
+        (fun () ->
           let view = C.Resolved.view (secret_resolved ()) in
           let s = encode_view view in
           is_false ~msg:"sentinel credential absent from the wire"
             (String.includes ~affix:"SECRET" s);
-          (match entry_for "providers.openai.base_url" view with
-          | None -> failf "base_url entry missing from the view"
-          | Some e -> (
-              match C.Resolved.View.Entry.value e with
-              | C.Resolved.View.Value.Redacted -> ()
-              | C.Resolved.View.Value.Shown _ ->
-                  failf "secret-bearing base_url was not redacted"));
-          match entry_for "run.max_steps" view with
-          | None -> failf "run.max_steps entry missing from the view"
-          | Some e -> (
-              match C.Resolved.View.Entry.value e with
-              | C.Resolved.View.Value.Shown { text; _ } ->
-                  equal string ~msg:"plain field shows its value" "7" text
-              | C.Resolved.View.Value.Redacted ->
-                  failf "run.max_steps must not be redacted"));
+          let text key =
+            match entry_for key view with
+            | None -> failf "%s entry missing from the view" key
+            | Some e -> (
+                match C.Resolved.View.Entry.value e with
+                | C.Resolved.View.Value.Shown { text; _ } -> Some text
+                | C.Resolved.View.Value.Redacted -> None)
+          in
+          equal (option string) ~msg:"an API key is withheld whole" None
+            (text "web.exa_api_key");
+          equal (option string) ~msg:"a base URL keeps its endpoint"
+            (Some "https://[REDACTED]@api.example.test/v1")
+            (text "providers.openai.base_url");
+          equal (option string) ~msg:"a base URL with no userinfo is verbatim"
+            (Some "http://127.0.0.1:11434")
+            (text "providers.ollama.base_url");
+          equal (option string) ~msg:"plain field shows its value" (Some "7")
+            (text "run.max_steps"));
     ]
 
 (* The notify vocabulary is owned by config and read back typed by the TUI

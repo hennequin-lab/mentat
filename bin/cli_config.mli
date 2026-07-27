@@ -20,6 +20,7 @@ val print_warnings :
 
 val resolved_json : Composition.t -> Jsont.json
 (** [resolved_json t] is the effective configuration with each value's
-    provenance, as [config show --json --origins] renders it. Secret-bearing
-    fields are [[REDACTED]] because the library's view projects them that way,
+    provenance, as [config show --json --origins] renders it. Credentials are
+    withheld because the library's view projects them that way — an API key
+    reads [[REDACTED]], a base URL keeps its endpoint and loses its userinfo —
     so {!Cli_report} can bundle this without a redaction pass of its own. *)

@@ -136,14 +136,15 @@ value is a default except the env-provided sandbox mode.
   workspace_trust=trusted
 
 Setting user values re-renders the changed keys in place and marks their origin
-as (user); secret-bearing values are redacted and the sandbox mode stays (env).
+as (user); a base URL carrying no credential shows verbatim (see secrets.t for
+one that does) and the sandbox mode stays (env).
 
   $ mentat config set model openai/gpt-5.6-sol >/dev/null
   $ mentat config set run.max_steps 9 >/dev/null
   $ mentat config set providers.openai.base_url https://api.openai.example/v1 >/dev/null
   $ mentat config show | grep -E '^(model|run.max_steps|providers.openai.base_url)='
   model=openai/gpt-5.6-sol
-  providers.openai.base_url=[REDACTED]
+  providers.openai.base_url=https://api.openai.example/v1
   run.max_steps=9
   $ mentat config show --origins | grep -E '^(model|run.max_steps|sandbox.mode)='
   model=openai/gpt-5.6-sol (user)

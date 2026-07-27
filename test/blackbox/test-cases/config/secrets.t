@@ -26,12 +26,14 @@ direct credential values.
   $ mentat config set web.exa_api_key exa-SECRET-SENTINEL >/dev/null
   $ mentat config set web.parallel_api_key parallel-SECRET-SENTINEL >/dev/null
 
-Text, origins, and JSON views retain every field while replacing its value with
-the stable redaction marker. The complete outputs contain no sentinel bytes.
+Text, origins, and JSON views retain every field. An API key is replaced whole
+by the stable redaction marker; a base URL keeps the endpoint it names and loses
+only the userinfo that can carry a credential, so a wrong endpoint stays
+diagnosable. The complete outputs contain no sentinel bytes.
 
   $ mentat config show >show.txt 2>&1
   $ grep -E '^(providers\.openai\.base_url|web\.exa_api_key|web\.parallel_api_key)=' show.txt
-  providers.openai.base_url=[REDACTED]
+  providers.openai.base_url=https://[REDACTED]@api.openai.example/v1
   web.exa_api_key=[REDACTED]
   web.parallel_api_key=[REDACTED]
   $ grep -c SECRET-SENTINEL show.txt
@@ -40,7 +42,7 @@ the stable redaction marker. The complete outputs contain no sentinel bytes.
 
   $ mentat config show --origins >show-origins.txt 2>&1
   $ grep -E '^(providers\.openai\.base_url|web\.exa_api_key|web\.parallel_api_key)=' show-origins.txt
-  providers.openai.base_url=[REDACTED] (user)
+  providers.openai.base_url=https://[REDACTED]@api.openai.example/v1 (user)
   web.exa_api_key=[REDACTED] (user)
   web.parallel_api_key=[REDACTED] (user)
   $ grep -c SECRET-SENTINEL show-origins.txt
@@ -49,7 +51,7 @@ the stable redaction marker. The complete outputs contain no sentinel bytes.
 
   $ mentat config show --json >show.json 2>&1
   $ grep -oE '"(providers\.openai\.base_url|web\.exa_api_key|web\.parallel_api_key)":"[^"]*"' show.json
-  "providers.openai.base_url":"[REDACTED]"
+  "providers.openai.base_url":"https://[REDACTED]@api.openai.example/v1"
   "web.exa_api_key":"[REDACTED]"
   "web.parallel_api_key":"[REDACTED]"
   $ grep -c SECRET-SENTINEL show.json
@@ -57,8 +59,8 @@ the stable redaction marker. The complete outputs contain no sentinel bytes.
   [1]
 
   $ mentat config show --json --origins >show-json-origins.json 2>&1
-  $ grep -oE '"(providers\.openai\.base_url|web\.exa_api_key|web\.parallel_api_key)":\{"value":"\[REDACTED\]","source":"user"\}' show-json-origins.json
-  "providers.openai.base_url":{"value":"[REDACTED]","source":"user"}
+  $ grep -oE '"(providers\.openai\.base_url|web\.exa_api_key|web\.parallel_api_key)":\{"value":"[^"]*","source":"user"\}' show-json-origins.json
+  "providers.openai.base_url":{"value":"https://[REDACTED]@api.openai.example/v1","source":"user"}
   "web.exa_api_key":{"value":"[REDACTED]","source":"user"}
   "web.parallel_api_key":{"value":"[REDACTED]","source":"user"}
   $ grep -c SECRET-SENTINEL show-json-origins.json
