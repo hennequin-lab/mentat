@@ -130,12 +130,25 @@ locations.
 
 Dune's cache directory is the exception, and it is writable, because a build
 with git-pinned sources takes a lock under it unconditionally and cannot
-proceed without one. Two directories inside it stay read-only: `db` and
-`toolchains`. That split is the whole point. Dune restores a cache hit by
-hardlinking an entry into `_build` without re-digesting it, so write access to
-`db` is write access to your next *unsandboxed* build — a confined command
-could influence unrelated projects later. The lock lives outside `db`, so the
-build proceeds and the store stays read-only.
+proceed without one. Three directories inside it stay read-only, and that split
+is the whole point — each of them is something a later *unsandboxed* build
+consumes without checking.
+
+- `db`, the shared cache. Dune restores a hit by hardlinking an entry into
+  `_build` without re-digesting it, so writing here reaches your next
+  unsandboxed build in an unrelated project.
+- `toolchains`, the compilers dune downloads. This is not a store of data but an
+  installation: dune runs `ocamlc` out of it, ahead of `$PATH`, on every startup,
+  and prepends its `bin` for package actions. Nothing verifies it — reuse turns
+  on the directory existing, and the digest in its name covers the lockfile, not
+  the installed bytes. One install serves every project on the machine, so a
+  replaced binary compiles all of them.
+- `git-repo`, dune's revision store. A bare git repository is a set of things
+  git runs for you: a hook here fires on dune's own `update-ref`, and git config
+  can name a command to execute or point the opam repository at a local path.
+
+The lock lives outside all three, so pinned-source builds proceed. Reads stay
+granted everywhere — dune has to read a compiler to run it.
 
 ## Widening a single command
 
