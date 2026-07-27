@@ -140,14 +140,19 @@ let check_explicit_model t = function
 
 (* F7: the run-start posture summary on stderr — the configured sandbox posture
    block, then the untrusted-workspace warning when the workspace is not trusted.
-   Human-path only; the [--json] stream carries its own terminal events. *)
+   Human-path only; the [--json] stream carries its own terminal events.
+
+   Trust decides which config warning is worth the line: an untrusted workspace
+   drops every workspace file for one reason, stated once; a trusted one drops
+   individual keys, and each needs naming. *)
 let run_start_notices t ~json =
   if not json then (
     Cli_sandbox.print_run_posture t;
     if not (Composition.trusted t) then
       Output.stderr_printf
         "mentat: warning: workspace is not trusted; project config and rules \
-         are disabled (run `mentat trust .`)\n")
+         are disabled (run `mentat trust .`)\n"
+    else Cli_config.print_warnings t)
 
 (* Shell-quote the id in the saved hint so it stays copy-pasteable regardless of
    its bytes (ids are already restricted to a safe charset). *)

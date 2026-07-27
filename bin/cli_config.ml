@@ -72,6 +72,29 @@ let entries t ~origins =
 
 let trust_string t = if Composition.trusted t then "trusted" else "untrusted"
 
+(* Resolution warnings name config input that did not take effect: a workspace
+   key outside the shared allowlist, a file dropped by trust, a clamped budget.
+   Without a print here the fact reaches only the TUI settings screen, and a key
+   that does nothing looks exactly like a key that works.
+
+   [about] narrows the report to one key: reading a single value should explain
+   that value, not every other key the same file lost. A file-level warning —
+   an unparseable or trust-disabled workspace file — bears on every key and
+   survives the filter. *)
+let print_warnings ?about t =
+  let bears_on warning =
+    match (about, Config.Warning.field warning) with
+    | None, _ | _, None -> true
+    | Some (Config.Field.Any about), Some (Config.Field.Any field) ->
+        String.equal (Config.Field.name about) (Config.Field.name field)
+  in
+  List.iter
+    (fun warning ->
+      if bears_on warning then
+        Output.stderr_printf "mentat: warning: %s\n"
+          (Format.asprintf "%a" Config.Warning.pp warning))
+    (Config.Resolved.warnings (Composition.config t))
+
 (* A report always carries provenance: "which layer set this" is most of the
    answer to a configuration bug. *)
 let resolved_json t =
@@ -95,6 +118,7 @@ let resolved_json t =
 
 let show json origins cwd =
   Composition.with_base ~cwd ~overrides:[] (fun t ->
+      print_warnings t;
       let fields = entries t ~origins in
       let trust = trust_string t in
       if json then
@@ -146,7 +170,8 @@ let get json layer_opt key cwd =
   Composition.with_base ~cwd ~overrides:[] (fun t ->
       match Argv.config_key key with
       | Error status -> status
-      | Ok (Config.Field.Any field) -> (
+      | Ok (Config.Field.Any field as any) -> (
+          print_warnings ~about:any t;
           let value =
             match layer_opt with
             | None -> Config.Resolved.text field (Composition.config t)

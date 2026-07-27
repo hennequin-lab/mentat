@@ -15,9 +15,11 @@ Untrusted, the project layer is gated: the value is not applied and reads unset
 (exit 1), and config show reports the workspace as untrusted.
 
   $ mentat config get model --cwd . 2>&1
+  mentat: warning: workspace config file disabled: workspace trust is untrusted (project: $TESTCASE_ROOT/.mentat/config.json)
   mentat: model is not set
   [1]
   $ mentat config show --cwd . | grep -E '^workspace_trust='
+  mentat: warning: workspace config file disabled: workspace trust is untrusted (project: $TESTCASE_ROOT/.mentat/config.json)
   workspace_trust=untrusted
 
 Trusting the workspace honors the project layer: the value now resolves, and the
@@ -38,5 +40,6 @@ Trust is idempotent; untrust flips it back and re-gates the project layer.
   $ mentat untrust . | censor
   untrusted $TESTCASE_ROOT
   $ mentat config get model --cwd . 2>&1
+  mentat: warning: workspace config file disabled: workspace trust is untrusted (project: $TESTCASE_ROOT/.mentat/config.json)
   mentat: model is not set
   [1]

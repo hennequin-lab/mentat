@@ -40,7 +40,9 @@ unknown or explicitly untrusted workspace, Mentat does not open either file and
 `mentat config show --origins` reports that project configuration is disabled.
 Once trusted, the files are still reduced to a narrow allowlist: permission
 rules and authority-bearing keys are ignored, and budget values may tighten but
-not widen values selected outside the workspace. See
+not widen values selected outside the workspace. Every dropped input is named on
+stderr by `config show`, by `config get` for the key it affects, and at the
+start of a headless run, so a key that does nothing says so. See
 [Workspace trust](workspace-trust.md) for the complete boundary.
 
 ## Commands

@@ -7,6 +7,17 @@
 
 val cmd : int Cmdliner.Cmd.t
 
+val print_warnings :
+  ?about:Mentat_config.Field.any -> Composition.t -> unit
+(** [print_warnings t] writes [t]'s configuration resolution warnings to stderr,
+    one [mentat: warning:] line each: config input that did not take effect,
+    such as a workspace key outside the shared allowlist or a config file
+    dropped by trust. Human-path only; [config show], [config get], and
+    {!Cli_run}'s run-start notices call it so an inert key is never silent.
+
+    [about] restricts the report to warnings that bear on one key — its own,
+    plus the file-level warnings that bear on every key. *)
+
 val resolved_json : Composition.t -> Jsont.json
 (** [resolved_json t] is the effective configuration with each value's
     provenance, as [config show --json --origins] renders it. Secret-bearing
