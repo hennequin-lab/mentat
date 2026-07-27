@@ -464,7 +464,8 @@ let%expect_test "the side-by-side diff keeps its new side beside a long line" =
   @@ fun t ->
   open_review t;
   Tui.print t;
-  [%expect {|01 | ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  [%expect
+    {|01 | ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 02 | Review  HEAD..worktree                                                                                                               0/1 reviewed · pending
 03 |  ▾ lib                          │lib/wide.ml · unreviewed · +1 −0
 04 |    ❯ [ ] wide.ml              M │  1 let a = 1                                                 1   let a = 1
@@ -496,7 +497,8 @@ let%expect_test "a long file name yields to its status letter" =
   Tui.run ~name:"review-long-names" ~review:long_names @@ fun t ->
   open_review t;
   Tui.print t;
-  [%expect {|01 | ────────────────────────────────────────────────────────────────────────────────
+  [%expect
+    {|01 | ────────────────────────────────────────────────────────────────────────────────
 02 | Review  HEAD..worktree                                    0/3 reviewed · pending
 03 |  ▾ lib                          │lib/a_considerably_longer_module_name.ml · unre
 04 |    ❯ [ ] a_considerably_long… M │ 1   let a = 1

@@ -345,14 +345,16 @@ module Store = struct
     Secret.expose secret
       ~api_key:(fun ~key -> key)
       ~bearer:(fun ~token:_ -> assert false)
-      ~oauth:(fun ~access_token:_ ~refresh_token:_ ~expires_at:_ ~account_id:_ ->
+      ~oauth:(fun
+          ~access_token:_ ~refresh_token:_ ~expires_at:_ ~account_id:_ ->
         assert false)
 
   let bearer_material secret =
     Secret.expose secret
       ~api_key:(fun ~key:_ -> assert false)
       ~bearer:(fun ~token -> token)
-      ~oauth:(fun ~access_token:_ ~refresh_token:_ ~expires_at:_ ~account_id:_ ->
+      ~oauth:(fun
+          ~access_token:_ ~refresh_token:_ ~expires_at:_ ~account_id:_ ->
         assert false)
 
   let oauth_material secret =
@@ -415,7 +417,8 @@ module Store = struct
         if version <> 1 then
           decode_error
             ("unsupported account store version: " ^ string_of_int version))
-      ~enc:(fun () -> 1) Jsont.int
+      ~enc:(fun () -> 1)
+      Jsont.int
 
   (* Bindings are sorted by provider then name, and a strict map decodes its
      members in name order, so grouping by provider round-trips the order. *)
@@ -430,7 +433,8 @@ module Store = struct
               bindings
           in
           ( Mentat_llm.Provider.id provider,
-            List.map (fun (_, name, secret) -> (Name.to_string name, secret))
+            List.map
+              (fun (_, name, secret) -> (Name.to_string name, secret))
               same )
           :: loop rest
     in

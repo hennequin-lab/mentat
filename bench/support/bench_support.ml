@@ -54,8 +54,7 @@ module Session_fixture = struct
 
   let build ?(id = "bench") ~events () =
     let session =
-      Session.create
-        ~id:(Session.Id.of_string id)
+      Session.create ~id:(Session.Id.of_string id)
         ~cwd:(Lpath.Abs.of_string_exn "/workspace")
         ~created_at:(Session.Time.of_unix_ms 0L)
         ()
@@ -122,8 +121,7 @@ module Ledger = struct
     M.Event.of_edit
       ~turn:(Session.Turn.Id.of_string turn)
       ~claim:(Session.Tool_claim.Id.of_string claim)
-      ~ordinal ~checkpoint:None
-      (apply_exn ~fs:[] plan)
+      ~ordinal ~checkpoint:None (apply_exn ~fs:[] plan)
 
   let build ~claims ~edits_per_claim =
     let per_claim c =

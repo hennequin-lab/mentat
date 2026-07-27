@@ -174,7 +174,9 @@ let platform =
     (let uname =
        match Unix.open_process_in "uname -sm 2>/dev/null" with
        | channel ->
-           let line = try Some (input_line channel) with End_of_file -> None in
+           let line =
+             try Some (input_line channel) with End_of_file -> None
+           in
            ignore (Unix.close_process_in channel);
            line
        | exception (Unix.Unix_error _ | Sys_error _) -> None

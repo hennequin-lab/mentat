@@ -25,7 +25,9 @@
  (action
   (progn
    (run %{test})
-   (diff? test_tools_read_file_expect.ml test_tools_read_file_expect.ml.corrected)))
+   (diff?
+    test_tools_read_file_expect.ml
+    test_tools_read_file_expect.ml.corrected)))
  (libraries
   windtrap
   test_tools_support
@@ -57,7 +59,9 @@
  (action
   (progn
    (run %{test})
-   (diff? test_tools_search_text_expect.ml test_tools_search_text_expect.ml.corrected)))
+   (diff?
+    test_tools_search_text_expect.ml
+    test_tools_search_text_expect.ml.corrected)))
  (libraries
   windtrap
   test_tools_support
@@ -91,7 +95,9 @@
  (action
   (progn
    (run %{test})
-   (diff? test_tools_write_file_expect.ml test_tools_write_file_expect.ml.corrected)))
+   (diff?
+    test_tools_write_file_expect.ml
+    test_tools_write_file_expect.ml.corrected)))
  (libraries
   windtrap
   test_tools_support
@@ -123,7 +129,9 @@
  (action
   (progn
    (run %{test})
-   (diff? test_tools_applied_within_review_expect.ml test_tools_applied_within_review_expect.ml.corrected)))
+   (diff?
+    test_tools_applied_within_review_expect.ml
+    test_tools_applied_within_review_expect.ml.corrected)))
  (libraries
   windtrap
   test_tools_support
@@ -185,7 +193,9 @@
  (action
   (progn
    (run %{test})
-   (diff? test_tools_ocaml_search_expressions_expect.ml test_tools_ocaml_search_expressions_expect.ml.corrected)))
+   (diff?
+    test_tools_ocaml_search_expressions_expect.ml
+    test_tools_ocaml_search_expressions_expect.ml.corrected)))
  (libraries
   windtrap
   test_tools_support
@@ -216,7 +226,9 @@
  (action
   (progn
    (run %{test})
-   (diff? test_tools_ocaml_replace_expressions_expect.ml test_tools_ocaml_replace_expressions_expect.ml.corrected)))
+   (diff?
+    test_tools_ocaml_replace_expressions_expect.ml
+    test_tools_ocaml_replace_expressions_expect.ml.corrected)))
  (libraries
   windtrap
   test_tools_support
@@ -303,7 +315,9 @@
  (action
   (progn
    (run %{test})
-   (diff? test_tools_ocaml_ast_edit_expect.ml test_tools_ocaml_ast_edit_expect.ml.corrected)))
+   (diff?
+    test_tools_ocaml_ast_edit_expect.ml
+    test_tools_ocaml_ast_edit_expect.ml.corrected)))
  (libraries
   windtrap
   test_tools_support
@@ -334,7 +348,9 @@
  (action
   (progn
    (run %{test})
-   (diff? test_tools_ocaml_type_at_expect.ml test_tools_ocaml_type_at_expect.ml.corrected)))
+   (diff?
+    test_tools_ocaml_type_at_expect.ml
+    test_tools_ocaml_type_at_expect.ml.corrected)))
  (libraries
   windtrap
   test_tools_support
@@ -367,7 +383,9 @@
  (action
   (progn
    (run %{test})
-   (diff? test_tools_edit_file_expect.ml test_tools_edit_file_expect.ml.corrected)))
+   (diff?
+    test_tools_edit_file_expect.ml
+    test_tools_edit_file_expect.ml.corrected)))
  (libraries
   windtrap
   test_tools_support
@@ -398,7 +416,9 @@
  (action
   (progn
    (run %{test})
-   (diff? test_tools_apply_patch_expect.ml test_tools_apply_patch_expect.ml.corrected)))
+   (diff?
+    test_tools_apply_patch_expect.ml
+    test_tools_apply_patch_expect.ml.corrected)))
  (libraries
   windtrap
   test_tools_support
@@ -428,7 +448,9 @@
  (action
   (progn
    (run %{test})
-   (diff? test_tools_ocaml_eval_expect.ml test_tools_ocaml_eval_expect.ml.corrected)))
+   (diff?
+    test_tools_ocaml_eval_expect.ml
+    test_tools_ocaml_eval_expect.ml.corrected)))
  (libraries
   windtrap
   test_tools_support
@@ -461,7 +483,9 @@
  (action
   (progn
    (run %{test})
-   (diff? test_tools_ocaml_rename_expect.ml test_tools_ocaml_rename_expect.ml.corrected)))
+   (diff?
+    test_tools_ocaml_rename_expect.ml
+    test_tools_ocaml_rename_expect.ml.corrected)))
  (libraries
   windtrap
   test_tools_support
@@ -493,7 +517,9 @@
  (action
   (progn
    (run %{test})
-   (diff? test_tools_ocaml_find_references_expect.ml test_tools_ocaml_find_references_expect.ml.corrected)))
+   (diff?
+    test_tools_ocaml_find_references_expect.ml
+    test_tools_ocaml_find_references_expect.ml.corrected)))
  (libraries
   windtrap
   test_tools_support
@@ -525,7 +551,9 @@
  (action
   (progn
    (run %{test})
-   (diff? test_tools_ocaml_find_definitions_expect.ml test_tools_ocaml_find_definitions_expect.ml.corrected)))
+   (diff?
+    test_tools_ocaml_find_definitions_expect.ml
+    test_tools_ocaml_find_definitions_expect.ml.corrected)))
  (libraries
   windtrap
   test_tools_support
@@ -558,7 +586,9 @@
  (action
   (progn
    (run %{test})
-   (diff? test_tools_ocaml_docs_expect.ml test_tools_ocaml_docs_expect.ml.corrected)))
+   (diff?
+    test_tools_ocaml_docs_expect.ml
+    test_tools_ocaml_docs_expect.ml.corrected)))
  (libraries
   windtrap
   test_tools_support
@@ -591,7 +621,9 @@
  (action
   (progn
    (run %{test})
-   (diff? test_tools_ocaml_dune_describe_expect.ml test_tools_ocaml_dune_describe_expect.ml.corrected)))
+   (diff?
+    test_tools_ocaml_dune_describe_expect.ml
+    test_tools_ocaml_dune_describe_expect.ml.corrected)))
  (libraries
   windtrap
   test_tools_support
@@ -623,7 +655,9 @@
  (action
   (progn
    (run %{test})
-   (diff? test_tools_web_fetch_expect.ml test_tools_web_fetch_expect.ml.corrected)))
+   (diff?
+    test_tools_web_fetch_expect.ml
+    test_tools_web_fetch_expect.ml.corrected)))
  (libraries
   windtrap
   test_tools_support
@@ -647,7 +681,9 @@
  (action
   (progn
    (run %{test})
-   (diff? test_tools_web_search_expect.ml test_tools_web_search_expect.ml.corrected)))
+   (diff?
+    test_tools_web_search_expect.ml
+    test_tools_web_search_expect.ml.corrected)))
  (libraries
   windtrap
   test_tools_support

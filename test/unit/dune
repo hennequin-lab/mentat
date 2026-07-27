@@ -98,14 +98,7 @@
 (test
  (name test_llm_http)
  (modules test_llm_http)
- (libraries
-  eio
-  eio.unix
-  eio.mock
-  unix
-  windtrap
-  mentat_llm
-  mentat_llm_http))
+ (libraries eio eio.unix eio.mock unix windtrap mentat_llm mentat_llm_http))
 
 (test
  (name test_llm_local)

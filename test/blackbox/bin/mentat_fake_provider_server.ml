@@ -129,7 +129,13 @@ let script_item_of_json json =
   | None -> (
       match object_field "chat" json with
       | Some chat ->
-          { expect; delay_ms; stream_delay_ms; delta_delay_ms; reply = Chat chat }
+          {
+            expect;
+            delay_ms;
+            stream_delay_ms;
+            delta_delay_ms;
+            reply = Chat chat;
+          }
       | None -> (
           match object_field "response" json with
           | None ->
@@ -584,7 +590,8 @@ let sleep_ms ms = Unix.sleepf (float_of_int ms /. 1000.)
    the pre-pacing path. *)
 let send_streamed client ~delta_delay_ms ~stream_delay_ms deltas terminal =
   match (delta_delay_ms, stream_delay_ms) with
-  | None, None -> write_all client (http_response (String.concat "" deltas ^ terminal))
+  | None, None ->
+      write_all client (http_response (String.concat "" deltas ^ terminal))
   | _ ->
       let content_length =
         List.fold_left

@@ -1361,8 +1361,7 @@ let account_store_group =
           let store_json credentials =
             json_object
               [
-                ("version", Json.int 1);
-                ("credentials", json_object credentials);
+                ("version", Json.int 1); ("credentials", json_object credentials);
               ]
           in
           (* Two entries for one key are a corrupt store, not a last-one-wins
@@ -1381,8 +1380,7 @@ let account_store_group =
                  ( "openai",
                    json_object
                      [
-                       ("default", secret "sk-one");
-                       ("default", secret "sk-two");
+                       ("default", secret "sk-one"); ("default", secret "sk-two");
                      ] );
                ]));
     ]

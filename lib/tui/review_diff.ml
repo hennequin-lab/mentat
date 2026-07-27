@@ -515,8 +515,8 @@ let cr_context_body ~palette ~focused ~dimmed ~compose_line ~on_line_click c fd
              else diff_text_style palette)
           ?language
           ~line_signs:(cursor_signs @ compose_signs)
-          ~line_highlights:(cursor_hl @ compose_hl)
-          ?on_line_click:on_click source;
+          ~line_highlights:(cursor_hl @ compose_hl) ?on_line_click:on_click
+          source;
       ]
 
 (* A CR anchored inside a hunk: the file diff, cursor on the anchor line. *)

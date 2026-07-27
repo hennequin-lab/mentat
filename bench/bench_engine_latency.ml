@@ -11,33 +11,34 @@
     drives the real engine ({!Mentat_agent}) over an in-memory store and a
     streaming provider stub: the stub records [t0] the instant it is called and
     emits one assistant delta, and the harness watches a pre-opened [`Now] feed
-    for that delta. Two spans compose the latency: [submit -> provider_call] (the
-    engine acquiring the session fence, loading, recovering to quiescence, and
-    committing [Turn_started] before dispatching the request) and [t0 -> first
-    Assistant_delta] (the delta crossing the driver's fan-out to the feed). Both
-    should be flat across the 100/1k/10k session axis — the engine reads the head,
-    not the whole journal, per turn.
+    for that delta. Two spans compose the latency: [submit -> provider_call]
+    (the engine acquiring the session fence, loading, recovering to quiescence,
+    and committing [Turn_started] before dispatching the request) and
+    [t0 -> first Assistant_delta] (the delta crossing the driver's fan-out to
+    the feed). Both should be flat across the 100/1k/10k session axis — the
+    engine reads the head, not the whole journal, per turn.
 
     [submit -> provider_call] is O(conversation): before a turn's first byte,
     mentat projects the whole model-visible transcript and assembles and digests
     the request over it — the cost [bench_enter]'s pure group isolates, inherent
-    because the model is sent the whole conversation as context. [provider ->
-    delta] is O(1): the streaming fan-out to the feed does not grow with history.
+    because the model is sent the whole conversation as context.
+    [provider -> delta] is O(1): the streaming fan-out to the feed does not grow
+    with history.
 
     Each session is driven through two turns, COLD (the driver attaches — loads
-    and replays the journal from the store) and WARM (the driver is attached, its
-    head cached, no store read). The measured surprise is that cold ≈ warm at
-    every size: the linear term is NOT the store reload — a warm turn skips it and
-    is just as slow — but the per-turn request assembly over the conversation. So
-    the lever for the optimization campaign is an incremental request/digest, not
-    a driver-side cache of the loaded journal.
+    and replays the journal from the store) and WARM (the driver is attached,
+    its head cached, no store read). The measured surprise is that cold ≈ warm
+    at every size: the linear term is NOT the store reload — a warm turn skips
+    it and is just as slow — but the per-turn request assembly over the
+    conversation. So the lever for the optimization campaign is an incremental
+    request/digest, not a driver-side cache of the loaded journal.
 
     It is a WALL TREND, recorded and never gated: engine orchestration is
-    multi-fiber and stateful per run, so it is driven directly (fresh session per
-    sample, first samples discarded) rather than through the alloc-exact sampler
-    the Tier A gates use, and printed for the nightly log. Wall time on a shared
-    runner under load is noise, not a regression — the gate-worthy scaling
-    property (that one feed poll is O(1) in journal length) is asserted
+    multi-fiber and stateful per run, so it is driven directly (fresh session
+    per sample, first samples discarded) rather than through the alloc-exact
+    sampler the Tier A gates use, and printed for the nightly log. Wall time on
+    a shared runner under load is noise, not a regression — the gate-worthy
+    scaling property (that one feed poll is O(1) in journal length) is asserted
     separately and deterministically by [bench_poll_scaling]. *)
 
 module Agent = Mentat_agent
@@ -194,7 +195,10 @@ let store_of st : (module Ports.STORE) =
            (Mentat_diagnostic.of_text ("bench store: " ^ name ^ " unused")))
 
     let revert _g _loaded ~scope:_ = unsupported "revert"
-    let revert_selection _g _loaded ~selection:_ = unsupported "revert_selection"
+
+    let revert_selection _g _loaded ~selection:_ =
+      unsupported "revert_selection"
+
     let truncate _g _loaded ~keep:_ _session = unsupported "truncate"
     let export _g = unsupported "export"
   end)
@@ -231,12 +235,12 @@ let config _id ~latest_model:_ =
 (* The client's non-session responders are inert stubs: a latency run exercises
    only submit and follow, which route to the engine's session driver. *)
 let stub_unavailable () =
-  Error
-    (Protocol.Error.Unavailable (Mentat_diagnostic.of_text "bench stub"))
+  Error (Protocol.Error.Unavailable (Mentat_diagnostic.of_text "bench stub"))
 
 let stub_accounts : Client.Driver.Accounts.t =
   {
-    Client.Driver.Accounts.login = (fun ~provider:_ ~method_:_ -> stub_unavailable ());
+    Client.Driver.Accounts.login =
+      (fun ~provider:_ ~method_:_ -> stub_unavailable ());
     save_api_key = (fun ~provider:_ ~key:_ -> stub_unavailable ());
     logout = (fun ?revoke:_ _provider -> stub_unavailable ());
     account_readiness = (fun () -> stub_unavailable ());
@@ -314,7 +318,8 @@ let mk_engine ~sw ~store ~provider =
   let delegated_execution ~role:_ ~background:_ =
     ( (fun ~configured:_ ~model:_ ~sealed_declarations:_ _mode ->
         Agent.Execution.make ~catalog ~workspace
-          ~policy:Mentat_permission.Policy.default ~prelude:Llm.Request.Prelude.empty),
+          ~policy:Mentat_permission.Policy.default
+          ~prelude:Llm.Request.Prelude.empty),
       fun () -> [] )
   in
   Agent.create ~sw ~store:(store_of store) ~provider ~config ~now
@@ -326,7 +331,8 @@ let prompt ~session ~turn text =
   with
   | Ok c -> c
   | Error e ->
-      Format.kasprintf failwith "prompt: %s" (Protocol.Command.Invalid.message e)
+      Format.kasprintf failwith "prompt: %s"
+        (Protocol.Command.Invalid.message e)
 
 let is_assistant_delta = function
   | Protocol.Update.Progress
@@ -344,17 +350,18 @@ let provider_ref :
     cancelled:(unit -> bool) ->
     (Llm.Response.t, Llm.Error.t) result)
     ref =
-  ref (fun _ ~on_event:_ ~on_download:_ ~cancelled:_ -> Ok (plain_response "unset"))
+  ref (fun _ ~on_event:_ ~on_download:_ ~cancelled:_ ->
+      Ok (plain_response "unset"))
 
 (* Install a per-turn provider stub that stamps [t0] the instant it is called and
    streams one assistant delta. Returns the [t0] ref the caller reads after. *)
 let install_provider () =
   let t0 = ref nan in
-  provider_ref :=
-    (fun _request ~on_event ~on_download:_ ~cancelled:_ ->
-      t0 := monotonic ();
-      on_event (Llm.Event.text_delta "hi");
-      Ok (plain_response "hi"));
+  (provider_ref :=
+     fun _request ~on_event ~on_download:_ ~cancelled:_ ->
+       t0 := monotonic ();
+       on_event (Llm.Event.text_delta "hi");
+       Ok (plain_response "hi"));
   t0
 
 (* Submit [turn] and time the two spans to the first streamed delta: submit ->
@@ -387,7 +394,7 @@ let drain_to_settled feed =
     | Error e -> Format.kasprintf failwith "feed: %a" Protocol.Error.pp e
     | Ok Client.Feed.Closed -> ()
     | Ok (Client.Feed.Item (Protocol.Update.Committed { fact; _ }))
-      when (match fact with Protocol.Fact.Turn_settled _ -> true | _ -> false) ->
+      when match fact with Protocol.Fact.Turn_settled _ -> true | _ -> false ->
         ()
     | Ok (Client.Feed.Item _) -> loop ()
   in

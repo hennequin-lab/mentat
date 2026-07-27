@@ -604,9 +604,13 @@ let reasoning_effort_encoding () =
     in
     let check_body body =
       let thinking = field "body" "thinking" body in
-      equal string ~msg:(expected ^ " thinking type") "adaptive"
+      equal string
+        ~msg:(expected ^ " thinking type")
+        "adaptive"
         (string_field "thinking" "type" thinking);
-      equal string ~msg:(expected ^ " thinking display") "summarized"
+      equal string
+        ~msg:(expected ^ " thinking display")
+        "summarized"
         (string_field "thinking" "display" thinking);
       equal string ~msg:(expected ^ " effort") expected
         (string_field "output_config" "effort"
@@ -658,7 +662,8 @@ let reasoning_effort_encoding () =
   List.iter2
     (fun (name, _options, check_body) request ->
       let body = request_body request in
-      check (name ^ " sends no thinking budget")
+      check
+        (name ^ " sends no thinking budget")
         (not (mentions_field "budget_tokens" body));
       check_body body)
     cases requests

@@ -599,8 +599,7 @@ let outcome_blocks ~provider_failure_reported outcome =
       [
         Transcript.notice
           (Notice.Event
-             "The turn stopped at its step limit — the cap on model \
-              responses.");
+             "The turn stopped at its step limit — the cap on model responses.");
       ]
   | Session.Turn.Outcome.Interrupted _ -> [ Transcript.notice Notice.Interrupt ]
   | Session.Turn.Outcome.Failed { message } ->

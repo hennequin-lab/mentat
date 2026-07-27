@@ -113,14 +113,15 @@ let with_env bindings fn =
    it is [/tmp] itself. *)
 let fixture_root =
   let root = Filename.concat (Sys.getcwd ()) "wio-fixtures" in
-  (try Unix.mkdir root 0o755
-   with Unix.Unix_error (Unix.EEXIST, _, _) -> ());
+  (try Unix.mkdir root 0o755 with Unix.Unix_error (Unix.EEXIST, _, _) -> ());
   root
 
 let in_dirs name fn =
   Eio_main.run @@ fun stdenv ->
   let stdenv = (stdenv :> Eio_unix.Stdenv.base) in
-  let raw = Filename.temp_dir ~temp_dir:fixture_root ("mentat-wio-" ^ name) "" in
+  let raw =
+    Filename.temp_dir ~temp_dir:fixture_root ("mentat-wio-" ^ name) ""
+  in
   Fun.protect ~finally:(fun () -> rm_rf raw) @@ fun () ->
   let base = Unix.realpath raw in
   let subdir sub =
@@ -300,7 +301,8 @@ let escalation_projects_the_sealed_stance () =
    load-bearing now that no normalization step stands between the derivation and
    the digest. *)
 let resolving_twice_agrees_on_the_identity () =
-  in_dirs "identity-stable" @@ fun ~stdenv ~base:_ ~ws_dir ~out_dir:_ ~tmp_base ->
+  in_dirs "identity-stable"
+  @@ fun ~stdenv ~base:_ ~ws_dir ~out_dir:_ ~tmp_base ->
   let primary = Workspace.Root.of_dir (abs ws_dir) in
   let logical = Workspace.make ~primary ~read_only:[] () |> Result.get_ok in
   let resolve () =
@@ -310,8 +312,7 @@ let resolving_twice_agrees_on_the_identity () =
   in
   let first = resolve () in
   let second = resolve () in
-  is_true
-    ~msg:"two resolutions of one unchanged workspace project one identity"
+  is_true ~msg:"two resolutions of one unchanged workspace project one identity"
     (Sandbox.Identity.equal first second)
 
 let resolve_path_uses_the_capability_workspace () =
@@ -2166,12 +2167,12 @@ let a_grant_widens_one_command_and_no_more () =
      Command.run_granted w.io ~capture:Command.All
        ~timeout:Eio.Time.Timeout.none ~grants (write outside)
    with
-  | Ok outcome ->
+  | Ok outcome -> (
       equal status_value ~msg:"the granted write succeeds" (`Exited 0)
         (exit_status outcome);
       equal string ~msg:"the bytes landed" "g" (read_file outside);
       (* Unlike an escalation, a grant never left the sandbox. *)
-      (match outcome.Command.sandbox_evidence with
+      match outcome.Command.sandbox_evidence with
       | Sandbox.Evidence.Enforced _ -> ()
       | _ -> fail "a granted command is still an enforced one")
   | Error e -> failf "granted run failed: %a" Command.Error.pp e);
@@ -2211,8 +2212,7 @@ let read_only_refuses_a_write_grant () =
   with_capability "grant-read-only" ~mode:Mode.Read_only @@ fun w ->
   require_enforced w.io;
   match
-    Command.run_granted w.io ~capture:Command.All
-      ~timeout:Eio.Time.Timeout.none
+    Command.run_granted w.io ~capture:Command.All ~timeout:Eio.Time.Timeout.none
       ~grants:[ (abs w.out_dir, Sandbox.Policy.Access.Write) ]
       (sh (Printf.sprintf {|printf n > "%s/x.txt"|} w.out_dir))
   with
@@ -2235,8 +2235,8 @@ let a_grant_must_name_a_directory () =
       ~grants:[ (abs file, Sandbox.Policy.Access.Write) ]
       (sh "exit 0")
   with
-  | Error
-      (Command.Error.Sandbox (Sandbox.Error.Grant_not_a_directory { path })) ->
+  | Error (Command.Error.Sandbox (Sandbox.Error.Grant_not_a_directory { path }))
+    ->
       equal abs_value ~msg:"the refusal names the path the caller spelled"
         (abs file) path
   | Ok _ -> fail "a grant naming a file must be refused"

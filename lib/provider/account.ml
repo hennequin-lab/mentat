@@ -392,8 +392,7 @@ let present_case =
   in
   Jsont.Object.map ~kind:"present account" (fun source kind fingerprint ->
       Present_status { source; kind; fingerprint })
-  |> summary_mems summary
-  |> Jsont.Object.error_unknown |> Jsont.Object.finish
+  |> summary_mems summary |> Jsont.Object.error_unknown |> Jsont.Object.finish
   |> Jsont.Object.Case.map "present" ~dec:Fun.id
 
 let checked_case =
@@ -424,14 +423,11 @@ let checked_case =
       (facts status).profile)
   |> Jsont.Object.opt_mem "org" Org.jsont ~enc:(fun status ->
       (facts status).org)
-  |> Jsont.Object.mem "problems"
-       (Jsont.list Problem.jsont)
-       ~dec_absent:[]
+  |> Jsont.Object.mem "problems" (Jsont.list Problem.jsont) ~dec_absent:[]
        ~enc:(fun status -> (facts status).problems)
        ~enc_omit:List.is_empty
-  |> Jsont.Object.opt_mem "models"
-       (Jsont.list Jsont.string)
-       ~enc:(fun status -> (facts status).models)
+  |> Jsont.Object.opt_mem "models" (Jsont.list Jsont.string) ~enc:(fun status ->
+      (facts status).models)
   |> Jsont.Object.error_unknown |> Jsont.Object.finish
   |> Jsont.Object.Case.map "checked" ~dec:Fun.id
 

@@ -242,9 +242,7 @@ let with_temp name f =
   Unix.mkdir root 0o700;
   let project = { root; home = Unix.realpath container } in
   write project "dune-project" "(lang dune 3.0)\n(name fixture)\n";
-  Fun.protect
-    ~finally:(fun () -> Util.rm_rf container)
-    (fun () -> f project)
+  Fun.protect ~finally:(fun () -> Util.rm_rf container) (fun () -> f project)
 
 let with_git_fixture name f =
   with_temp name @@ fun project ->

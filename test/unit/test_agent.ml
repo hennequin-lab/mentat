@@ -1271,7 +1271,8 @@ let a_budget_exhausted_goal_winds_down_with_the_budget_notice () =
     |> append_or_fail ~what:"budget fixture: continuation"
          (settled_turn ~contract ~id:"t-cont"
             ~origin:Session.Turn.Origin.Goal_continuation ~text:"continue"
-            ~response:(usage_response ~tokens:100 "worked") ())
+            ~response:(usage_response ~tokens:100 "worked")
+            ())
   in
   match
     Step.next_admission ~continuation_turn_limit:None (Session.state session)
@@ -1313,7 +1314,8 @@ let a_step_limited_turn_winds_down_once_with_no_goal () =
       is_true ~msg:"the wind-down turn carries the step-limit notice"
         (contains_sub ~sub:"reached its step limit"
            (Option.value ~default:"" (Session.Turn.Input.text input)));
-      is_true ~msg:"the wind-down turn asks for the work to be parked and stated"
+      is_true
+        ~msg:"the wind-down turn asks for the work to be parked and stated"
         (contains_sub ~sub:"summarize where the work stands"
            (Option.value ~default:"" (Session.Turn.Input.text input)))
   | Step.Admission.Continuation _ | Step.Admission.Budget_wind_down _
@@ -1348,7 +1350,8 @@ let a_step_limited_turn_winds_down_once_with_no_goal () =
             ())
   in
   match
-    Step.next_admission ~continuation_turn_limit:None (Session.state interrupted)
+    Step.next_admission ~continuation_turn_limit:None
+      (Session.state interrupted)
   with
   | Step.Admission.Idle -> ()
   | Step.Admission.Step_limit_wind_down _ | Step.Admission.Continuation _
@@ -3541,8 +3544,10 @@ let a_step_limited_turn_winds_down_once_then_stops () =
       (match settled_outcome pairs with
       | Some Session.Turn.Outcome.Step_limit -> ()
       | Some _ | None -> fail "the first turn must end at its step limit");
-      is_true ~msg:"the wind-down turn carried the step-limit notice" !saw_notice;
-      equal (list string) ~msg:"the step-limited turn is wound down exactly once"
+      is_true ~msg:"the wind-down turn carried the step-limit notice"
+        !saw_notice;
+      equal (list string)
+        ~msg:"the step-limited turn is wound down exactly once"
         [ "user"; "step-limit-wind-down" ]
         (origins store);
       (* The wind-down settled at the step limit as well. Nothing further is

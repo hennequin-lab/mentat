@@ -1989,7 +1989,7 @@ let next_admission ~continuation_turn_limit state =
                         Mentat_session.Turn.Input.user_text
                           Mentat_prompts.Goals.budget_limit;
                     }
-              | Some _ | None when step_limit_wind_down_due state ->
+              | (Some _ | None) when step_limit_wind_down_due state ->
                   (* The goal outlives the wind-down: it stays active and its
                      continuation resumes on the turn after. *)
                   step_limit_wind_down

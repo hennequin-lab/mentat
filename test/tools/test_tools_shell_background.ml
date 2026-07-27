@@ -95,6 +95,7 @@ let elapsed ~clock fn =
   let value = fn () in
   let span = Mtime.span start (Eio.Time.Mono.now clock) in
   (value, Mtime.Span.to_float_ns span /. 1e9)
+
 let json_of result = Tool.Output.json (output_exn result)
 
 let json_str result name =
@@ -274,8 +275,7 @@ let%test "shell_output waits for output and returns on the write" =
        (stdout_section (Tool.Output.text (output_exn result))));
   is_true ~msg:"it did not answer before the command wrote" (seconds >= 0.9);
   is_true ~msg:"it returned on the write, not on its budget"
-    (seconds
-    < float_of_int Shell.Shell_output.default_wait_ms /. 1_000. *. 0.8)
+    (seconds < float_of_int Shell.Shell_output.default_wait_ms /. 1_000. *. 0.8)
 
 (* A silent command costs the reader its whole budget, and the result says so:
    an empty read that looks free is what invites a read to be repeated in place
@@ -310,8 +310,7 @@ let%test "a wait_ms outside the accepted range is refused" =
     with
     | Ok _ -> false
     | Error error ->
-        String.includes ~affix:"wait_ms"
-          (Tool.Call.Decode_error.message error)
+        String.includes ~affix:"wait_ms" (Tool.Call.Decode_error.message error)
   in
   is_true ~msg:"a budget below the floor is refused, not raised"
     (refused (Shell.Shell_output.min_wait_ms - 1));

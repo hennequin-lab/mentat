@@ -21,8 +21,8 @@ val root : t -> string
     spelling every fixture lays out and every golden records. *)
 
 val home : t -> string
-(** [home project] is the canonical private container the workspace lives in.
-    It is the fixture's [HOME], so a workspace path formatted against the home
+(** [home project] is the canonical private container the workspace lives in. It
+    is the fixture's [HOME], so a workspace path formatted against the home
     boundary reads [~/mentat-tui-<token>] on every platform. *)
 
 val canonical_root : t -> string

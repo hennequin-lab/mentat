@@ -49,9 +49,9 @@ val daemon_dir : t -> string
 
 val daemon_socket_dir : t -> string
 (** [daemon_socket_dir t] is [/tmp/mentat-<uid>-<key>], the directory the
-    per-user daemon binds its socket in — under [/tmp] so a deep checkout
-    cannot overflow [sun_path], keyed on the data home so a [MENTAT_DATA_HOME]
-    override isolates daemons.
+    per-user daemon binds its socket in — under [/tmp] so a deep checkout cannot
+    overflow [sun_path], keyed on the data home so a [MENTAT_DATA_HOME] override
+    isolates daemons.
 
     Two callers need it and neither can see the other: the daemon binds it, and
     the sandbox denies it. The denial is not optional. [/tmp] is granted

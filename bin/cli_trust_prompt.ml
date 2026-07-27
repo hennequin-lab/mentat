@@ -7,6 +7,7 @@ open Mosaic
 
 type choice = Untrusted | Trusted
 type 'a outcome = Continue of 'a | Exit_prompt
+
 (* [root] is the workspace as the rest of the TUI shows it — home-relative when
    the repository lives under the user's home — so the trust gate names one
    workspace the same way the banner, footer and status screens do. The

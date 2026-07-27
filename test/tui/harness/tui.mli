@@ -520,12 +520,12 @@ val now : t -> float
     is requested; a real wall render span is the pty harness's, not this. *)
 
 val launch_now : t -> float
-(** [launch_now t] is the virtual instant the runtime handed back its probe — the
-    launch mark of the boot span (see [Runtime.run]'s [?probe]). In-process the
-    clock does not advance during boot, so [now t -. launch_now t] measured over
-    the first settle is zero by construction: the first frame is synchronous,
-    never gated behind a timer. The boot span's wall figure is the pty
-    harness's. *)
+(** [launch_now t] is the virtual instant the runtime handed back its probe —
+    the launch mark of the boot span (see [Runtime.run]'s [?probe]). In-process
+    the clock does not advance during boot, so [now t -. launch_now t] measured
+    over the first settle is zero by construction: the first frame is
+    synchronous, never gated behind a timer. The boot span's wall figure is the
+    pty harness's. *)
 
 val output_bytes : t -> int
 (** [output_bytes t] is the number of bytes the renderer has committed to the

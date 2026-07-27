@@ -706,12 +706,14 @@ let rotate_daemon_log dirs log =
   | stat when stat.Unix.st_size >= daemon_log_cap ->
       let stamp = Int64.of_float (Unix.gettimeofday () *. 1_000_000.) in
       let rotated =
-        Filename.concat (User_dirs.daemon_dir dirs)
+        Filename.concat
+          (User_dirs.daemon_dir dirs)
           (Printf.sprintf "daemon-%Ld.log" stamp)
       in
       (try Unix.rename log rotated with Unix.Unix_error _ -> ());
       Log_setup.retain_logs ~keep:daemon_logs_kept
-        ~dir:(User_dirs.daemon_dir dirs) ~current:log
+        ~dir:(User_dirs.daemon_dir dirs)
+        ~current:log
   | _ | (exception Unix.Unix_error _) -> ()
 
 let spawn dirs =

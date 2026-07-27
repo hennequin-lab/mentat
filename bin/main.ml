@@ -28,8 +28,8 @@ let man =
     `S Manpage.s_common_options;
     `P
       "$(b,-v) raises the diagnostics level to $(b,info) for the whole run and \
-       $(b,-vv) to $(b,debug). Both are read before any command starts, so they \
-       cover startup as well, and both override $(b,MENTAT_LOG).";
+       $(b,-vv) to $(b,debug). Both are read before any command starts, so \
+       they cover startup as well, and both override $(b,MENTAT_LOG).";
   ]
 
 let default_term = Cli_tui.default_term ~version
@@ -141,8 +141,7 @@ let () =
       let code =
         match
           Cmd.eval' ~catch:false ~help:Output.help_ppf ~err:Output.err_ppf
-            ~argv:(rewrite_run_prompt argv)
-            root
+            ~argv:(rewrite_run_prompt argv) root
         with
         | code -> code
         | exception exn -> (

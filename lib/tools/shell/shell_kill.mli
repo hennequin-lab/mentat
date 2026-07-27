@@ -7,8 +7,7 @@
 
     [shell_kill] takes a handle returned by a background [shell] call, signals
     the process group it leads and then the process itself (SIGTERM, a bounded
-    grace, then SIGKILL), drains its final tail, and returns the final
-    status.
+    grace, then SIGKILL), drains its final tail, and returns the final status.
 
     {1 Input contract}
 

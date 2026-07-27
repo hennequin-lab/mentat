@@ -64,8 +64,8 @@ module Ledger : sig
       claim count at one edit each (linear reference). *)
 
   val build : claims:int -> edits_per_claim:int -> Mentat_mutation.Event.t list
-  (** [build ~claims ~edits_per_claim] is a valid ledger of [claims] claims, each
-      recording [edits_per_claim] applies to distinct paths. Total events =
+  (** [build ~claims ~edits_per_claim] is a valid ledger of [claims] claims,
+      each recording [edits_per_claim] applies to distinct paths. Total events =
       [claims * edits_per_claim]. *)
 
   type revert_case = {
@@ -118,9 +118,8 @@ module Transcript_fixture : sig
   (** The transcript axis: [("100", 100); ("1k", 1000); ("5k", 5000)]. *)
 
   val build : blocks:int -> Mentat_tui.Transcript.t
-  (** [build ~blocks] is a transcript of [blocks] settled blocks, cycling
-      user / assistant / reasoning / tool constructors, deterministic content.
-  *)
+  (** [build ~blocks] is a transcript of [blocks] settled blocks, cycling user /
+      assistant / reasoning / tool constructors, deterministic content. *)
 
   val palette : Mentat_tui.Theme.Palette.t
   (** The default palette {!Mentat_tui.Transcript.view} renders against. *)

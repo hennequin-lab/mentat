@@ -213,8 +213,8 @@ module Admission : sig
             [input]; the now budget-limited goal admits no further continuation.
         *)
     | Step_limit_wind_down of Mentat_session.Turn.Input.t
-        (** The last turn settled {!Mentat_session.Turn.Outcome.Step_limit}.
-            The driver admits one wrap-up turn with [input] under the
+        (** The last turn settled {!Mentat_session.Turn.Outcome.Step_limit}. The
+            driver admits one wrap-up turn with [input] under the
             {!Mentat_session.Turn.Origin.Step_limit_wind_down} origin, which is
             what keeps a wind-down that spends its own budget from admitting
             another. Independent of the goal: it is admitted with no goal, with

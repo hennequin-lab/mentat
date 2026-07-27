@@ -101,7 +101,9 @@ let update_sync_state ~sync_active ~tail delta =
     else if starts_with_at index enable then
       loop (index + String.length enable) true commits
     else if starts_with_at index disable then
-      loop (index + String.length disable) false
+      loop
+        (index + String.length disable)
+        false
         (if active then commits + 1 else commits)
     else loop (index + 1) active commits
   in
@@ -256,7 +258,9 @@ let settle t =
       let at_frame_boundary =
         (not t.sync_active) && Int.equal raw_length previous_raw
       in
-      let stable_since = if at_frame_boundary then stable_since else monotonic () in
+      let stable_since =
+        if at_frame_boundary then stable_since else monotonic ()
+      in
       if monotonic () -. stable_since < quiescence_window then
         loop raw_length stable_since
     end

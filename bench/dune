@@ -100,7 +100,11 @@
 (executable
  (name bench_poll_scaling)
  (modules bench_poll_scaling)
- (libraries mentat_protocol mentat_session mentat_llm mentat_mutation
+ (libraries
+  mentat_protocol
+  mentat_session
+  mentat_llm
+  mentat_mutation
   bench_support))
 
 ; bench_engine_latency drives the real engine over an in-memory store to time

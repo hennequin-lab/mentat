@@ -722,8 +722,11 @@ let denials_are_unfiltered_and_identified () =
    the posture removed. *)
 let a_grant_widens_without_defeating_a_denial () =
   let policy =
-    confined ~reads:[ abs "/work" ] ~writable_roots:[ abs "/work" ]
-      ~denied_paths:[ abs "/work/.mentat" ] ()
+    confined
+      ~reads:[ abs "/work" ]
+      ~writable_roots:[ abs "/work" ]
+      ~denied_paths:[ abs "/work/.mentat" ]
+      ()
   in
   let granted =
     match Policy.grant policy [ (abs "/cache/dune", Policy.Access.Write) ] with
@@ -732,7 +735,9 @@ let a_grant_widens_without_defeating_a_denial () =
         failf "granting %a was refused by %a" Abs.pp path Abs.pp denied
   in
   is_true ~msg:"the granted path is writable"
-    (List.exists (Abs.equal (abs "/cache/dune")) (Policy.writable_roots granted));
+    (List.exists
+       (Abs.equal (abs "/cache/dune"))
+       (Policy.writable_roots granted));
   equal (list abs_value) ~msg:"the denial is untouched by a grant elsewhere"
     [ abs "/work/.mentat" ]
     (Policy.denied_paths granted);
@@ -741,7 +746,8 @@ let a_grant_widens_without_defeating_a_denial () =
   (* A grant over the tree that contains a denial is admitted, and the deeper
      denial still resolves inside it. *)
   match Policy.grant policy [ (abs "/work/sub", Policy.Access.Write) ] with
-  | Error (path, _) -> failf "a grant containing no denial was refused: %a" Abs.pp path
+  | Error (path, _) ->
+      failf "a grant containing no denial was refused: %a" Abs.pp path
   | Ok wider ->
       equal (list abs_value) ~msg:"a grant beside a denial leaves it standing"
         [ abs "/work/.mentat" ]
@@ -753,22 +759,33 @@ let a_grant_widens_without_defeating_a_denial () =
    that would be defeated. *)
 let a_grant_under_a_denial_is_refused () =
   let denied = abs "/home/user/.config/mentat" in
-  let policy = confined ~writable_roots:[ abs "/work" ] ~denied_paths:[ denied ] () in
-  (match Policy.grant policy [ (abs "/home/user/.config/mentat/auth", Policy.Access.Write) ] with
+  let policy =
+    confined ~writable_roots:[ abs "/work" ] ~denied_paths:[ denied ] ()
+  in
+  (match
+     Policy.grant policy
+       [ (abs "/home/user/.config/mentat/auth", Policy.Access.Write) ]
+   with
   | Ok _ -> fail "a grant beneath a denied path was admitted"
   | Error (path, root) ->
       equal abs_value ~msg:"the refusal names the grant"
-        (abs "/home/user/.config/mentat/auth") path;
-      equal abs_value ~msg:"the refusal names the denial that defeats it" denied root);
+        (abs "/home/user/.config/mentat/auth")
+        path;
+      equal abs_value ~msg:"the refusal names the denial that defeats it" denied
+        root);
   (match Policy.grant policy [ (denied, Policy.Access.Write) ] with
   | Ok _ -> fail "a grant of the denied path itself was admitted"
   | Error _ -> ());
-  match Policy.grant policy [ (abs "/home/user/.config", Policy.Access.Write) ] with
+  match
+    Policy.grant policy [ (abs "/home/user/.config", Policy.Access.Write) ]
+  with
   | Error (path, _) ->
-      failf "a grant containing a denial should be admitted, refused %a" Abs.pp path
+      failf "a grant containing a denial should be admitted, refused %a" Abs.pp
+        path
   | Ok wider ->
-      equal (list abs_value) ~msg:"the denial still wins inside the granted tree"
-        [ denied ] (Policy.denied_paths wider)
+      equal (list abs_value)
+        ~msg:"the denial still wins inside the granted tree" [ denied ]
+        (Policy.denied_paths wider)
 
 (* A carveout is a clause deliberately lowered inside a more permissive one —
    [.git] inside the writable workspace, the dune store inside its cache. A
@@ -781,8 +798,7 @@ let a_grant_may_not_raise_a_carveout () =
   let git = abs "/work/.git" in
   let policy =
     Policy.make
-      ~entries:
-        [ (workspace, Policy.Access.Write); (git, Policy.Access.Read) ]
+      ~entries:[ (workspace, Policy.Access.Write); (git, Policy.Access.Read) ]
       ~reads_default:Policy.Denied ~network:Policy.Network.Restricted
   in
   (match Policy.grant policy [ (git, Policy.Access.Write) ] with
@@ -790,7 +806,9 @@ let a_grant_may_not_raise_a_carveout () =
   | Error (path, root) ->
       equal abs_value ~msg:"the refusal names the grant" git path;
       equal abs_value ~msg:"and the carveout that defeats it" git root);
-  (match Policy.grant policy [ (abs "/work/.git/hooks", Policy.Access.Write) ] with
+  (match
+     Policy.grant policy [ (abs "/work/.git/hooks", Policy.Access.Write) ]
+   with
   | Ok _ -> fail "a write grant beneath a read carveout must be refused"
   | Error _ -> ());
   (* A read root is not a carveout: nothing lowered it, so a grant beneath it is
@@ -800,7 +818,9 @@ let a_grant_may_not_raise_a_carveout () =
       ~entries:[ (abs "/usr", Policy.Access.Read) ]
       ~reads_default:Policy.Denied ~network:Policy.Network.Restricted
   in
-  match Policy.grant open_reads [ (abs "/usr/local/x", Policy.Access.Write) ] with
+  match
+    Policy.grant open_reads [ (abs "/usr/local/x", Policy.Access.Write) ]
+  with
   | Ok _ -> ()
   | Error (path, _) ->
       failf "a grant beneath a plain read root must be admitted, refused %a"
@@ -810,10 +830,14 @@ let a_grant_may_not_raise_a_carveout () =
    and reports as an enforced confined command — never as an escape — and the
    seal it was made from is unchanged. *)
 let a_granted_seal_still_confines () =
-  let policy = confined ~reads:[ abs "/work" ] ~writable_roots:[ abs "/work" ] () in
+  let policy =
+    confined ~reads:[ abs "/work" ] ~writable_roots:[ abs "/work" ] ()
+  in
   let sandbox = sealed policy in
   let granted =
-    match Mentat_sandbox.grant sandbox [ (abs "/work/deep", Policy.Access.Write) ] with
+    match
+      Mentat_sandbox.grant sandbox [ (abs "/work/deep", Policy.Access.Write) ]
+    with
     | Ok granted -> granted
     | Error error -> fail (Error.message error)
   in
@@ -827,7 +851,10 @@ let a_granted_seal_still_confines () =
   equal policy_value ~msg:"the seal the grant was made from is untouched" policy
     (Option.get (Mentat_sandbox.policy sandbox));
   (* An unconfined route already admits what a grant asks for. *)
-  match Mentat_sandbox.grant Mentat_sandbox.direct [ (abs "/x", Policy.Access.Write) ] with
+  match
+    Mentat_sandbox.grant Mentat_sandbox.direct
+      [ (abs "/x", Policy.Access.Write) ]
+  with
   | Ok _ -> ()
   | Error error -> fail (Error.message error)
 
@@ -1136,8 +1163,11 @@ let escalation_keeps_the_denials_and_drops_the_rest () =
      approve itself. The read carveouts are deliberately not kept. *)
   let denied = abs "/home/u/.local/state/mentat" in
   let policy =
-    confined ~reads:[ abs "/work" ] ~writable_roots:[ abs "/work" ]
-      ~protected_paths:[ abs "/work/.git" ] ~denied_paths:[ denied ] ()
+    confined
+      ~reads:[ abs "/work" ]
+      ~writable_roots:[ abs "/work" ]
+      ~protected_paths:[ abs "/work/.git" ]
+      ~denied_paths:[ denied ] ()
   in
   let sandbox = sealed policy in
   let out_of_scope = abs "/outside" in
@@ -1177,9 +1207,7 @@ let escalation_keeps_the_denials_and_drops_the_rest () =
       | Error error -> fail (Error.message error))
 
 let lower_escalated_refuses_denied_and_ignored () =
-  (match
-     Sandbox.escalated (sealed ~mutates:false (confined ()))
-   with
+  (match Sandbox.escalated (sealed ~mutates:false (confined ())) with
   | Error Error.Escalation_denied ->
       (* Semantic pin: the read-only refusal message is product-neutral — no
          --sandbox flag hint leaks from the library. *)
@@ -1188,9 +1216,7 @@ let lower_escalated_refuses_denied_and_ignored () =
          neither an escalation nor a write grant"
         (Error.message Error.Escalation_denied)
   | _ -> fail "read-only escalation must be Escalation_denied");
-  match
-    Sandbox.escalated Sandbox.direct
-  with
+  match Sandbox.escalated Sandbox.direct with
   | Error Error.Escalation_irrelevant -> ()
   | _ -> fail "direct escalation must be Escalation_irrelevant"
 

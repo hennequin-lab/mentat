@@ -254,7 +254,9 @@ let unresolved_host_fails_fast () =
 let stream_reruns_only_before_output () =
   Eio_mock.Backend.run_full @@ fun env ->
   let clock = env#clock in
-  let transient = Mentat_llm.Error.make ~kind:Mentat_llm.Error.Provider "boom" in
+  let transient =
+    Mentat_llm.Error.make ~kind:Mentat_llm.Error.Provider "boom"
+  in
   let run_stream ~consume =
     let opens = ref 0 in
     let result =

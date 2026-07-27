@@ -798,8 +798,8 @@ let rec launch_trusted ~launch_review ~review_base ~version ~attach ~cwd
         let gate =
           Eio_main.run @@ fun stdenv ->
           prompt_for_trust ~notice:(activation_notice status)
-            ?home:(ambient_home ()) ~stdenv root
-            ~set:(fun status -> Trust_store.set ~path ~root:root_text status)
+            ?home:(ambient_home ()) ~stdenv root ~set:(fun status ->
+              Trust_store.set ~path ~root:root_text status)
         in
         match gate with
         | Stop -> Exit_status.Success

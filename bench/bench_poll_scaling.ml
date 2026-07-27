@@ -10,22 +10,22 @@
     in a fresh one — every delta the UI polls must land in constant time however
     much has already been said. A feed hub serves that poll by growing its
     materialized projection one commit at a time through the one projector
-    ([Mentat_protocol.Projection.advance]) and indexing the shared array in O(1);
-    {!Mentat_agent}'s feed is a thin O(1) reader over exactly this. So the
+    ([Mentat_protocol.Projection.advance]) and indexing the shared array in
+    O(1); {!Mentat_agent}'s feed is a thin O(1) reader over exactly this. So the
     load-bearing property behind a flat [Feed.next] is that [advance] over a
     single-event delta is O(delta), never O(events already folded).
 
-    This is a boolean SCALING gate, not a wall number: it folds a fixed number of
-    single-event advances onto a projection that has already consumed 100 events
-    and, separately, 10 000, and asserts the per-advance allocation is flat
-    across the two (ratio < 2x). Allocation is exact and machine-independent, so
-    the assertion never flakes; a regression that made [advance] re-fold the
-    whole journal per commit — the quadratic the incremental projector exists to
-    prevent — would blow the ratio to the size ratio (100x) and fail loudly. It
-    runs on [runtest] because a flat-vs-not verdict is honest to gate, unlike the
-    wall latencies its sibling trend records. It drives no engine: the projector
-    is the mechanism [Feed.next] indexes, and exercising it directly keeps the
-    gate deterministic. *)
+    This is a boolean SCALING gate, not a wall number: it folds a fixed number
+    of single-event advances onto a projection that has already consumed 100
+    events and, separately, 10 000, and asserts the per-advance allocation is
+    flat across the two (ratio < 2x). Allocation is exact and
+    machine-independent, so the assertion never flakes; a regression that made
+    [advance] re-fold the whole journal per commit — the quadratic the
+    incremental projector exists to prevent — would blow the ratio to the size
+    ratio (100x) and fail loudly. It runs on [runtest] because a flat-vs-not
+    verdict is honest to gate, unlike the wall latencies its sibling trend
+    records. It drives no engine: the projector is the mechanism [Feed.next]
+    indexes, and exercising it directly keeps the gate deterministic. *)
 
 module Projection = Mentat_protocol.Projection
 module Session = Mentat_session
@@ -85,9 +85,9 @@ let () =
     short long ratio;
   if ratio >= 2.0 then begin
     Printf.eprintf
-      "poll-scaling regression: per-commit projection advance is not flat across \
-       session sizes (%.1f B @10k / %.1f B @100 = %.3f >= 2.0); the incremental \
-       projector may be re-folding the journal per commit.\n"
+      "poll-scaling regression: per-commit projection advance is not flat \
+       across session sizes (%.1f B @10k / %.1f B @100 = %.3f >= 2.0); the \
+       incremental projector may be re-folding the journal per commit.\n"
       long short ratio;
     exit 1
   end

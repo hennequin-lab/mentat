@@ -291,7 +291,8 @@ let render ~palette ~focused ~dimmed ~on_click row =
           spacer;
           Mosaic.text
             ~style:(dim ~palette ~dimmed letter_style)
-            ~wrap:`None ~flex_shrink:0. (" " ^ letter ^ " ");
+            ~wrap:`None ~flex_shrink:0.
+            (" " ^ letter ^ " ");
         ]
   | Cr c ->
       let malformed = cr_malformed c.cr in
