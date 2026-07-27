@@ -232,7 +232,17 @@ let owned_directories paths =
    carved back out: a cache entry is restored by hardlinking into a later
    unsandboxed build without being re-digested, and a downloaded toolchain is
    executed outright, so neither may be reachable through a grant taken for a
-   lock file. *)
+   lock file.
+
+   [toolchains] is the stronger of the two, which is worth stating because its
+   name suggests the weaker. It is an installation prefix, not a store: it holds
+   the compiler dune runs, dune resolves those binaries ahead of [PATH] and
+   prepends their directory to it for package actions, and one install is shared
+   by every project on the machine. Nothing checks it — reuse turns on the
+   directory being present, and the digest in its name covers the lockfile
+   fields rather than the installed bytes, so a replaced binary is
+   indistinguishable from the real one. A write here is arbitrary code in the
+   user's next unconfined build. *)
 let home_relative ~lookup ~var ~default =
   let home =
     match lookup "HOME" with
