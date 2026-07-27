@@ -995,23 +995,23 @@ module Field = struct
         Some (i + 3)
       else authority_start (i + 1)
     in
+    let rec authority_end i =
+      if i >= len then i
+      else match url.[i] with '/' | '?' | '#' -> i | _ -> authority_end (i + 1)
+    in
+    let rec last_at i stop found =
+      if i >= stop then found
+      else last_at (i + 1) stop (if url.[i] = '@' then Some i else found)
+    in
     match authority_start 0 with
     | None -> url
-    | Some start ->
-        let rec authority_end i =
-          if i >= len then i
-          else
-            match url.[i] with '/' | '?' | '#' -> i | _ -> authority_end (i + 1)
-        in
-        let stop = authority_end start in
-        let rec last_at i found =
-          if i >= stop then found
-          else last_at (i + 1) (if url.[i] = '@' then Some i else found)
-        in
-        (match last_at start None with
+    | Some start -> (
+        match last_at start (authority_end start) None with
         | None -> url
         | Some at ->
-            String.sub url 0 start ^ "[REDACTED]" ^ String.sub url at (len - at))
+            (* [at] is the ['@'], so the tail keeps its own separator. *)
+            let tail = String.sub url at (len - at) in
+            String.sub url 0 start ^ "[REDACTED]" ^ tail)
 
   (* What the diagnostic values-with-origins view may show of a value. [None]
      withholds it entirely. Enumerated in full — never a wildcard default — so

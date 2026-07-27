@@ -337,9 +337,7 @@ let init_cmd =
    moves the second list into the first — the check a CI job wants — so the two
    modes differ in severity, never in what they notice. *)
 let report json ~errors ~warnings =
-  let strings items =
-    Output.Json.list (List.map Output.Json.string items)
-  in
+  let strings items = Output.Json.list (List.map Output.Json.string items) in
   if json then
     Output.stdout_printf "%s\n"
       (Output.Json.to_string

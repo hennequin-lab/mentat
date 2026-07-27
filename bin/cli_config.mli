@@ -7,8 +7,7 @@
 
 val cmd : int Cmdliner.Cmd.t
 
-val print_warnings :
-  ?about:Mentat_config.Field.any -> Composition.t -> unit
+val print_warnings : ?about:Mentat_config.Field.any -> Composition.t -> unit
 (** [print_warnings t] writes [t]'s configuration resolution warnings to stderr,
     one [mentat: warning:] line each: config input that did not take effect,
     such as a workspace key outside the shared allowlist or a config file
