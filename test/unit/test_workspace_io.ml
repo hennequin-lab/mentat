@@ -232,6 +232,13 @@ let run_escalated_res ?cwd ?stdin ?(capture = Command.All)
     ?(timeout = Eio.Time.Timeout.none) ?cancelled io argv =
   Command.run_escalated io ?cwd ?stdin ~capture ~timeout ?cancelled argv
 
+(* The probe is reaped under an installed SIGCHLD handler, which interrupts the
+   wait before it runs: its own exit is the signal that arrives. *)
+let rec waitpid_nointr pid =
+  match Unix.waitpid [] pid with
+  | result -> result
+  | exception Unix.Unix_error (Unix.EINTR, _, _) -> waitpid_nointr pid
+
 (* The direct child (and nothing else this process spawned) carries [name];
    a clean [pgrep] proves it was terminated and reaped before the run
    returned. Descendants are deliberately not scanned: they are reparented
@@ -242,13 +249,6 @@ let run_escalated_res ?cwd ?stdin ?(capture = Command.All)
    runs a shell command as a real [/bin/sh] child of this process, so a
    shell-mediated probe is itself a direct child and would answer questions
    about process names the shell can carry. *)
-(* The probe is reaped under an installed SIGCHLD handler, which interrupts the
-   wait before it runs: its own exit is the signal that arrives. *)
-let rec waitpid_nointr pid =
-  match Unix.waitpid [] pid with
-  | result -> result
-  | exception Unix.Unix_error (Unix.EINTR, _, _) -> waitpid_nointr pid
-
 let assert_leader_gone name =
   let devnull = Unix.openfile "/dev/null" [ Unix.O_RDWR ] 0 in
   let argv = [| "pgrep"; "-P"; string_of_int (Unix.getpid ()); "-x"; name |] in
@@ -1150,8 +1150,8 @@ let native_writes_name_non_directory_ancestors () =
             reported
       | e -> failf "wrong error: %a" Edit.Error.pp e)
 
-(* Workspace port types: the claim scope (the notice datum is pure data and *)
-(* is tested with its owner, [mentat_workspace]). *)
+(* Workspace port types: the claim scope (the notice datum is pure data and
+   is tested with its owner, [mentat_workspace]). *)
 
 let apply_exn w plan =
   match Wio.Edit.apply w.io (plan_exn plan) with
@@ -1384,8 +1384,8 @@ let a_claim_scope_records_successes_and_failures_in_one_order () =
       failf "expected [ success; attempt; success ], got %d applies"
         (List.length applies)
 
-(* Command: supervision and the launch boundary (direct route — these *)
-(* mechanics are backend-independent and must hold on every host). *)
+(* Command: supervision and the launch boundary (direct route — these
+   mechanics are backend-independent and must hold on every host). *)
 
 let with_direct ?env name fn =
   with_capability ?env name ~mode:Mode.Danger_full_access fn
@@ -2096,8 +2096,8 @@ let sessions_die_on_switch_release () =
     pids;
   assert_leader_gone "sleep"
 
-(* Sandbox integration: the confined and escalated routes (skip without a *)
-(* real enforcing backend — Seatbelt here, Bubblewrap on Linux). *)
+(* Sandbox integration: the confined and escalated routes (skip without a
+   real enforcing backend — Seatbelt here, Bubblewrap on Linux). *)
 
 let confined_commands_are_enforced_by_the_backend () =
   with_capability "enforce" @@ fun w ->

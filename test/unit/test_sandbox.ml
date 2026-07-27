@@ -71,12 +71,6 @@ let lowered ?cwd sandbox ~program args =
   | Ok tokens -> tokens
   | Error error -> fail (Error.message error)
 
-(* The generators are library-internal; the golden surface is the lowered
-   argv. For Seatbelt the SBPL document is the argv token after
-   ["-p"] and each following ["-DKEY=VALUE"] token carries one (key, path)
-   parameter; for Bubblewrap the enforcing prefix is the argv verbatim.
-   [seatbelt_sbpl] lowers a probe command with a cwd inside the read scope and
-   projects the (sbpl, params) pair back out of the argv. *)
 (* Any admitted read root serves; lowering re-checks lexical containment. *)
 let cwd_in_scope policy =
   match (Policy.reads_default policy, Policy.readable_roots policy) with
@@ -84,6 +78,12 @@ let cwd_in_scope policy =
   | Policy.Denied, root :: _ -> root
   | Policy.Denied, [] -> abs "/tmp"
 
+(* The generators are library-internal; the golden surface is the lowered
+   argv. For Seatbelt the SBPL document is the argv token after
+   ["-p"] and each following ["-DKEY=VALUE"] token carries one (key, path)
+   parameter; for Bubblewrap the enforcing prefix is the argv verbatim.
+   [seatbelt_sbpl] lowers a probe command with a cwd inside the read scope and
+   projects the (sbpl, params) pair back out of the argv. *)
 let seatbelt_sbpl policy =
   let tokens =
     lowered
@@ -220,9 +220,6 @@ let policy_distinguishes_network () =
     | Policy.Network.Restricted -> true
     | Policy.Network.Enabled -> false)
 
-(* Nothing is discarded any more: a clause is meaningful wherever it lies, and
-   the membership filter that used to drop a carveout outside every writable
-   root is what made the deny set impossible to express as one. *)
 (* Descendants are not collapsed — the ordered model needs them, since a
    deeper clause is how a carveout overrides the root that contains it. What
    collapses is two clauses on one path, to the stronger. *)
@@ -241,6 +238,9 @@ let policy_collapses_only_duplicate_paths () =
     [ abs "/work/sub" ]
     (Policy.denied_paths policy)
 
+(* Nothing is discarded: a clause is meaningful wherever it lies. A membership
+   filter that dropped a carveout outside every writable root would make the
+   deny set impossible to express as one. *)
 let policy_keeps_every_clause () =
   let policy =
     confined
@@ -770,9 +770,6 @@ let a_grant_under_a_denial_is_refused () =
       equal (list abs_value) ~msg:"the denial still wins inside the granted tree"
         [ denied ] (Policy.denied_paths wider)
 
-(* A grant is a route, not a stored posture: the sealed value it returns lowers
-   and reports as an enforced confined command — never as an escape — and the
-   seal it was made from is unchanged. *)
 (* A carveout is a clause deliberately lowered inside a more permissive one —
    [.git] inside the writable workspace, the dune store inside its cache. A
    grant may not raise one back: [normalize] keeps the stronger access, so
@@ -809,6 +806,9 @@ let a_grant_may_not_raise_a_carveout () =
       failf "a grant beneath a plain read root must be admitted, refused %a"
         Abs.pp path
 
+(* A grant is a route, not a stored posture: the sealed value it returns lowers
+   and reports as an enforced confined command — never as an escape — and the
+   seal it was made from is unchanged. *)
 let a_granted_seal_still_confines () =
   let policy = confined ~reads:[ abs "/work" ] ~writable_roots:[ abs "/work" ] () in
   let sandbox = sealed policy in

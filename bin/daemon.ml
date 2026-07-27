@@ -136,8 +136,9 @@ let boot registry ~root =
 (* Get-or-boot under the mutex, establishing a non-zero lease before releasing
    it: a fresh entry is inserted with [lease = 1]; an existing one has its lease
    bumped. The caller converts the lease to a [bound] or an [inflight] and drops
-   it. *)
-(* The mutex is held across the {b entire} boot — [Composition.instance] and
+   it.
+
+   The mutex is held across the {b entire} boot — [Composition.instance] and
    [Composition.driver] staging included — a deliberate no-double-boot trade: two
    racing get-or-boots of the same root can never both stage an instance, at the
    cost of serializing concurrent boots of {e distinct} workspaces behind one

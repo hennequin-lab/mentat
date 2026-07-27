@@ -50,13 +50,13 @@ let session_tag () =
       let short = if String.length id > 8 then String.sub id 0 8 else id in
       Printf.sprintf " [s=%s]" short
 
+(* Format's own ceiling is [pp_infinity], 1e9 + 10; stay clear of it. *)
+let unbounded_margin = 1_000_000_000
+
 (* [run_tag] distinguishes the shared sinks (stderr, an explicit [MENTAT_LOG_FILE])
    — which interleave across processes and so carry [run=<run_id>] — from the
    per-run divert file, whose filename already is the run identity. Every message
    flushes so a crashed or killed process keeps its trail. *)
-(* Format's own ceiling is [pp_infinity], 1e9 + 10; stay clear of it. *)
-let unbounded_margin = 1_000_000_000
-
 let reporter ~run_tag oc =
   let formatter = Format.formatter_of_out_channel oc in
   (* A log record is one physical line: every reader is line-oriented — grep,

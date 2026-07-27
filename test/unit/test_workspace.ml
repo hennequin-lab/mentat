@@ -172,8 +172,6 @@ let nested_case =
         case.target_abs)
     ~gen:nested_case_gen ()
 
-(* A single root, a construction-fixed cwd below it, and a target below the same
-   root; drives cwd-relative resolve_string. *)
 (* Root keys are JSON-safe text: non-empty valid UTF-8 without ASCII control
    characters. The property generator covers the printable ASCII subset;
    examples below cover Unicode and each rejection class. *)

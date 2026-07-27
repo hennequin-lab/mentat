@@ -74,13 +74,6 @@ let root =
       Cli_completion.cmd;
     ]
 
-(* cmdliner resolves the first token after [run] as a subcommand and does not
-   fall back to the group's default term for a bare positional, so a bare
-   [mentat run "do X"] would fail as an unknown command. Splice an explicit
-   [start] before a bare-word (or [-] stdin) first token to preserve the
-   baseline [run PROMPT] ergonomic. An option-led first token ([run --json …])
-   already reaches the default [start]; the [start]/[resume]/[reply] subcommand
-   names and the [run -- PROMPT] escape are left untouched. *)
 (* [-v]/[-vv]/[--verbose] raise the diagnostics level for the whole process, so
    they are taken from argv here — before the reporter is installed — rather than
    declared per command: a level chosen after [Cmd.eval'] would miss every record
@@ -108,6 +101,13 @@ let take_verbosity argv =
   let kept = split [] (Array.to_list argv) in
   (Array.of_list kept, !count)
 
+(* cmdliner resolves the first token after [run] as a subcommand and does not
+   fall back to the group's default term for a bare positional, so a bare
+   [mentat run "do X"] would fail as an unknown command. Splice an explicit
+   [start] before a bare-word (or [-] stdin) first token to preserve the
+   baseline [run PROMPT] ergonomic. An option-led first token ([run --json …])
+   already reaches the default [start]; the [start]/[resume]/[reply] subcommand
+   names and the [run -- PROMPT] escape are left untouched. *)
 let rewrite_run_prompt argv =
   match Array.to_list argv with
   (* [run -- PROMPT] escapes a prompt that collides with a subcommand

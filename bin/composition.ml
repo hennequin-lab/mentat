@@ -2110,13 +2110,6 @@ let build_execution_layer t : (execution_layer, Exit_status.t) result =
     | Mentat_session.Contract.Mode.Review ->
         [ Mentat_llm.Message.developer Mentat_prompts.Modes.review ]
   in
-  (* Assemble the per-turn model-visible context: the loaded workspace context
-     (system prompt, workspace block, AGENTS.md instructions), the mode prompt,
-     then the skills catalog. Recomputed per selection, so a mid-session edit to
-     AGENTS.md or the skill set takes effect at the next turn. [Context.load]
-     only fails when the cwd escapes the root, impossible here where they are
-     the same canonical path, so a load failure degrades to no context rather
-     than aborting the turn. *)
   (* The environment facts rendered into the workspace fragment. The date reads
      the [MENTAT_NOW]-aware reference clock (deterministic under the env pin);
      the model label resolves the catalog display name; the platform is the
@@ -2150,6 +2143,10 @@ let build_execution_layer t : (execution_layer, Exit_status.t) result =
     Mentat_context.Context.Environment.make ~date ~model:model_label
       ?model_cutoff ~platform:(Lazy.force platform) ()
   in
+  (* Assemble the per-turn model-visible context: the loaded workspace context
+     (system prompt, workspace block, AGENTS.md instructions), the mode prompt,
+     then the skills catalog. Recomputed per selection, so a mid-session edit to
+     AGENTS.md or the skill set takes effect at the next turn. *)
   let context_prelude ~model ~mode_fragments =
     let skills = load_skills () in
     (* [Context.prelude] is the one assembly shared with the offline prompt

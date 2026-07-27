@@ -144,10 +144,10 @@ let codecs =
           equal json_value ~msg:"compact read JSON" expected actual);
     ]
 
-(* Exhaustive compact-codec laws, merged from the former expect suite *)
-(* mentat.tools.output: every variant round-trips, decoders reapply their *)
-(* constructor invariants, and the durable Tool.Output envelope never *)
-(* duplicates authoritative text. *)
+(* Exhaustive compact-codec laws, merged from the former expect suite
+   mentat.tools.output: every variant round-trips, decoders reapply their
+   constructor invariants, and the durable Tool.Output envelope never
+   duplicates authoritative text. *)
 
 let decode_rejects codec json =
   match Json.decode codec json with Ok _ -> false | Error _ -> true
@@ -770,8 +770,8 @@ let compact_codecs =
                 Output.Read.unchanged));
     ]
 
-(* Web-fetch compact facts, merged from the former expect suite *)
-(* mentat.tools.output.web-fetch: closed-codec laws for [Web.Fetch]. *)
+(* Web-fetch compact facts, merged from the former expect suite
+   mentat.tools.output.web-fetch: closed-codec laws for [Web.Fetch]. *)
 
 let equal_fetch left right =
   Output.Web.Fetch.disposition left = Output.Web.Fetch.disposition right

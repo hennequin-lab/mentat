@@ -1242,17 +1242,17 @@ let begin_session_follow ~request kind t =
     motion = Home.Motion.freeze t.motion;
   }
 
-(* The conversation reset shared by activating a session and by clearing to a
-   fresh one: every field that returns to the conversing baseline, with the home
-   motion frozen so the next stage animates from rest. Each caller layers its own
-   divergent overrides — the destination session, the staged model or goal, and
-   the phase it opens on — on top of this. *)
 (* The close every panel and screen shares: return to the conversing surface.
    [restore] threads any extra teardown the closing surface owns — like a theme
    cancel restoring its saved palette — applied before the surface flips. *)
 let close_to_chat ?(restore = Fun.id) t =
   ({ (restore t) with surface = Conversing }, [])
 
+(* The conversation reset shared by activating a session and by clearing to a
+   fresh one: every field that returns to the conversing baseline, with the home
+   motion frozen so the next stage animates from rest. Each caller layers its own
+   divergent overrides — the destination session, the staged model or goal, and
+   the phase it opens on — on top of this. *)
 let reset_conversation t =
   {
     t with
@@ -3330,10 +3330,6 @@ let update_model_panel message model t =
               keep,
             [ Set_model { request; session; selector; reasoning_effort } ] ))
 
-(* The /theme picker previews live by pushing a new palette into [t.palette] on
-   every cursor move, restores the palette saved at open on cancel, and on
-   confirm keeps the previewed palette and persists the name to the user layer.
-   The provenance warning is surfaced by {!Persist_ui_theme}'s result. *)
 (* A hand pick disarms auto's colour-scheme following for the session. *)
 let disarm_auto t =
   {
@@ -3342,6 +3338,10 @@ let disarm_auto t =
       Option.map (fun a -> { a with auto_armed = false }) t.theme_auto;
   }
 
+(* The /theme picker previews live by pushing a new palette into [t.palette] on
+   every cursor move, restores the palette saved at open on cancel, and on
+   confirm keeps the previewed palette and persists the name to the user layer.
+   The provenance warning is surfaced by {!Persist_ui_theme}'s result. *)
 let theme_panel_event panel event t =
   let keep = { t with surface = Panel (Theme panel) } in
   match event with
@@ -5637,11 +5637,6 @@ let ambiguity_status t =
     ]
   else []
 
-(* The narrow activity carried inside the transcript region: only the todo board
-   (a side-pane tenant on wide, hence narrow-only here). The agent switcher does
-   not ride the region; it stacks beneath the composer exactly as the main view
-   does (see [below_composer_threads] in [drill_view]), so the two surfaces place
-   it identically. *)
 (* The narrow strip shares the pane's tenants that survive the width squeeze:
    the goal line leads (labelled, because the strip has no section headers),
    then the task board. One rule bounds the whole strip. *)
@@ -5652,6 +5647,11 @@ let narrow_goal t =
       Workspace_glance.goal ~palette:t.palette ~labelled:true
         ~objective:(Some objective)
 
+(* The narrow activity carried inside the transcript region: only the todo board
+   (a side-pane tenant on wide, hence narrow-only here). The agent switcher does
+   not ride the region; it stacks beneath the composer exactly as the main view
+   does (see [below_composer_threads] in [drill_view]), so the two surfaces place
+   it identically. *)
 let narrow_activity chat t =
   let board =
     match chat.task_board with

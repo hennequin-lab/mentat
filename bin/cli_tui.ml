@@ -198,9 +198,6 @@ let run_local_shell definition ~cancelled ~command =
                "the executable-local shell unexpectedly prepared a staged tool \
                 call"))
 
-(* The launch-fixed notification policy, resolved from the [notify.*] config.
-   The channel/focus spellings are validated by the field codecs, so decoding
-   them back to the typed enums cannot fail; the fallbacks preserve totality. *)
 (* Theme resolution is the executable's only I/O boundary over the palette. A
    built-in preset name resolves from the compiled {!Mentat_tui.Theme.Preset}
    floor; any other name — or a same-named file overlaying a preset — reads
@@ -359,6 +356,9 @@ let theme_auto t =
 let seed_palette t =
   match theme_auto t with Some (dark, _light) -> dark | None -> palette t
 
+(* The launch-fixed notification policy, resolved from the [notify.*] config.
+   The channel/focus spellings are validated by the field codecs, so decoding
+   them back to the typed enums cannot fail; the fallbacks preserve totality. *)
 let notify_policy t =
   let config = Composition.config t in
   let get field = Mentat_config.Resolved.get field config in

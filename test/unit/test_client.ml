@@ -2021,8 +2021,8 @@ let lifecycle_group =
             (List.rev !calls));
     ]
 
-(* Error passthrough: every unit-returning flow surfaces the driver's error *)
-(* unmapped (error unification — one Error.t escapes). *)
+(* Error passthrough: every unit-returning flow surfaces the driver's error
+   unmapped (error unification — one Error.t escapes). *)
 
 let error_passthrough_group =
   group "error passthrough"

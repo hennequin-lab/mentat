@@ -2617,8 +2617,8 @@ let documents_round_trip_over_generated_sessions () =
     check (Printf.sprintf "generated %d" index) (random_tame 1 12 ^ "-g")
   done
 
-(* Adjudicated changes: verify-on-exists, layout, scan kind, decode version, *)
-(* Io change (B3, B9, B10, B8). *)
+(* Adjudicated changes: verify-on-exists, layout, scan kind, decode version,
+   Io change (B3, B9, B10, B8). *)
 
 (* A pre-existing blob is verified against its reference, never trusted (B3):
    an externally damaged file at the content-derived path is [Blob_mismatch],

@@ -1286,13 +1286,6 @@ module Command = struct
           ~stdin:(Option.map coerce_source stdin)
           ~capture ~timeout ~cancelled argv
 
-  (* The widened seal is built here and discarded when the command returns:
-     nothing stores it, which is what makes the grant expire. It lowers through
-     the ordinary confined route, so a granted command is still an enforced one
-     and reports enforced evidence — unlike an escalation, which reports having
-     left the sandbox. Every grant path is an ordinary obligation, so one that
-     does not exist is refused by the discharge already standing in [prepare]
-     rather than conjured into being. *)
   (* A grant is the one path into the policy that does not come from the
      resolver, so the two things the resolver would have done for it have to
      happen here.
@@ -1322,6 +1315,13 @@ module Command = struct
     in
     loop [] grants
 
+  (* The widened seal is built here and discarded when the command returns:
+     nothing stores it, which is what makes the grant expire. It lowers through
+     the ordinary confined route, so a granted command is still an enforced one
+     and reports enforced evidence — unlike an escalation, which reports having
+     left the sandbox. Every grant path is an ordinary obligation, so one that
+     does not exist is refused by the discharge already standing in [prepare]
+     rather than conjured into being. *)
   let run_granted t ?cwd ?stdin ~capture ~timeout ?cancelled ~grants argv =
     match admissible_grants t grants with
     | Error error -> Error (Error.Sandbox error)
