@@ -104,10 +104,23 @@ let with_env bindings fn =
    way out. Paths handed to tests are physical ([realpath]'d), so they
    compare equal to the capability's canonical spellings. *)
 
+(* Fixtures live beside the build, never under the temp directory. Every
+   confined posture grants [/tmp] and the temp-dir family writable, so a control
+   directory created there is inside the sandbox rather than outside it, and
+   every test that proves a write is refused would instead prove that [/tmp] is
+   writable. It reads as a pass on macOS, where the ambient [TMPDIR] is a
+   per-user bucket the policy does not grant, and as a failure on Linux, where
+   it is [/tmp] itself. *)
+let fixture_root =
+  let root = Filename.concat (Sys.getcwd ()) "wio-fixtures" in
+  (try Unix.mkdir root 0o755
+   with Unix.Unix_error (Unix.EEXIST, _, _) -> ());
+  root
+
 let in_dirs name fn =
   Eio_main.run @@ fun stdenv ->
   let stdenv = (stdenv :> Eio_unix.Stdenv.base) in
-  let raw = Filename.temp_dir ("mentat-wio-" ^ name) "" in
+  let raw = Filename.temp_dir ~temp_dir:fixture_root ("mentat-wio-" ^ name) "" in
   Fun.protect ~finally:(fun () -> rm_rf raw) @@ fun () ->
   let base = Unix.realpath raw in
   let subdir sub =
