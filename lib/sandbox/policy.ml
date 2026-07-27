@@ -110,12 +110,45 @@ let readable_roots t =
    denied path is admitted and the deeper denial keeps winning inside it, which
    is how the deny set survives a grant made over a whole tree. *)
 let grant t entries =
-  let denied = denied_paths t in
-  let defeated (path, _) =
-    List.find_opt (fun root -> Lpath.Abs.is_within ~root path) denied
+  (* A clause that grants less than one enclosing it was lowered on purpose —
+     [.git] inside the workspace, the dune store inside its cache. Those are
+     what a grant must not raise, and the deny set is only the loudest of them:
+     admitting a write over a carveout hands back exactly the path some earlier
+     ruling took away, and [normalize] would collapse the two clauses to the
+     stronger without a word.
+
+     Only a carveout, though. A read root is not a carveout, and a grant beneath
+     one is the ordinary case this exists to serve — [/usr] being unwritable is
+     the default reach, not a decision about [/usr/local/x]. So the test is
+     relative: refuse where the covering clause is weaker than the grant *and*
+     something shallower is stronger than it. *)
+  let carveouts =
+    List.filter
+      (fun (path, access) ->
+        List.exists
+          (fun (enclosing, enclosing_access) ->
+            (not (Lpath.Abs.equal enclosing path))
+            && Lpath.Abs.is_within ~root:enclosing path
+            && Access.compare enclosing_access access > 0)
+          t.entries)
+      t.entries
+  in
+  let defeated (path, access) =
+    List.find_opt
+      (fun (root, root_access) ->
+        Lpath.Abs.is_within ~root path && Access.compare root_access access < 0)
+      carveouts
+    |> Option.map (fun (root, _) -> (path, root))
+  in
+  let denied (path, _) =
+    List.find_opt (fun root -> Lpath.Abs.is_within ~root path) (denied_paths t)
     |> Option.map (fun root -> (path, root))
   in
-  match List.find_map defeated entries with
+  match
+    List.find_map (fun entry -> match denied entry with
+      | Some _ as defeat -> defeat
+      | None -> defeated entry) entries
+  with
   | Some defeat -> Error defeat
   | None -> Ok { t with entries = normalize (t.entries @ entries) }
 

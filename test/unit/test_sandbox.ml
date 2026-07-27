@@ -773,6 +773,42 @@ let a_grant_under_a_denial_is_refused () =
 (* A grant is a route, not a stored posture: the sealed value it returns lowers
    and reports as an enforced confined command — never as an escape — and the
    seal it was made from is unchanged. *)
+(* A carveout is a clause deliberately lowered inside a more permissive one —
+   [.git] inside the writable workspace, the dune store inside its cache. A
+   grant may not raise one back: [normalize] keeps the stronger access, so
+   admitting the write would hand back exactly the path an earlier ruling took
+   away, silently. The workspace case is the sharp one, because Mentat itself
+   runs git, and a writable [.git/hooks] is arbitrary code on the next call. *)
+let a_grant_may_not_raise_a_carveout () =
+  let workspace = abs "/work" in
+  let git = abs "/work/.git" in
+  let policy =
+    Policy.make
+      ~entries:
+        [ (workspace, Policy.Access.Write); (git, Policy.Access.Read) ]
+      ~reads_default:Policy.Denied ~network:Policy.Network.Restricted
+  in
+  (match Policy.grant policy [ (git, Policy.Access.Write) ] with
+  | Ok _ -> fail "a write grant over a read carveout must be refused"
+  | Error (path, root) ->
+      equal abs_value ~msg:"the refusal names the grant" git path;
+      equal abs_value ~msg:"and the carveout that defeats it" git root);
+  (match Policy.grant policy [ (abs "/work/.git/hooks", Policy.Access.Write) ] with
+  | Ok _ -> fail "a write grant beneath a read carveout must be refused"
+  | Error _ -> ());
+  (* A read root is not a carveout: nothing lowered it, so a grant beneath it is
+     the ordinary widening this exists to serve. *)
+  let open_reads =
+    Policy.make
+      ~entries:[ (abs "/usr", Policy.Access.Read) ]
+      ~reads_default:Policy.Denied ~network:Policy.Network.Restricted
+  in
+  match Policy.grant open_reads [ (abs "/usr/local/x", Policy.Access.Write) ] with
+  | Ok _ -> ()
+  | Error (path, _) ->
+      failf "a grant beneath a plain read root must be admitted, refused %a"
+        Abs.pp path
+
 let a_granted_seal_still_confines () =
   let policy = confined ~reads:[ abs "/work" ] ~writable_roots:[ abs "/work" ] () in
   let sandbox = sealed policy in
@@ -1498,6 +1534,7 @@ let () =
       test "a grant widens without defeating a denial"
         a_grant_widens_without_defeating_a_denial;
       test "a grant under a denial is refused" a_grant_under_a_denial_is_refused;
+      test "a grant may not raise a carveout" a_grant_may_not_raise_a_carveout;
       test "a granted seal still confines" a_granted_seal_still_confines;
       test "bubblewrap seals a denial after its descendants"
         bubblewrap_seals_a_denial_after_its_descendants;
