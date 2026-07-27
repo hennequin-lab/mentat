@@ -17,6 +17,13 @@ let is_wsl1 () =
       && not (String.includes ~affix:"wsl2" version)
   | exception Sys_error _ -> false
 
+(* The probe exercises every operation a lowered policy can emit, not just the
+   binds. [--perms] arrived in bubblewrap 0.5.0, and a probe that omits it
+   passes on an older one and then fails every command in the session — the
+   failure lands on the first thing the agent runs rather than at startup, where
+   the resolver could have reported an unusable backend. The denial trio is
+   applied to [/tmp] because it exists on every host and the probe's own
+   [/bin/true] has no use for it. *)
 let probe_argv executable =
   [
     executable;
@@ -25,6 +32,12 @@ let probe_argv executable =
     "--ro-bind";
     "/";
     "/";
+    "--perms";
+    "000";
+    "--tmpfs";
+    "/tmp";
+    "--remount-ro";
+    "/tmp";
     "--dev";
     "/dev";
     "--proc";
