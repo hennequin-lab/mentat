@@ -332,15 +332,28 @@ let init_cmd =
 
 (* validate. — structured output. *)
 
-let ok_envelope json =
+(* One report shape for every outcome: [errors] decides the verdict and the
+   exit code, [warnings] carries the keys that parse but do nothing. --strict
+   moves the second list into the first — the check a CI job wants — so the two
+   modes differ in severity, never in what they notice. *)
+let report json ~errors ~warnings =
+  let strings items =
+    Output.Json.list (List.map Output.Json.string items)
+  in
   if json then
     Output.stdout_printf "%s\n"
       (Output.Json.to_string
          (Output.Json.envelope ~type_:"config.validate"
             [
-              ("valid", Output.Json.bool true); ("errors", Output.Json.list []);
+              ("valid", Output.Json.bool (errors = []));
+              ("errors", strings errors);
+              ("warnings", strings warnings);
             ]))
-  else Output.stdout_printf "ok\n"
+  else (
+    List.iter (Output.stderr_printf "warning: %s\n") warnings;
+    List.iter (Output.stderr_printf "%s\n") errors;
+    if errors = [] then Output.stdout_printf "ok\n");
+  if errors = [] then Exit_status.Success else Exit_status.Failed
 
 let validate json strict path_opt cwd =
   Composition.with_base ~cwd ~overrides:[] (fun t ->
@@ -349,70 +362,46 @@ let validate json strict path_opt cwd =
         | Some p -> p
         | None -> User_dirs.config_file (Composition.dirs t)
       in
+      let ok () = report json ~errors:[] ~warnings:[] in
       match Config_io.read ~path with
       | Error message ->
           if json then (
             Output.json_error ~type_:"config.validate" message;
             Exit_status.Failed)
           else Exit_status.runtime message
-      | Ok None ->
-          (* A missing config file has nothing to validate — ok, not an
-             "end of text" parse error. *)
-          ok_envelope json;
-          Exit_status.Success
-      | Ok (Some bytes) when String.length (String.trim bytes) = 0 ->
-          ok_envelope json;
-          Exit_status.Success
+      (* A missing or empty config file has nothing to validate — ok, not an
+         "end of text" parse error. *)
+      | Ok None -> ok ()
+      | Ok (Some bytes) when String.length (String.trim bytes) = 0 -> ok ()
       | Ok (Some bytes) -> (
           match Jsont_bytesrw.decode_string Jsont.json bytes with
           | Error message ->
-              if json then (
-                Output.stdout_printf "%s\n"
-                  (Output.Json.to_string
-                     (Output.Json.envelope ~type_:"config.validate"
-                        [
-                          ("valid", Output.Json.bool false);
-                          ( "errors",
-                            Output.Json.list [ Output.Json.string message ] );
-                        ]));
-                Exit_status.Failed)
+              if json then report json ~errors:[ message ] ~warnings:[]
               else Exit_status.runtime message
           | Ok j ->
-              let errors = Config.validate ~strict ~source:path j in
-              if errors = [] then (
-                if json then
-                  Output.stdout_printf "%s\n"
-                    (Output.Json.to_string
-                       (Output.Json.envelope ~type_:"config.validate"
-                          [
-                            ("valid", Output.Json.bool true);
-                            ("errors", Output.Json.list []);
-                          ]))
-                else Output.stdout_printf "ok\n";
-                Exit_status.Success)
-              else (
-                if json then
-                  Output.stdout_printf "%s\n"
-                    (Output.Json.to_string
-                       (Output.Json.envelope ~type_:"config.validate"
-                          [
-                            ("valid", Output.Json.bool false);
-                            ( "errors",
-                              Output.Json.list
-                                (List.map
-                                   (fun e ->
-                                     Output.Json.string (Config.Error.message e))
-                                   errors) );
-                          ]))
-                else
-                  List.iter
-                    (fun e ->
-                      Output.stderr_printf "%s\n" (Config.Error.message e))
-                    errors;
-                Exit_status.Failed)))
+              (* A workspace file's allowlist is part of "is this file right",
+                 so the check reads the same layer boundary the resolver
+                 does. *)
+              let workspace =
+                match
+                  Config_io.layer_of_path ~dirs:(Composition.dirs t)
+                    ~root:(Composition.root t) path
+                with
+                | Some (Config_io.Project | Config_io.Project_local) -> true
+                | Some Config_io.User | None -> false
+              in
+              let message e = Config.Error.message e in
+              let errors = List.map message (Config.validate ~source:path j) in
+              let ignored =
+                List.map message (Config.ignored_keys ~workspace ~source:path j)
+              in
+              if strict then report json ~errors:(errors @ ignored) ~warnings:[]
+              else report json ~errors ~warnings:ignored))
 
 let strict_flag =
-  Arg.(value & flag & info [ "strict" ] ~doc:"Also report unknown fields.")
+  Arg.(
+    value & flag
+    & info [ "strict" ] ~doc:"Fail on keys that have no effect, not just warn.")
 
 let path_pos =
   Arg.(

@@ -1720,7 +1720,7 @@ let validate_provider_unknown_fields source json =
         providers
   | None | Some _ -> []
 
-let validate ?(strict = false) ~source json =
+let validate ~source json =
   match json with
   | Jsont.Null _ | Jsont.Bool _ | Jsont.Number _ | Jsont.String _
   | Jsont.Array _ ->
@@ -1729,61 +1729,98 @@ let validate ?(strict = false) ~source json =
       let key_errors key =
         errors_of_result (decode_file_key source json key empty)
       in
-      let supported_errors =
+      List.concat_map
+        (function
+          | Key key -> key_errors key
+          | Providers -> validate_providers source json
+          | Section head -> (
+              match json_mem head json with
+              | None -> []
+              | Some (Jsont.Object _) ->
+                  List.concat_map key_errors (section_keys head)
+              | Some _ ->
+                  [ error_t (source ^ " " ^ head ^ " must be an object") ]))
+        file_units
+      @ errors_of_result (decode_permission_rules source json empty)
+
+(* The keys a file carries that the reader will skip: members no field spells,
+   and — in a workspace layer — the supported keys the shared allowlist drops
+   there. Neither is a value error, which is why they live beside [validate]
+   rather than in it; both are text the author believes is live. *)
+let ignored_in_workspace source json =
+  match of_json ~source json with
+  | Error _ -> (* [validate] owns the shape report. *) []
+  | Ok config ->
+      let keys =
+        List.filter_map
+          (fun (Field.Any field) ->
+            let name = Field.name field in
+            if Field.allowed_in_workspace field then None
+            else
+              Some
+                (error_t
+                   (Printf.sprintf
+                      "%s %s is ignored in a workspace config file; set it in \
+                       the user config with `mentat config set %s`"
+                      source name name)))
+          (keys config)
+      in
+      let rules =
+        match permission_rules config with
+        | [] -> []
+        | _ ->
+            [
+              error_t
+                (source
+               ^ " permission.rules is ignored in a workspace config file");
+            ]
+      in
+      keys @ rules
+
+let ignored_keys ?(workspace = false) ~source json =
+  match json with
+  | Jsont.Null _ | Jsont.Bool _ | Jsont.Number _ | Jsont.String _
+  | Jsont.Array _ ->
+      []
+  | Jsont.Object _ ->
+      let top_level_allowed =
+        List.map
+          (function
+            | Key (Field.Any field) -> Field.name field
+            | Providers -> "providers"
+            | Section head -> head)
+          file_units
+      in
+      let section_unknown_errors =
         List.concat_map
           (function
-            | Key key -> key_errors key
-            | Providers -> validate_providers source json
+            | Key _ | Providers -> []
             | Section head -> (
                 match json_mem head json with
-                | None -> []
-                | Some (Jsont.Object _) ->
-                    List.concat_map key_errors (section_keys head)
-                | Some _ ->
-                    [ error_t (source ^ " " ^ head ^ " must be an object") ]))
+                | Some (Jsont.Object _ as inner) ->
+                    let structured_members =
+                      (* Members handled outside the scalar key system must not
+                         also produce unknown-member reports.
+                         [permission.rules] is the only such member. *)
+                      match head with
+                      | "permission" -> [ "rules" ]
+                      | _ -> []
+                    in
+                    unknown_object_field_errors
+                      (source ^ " " ^ head)
+                      (List.map
+                         (fun (Field.Any field) ->
+                           String.concat "." (List.tl (field_path field)))
+                         (section_keys head)
+                      @ structured_members)
+                      inner
+                | None | Some _ -> []))
           file_units
-        @ errors_of_result (decode_permission_rules source json empty)
       in
-      if not strict then supported_errors
-      else
-        let top_level_allowed =
-          List.map
-            (function
-              | Key (Field.Any field) -> Field.name field
-              | Providers -> "providers"
-              | Section head -> head)
-            file_units
-        in
-        let section_unknown_errors =
-          List.concat_map
-            (function
-              | Key _ | Providers -> []
-              | Section head -> (
-                  match json_mem head json with
-                  | Some (Jsont.Object _ as inner) ->
-                      let structured_members =
-                        (* Members handled outside the scalar key system must
-                           not also produce strict unknown-member errors.
-                           [permission.rules] is the only such member. *)
-                        match head with
-                        | "permission" -> [ "rules" ]
-                        | _ -> []
-                      in
-                      unknown_object_field_errors
-                        (source ^ " " ^ head)
-                        (List.map
-                           (fun (Field.Any field) ->
-                             String.concat "." (List.tl (field_path field)))
-                           (section_keys head)
-                        @ structured_members)
-                        inner
-                  | None | Some _ -> []))
-            file_units
-        in
-        supported_errors
-        @ unknown_object_field_errors source top_level_allowed json
-        @ section_unknown_errors
-        @ validate_provider_unknown_fields source json
+      unknown_object_field_errors source top_level_allowed json
+      @ section_unknown_errors
+      @ validate_provider_unknown_fields source json
+      @ if workspace then ignored_in_workspace source json else []
 
 (* The pure splice behind [plan]: unknown members in the original JSON keep
    their value and nesting; supported members are re-emitted in file-unit

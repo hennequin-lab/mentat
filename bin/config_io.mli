@@ -34,6 +34,13 @@ val resolve :
 val layer_path : dirs:User_dirs.t -> root:Lpath.Abs.t -> layer -> string
 (** [layer_path ~dirs ~root layer] is the absolute file path of [layer]. *)
 
+val layer_of_path :
+  dirs:User_dirs.t -> root:Lpath.Abs.t -> string -> layer option
+(** [layer_of_path ~dirs ~root path] is the layer whose file is [path], if any.
+    Paths are compared as files, so a relative spelling or a symlinked home
+    still classifies; a path that does not resolve, or names no layer file, is
+    [None]. *)
+
 val read : path:string -> (string option, string) result
 (** [read ~path] is the byte-capped contents of [path]: [Ok None] if the file is
     absent (so [config validate] on a missing file is "ok", not a parse error),

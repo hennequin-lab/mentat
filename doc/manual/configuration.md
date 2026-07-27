@@ -62,6 +62,14 @@ Editing commands write the user config by default; `--project` targets
 These explicit file operations remain available before trust, but the values
 activate only after `mentat trust` records the workspace root.
 
+`config validate` reports two kinds of finding. Errors — a member of a supported
+field with the wrong shape or an unusable value — fail the check. Warnings name
+keys that parse but have no effect: a member no field spells (a typo, or a
+setting from another tool), and, when the file is a workspace layer, a key
+outside the shared allowlist. Unknown members are preserved across edits rather
+than rejected, so they warn by default; `--strict` fails on them instead, which
+is the form to run in CI.
+
 ## Keys
 
 Keys supported by `get`, `set`, and `unset`:

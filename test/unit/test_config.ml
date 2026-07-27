@@ -547,12 +547,13 @@ let parser_errors =
             (doc_err (rules_wire [ rule_a; rule_a ])));
     ]
 
+let messages errors = List.map C.Error.message errors
+
 let parser_validate =
-  group "parser: validate strict vs loose"
+  group "parser: value errors vs ignored keys"
     [
-      test
-        "loose reports only supported invalid fields; strict adds unknowns in \
-         file order" (fun () ->
+      test "validate reports supported invalid fields; ignored_keys the rest"
+        (fun () ->
           let json =
             jo
               [
@@ -561,42 +562,35 @@ let parser_validate =
                 ("unknown2", ji 2);
               ]
           in
-          let messages strict =
-            List.map C.Error.message (C.validate ~strict ~source:"cfg" json)
-          in
-          equal (list string) ~msg:"loose"
+          equal (list string) ~msg:"value errors"
             [ "cfg run.max_steps must be an integer" ]
-            (messages false);
-          equal (list string) ~msg:"strict, in file order"
+            (messages (C.validate ~source:"cfg" json));
+          equal (list string) ~msg:"ignored keys, in file order"
             [
-              "cfg run.max_steps must be an integer";
               "cfg unknown field: unknown1";
               "cfg unknown field: unknown2";
               "cfg run unknown field: unknown_run";
             ]
-            (messages true));
+            (messages (C.ignored_keys ~source:"cfg" json)));
       test "removed file shapes are ordinary unknown fields, not rejections"
         (fun () ->
           (* These members named behavior in an earlier stack. next has no
              field, alias, or decoder for them, so each loads without error,
-             contributes nothing, is tolerated by default validation, and is
-             named only by strict validation — exactly like any other unknown
-             member. *)
+             contributes nothing, and is no value error — it is an ignored key,
+             exactly like any other unknown member. *)
           List.iter
-            (fun (label, fields, strict_message) ->
+            (fun (label, fields, ignored_message) ->
               is_true
                 ~msg:(label ^ " loads and contributes nothing")
                 (C.equal C.empty (doc_exn fields));
               equal (list string)
-                ~msg:(label ^ " loose validate is silent")
+                ~msg:(label ^ " is no value error")
                 []
-                (List.map C.Error.message
-                   (C.validate ~source:"cfg" (jo fields)));
+                (messages (C.validate ~source:"cfg" (jo fields)));
               equal (list string)
-                ~msg:(label ^ " strict validate names it")
-                [ strict_message ]
-                (List.map C.Error.message
-                   (C.validate ~strict:true ~source:"cfg" (jo fields))))
+                ~msg:(label ^ " is named as ignored")
+                [ ignored_message ]
+                (messages (C.ignored_keys ~source:"cfg" (jo fields))))
             [
               ( "permission.mode",
                 [ ("permission", jo [ ("mode", js "auto") ]) ],
@@ -611,11 +605,52 @@ let parser_validate =
                 [ ("web", jo [ ("search_backend", js "brave") ]) ],
                 "cfg web unknown field: search_backend" );
             ]);
-      test "validate on a clean configuration reports nothing" (fun () ->
-          equal (list string) ~msg:"no errors" []
-            (List.map C.Error.message
-               (C.validate ~strict:true ~source:"cfg"
-                  (jo (nested "run.max_steps" (ji 5))))));
+      test "a workspace layer also ignores the keys the allowlist drops"
+        (fun () ->
+          let json =
+            jo
+              [
+                ("model", js "openai/gpt-5.6-sol");
+                ("shell", js "/bin/bash");
+                ("providers", jo [ ("openai", jo [ ("base_url", js "u") ]) ]);
+              ]
+          in
+          equal (list string) ~msg:"user layer keeps every supported key" []
+            (messages (C.ignored_keys ~source:"cfg" json));
+          equal (list string) ~msg:"workspace layer names the dropped keys"
+            [
+              "cfg providers.openai.base_url is ignored in a workspace config \
+               file; set it in the user config with `mentat config set \
+               providers.openai.base_url`";
+              "cfg shell is ignored in a workspace config file; set it in the \
+               user config with `mentat config set shell`";
+            ]
+            (messages (C.ignored_keys ~workspace:true ~source:"cfg" json)));
+      test "a workspace layer ignores permission.rules" (fun () ->
+          let json =
+            jo
+              [
+                ( "permission",
+                  jo
+                    [
+                      ( "rules",
+                        jo
+                          [
+                            ("version", ji 1);
+                            ("items", jlist [ rule_json rule_a ]);
+                          ] );
+                    ] );
+              ]
+          in
+          equal (list string) ~msg:"named as ignored"
+            [ "cfg permission.rules is ignored in a workspace config file" ]
+            (messages (C.ignored_keys ~workspace:true ~source:"cfg" json)));
+      test "a clean configuration reports nothing either way" (fun () ->
+          let json = jo (nested "run.max_steps" (ji 5)) in
+          equal (list string) ~msg:"no value errors" []
+            (messages (C.validate ~source:"cfg" json));
+          equal (list string) ~msg:"no ignored keys" []
+            (messages (C.ignored_keys ~workspace:true ~source:"cfg" json)));
     ]
 
 (* 3. Typed reads and writes. *)

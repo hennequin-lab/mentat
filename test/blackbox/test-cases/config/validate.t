@@ -1,5 +1,6 @@
-Config validate checks a config file's syntax and supported field types, with
-an enveloped --json report and a strict mode that also rejects unknown fields.
+Config validate checks a config file's syntax and supported field types and
+names every key that has no effect, with an enveloped --json report and a strict
+mode that fails on those keys instead of warning about them.
 CFG-6: a corrupt effective config reader fails closed with a clean diagnostic.
 
   $ use_trusted_workspace
@@ -20,14 +21,15 @@ treats an absent file as the empty config).
   $ mentat config validate does-not-exist.json
   ok
 
-Unknown fields are tolerated by default so editing can preserve them, and named
-by strict validation. Errors are prefixed with the file and carry no mentat:
-banner.
+Unknown fields are tolerated by default so editing can preserve them — but never
+in silence: they warn and pass, and fail under strict. Both are prefixed with the
+file and carry no mentat: banner.
 
   $ cat > unknown.json <<EOF
   > {"model":"openai/gpt-5.6-sol","extra":true}
   > EOF
   $ mentat config validate unknown.json
+  warning: unknown.json unknown field: extra
   ok
   $ mentat config validate --strict unknown.json 2>&1
   unknown.json unknown field: extra
@@ -54,6 +56,7 @@ too, whatever an earlier release meant by it — [permission.mode] is one.
   > {"permission":{"mode":"auto"}}
   > EOF
   $ mentat config validate unknown-permission.json
+  warning: unknown-permission.json permission unknown field: mode
   ok
   $ mentat config validate --strict unknown-permission.json 2>&1
   unknown-permission.json permission unknown field: mode
@@ -63,9 +66,9 @@ The --json report is a single enveloped object with a valid flag and an errors
 list.
 
   $ mentat config validate --json valid.json
-  {"schema_version":1,"type":"config.validate","valid":true,"errors":[]}
+  {"schema_version":1,"type":"config.validate","valid":true,"errors":[],"warnings":[]}
   $ mentat config validate --json --strict unknown.json
-  {"schema_version":1,"type":"config.validate","valid":false,"errors":["unknown.json unknown field: extra"]}
+  {"schema_version":1,"type":"config.validate","valid":false,"errors":["unknown.json unknown field: extra"],"warnings":[]}
   [1]
 
 Malformed JSON fails (the parse error carries the mentat: banner).
@@ -138,6 +141,36 @@ Validation reports every error it finds in one file, in a stable order.
   many-errors.json run unknown field: extra
   many-errors.json permission unknown field: mode
   [1]
+
+A key's effect depends on the file it sits in, so validation reads the same
+layer boundary the resolver does: a workspace file naming a key outside the
+shared allowlist carries text nothing will read, and says so. The identical file
+is clean at the user path.
+
+  $ mkdir -p .mentat
+  $ cat > .mentat/config.json <<EOF
+  > {"model":"openai/gpt-5.6-sol","shell":"/bin/bash"}
+  > EOF
+  $ mentat config validate .mentat/config.json 2>&1
+  warning: .mentat/config.json shell is ignored in a workspace config file; set it in the user config with `mentat config set shell`
+  ok
+  $ mentat config validate --strict .mentat/config.json 2>&1
+  .mentat/config.json shell is ignored in a workspace config file; set it in the user config with `mentat config set shell`
+  [1]
+
+  $ cp .mentat/config.json plain.json
+  $ mentat config validate plain.json
+  ok
+
+Workspace permission rules never load, however well-formed the file's rules are.
+
+  $ cat > .mentat/config.json <<EOF
+  > {"permission":{"rules":{"version":1,"items":[{"action":"allow","matcher":{"type":"any"}}]}}}
+  > EOF
+  $ mentat config validate .mentat/config.json 2>&1
+  warning: .mentat/config.json permission.rules is ignored in a workspace config file
+  ok
+  $ rm -r .mentat
 
 CFG-6 — a corrupt effective config reader fails closed. Plant a malformed user
 file; a bare `config validate` resolves the effective config first and reports

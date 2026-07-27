@@ -27,6 +27,20 @@ let layer_path ~dirs ~root layer =
   | Project_local ->
       Filename.concat (Lpath.Abs.to_string root) ".mentat/config.local.json"
 
+(* Which layer a path names, decided on the files themselves rather than on
+   spelling: a relative path, a symlinked home, and the layer's own absolute
+   path all name the same file, and the answer governs which keys that file may
+   carry. An unresolvable path names no layer. *)
+let same_file a b =
+  match (Unix.realpath a, Unix.realpath b) with
+  | a, b -> String.equal a b
+  | exception Unix.Unix_error _ -> false
+
+let layer_of_path ~dirs ~root path =
+  List.find_opt
+    (fun layer -> same_file path (layer_path ~dirs ~root layer))
+    [ User; Project; Project_local ]
+
 let read_layer ~dirs ~root layer =
   let path = layer_path ~dirs ~root layer in
   match read_file path with

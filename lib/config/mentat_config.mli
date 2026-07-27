@@ -729,13 +729,27 @@ val set_permission_rules : Mentat_permission.Policy.Rule.t list -> t -> t
 
 (** {1:planning Validation and edit planning} *)
 
-val validate : ?strict:bool -> source:string -> Jsont.json -> Error.t list
+val validate : source:string -> Jsont.json -> Error.t list
 (** [validate ~source json] collects every shape or value error in [json]'s
     supported fields, labelling each with [source].
 
-    Default validation reports supported fields with invalid shapes or values.
-    [strict] validation additionally reports every ordinary unknown field, in
-    file order. *)
+    A member no field spells is not an error: the file format tolerates unknown
+    members so an edit preserves them across versions. {!ignored_keys} reports
+    those separately. *)
+
+val ignored_keys :
+  ?workspace:bool -> source:string -> Jsont.json -> Error.t list
+(** [ignored_keys ~source json] is every key [json] carries that has no effect,
+    in file order, each labelled with [source]: members no field spells,
+    including unknown members of a known section or of a [providers] entry.
+
+    [workspace] declares [json] a workspace layer ([.mentat/config.json] or
+    [.mentat/config.local.json]), adding the supported keys the shared allowlist
+    drops there and workspace [permission.rules] — text a workspace file may
+    carry and {!resolve} will not read.
+
+    These are diagnostics about inert text, not value errors; a caller decides
+    whether they fail a check. *)
 
 module Plan : sig
   (** A planned config-file edit.

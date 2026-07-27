@@ -26,7 +26,8 @@ Show documents its JSON and origins flags.
   $ mentat config show --help=plain | grep -o "Include each value's source."
   Include each value's source.
 
-Validate documents strict unknown-field rejection.
+Validate documents what strict mode changes: the severity of an inert key, not
+whether it is noticed.
 
-  $ mentat config validate --help=plain | grep -o 'Also report unknown fields.'
-  Also report unknown fields.
+  $ mentat config validate --help=plain | grep -o 'Fail on keys that have no effect, not just warn.'
+  Fail on keys that have no effect, not just warn.
