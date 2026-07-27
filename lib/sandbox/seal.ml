@@ -133,8 +133,6 @@ let evidence t =
   | Confine { evidence; _ } -> evidence
   | Refuse { error; _ } -> Evidence.refused error
 
-let escalated_evidence _ = Evidence.not_requested
-
 (* OS argv cannot represent an empty program or a NUL byte. The check mints
    [Error.t] here so every lowering validates; its enforcement home is the
    single launch boundary, which lowers every command through this library. *)
@@ -170,14 +168,61 @@ let lower_argv t ~cwd argv =
           if cwd_within policy cwd then Ok (Profile.wrap profile ~cwd argv)
           else Error (Error.Cwd_outside_scope cwd))
 
-let lower_escalated_argv t ~cwd:_ argv =
-  match validated_argv argv with
-  | Error _ as error -> error
-  | Ok argv -> (
-      match t.escalation with
-      | Available -> Ok argv
-      | Denied error -> Error error
-      | Ignored -> Error Error.Escalation_irrelevant)
+(* An escalation is a widening like any other, so it mints a seal rather than
+   discarding one. The floor it keeps is the deny set: those paths are denied
+   because a later unconfined process consumes what is in them as authority —
+   the session store carries the confinement identity a resume revalidates
+   against, so a command able to write it can approve itself, and one approved
+   escalation would otherwise become a standing one.
+
+   Only the denials. The read carveouts are a weaker protection with a different
+   purpose, and an escalation that could not write [.git] would surprise the
+   person who approved it. What must not survive an approval is the ability to
+   rewrite the approval.
+
+   A route with no backend keeps exactly what it had. There is nothing to lower
+   a floor through, so the honest answer is the unconfined seal — which is what
+   an escalation on a refused route has always been, now said in the vocabulary
+   instead of by returning the argv untouched. The floor is enforced wherever a
+   backend exists and is best-effort where none does; that is a property worth
+   stating rather than one to discover. *)
+let floor policy =
+  Policy.make
+    ~entries:
+      ((Lpath.Abs.root, Policy.Access.Write)
+      :: List.map
+           (fun path -> (path, Policy.Access.Deny))
+           (Policy.denied_paths policy))
+    ~reads_default:Policy.All ~network:Policy.Network.Enabled
+
+let escalated t =
+  match t.escalation with
+  | Denied error -> Error error
+  | Ignored -> Error Error.Escalation_irrelevant
+  | Available -> (
+      match t.route with
+      | Unconfined | Declared_external -> Ok t
+      | Refuse _ -> Ok direct
+      | Confine { backend; policy; _ } ->
+          let policy = floor policy in
+          let profile = Profile.prepare backend policy in
+          Ok
+            {
+              route =
+                Confine
+                  {
+                    backend;
+                    policy;
+                    profile;
+                    evidence =
+                      Evidence.enforced ~backend
+                        ~profile:(Profile.digest profile);
+                  };
+              escalation = t.escalation;
+              identity =
+                Identity.enforced ~backend
+                  ~profile:(Profile.identity_digest backend policy);
+            })
 
 let obligations t =
   match t.route with

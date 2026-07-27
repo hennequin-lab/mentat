@@ -1154,7 +1154,7 @@ module Command = struct
 
   (* Validate, bind and open the cwd, discharge every obligation, lower — one
      private sequence no caller can reorder or skip. *)
-  let prepare t ~sandbox ~escalated ~cwd argv =
+  let prepare t ~sandbox ~cwd argv =
     let cwd_path =
       match cwd with
       | Some path -> path
@@ -1189,11 +1189,7 @@ module Command = struct
       | Error path ->
           Error (Error.Sandbox (Mentat_sandbox.Error.Stale_policy { path }))
     in
-    let lower =
-      if escalated then Mentat_sandbox.lower_escalated_argv
-      else Mentat_sandbox.lower_argv
-    in
-    match lower sandbox ~cwd:bound.abs argv with
+    match Mentat_sandbox.lower_argv sandbox ~cwd:bound.abs argv with
     | Error error -> Error (Error.Sandbox error)
     | Ok lowered -> (
         let head =
@@ -1226,13 +1222,9 @@ module Command = struct
         Error.Io (Eio.Exn.X (Eio_unix.Unix_error (code, name, argument)))
     | exn -> raise exn
 
-  let run_route t ~sandbox ~escalated ~cwd ~stdin ~capture ~timeout ~cancelled
-      argv =
-    let* prepared = prepare t ~sandbox ~escalated ~cwd argv in
-    let sandbox_evidence =
-      if escalated then Mentat_sandbox.escalated_evidence sandbox
-      else Mentat_sandbox.evidence sandbox
-    in
+  let run_route t ~sandbox ~cwd ~stdin ~capture ~timeout ~cancelled argv =
+    let* prepared = prepare t ~sandbox ~cwd argv in
+    let sandbox_evidence = Mentat_sandbox.evidence sandbox in
     match
       Subprocess.run ~proc_mgr:t.proc_mgr ~mono:t.mono ~fs:t.fs
         ~cwd:prepared.cwd ~env:prepared.child_environment
@@ -1277,14 +1269,22 @@ module Command = struct
     | exception Subprocess.Launch exn -> Error (launch_failure exn)
 
   let run t ?cwd ?stdin ~capture ~timeout ?cancelled argv =
-    run_route t ~sandbox:t.sandbox ~escalated:false ~cwd
+    run_route t ~sandbox:t.sandbox ~cwd
       ~stdin:(Option.map coerce_source stdin)
       ~capture ~timeout ~cancelled argv
 
+  (* The escalated seal is built here and discarded with the command, exactly as
+     a grant is — the two are one mechanism now, differing only in how wide they
+     open. Because it is an ordinary seal, the command lowers through the
+     ordinary route and its evidence names the profile that really ran, instead
+     of a route reporting that nothing confined it. *)
   let run_escalated t ?cwd ?stdin ~capture ~timeout ?cancelled argv =
-    run_route t ~sandbox:t.sandbox ~escalated:true ~cwd
-      ~stdin:(Option.map coerce_source stdin)
-      ~capture ~timeout ~cancelled argv
+    match Mentat_sandbox.escalated t.sandbox with
+    | Error error -> Error (Error.Sandbox error)
+    | Ok sandbox ->
+        run_route t ~sandbox ~cwd
+          ~stdin:(Option.map coerce_source stdin)
+          ~capture ~timeout ~cancelled argv
 
   (* The widened seal is built here and discarded when the command returns:
      nothing stores it, which is what makes the grant expire. It lowers through
@@ -1329,7 +1329,7 @@ module Command = struct
         match Mentat_sandbox.grant t.sandbox grants with
         | Error error -> Error (Error.Sandbox error)
         | Ok sandbox ->
-            run_route t ~sandbox ~escalated:false ~cwd
+            run_route t ~sandbox ~cwd
               ~stdin:(Option.map coerce_source stdin)
               ~capture ~timeout ~cancelled argv)
 
@@ -1605,7 +1605,7 @@ module Command = struct
   end
 
   let start_session t ~sw ?cwd argv =
-    let* prepared = prepare t ~sandbox:t.sandbox ~escalated:false ~cwd argv in
+    let* prepared = prepare t ~sandbox:t.sandbox ~cwd argv in
     match
       Session.launch ~sw ~proc_mgr:t.proc_mgr ~fs:t.fs
         ~env:prepared.child_environment ~mono:t.mono ~cwd:prepared.cwd

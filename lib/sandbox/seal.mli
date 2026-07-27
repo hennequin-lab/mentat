@@ -47,6 +47,10 @@ val confined :
     {!Mentat_sandbox.confined}. [Ok] lowers the profile from [policy]; [Error]
     refuses every command. Pure and total. *)
 
+val escalated : t -> (t, Error.t) result
+(** [escalated t] is [t] widened to the approved escape; see
+    {!Mentat_sandbox.escalated}. Pure. *)
+
 val grant : t -> (Lpath.Abs.t * Policy.Access.t) list -> (t, Error.t) result
 (** [grant t entries] widens [t] for one command; see {!Mentat_sandbox.grant}.
     Pure. *)
@@ -63,10 +67,6 @@ val policy : t -> Policy.t option
 val evidence : t -> Evidence.t
 (** The sealed posture, fixed at seal time; not per-command. *)
 
-val escalated_evidence : t -> Evidence.t
-(** The evidence an escalated command reports: always [Evidence.not_requested].
-*)
-
 val escalation : t -> escalation
 val identity : t -> Identity.t
 
@@ -80,8 +80,6 @@ val lower_argv :
 (** The pure per-command lowering; see {!Mentat_sandbox.lower_argv}.
     Precondition: [cwd] is realpath-resolved and {!obligations} discharged. *)
 
-val lower_escalated_argv :
-  t -> cwd:Lpath.Abs.t -> string list -> (string list, Error.t) result
 (** As {!lower_argv} but drops confinement when {!escalation} is [Available]:
     never emits an enforcing prefix and applies no cwd containment; see
     {!Mentat_sandbox.lower_escalated_argv}. *)

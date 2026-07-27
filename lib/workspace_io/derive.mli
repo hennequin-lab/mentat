@@ -89,12 +89,12 @@ val run :
     refused ({!Resolve_error.Denied_overlaps_grant}): both backends let the
     deeper grant win inside the denial, so admitting it would carve a hole in
     the one set of directories that must stay closed — the session store's
-    confinement identity is what a resume revalidates against. A denial nested {e inside} a granted root is admitted and enforced —
-    that is a store kept inside the workspace, and masking just that subtree is
-    the point. [scoped] is [true] iff the route is confined with project-scoped
-    reads; unscoped derivation still canonicalizes the workspace roots and
-    validates the configured writable roots. [lookup] reads the ambient
-    environment. *)
+    confinement identity is what a resume revalidates against. A denial nested
+    {e inside} a granted root is admitted and enforced — that is a store kept
+    inside the workspace, and masking just that subtree is the point. [scoped]
+    is [true] iff the route is confined with project-scoped reads; unscoped
+    derivation still canonicalizes the workspace roots and validates the
+    configured writable roots. [lookup] reads the ambient environment. *)
 
 val canonical : Lpath.Abs.t -> Lpath.Abs.t
 (** [canonical path] is [path] resolved through [realpath] where it exists (so

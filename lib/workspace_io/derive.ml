@@ -194,7 +194,8 @@ let owned_lexical_path path =
   let parent = Filename.dirname spelling in
   match Unix.realpath parent with
   | real -> (
-      match Lpath.Abs.of_string (Filename.concat real (Filename.basename spelling))
+      match
+        Lpath.Abs.of_string (Filename.concat real (Filename.basename spelling))
       with
       | Ok path -> path
       | Error _ -> path)

@@ -17,16 +17,15 @@ module Obligation = Seal.Obligation
 
 let confined = Seal.confined
 let grant = Seal.grant
+let escalated = Seal.escalated
 let direct = Seal.direct
 let external_ = Seal.external_
 let policy = Seal.policy
 let evidence = Seal.evidence
-let escalated_evidence = Seal.escalated_evidence
 let escalation = Seal.escalation
 let identity = Seal.identity
 let obligations = Seal.obligations
 let lower_argv = Seal.lower_argv
-let lower_escalated_argv = Seal.lower_escalated_argv
 
 let admits (requirement : Requirement.t) sandbox =
   match (requirement, evidence sandbox) with

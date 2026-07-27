@@ -284,6 +284,30 @@ val grant : t -> (Lpath.Abs.t * Policy.Access.t) list -> (t, Error.t) result
     belongs to the seal the session resumed under, and a widening that expires
     with a command may not change it. *)
 
+val escalated : t -> (t, Error.t) result
+(** [escalated t] is [t] widened to the approved escape: writable everywhere,
+    readable everywhere, network open — {e except} the paths [t] denies, which
+    survive.
+
+    An escalation is a widening, so it mints a seal like {!grant} rather than
+    discarding one, and the same observers answer for it. That is what keeps the
+    floor honest: {!evidence} reports the profile that actually ran, so a
+    transcript cannot claim a command was unconfined when it was not.
+
+    {b Why the denials survive an approval.} Each is denied because something
+    later and unconfined reads what is in it as authority. The session store
+    carries the confinement identity a resume revalidates against — a command
+    able to write it can approve itself, so one approved escalation would become
+    a standing one. Read carveouts are deliberately {e not} kept: they guard a
+    weaker thing, and an escalation unable to write [.git] would surprise the
+    person who approved it. What an approval must not buy is the power to
+    rewrite approvals.
+
+    Fails with the stance's own error where {!escalation} is not [Available]. A
+    route with no backend returns {!direct}: there is nothing to lower a floor
+    through, so the floor is enforced wherever a backend exists and is
+    best-effort where none does. *)
+
 val direct : t
 (** [direct] is the intentionally unconfined route (for example
     danger-full-access): Mentat applies no filesystem or network confinement.
@@ -303,11 +327,6 @@ val policy : t -> Policy.t option
 val evidence : t -> Evidence.t
 (** [evidence t] is the sealed posture: the evidence every command from [t]
     reports, fixed at seal time. Not per-command. *)
-
-val escalated_evidence : t -> Evidence.t
-(** [escalated_evidence t] is the evidence an escalated command reports: always
-    [Not_requested] — an approved escalation runs unconfined, and its record
-    must say so rather than claim the sealed enforcement. *)
 
 val escalation : t -> escalation
 (** [escalation t] is the sealed escalation stance. *)
@@ -344,29 +363,6 @@ val lower_argv :
     rewrite, reorder, or drop the command it wraps. A direct or external route
     returns [argv] verbatim — no confinement is applied. A refused route is
     [Error]; the result reports {!Evidence.refused}. *)
-
-val lower_escalated_argv :
-  t -> cwd:Lpath.Abs.t -> string list -> (string list, Error.t) result
-(** [lower_escalated_argv t ~cwd argv] lowers one command with filesystem and
-    network confinement dropped — {b only} when {!escalation} is [Available]. It
-    validates [argv] exactly as {!lower_argv}, then returns it verbatim:
-    {b an escalated lowering never emits an enforcing prefix}. Unlike
-    {!lower_argv} it applies no read-root cwd containment, so a cwd that
-    {!lower_argv} would reject as out of scope is accepted — that is the point
-    of escalation. [Denied] and [Ignored] stances are structured errors
-    ({!Error.Escalation_denied}, {!Error.Escalation_irrelevant}) and lower
-    nothing.
-
-    {b Law (escalation escapes the profile, never the environment).} The escaped
-    confinement is exactly the enforcing prefix this function omits. The exact
-    child environment is owned and enforced by the launch boundary, which passes
-    an escalated command the {e same} stripped environment as a confined one:
-    ambient secrets and agent sockets stay withheld even with the profile
-    dropped.
-
-    {b Law (escalated evidence).} An escalated command reports
-    {!escalated_evidence} — [Not_requested] — never the sealed [Enforced]
-    posture. *)
 
 val admits : Requirement.t -> t -> (unit, Requirement.Rejection.t) result
 (** [admits req sandbox] is [Ok ()] iff [sandbox]'s sealed {!evidence} meets

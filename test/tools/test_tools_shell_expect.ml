@@ -887,7 +887,7 @@ source: shell display: printf escaped > '<outside>/escalated.txt'; printf 'secre
 shell: command="printf escaped > '<outside>/escalated.txt'; printf 'secret=%s\\n' \"${MENTAT_SHELL_EXPECT_SECRET-unset}\"" cwd=. execution=direct
 custom: name=shell.escalate subject=printf escaped > '<outside>/escalated.txt'; printf 'secret=%s\n' "${MENTAT_SHELL_EXPECT_SECRET-unset}"
 status: completed
-outside: "escaped" stdout: "secret=unset\n" evidence: not_requested|}]
+outside: "escaped" stdout: "secret=unset\n" evidence: enforced|}]
 
 let%expect_test "a confined read denial is explained with the escalate path" =
   with_world ~mode:Mentat_config.Mode.Workspace_write

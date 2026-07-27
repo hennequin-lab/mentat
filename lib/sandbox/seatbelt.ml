@@ -256,11 +256,16 @@ let clause_rules params =
             param param)
     params
 
+(* The root is skipped, and not as a tidy-up: [(path-ancestors "/")] does not
+   compile — [sandbox-exec] rejects the profile with "argument expected but none
+   provided" and exits 65 before the command runs. Root has no ancestors to
+   name, and every path already reaches it, so dropping it costs nothing. *)
 let ancestor_rule params =
   match
     List.filter
-      (fun (_, _, access) ->
-        not (Policy.Access.equal access Policy.Access.Deny))
+      (fun (_, path, access) ->
+        (not (Policy.Access.equal access Policy.Access.Deny))
+        && not (String.equal path (Lpath.Abs.to_string Lpath.Abs.root)))
       params
   with
   | [] -> ""

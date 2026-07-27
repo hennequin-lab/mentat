@@ -1124,38 +1124,61 @@ let lower_argv_validates_argv () =
   check ~msg:"direct" (ordinary Sandbox.direct);
   check ~msg:"external" (ordinary Sandbox.external_);
   check ~msg:"escalated" (fun argv ->
-      Sandbox.lower_escalated_argv (sealed workspace_policy) ~cwd:(abs "/x")
-        argv)
+      match Sandbox.escalated (sealed workspace_policy) with
+      | Ok escalated -> Sandbox.lower_argv escalated ~cwd:(abs "/x") argv
+      | Error error -> fail (Error.message error))
 
-let lower_escalated_drops_containment_never_prefixes () =
-  (* RFC L6: escalation escapes the profile, never the environment.
-     The sandbox-side fact is that an escalated lowering never emits an
-     enforcing prefix; the exact-environment half is enforced at the launch
-     boundary, which passes an escalated command the same stripped
-     environment as a confined one. It also applies no read-root cwd
-     containment: the same out-of-scope cwd lower_argv rejects is accepted. *)
+let escalation_keeps_the_denials_and_drops_the_rest () =
+  (* Escalation is a widening, not a discard: it opens the filesystem and the
+     network and keeps exactly the denied paths, because those are denied so a
+     later unconfined process cannot be handed authority through them — the
+     session store most of all, which a command able to write it could use to
+     approve itself. The read carveouts are deliberately not kept. *)
+  let denied = abs "/home/u/.local/state/mentat" in
   let policy =
-    confined ~reads:[ abs "/work" ] ~writable_roots:[ abs "/work" ] ()
+    confined ~reads:[ abs "/work" ] ~writable_roots:[ abs "/work" ]
+      ~protected_paths:[ abs "/work/.git" ] ~denied_paths:[ denied ] ()
   in
   let sandbox = sealed policy in
   let out_of_scope = abs "/outside" in
   is_true ~msg:"lower_argv rejects the out-of-scope cwd"
     (Result.is_error (Sandbox.lower_argv sandbox ~cwd:out_of_scope [ "true" ]));
-  match Sandbox.lower_escalated_argv sandbox ~cwd:out_of_scope [ "true" ] with
-  | Ok tokens ->
-      equal (list string) ~msg:"escalated lowering is the command verbatim"
-        [ "true" ] tokens;
-      is_true ~msg:"escalated evidence is Not_requested (the sandbox-side law)"
-        (match Sandbox.escalated_evidence sandbox with
-        | Evidence.Not_requested -> true
-        | _ -> false)
+  match Sandbox.escalated sandbox with
   | Error error -> fail (Error.message error)
+  | Ok escalated -> (
+      let escalated_policy = Option.get (Sandbox.policy escalated) in
+      equal (list abs_value) ~msg:"the denial survives the escalation"
+        [ denied ]
+        (Policy.denied_paths escalated_policy);
+      is_true ~msg:"the root is writable"
+        (List.exists
+           (fun p -> Lpath.Abs.is_root p)
+           (Policy.writable_roots escalated_policy));
+      is_true ~msg:"reads are open"
+        (match Policy.reads_default escalated_policy with
+        | Policy.All -> true
+        | Policy.Denied -> false);
+      is_true ~msg:"the network is open"
+        (Policy.Network.equal
+           (Policy.network escalated_policy)
+           Policy.Network.Enabled);
+      is_false ~msg:"a read carveout is not kept"
+        (List.exists
+           (fun p -> Lpath.Abs.equal p (abs "/work/.git"))
+           (Policy.readable_roots escalated_policy));
+      (* Still enforced, and it says so: an escalated command must not report
+         that nothing confined it. *)
+      (match Sandbox.evidence escalated with
+      | Evidence.Enforced _ -> ()
+      | _ -> fail "an escalated command is still an enforced one");
+      (* The out-of-scope cwd is accepted — that is the point of escalating. *)
+      match Sandbox.lower_argv escalated ~cwd:out_of_scope [ "true" ] with
+      | Ok _ -> ()
+      | Error error -> fail (Error.message error))
 
 let lower_escalated_refuses_denied_and_ignored () =
   (match
-     Sandbox.lower_escalated_argv
-       (sealed ~mutates:false (confined ()))
-       ~cwd:(abs "/tmp") [ "true" ]
+     Sandbox.escalated (sealed ~mutates:false (confined ()))
    with
   | Error Error.Escalation_denied ->
       (* Semantic pin: the read-only refusal message is product-neutral — no
@@ -1166,7 +1189,7 @@ let lower_escalated_refuses_denied_and_ignored () =
         (Error.message Error.Escalation_denied)
   | _ -> fail "read-only escalation must be Escalation_denied");
   match
-    Sandbox.lower_escalated_argv Sandbox.direct ~cwd:(abs "/tmp") [ "true" ]
+    Sandbox.escalated Sandbox.direct
   with
   | Error Error.Escalation_irrelevant -> ()
   | _ -> fail "direct escalation must be Escalation_irrelevant"
@@ -1596,7 +1619,7 @@ let () =
         lower_argv_passes_unconfined_routes_verbatim;
       test "lower_argv validates argv on every route" lower_argv_validates_argv;
       test "lower_escalated_argv drops containment and never prefixes"
-        lower_escalated_drops_containment_never_prefixes;
+        escalation_keeps_the_denials_and_drops_the_rest;
       test "lower_escalated_argv refuses denied and ignored routes"
         lower_escalated_refuses_denied_and_ignored;
       (* obligations *)

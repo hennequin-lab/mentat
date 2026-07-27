@@ -2114,7 +2114,7 @@ let confined_commands_are_enforced_by_the_backend () =
     (`Exited 0) (exit_status allowed);
   equal string ~msg:"the bytes landed inside the root" "x" (read_file inside)
 
-let escalation_escapes_the_profile_never_the_environment () =
+let escalation_opens_the_profile_never_the_environment () =
   with_capability "escalate" @@ fun w ->
   require_enforced w.io;
   let outside = Filename.concat w.out_dir "escalated.txt" in
@@ -2122,9 +2122,12 @@ let escalation_escapes_the_profile_never_the_environment () =
      run_escalated_res w.io (sh (Printf.sprintf {|printf y > "%s"|} outside))
    with
   | Ok outcome ->
+      (* An escalation is a widening now, not a discard: the command still runs
+         under a profile — everything open except the denied paths — so its
+         evidence names the profile that ran rather than claiming nothing did. *)
       (match outcome.Command.sandbox_evidence with
-      | Sandbox.Evidence.Not_requested -> ()
-      | _ -> fail "escalated outcome must report the escaped route");
+      | Sandbox.Evidence.Enforced _ -> ()
+      | _ -> fail "an escalated outcome reports the floor it ran under");
       equal status_value ~msg:"the approved escalation drops the profile"
         (`Exited 0) (exit_status outcome);
       equal string ~msg:"the escalated write landed" "y" (read_file outside)
@@ -2139,8 +2142,8 @@ let escalation_escapes_the_profile_never_the_environment () =
   match run_escalated_res w.io [ "/usr/bin/env" ] with
   | Ok escalated ->
       (match escalated.Command.sandbox_evidence with
-      | Sandbox.Evidence.Not_requested -> ()
-      | _ -> fail "every escalated outcome must report its route");
+      | Sandbox.Evidence.Enforced _ -> ()
+      | _ -> fail "every escalated outcome reports its route");
       equal string
         ~msg:"escalation receives the byte-identical private environment"
         (stdout_str confined_env) (stdout_str escalated)
@@ -2441,8 +2444,8 @@ let () =
       (* Sandbox integration *)
       test "confined commands are enforced by the backend"
         confined_commands_are_enforced_by_the_backend;
-      test "escalation escapes the profile, never the environment"
-        escalation_escapes_the_profile_never_the_environment;
+      test "escalation opens the profile, never the environment"
+        escalation_opens_the_profile_never_the_environment;
       test "a grant widens one command and no more"
         a_grant_widens_one_command_and_no_more;
       test "a grant of a denied path is refused"

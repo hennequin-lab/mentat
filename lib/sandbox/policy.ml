@@ -145,9 +145,12 @@ let grant t entries =
     |> Option.map (fun root -> (path, root))
   in
   match
-    List.find_map (fun entry -> match denied entry with
-      | Some _ as defeat -> defeat
-      | None -> defeated entry) entries
+    List.find_map
+      (fun entry ->
+        match denied entry with
+        | Some _ as defeat -> defeat
+        | None -> defeated entry)
+      entries
   with
   | Some defeat -> Error defeat
   | None -> Ok { t with entries = normalize (t.entries @ entries) }

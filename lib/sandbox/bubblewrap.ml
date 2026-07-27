@@ -25,13 +25,29 @@ let clause (path, access) =
      with [Can't mkdir: Read-only file system] before the command runs. *)
   | Policy.Access.Deny -> [ "--perms"; "000"; "--tmpfs"; p ]
 
+(* A clause naming the root is hoisted into the root position rather than
+   emitted with the others. [--bind] is recursive, so a root clause landing after
+   [--dev] re-binds the host's root over the devtmpfs bwrap just made: [/dev]
+   becomes the host mount and [/dev/null] stops working, which fails every
+   command rather than confining it. Hoisting is the fix and reordering [--dev]
+   is not — moving [--dev] would change the argv of every existing policy and
+   trip resume on every suspended session. *)
 let filesystem_args policy =
-  let root =
-    match Policy.reads_default policy with
-    | Policy.All -> [ "--ro-bind"; "/"; "/" ]
-    | Policy.Denied -> [ "--tmpfs"; "/" ]
+  let root_clause, rest =
+    List.partition
+      (fun (path, _) -> Lpath.Abs.is_root path)
+      (Policy.entries policy)
   in
-  root @ [ "--dev"; "/dev" ] @ List.concat_map clause (Policy.entries policy)
+  let root =
+    match (root_clause, Policy.reads_default policy) with
+    | (_, Policy.Access.Write) :: _, _ -> [ "--bind"; "/"; "/" ]
+    | ((_, (Policy.Access.Read | Policy.Access.Deny)) :: _ | []), Policy.All ->
+        [ "--ro-bind"; "/"; "/" ]
+    | ((_, (Policy.Access.Read | Policy.Access.Deny)) :: _ | []), Policy.Denied
+      ->
+        [ "--tmpfs"; "/" ]
+  in
+  root @ [ "--dev"; "/dev" ] @ List.concat_map clause rest
 
 (* An [Only] read scope builds its root as a [--tmpfs], which is writable. A
    write to a path no bind covers therefore lands in that ephemeral mount and
