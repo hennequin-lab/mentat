@@ -182,7 +182,26 @@ let existing_auto_root path =
    real directory this account owns. The lexical path is what enters the policy;
    [realpath] is deliberately not consulted, because a final component the agent
    can replace must not be able to relocate the exclusion. *)
+(* The parent is canonicalized, the final component is not. Both halves matter.
+   A denial is enforced against the path the kernel resolves, so a parent left
+   lexical names something the backend never sees: on macOS [/tmp] is a link to
+   [/private/tmp], and a denial spelled [/tmp/x] simply does not match the
+   [/private/tmp/x] the command opens. The final component stays lexical for the
+   reason above — resolving it would let an agent that can plant a symlink there
+   relocate the exclusion at its target. *)
+let owned_lexical_path path =
+  let spelling = Lpath.Abs.to_string path in
+  let parent = Filename.dirname spelling in
+  match Unix.realpath parent with
+  | real -> (
+      match Lpath.Abs.of_string (Filename.concat real (Filename.basename spelling))
+      with
+      | Ok path -> path
+      | Error _ -> path)
+  | exception Unix.Unix_error _ -> path
+
 let owned_directory path =
+  let path = owned_lexical_path path in
   let spelling = Lpath.Abs.to_string path in
   let accept () =
     match Unix.lstat spelling with
