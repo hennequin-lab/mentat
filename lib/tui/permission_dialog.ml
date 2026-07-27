@@ -309,6 +309,17 @@ let access_inline ?(omit_command = false) = function
       else "command " ^ command_inline command
   | Access.Network { protocol = scheme; host = name; port } ->
       "network " ^ network_target ~protocol:scheme ~host:name ~port
+  (* The two sandbox widenings are spelled out rather than shown as their
+     identifiers. A reviewer approving `shell.escalate` is being asked for the
+     whole posture, and the identifier says none of that; what they need is what
+     changes and what does not. Every other custom access keeps its raw name —
+     the host that minted it knows what it means and this dialog does not. *)
+  | Access.Custom { name = "shell.escalate"; _ } ->
+      "run outside the sandbox — reads, writes and network open, except \
+       Mentat's own directories"
+  | Access.Custom { name = "shell.grant"; subject = detail } ->
+      "make writable for this command only"
+      ^ Option.fold ~none:"" ~some:(fun value -> ": " ^ subject value) detail
   | Access.Custom { name; subject = detail } ->
       "custom " ^ custom_name name
       ^ Option.fold ~none:""
