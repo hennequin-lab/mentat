@@ -334,7 +334,7 @@ let toolchain_home_roots ~lookup ~workspace_roots =
         let secured =
           List.map
             (fun sub -> owned_under (Some base) sub)
-            [ "db"; "toolchains"; "git-repo" ]
+            [ "db"; "toolchains"; "git-repo"; "rev_store" ]
         in
         if List.for_all Option.is_some secured then
           (Some base, List.filter_map Fun.id secured)

@@ -33,6 +33,15 @@ let fixed_bindings =
     ("NO_COLOR", "1");
     ("PAGER", "cat");
     ("TERM", "dumb");
+    (* Dune's revision-store memo lives in a directory the policy denies, and
+       dune opens it read-write even to read it — with no handler, so a confined
+       build aborts with an unmapped LMDB error rather than losing a cache. The
+       binding is not a redirect: it points the child at nothing, it tells dune
+       the thing the policy already decided, so the two agree instead of
+       disagreeing. What is lost is a memo over `git ls-tree`, which dune
+       recomputes; what is kept is a store whose contents it serves back as file
+       bytes without re-hashing. *)
+    ("DUNE_CONFIG__REV_STORE_CACHE", "disabled");
   ]
 
 let inherited_names =

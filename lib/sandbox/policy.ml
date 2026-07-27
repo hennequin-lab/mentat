@@ -133,6 +133,14 @@ let grant t entries =
           t.entries)
       t.entries
   in
+  (* A grant naming the root is refused. Nothing else bounds a grant's breadth,
+     and it does not need to — a grant is approved per command and the approver
+     sees the path — but the root is the one spelling that makes a grant a
+     different thing than it claims to be: it is the escalation, wearing the
+     name of the narrow move and skipping the stance that gates the wide one. *)
+  let root_grant (path, _) =
+    if Lpath.Abs.is_root path then Some (path, path) else None
+  in
   let defeated (path, access) =
     List.find_opt
       (fun (root, root_access) ->
@@ -147,9 +155,12 @@ let grant t entries =
   match
     List.find_map
       (fun entry ->
-        match denied entry with
+        match root_grant entry with
         | Some _ as defeat -> defeat
-        | None -> defeated entry)
+        | None -> (
+            match denied entry with
+            | Some _ as defeat -> defeat
+            | None -> defeated entry))
       entries
   with
   | Some defeat -> Error defeat
