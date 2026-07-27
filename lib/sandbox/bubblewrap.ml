@@ -18,7 +18,12 @@ let clause (path, access) =
   match access with
   | Policy.Access.Read -> [ "--ro-bind"; p; p ]
   | Policy.Access.Write -> [ "--bind"; p; p ]
-  | Policy.Access.Deny -> [ "--perms"; "000"; "--tmpfs"; p; "--remount-ro"; p ]
+  (* The empty mount only; its seal is deferred to {!seal_denials}. Sealing here
+     would freeze the tree before any deeper clause could be mounted inside it,
+     and bubblewrap creates each mount point as it goes — so a grant beneath a
+     denial, which the resolution law says must win, instead aborts the spawn
+     with [Can't mkdir: Read-only file system] before the command runs. *)
+  | Policy.Access.Deny -> [ "--perms"; "000"; "--tmpfs"; p ]
 
 let filesystem_args policy =
   let root =
@@ -43,6 +48,18 @@ let seal_root policy =
   | Policy.All -> []
   | Policy.Denied -> [ "--remount-ro"; "/" ]
 
+(* Every denial's tmpfs is sealed here, after the last clause has been mounted,
+   for the same reason the root is: a mount point cannot be created inside a
+   tree that is already read-only. Deferring only the seal — not the [--perms
+   000] or the [--tmpfs] — keeps a denial with nothing beneath it exactly as it
+   was, and lets one with a grant beneath it resolve the way the law says and
+   the way seatbelt already did. The order among the seals is free: each names
+   its own mount, and a seal never has to create anything. *)
+let seal_denials policy =
+  List.concat_map
+    (fun path -> [ "--remount-ro"; Lpath.Abs.to_string path ])
+    (Policy.denied_paths policy)
+
 let arguments policy =
   let namespace =
     [ "--new-session"; "--die-with-parent"; "--unshare-user"; "--unshare-pid" ]
@@ -53,4 +70,4 @@ let arguments policy =
     | Policy.Network.Enabled -> []
   in
   namespace @ filesystem_args policy @ network @ [ "--proc"; "/proc" ]
-  @ seal_root policy
+  @ seal_denials policy @ seal_root policy

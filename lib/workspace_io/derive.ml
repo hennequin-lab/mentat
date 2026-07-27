@@ -841,10 +841,10 @@ let run ~scoped ~lookup ~logical ~configured_reads ~configured_writes
      Both kinds of grant are checked, not only the writable ones. A read root
      inside a denied path is the shape a user reaches by pointing
      [sandbox.readable_roots] at something under Mentat's own config home, and
-     it is worse than masked: bubblewrap freezes the denied tree read-only
-     before it can mount the nested grant inside it, so the sandbox never
-     starts and every command in the session dies at setup with a raw bwrap
-     message. Refuse it here, where the diagnostic can name both paths. *)
+     the backends resolve it exactly as the law says — the deeper grant wins —
+     which is the problem, not a bug to work around: it opens the store whose
+     confinement identity a resume revalidates against. Refuse it here, where
+     the diagnostic can name both paths and the variable to move. *)
   let* () =
     let granted_lattice = writable_lattice @ readable in
     match

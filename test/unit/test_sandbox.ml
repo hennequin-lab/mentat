@@ -649,6 +649,53 @@ let bubblewrap_seals_a_scoped_root () =
        (String.equal "--remount-ro")
        (bubblewrap_lowered (confined ()) ~cwd:(abs "/tmp") ~program:"true" []))
 
+(* Bubblewrap creates each mount point as it goes, so a denial that sealed its
+   own tmpfs in place would freeze it before a deeper clause could be mounted
+   inside — and the spawn dies at setup with [Can't mkdir: Read-only file
+   system], before the command runs. The empty mount is emitted in clause order;
+   every seal trails the last clause. Verified against real bubblewrap 0.9.0:
+   with the seal deferred, a read grant beneath a denial is readable, a write
+   grant beneath it is writable, and the denied siblings stay hidden and
+   unwritable. *)
+let bubblewrap_seals_a_denial_after_its_descendants () =
+  let denied = abs "/home/u/.config/mentat" in
+  let nested = abs "/home/u/.config/mentat/skills" in
+  let args =
+    bubblewrap_lowered
+      (confined ~reads:[ abs "/home/u"; nested ] ~denied_paths:[ denied ] ())
+      ~cwd:(abs "/home/u") ~program:"true" []
+  in
+  let rec index_of needle index = function
+    | [] -> None
+    | x :: _ when String.equal x needle -> Some index
+    | _ :: rest -> index_of needle (index + 1) rest
+  in
+  let rec seal_of path index = function
+    | "--remount-ro" :: p :: _ when String.equal p path -> Some index
+    | _ :: rest -> seal_of path (index + 2) rest
+    | [] -> None
+  in
+  let rec bind_of path index = function
+    | ("--ro-bind" | "--bind") :: p :: _ :: _ when String.equal p path ->
+        Some index
+    | _ :: rest -> bind_of path (index + 1) rest
+    | [] -> None
+  in
+  match
+    ( index_of "--tmpfs" 0 args,
+      bind_of (Lpath.Abs.to_string nested) 0 args,
+      seal_of (Lpath.Abs.to_string denied) 0 args )
+  with
+  | Some tmpfs, Some nested_bind, Some seal ->
+      is_true ~msg:"the denial's empty mount precedes the clause beneath it"
+        (tmpfs < nested_bind);
+      is_true ~msg:"the denial is sealed only after that clause is mounted"
+        (seal > nested_bind)
+  | _ ->
+      fail
+        "a denial with a clause beneath it must emit tmpfs, then the clause, \
+         then the seal"
+
 (* A denial must survive a posture that grants nothing else, and must reach the
    identity — two policies differing only in what they deny are different
    confinements. *)
@@ -1452,6 +1499,8 @@ let () =
         a_grant_widens_without_defeating_a_denial;
       test "a grant under a denial is refused" a_grant_under_a_denial_is_refused;
       test "a granted seal still confines" a_granted_seal_still_confines;
+      test "bubblewrap seals a denial after its descendants"
+        bubblewrap_seals_a_denial_after_its_descendants;
       test "policy collapses only duplicate paths"
         policy_collapses_only_duplicate_paths;
       policy_entries_are_ordered_shallowest_first ();

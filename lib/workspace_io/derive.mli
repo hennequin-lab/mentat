@@ -86,11 +86,10 @@ val run :
 
     [mentat_dirs] are Mentat's own user directories, which become {!denied}. A
     denied path that {e contains} a granted root — readable or writable — is
-    refused ({!Resolve_error.Denied_overlaps_grant}): denials lower last, so it
-    would mask the root itself and leave the agent unable to tell an emptied
-    workspace from a deleted one, and bubblewrap cannot mount the nested grant
-    inside a tree the denial has already frozen, so the sandbox would not start
-    at all. A denial nested {e inside} a granted root is admitted and enforced —
+    refused ({!Resolve_error.Denied_overlaps_grant}): both backends let the
+    deeper grant win inside the denial, so admitting it would carve a hole in
+    the one set of directories that must stay closed — the session store's
+    confinement identity is what a resume revalidates against. A denial nested {e inside} a granted root is admitted and enforced —
     that is a store kept inside the workspace, and masking just that subtree is
     the point. [scoped] is [true] iff the route is confined with project-scoped
     reads; unscoped derivation still canonicalizes the workspace roots and

@@ -41,13 +41,13 @@ type t =
           never reaches here. *)
   | Denied_overlaps_grant of { denied : string; granted : string }
       (** A path Mentat denies to every confined command {e contains} a root the
-          policy would grant. Denials are lowered last, so the overlap does not
-          narrow the sandbox: it masks the granted root with an empty mount the
-          agent cannot distinguish from a wiped directory, and under bubblewrap
-          it is worse than that — the denial freezes the tree read-only before
-          the nested grant can be mounted inside it, so the sandbox fails to
-          start and every command in the session dies at setup. Refused at
-          resolution, loudly, instead.
+          policy would grant. Both backends resolve that shape by the
+          resolution law — the deeper grant wins inside the denial — which is
+          precisely why it is refused: the grant would carve a hole in the
+          denial, and these are the directories holding the session store, whose
+          confinement identity a resume revalidates against. A command able to
+          write there could approve itself. Refused at resolution, loudly, where
+          the diagnostic can name both paths and the variable to move.
 
           Only this direction. A denial nested {e inside} a granted root is the
           case worth keeping: it masks that subtree and leaves the rest of the
