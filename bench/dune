@@ -92,7 +92,7 @@
 
 ; bench_poll_scaling is not a thumper suite: it is a boolean scaling gate over
 ; the incremental projector [Feed.next] indexes, asserting one commit's advance
-; is flat across session sizes (see its header). It gates on runtest by exit
+; is flat across session sizes (see its header). It gates on @bench by exit
 ; code, on allocation — exact and machine-independent — so it never flakes.
 
 (executable
@@ -226,6 +226,6 @@
 ; the same on every host.
 
 (rule
- (alias runtest)
+ (alias bench)
  (action
   (run %{exe:bench_poll_scaling.exe})))
