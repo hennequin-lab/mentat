@@ -29,10 +29,13 @@ let () =
       [
         Thumper.Budget.no_more_alloc_than 0.0;
         Thumper.Budget.no_slower_than ~metric:Thumper.Metric.wall_time 1000.0;
-        Thumper.Budget.no_slower_than ~metric:Thumper.Metric.cpu_time 1000.0;
       ]
     Thumper.
       [
-        bench_param "view" ~params:transcripts ~f:(fun transcript ->
-            ignore (T.view ~palette:Fixture.palette transcript : _ Mosaic.t));
+        group "view"
+          (List.map
+             (fun (label, transcript) ->
+               bench label (fun () ->
+                   ignore (T.view ~palette:Fixture.palette transcript : _ Mosaic.t)))
+             transcripts);
       ]

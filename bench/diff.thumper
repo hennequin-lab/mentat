@@ -1,24 +1,15 @@
-# thumper baseline
-# version: 2
-# suite_name: diff
+# thumper baseline v1
+# suite: diff
 
-# machine: 3b8ae6dbe74c4269
-# cpu: Apple M1 Max
-# ocaml: 5.5.0
-# git: 7cc7ffac
-# dirty: true
-# command: ./bench_diff.exe --quick -q
+# machine: 73bfb753d0739958
+# host: MacBookPro.Home · Apple M1 Max · arm64 · macos
+# ocaml: 5.5.0 · 64-bit · release
 
-render/20-files	alloc_words	2.971230e+05	2.971230e+05	2.971230e+05	0.000000e+00	5	0
-render/20-files	cpu_time	4.365198e-04	4.111566e-04	4.495328e-04	4.395695e-02	5	1
-render/20-files	wall_time	4.282087e-04	3.765869e-04	4.501520e-04	8.589863e-02	5	1
-render/200-line-file	alloc_words	2.216300e+04	2.216300e+04	2.216300e+04	0.000000e+00	5	0
-render/200-line-file	cpu_time	3.865178e-05	3.785855e-05	3.942246e-05	2.023075e-02	5	1
-render/200-line-file	wall_time	3.874719e-05	3.783899e-05	3.937928e-05	1.987614e-02	5	0
-render/one-line	alloc_words	2.040000e+03	2.040000e+03	2.040000e+03	0.000000e+00	7	0
-render/one-line	cpu_time	2.378284e-06	2.246754e-06	2.472750e-06	4.751254e-02	7	1
-render/one-line	wall_time	2.433149e-06	2.240900e-06	2.509542e-06	5.520454e-02	7	1
-stats_20-files	alloc_words	2.656000e+04	2.656000e+04	2.656000e+04	0.000000e+00	5	0
-stats_20-files	cpu_time	1.276316e-04	1.137204e-04	1.389989e-04	9.902933e-02	5	0
-stats_20-files	wall_time	1.303817e-04	1.126911e-04	1.432265e-04	1.171000e-01	5	0
-
+render/20-files	alloc_words	exact	100899
+render/20-files	wall_time	batch=16	n=11	3.433e-04	3.306e-04 3.321e-04 3.325e-04 3.395e-04 3.432e-04 3.433e-04 3.503e-04 3.577e-04 3.589e-04 3.611e-04 3.680e-04
+render/200-line-file	alloc_words	exact	11800
+render/200-line-file	wall_time	batch=128	n=11	4.089e-05	3.826e-05 3.872e-05 3.927e-05 4.037e-05 4.072e-05 4.089e-05 4.167e-05 4.200e-05 4.231e-05 4.242e-05 4.272e-05
+render/one-line	alloc_words	exact	740
+render/one-line	wall_time	batch=4096	n=11	1.613e-06	1.540e-06 1.544e-06 1.579e-06 1.595e-06 1.595e-06 1.613e-06 1.621e-06 1.624e-06 1.627e-06 1.649e-06 1.671e-06
+stats-20-files	alloc_words	exact	26560
+stats-20-files	wall_time	batch=64	n=11	1.406e-04	1.359e-04 1.382e-04 1.388e-04 1.397e-04 1.402e-04 1.406e-04 1.431e-04 1.432e-04 1.449e-04 1.450e-04 1.542e-04

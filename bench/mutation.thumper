@@ -1,26 +1,17 @@
-# thumper baseline
-# version: 2
-# suite_name: mutation
+# thumper baseline v1
+# suite: mutation
 
-# machine: 3b8ae6dbe74c4269
-# cpu: Apple M1 Max
-# ocaml: 5.5.0
-# git: 9b01e3b6
-# command: ./_build/default/bench/bench_mutation.exe --bless --baseline bench/mutation.thumper --quick -q
+# machine: 73bfb753d0739958
+# host: MacBookPro.Home · Apple M1 Max · arm64 · macos
+# ocaml: 5.5.0 · 64-bit · release
 
-of_events/of_events_claims_1000_	alloc_words	4.896040e+05	4.896040e+05	4.896040e+05	0.000000e+00	5	0
-of_events/of_events_claims_1000_	cpu_time	1.685784e-03	1.368375e-03	1.821667e-03	1.344453e-01	5	2
-of_events/of_events_claims_1000_	wall_time	1.700496e-03	1.384961e-03	1.839000e-03	1.335021e-01	5	2
-of_events/of_events_claims_100_	alloc_words	3.611800e+04	3.611800e+04	3.611800e+04	0.000000e+00	5	0
-of_events/of_events_claims_100_	cpu_time	8.966185e-05	8.323419e-05	9.416155e-05	6.093649e-02	5	2
-of_events/of_events_claims_100_	wall_time	8.947795e-05	8.258463e-05	9.410880e-05	6.439669e-02	5	2
-of_events/of_events_edits_1000_	alloc_words	2.358220e+05	2.358220e+05	2.358220e+05	0.000000e+00	6	0
-of_events/of_events_edits_1000_	cpu_time	5.813715e-04	4.886105e-04	6.266578e-04	1.187256e-01	6	2
-of_events/of_events_edits_1000_	wall_time	5.789456e-04	4.797069e-04	6.277116e-04	1.278227e-01	6	1
-of_events/of_events_edits_100_	alloc_words	1.901800e+04	1.901800e+04	1.901800e+04	0.000000e+00	5	0
-of_events/of_events_edits_100_	cpu_time	3.155742e-05	3.083176e-05	3.257491e-05	2.761865e-02	5	0
-of_events/of_events_edits_100_	wall_time	3.173379e-05	3.088421e-05	3.312678e-05	3.533408e-02	5	0
-of_events/of_events_edits_500_	alloc_words	1.112620e+05	1.112620e+05	1.112620e+05	0.000000e+00	5	0
-of_events/of_events_edits_500_	cpu_time	2.571144e-04	2.506149e-04	2.613892e-04	2.095239e-02	5	0
-of_events/of_events_edits_500_	wall_time	2.616237e-04	2.520972e-04	2.676409e-04	2.970624e-02	5	1
-
+of_events/claims-100	alloc_words	exact	36118
+of_events/claims-100	wall_time	batch=64	n=11	8.989e-05	8.701e-05 8.753e-05 8.822e-05 8.866e-05 8.951e-05 8.989e-05 9.056e-05 9.079e-05 9.175e-05 9.366e-05 9.432e-05
+of_events/claims-1000	alloc_words	exact	489604
+of_events/claims-1000	wall_time	batch=4	n=11	1.695e-03	1.538e-03 1.560e-03 1.564e-03 1.633e-03 1.687e-03 1.695e-03 1.695e-03 1.704e-03 1.710e-03 1.746e-03 1.759e-03
+of_events/edits-100	alloc_words	exact	19018
+of_events/edits-100	wall_time	batch=256	n=11	3.178e-05	3.086e-05 3.099e-05 3.154e-05 3.173e-05 3.176e-05 3.178e-05 3.206e-05 3.222e-05 3.245e-05 3.368e-05 3.729e-05
+of_events/edits-1000	alloc_words	exact	235822
+of_events/edits-1000	wall_time	batch=8	n=11	5.866e-04	5.449e-04 5.569e-04 5.730e-04 5.756e-04 5.864e-04 5.866e-04 5.931e-04 5.937e-04 6.306e-04 6.385e-04 6.650e-04
+of_events/edits-500	alloc_words	exact	111262
+of_events/edits-500	wall_time	batch=32	n=11	2.462e-04	2.349e-04 2.391e-04 2.423e-04 2.431e-04 2.431e-04 2.462e-04 2.467e-04 2.489e-04 2.523e-04 2.537e-04 2.694e-04

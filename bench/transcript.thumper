@@ -1,21 +1,13 @@
-# thumper baseline
-# version: 2
-# suite_name: transcript
+# thumper baseline v1
+# suite: transcript
 
-# machine: 3b8ae6dbe74c4269
-# cpu: Apple M1 Max
-# ocaml: 5.5.0
-# git: d9daa82e
-# dirty: true
-# command: ./bench_transcript.exe --quick -q
+# machine: 73bfb753d0739958
+# host: MacBookPro.Home · Apple M1 Max · arm64 · macos
+# ocaml: 5.5.0 · 64-bit · release
 
-view/view_100_	alloc_words	5.381100e+04	5.381100e+04	5.381100e+04	0.000000e+00	19	0
-view/view_100_	cpu_time	9.456904e-05	9.158549e-05	9.875068e-05	3.788333e-02	19	0
-view/view_100_	wall_time	1.114824e-04	9.746014e-05	1.290337e-04	1.416078e-01	19	0
-view/view_1k_	alloc_words	5.375610e+05	5.375610e+05	5.375610e+05	0.000000e+00	5	0
-view/view_1k_	cpu_time	2.416200e-03	2.034000e-03	2.729188e-03	1.438597e-01	5	0
-view/view_1k_	wall_time	2.413092e-03	2.027250e-03	2.727287e-03	1.450497e-01	5	0
-view/view_5k_	alloc_words	2.688561e+06	2.688561e+06	2.688561e+06	0.000000e+00	6	1
-view/view_5k_	cpu_time	1.622851e-02	1.522721e-02	1.706372e-02	5.658300e-02	6	0
-view/view_5k_	wall_time	1.633098e-02	1.513992e-02	1.704621e-02	5.836426e-02	6	0
-
+view/100	alloc_words	exact	53811
+view/100	wall_time	batch=64	n=11	8.667e-05	7.984e-05 8.066e-05 8.107e-05 8.326e-05 8.630e-05 8.667e-05 8.686e-05 9.140e-05 9.239e-05 9.283e-05 9.535e-05
+view/1k	alloc_words	exact	537561
+view/1k	wall_time	batch=2	n=11	2.682e-03	2.288e-03 2.380e-03 2.401e-03 2.441e-03 2.502e-03 2.682e-03 2.978e-03 2.993e-03 3.102e-03 3.212e-03 3.354e-03
+view/5k	alloc_words	exact	2688561
+view/5k	wall_time	batch=1	n=11	1.696e-02	1.442e-02 1.474e-02 1.530e-02 1.550e-02 1.657e-02 1.696e-02 1.734e-02 1.797e-02 1.807e-02 1.843e-02 1.896e-02

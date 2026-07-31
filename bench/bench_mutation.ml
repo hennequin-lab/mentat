@@ -31,10 +31,12 @@ let () =
       [
         Thumper.Budget.no_more_alloc_than 0.0;
         Thumper.Budget.no_slower_than ~metric:Thumper.Metric.wall_time 1000.0;
-        Thumper.Budget.no_slower_than ~metric:Thumper.Metric.cpu_time 1000.0;
       ]
     Thumper.
       [
-        bench_param "of_events" ~params:ledgers ~f:(fun events ->
-            M.State.of_events events);
+        group "of_events"
+          (List.map
+             (fun (label, events) ->
+               bench label (fun () -> M.State.of_events events))
+             ledgers);
       ]

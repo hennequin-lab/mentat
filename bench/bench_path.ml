@@ -49,7 +49,6 @@ let () =
       [
         Thumper.Budget.no_more_alloc_than 0.0;
         Thumper.Budget.no_slower_than ~metric:Thumper.Metric.wall_time 1000.0;
-        Thumper.Budget.no_slower_than ~metric:Thumper.Metric.cpu_time 1000.0;
       ]
     Thumper.
       [

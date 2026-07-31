@@ -32,14 +32,19 @@ let () =
       [
         Thumper.Budget.no_more_alloc_than 0.0;
         Thumper.Budget.no_slower_than ~metric:Thumper.Metric.wall_time 1000.0;
-        Thumper.Budget.no_slower_than ~metric:Thumper.Metric.cpu_time 1000.0;
       ]
     Thumper.
       [
-        bench_param "prepare" ~params:cases
-          ~f:(fun { Fixture.state; selection; evidence; _ } ->
-            M.Revert.prepare ~id:revert_id ~evidence state selection);
-        bench_param "diff-compute" ~params:cases
-          ~f:(fun { Fixture.state; selection; resolve; _ } ->
-            M.Diff.compute ~state ~selection ~resolve ());
+        group "prepare"
+          (List.map
+             (fun (label, { Fixture.state; selection; evidence; _ }) ->
+               bench label (fun () ->
+                   M.Revert.prepare ~id:revert_id ~evidence state selection))
+             cases);
+        group "diff-compute"
+          (List.map
+             (fun (label, { Fixture.state; selection; resolve; _ }) ->
+               bench label (fun () ->
+                   M.Diff.compute ~state ~selection ~resolve ()))
+             cases);
       ]

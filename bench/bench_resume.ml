@@ -36,12 +36,18 @@ let () =
       [
         Thumper.Budget.no_more_alloc_than 0.0;
         Thumper.Budget.no_slower_than ~metric:Thumper.Metric.wall_time 1000.0;
-        Thumper.Budget.no_slower_than ~metric:Thumper.Metric.cpu_time 1000.0;
       ]
     Thumper.
       [
-        bench_param "decode" ~params:encoded ~f:(fun bytes ->
-            Jsont_bytesrw.decode_string Session.jsont bytes);
-        bench_param "replay" ~params:event_lists ~f:(fun events ->
-            Session.State.of_events events);
+        group "decode"
+          (List.map
+             (fun (label, bytes) ->
+               bench label (fun () ->
+                   Jsont_bytesrw.decode_string Session.jsont bytes))
+             encoded);
+        group "replay"
+          (List.map
+             (fun (label, events) ->
+               bench label (fun () -> Session.State.of_events events))
+             event_lists);
       ]

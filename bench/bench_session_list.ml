@@ -13,38 +13,48 @@
     (decoding a fixed set of documents is deterministic); wall time is
     filesystem-dependent and recorded as trend only.
 
-    NOTE (verify): confirms [Eio.Stdenv.fs], [Mentat_store.open_] returning the
-    handle Session ops take, and that 1000 durable creates at setup is a
-    tolerable one-time cost. If setup is too slow, drop the top K to 500. *)
+    Measurement forks a worker per case, and a forked child cannot inherit a
+    live Eio scheduler — so nothing here runs under [Eio_main.run] at top
+    level. Each case's setup (inside the worker) populates a store under its
+    own Eio loop; the measured closure then opens the store and scans it
+    under a fresh loop. The measured unit is one whole picker-populate —
+    scheduler start, store open, scan — a constant scheduler cost plus the
+    K-dependent scan; the K-axis growth story is unchanged. *)
 
 module Store = Mentat_store
 module Fixture = Bench_support.Session_fixture
 
 let list_axis = [ ("10", 10); ("100", 100); ("1k", 1_000) ]
 
-let () =
+(* Runs in the forked worker: build and populate a store, return its root. *)
+let make_store count () =
   Eio_main.run @@ fun env ->
   let fs = Eio.Stdenv.fs env in
   Eio.Switch.run @@ fun sw ->
-  let make_store ~count =
-    let raw = Filename.temp_dir "mentat-bench-list-" "" in
-    let base = Unix.realpath raw in
-    let handle =
-      match Store.open_ ~sw (Eio.Path.( / ) fs base) with
-      | Ok handle -> handle
-      | Error error -> failwith (Store.Error.message error)
-    in
-    for i = 0 to count - 1 do
-      let session = Fixture.build ~id:(Printf.sprintf "s-%d" i) ~events:10 () in
-      match Store.Session.create handle session with
-      | Ok _ -> ()
-      | Error error -> failwith (Store.Session.Error.message error)
-    done;
-    handle
+  let raw = Filename.temp_dir "mentat-bench-list-" "" in
+  let base = Unix.realpath raw in
+  let handle =
+    match Store.open_ ~sw (Eio.Path.( / ) fs base) with
+    | Ok handle -> handle
+    | Error error -> failwith (Store.Error.message error)
   in
-  let stores =
-    List.map (fun (label, count) -> (label, make_store ~count)) list_axis
-  in
+  for i = 0 to count - 1 do
+    let session = Fixture.build ~id:(Printf.sprintf "s-%d" i) ~events:10 () in
+    match Store.Session.create handle session with
+    | Ok _ -> ()
+    | Error error -> failwith (Store.Session.Error.message error)
+  done;
+  base
+
+let scan_store base =
+  Eio_main.run @@ fun env ->
+  let fs = Eio.Stdenv.fs env in
+  Eio.Switch.run @@ fun sw ->
+  match Store.open_ ~sw (Eio.Path.( / ) fs base) with
+  | Ok handle -> Store.Session.scan handle
+  | Error error -> failwith (Store.Error.message error)
+
+let () =
   Thumper.run "session_list"
     ~budgets:
       [
@@ -53,13 +63,15 @@ let () =
            run to run — unlike the pure suites, it is not exactly reproducible.
            A small tolerance absorbs that jitter (observed well under 1%) while
            still catching a real regression, which would be proportional and
-           far larger. Wall and cpu are recorded but never gate. *)
+           far larger. Wall time is recorded but never gates. *)
         Thumper.Budget.no_more_alloc_than 0.05;
         Thumper.Budget.no_slower_than ~metric:Thumper.Metric.wall_time 1000.0;
-        Thumper.Budget.no_slower_than ~metric:Thumper.Metric.cpu_time 1000.0;
       ]
     Thumper.
       [
-        bench_param "scan" ~params:stores ~f:(fun handle ->
-            Store.Session.scan handle);
+        group "scan"
+          (List.map
+             (fun (label, count) ->
+               bench_with_setup ~setup:(make_store count) label scan_store)
+             list_axis);
       ]

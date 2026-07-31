@@ -36,14 +36,14 @@ let () =
       [
         Thumper.Budget.no_more_alloc_than 0.0;
         Thumper.Budget.no_slower_than ~metric:Thumper.Metric.wall_time 1000.0;
-        Thumper.Budget.no_slower_than ~metric:Thumper.Metric.cpu_time 1000.0;
       ]
     Thumper.
       [
-        bench_param "capture"
-          ~params:
-            [ ("1K", Bytes.small); ("64K", Bytes.medium); ("1M", Bytes.large) ]
-          ~f:(fun bytes -> Content_ref.of_contents bytes);
+        group "capture"
+          (List.map
+             (fun (label, bytes) ->
+               bench label (fun () -> Content_ref.of_contents bytes))
+             [ ("1K", Bytes.small); ("64K", Bytes.medium); ("1M", Bytes.large) ]);
         group "token"
           [
             bench "to-token" (fun () -> Content_ref.to_token medium_ref);
