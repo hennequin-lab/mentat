@@ -1,3 +1,12 @@
+; Every suite here drives real child processes (Merlin, ripgrep, dune,
+; shells); 1-5 s tests are the norm, so the slow warning fires only on
+; genuine regressions past five seconds.
+
+(env
+ (_
+  (env-vars
+   (WINDTRAP_SLOW_THRESHOLD 5))))
+
 ; MIGRATION NOTE (windtrap 0.2): expect-test executables became
 ; (inline_tests) libraries -- dune builds and drives one runner per
 ; library, and corrections arrive via the ordinary promotion flow

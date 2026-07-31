@@ -79,10 +79,6 @@ let () =
   let short = bytes_per_advance ~events:100 ~iterations in
   let long = bytes_per_advance ~events:10_000 ~iterations in
   let ratio = if short > 0. then long /. short else 1. in
-  Printf.printf
-    "poll-scaling: projection advance/commit = %.1f B @100 events, %.1f B @10k \
-     events, ratio %.3f\n"
-    short long ratio;
   if ratio >= 2.0 then begin
     Printf.eprintf
       "poll-scaling regression: per-commit projection advance is not flat \

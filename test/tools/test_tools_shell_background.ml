@@ -280,7 +280,7 @@ let%test "shell_output waits for output and returns on the write" =
 (* A silent command costs the reader its whole budget, and the result says so:
    an empty read that looks free is what invites a read to be repeated in place
    of work. *)
-let%test "an empty read spends its budget and names it" =
+let%test ("an empty read spends its budget and names it" [@tags "slow"]) =
   with_world "output-budget" @@ fun world ->
   let handle =
     completed_handle (run world.shell (bg_input ~background:true "sleep 30"))
