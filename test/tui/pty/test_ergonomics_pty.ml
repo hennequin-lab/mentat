@@ -61,30 +61,32 @@ let%expect_test "a keybindings.json remap loads and takes effect" =
   saw terminal "reverse-i-search";
   Screen.print ~project (Pty.screen terminal);
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-07 |
-08 |                          dev · openai/gpt-5.6-sol medium
-09 |
-10 |      ▎ welcome — and thanks for trying mentat this early.
-11 |      ▎ it's experimental: sessions and config may change without migration.
-12 |
-13 | reverse-i-search:
-14 | ❯ remembered prompt
-15 | ────────────────────────────────────────────────────────────────────────────────
-16 | ⌕ search history
-17 | ────────────────────────────────────────────────────────────────────────────────
-18 |
-19 |                          ! /login — no connected account
-20 |                               ∅ no recent sessions
-21 |
-22 |
-23 |
-24 |   ↵ insert · esc cancel · type to search                             ⌕ history|}];
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    07 |
+    08 |                          dev · openai/gpt-5.6-sol medium
+    09 |
+    10 |      ▎ welcome — and thanks for trying mentat this early.
+    11 |      ▎ it's experimental: sessions and config may change without migration.
+    12 |
+    13 | reverse-i-search:
+    14 | ❯ remembered prompt
+    15 | ────────────────────────────────────────────────────────────────────────────────
+    16 | ⌕ search history
+    17 | ────────────────────────────────────────────────────────────────────────────────
+    18 |
+    19 |                          ! /login — no connected account
+    20 |                               ∅ no recent sessions
+    21 |
+    22 |
+    23 |
+    24 |   ↵ insert · esc cancel · type to search                             ⌕ history
+    |}];
   Pty.quit terminal
 
 let%expect_test
@@ -111,30 +113,32 @@ let%expect_test
   (try Pty.settle terminal with _ -> ());
   Screen.print ~project (Pty.screen terminal);
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-07 |
-08 |                          dev · openai/gpt-5.6-sol medium
-09 |
-10 |      ▎ welcome — and thanks for trying mentat this early.
-11 |      ▎ it's experimental: sessions and config may change without migration.
-12 |
-13 |
-14 | ────────────────────────────────────────────────────────────────────────────────
-15 | ❯ edited-in-pty
-16 | ────────────────────────────────────────────────────────────────────────────────
-17 |
-18 |                          ! /login — no connected account
-19 |                               ∅ no recent sessions
-20 |
-21 |
-22 |
-23 |
-24 |   ! not logged in · /login · /priv… · openai/gpt-5.6-sol … · ! full access ? …|}];
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    07 |
+    08 |                          dev · openai/gpt-5.6-sol medium
+    09 |
+    10 |      ▎ welcome — and thanks for trying mentat this early.
+    11 |      ▎ it's experimental: sessions and config may change without migration.
+    12 |
+    13 |
+    14 | ────────────────────────────────────────────────────────────────────────────────
+    15 | ❯ edited-in-pty
+    16 | ────────────────────────────────────────────────────────────────────────────────
+    17 |
+    18 |                          ! /login — no connected account
+    19 |                               ∅ no recent sessions
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ! not logged in · /login · ~/me… · openai/gpt-5.6-sol … · ! full access ? f…
+    |}];
   (* Teardown, observed on the raw stream for the same cadence reason: the
      composer is non-empty, so the first Ctrl+C discards the draft, the second
      arms quit, the third confirms. *)
@@ -177,4 +181,3 @@ let%expect_test "a discarded draft never seeds the next launch" =
   standing_draft ();
   [%expect {| no standing draft |}]
 
-[%%run_tests "mentat.tui.pty.ergonomics"]

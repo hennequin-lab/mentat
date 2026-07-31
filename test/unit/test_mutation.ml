@@ -188,44 +188,40 @@ let revert_derive r path =
 
 (* Testables. *)
 
-let event_value = testable ~pp:M.Event.pp ~equal:M.Event.equal ()
-let change_value = testable ~pp:M.Change.pp ~equal:M.Change.equal ()
-let change_id_value = testable ~pp:M.Change.Id.pp ~equal:M.Change.Id.equal ()
-let path_value = testable ~pp:W.Path.pp ~equal:W.Path.equal ()
-let image_value = testable ~pp:M.Image.pp ~equal:M.Image.equal ()
+let event_value = Testable.make ~pp:M.Event.pp ~equal:M.Event.equal
+let change_value = Testable.make ~pp:M.Change.pp ~equal:M.Change.equal
+let change_id_value = Testable.make ~pp:M.Change.Id.pp ~equal:M.Change.Id.equal
+let path_value = Testable.make ~pp:W.Path.pp ~equal:W.Path.equal
+let image_value = Testable.make ~pp:M.Image.pp ~equal:M.Image.equal
 
 let stats_value =
   let pp ppf (s : Textdiff.stats) =
     Format.fprintf ppf "{files=%d; additions=%d; deletions=%d}" s.Textdiff.files
       s.Textdiff.additions s.Textdiff.deletions
   in
-  testable ~pp ~equal:Textdiff.Stats.equal ()
+  Testable.make ~pp ~equal:Textdiff.Stats.equal
 
 let selection_value =
-  testable ~pp:M.Revert.Selection.pp ~equal:M.Revert.Selection.equal ()
+  Testable.make ~pp:M.Revert.Selection.pp ~equal:M.Revert.Selection.equal
 
 let revertability_value =
-  testable ~pp:M.Revertability.pp ~equal:M.Revertability.equal ()
+  Testable.make ~pp:M.Revertability.pp ~equal:M.Revertability.equal
 
-let problem_value = testable ~pp:M.Revert.Problem.pp ~equal:( = ) ()
+let problem_value = Testable.make ~pp:M.Revert.Problem.pp ~equal:( = )
 
 let claim_id_value =
-  testable ~pp:Session.Tool_claim.Id.pp ~equal:Session.Tool_claim.Id.equal ()
+  Testable.make ~pp:Session.Tool_claim.Id.pp ~equal:Session.Tool_claim.Id.equal
 
 let checkpoint_id_value =
-  testable ~pp:M.Checkpoint.Id.pp ~equal:M.Checkpoint.Id.equal ()
+  Testable.make ~pp:M.Checkpoint.Id.pp ~equal:M.Checkpoint.Id.equal
 
 let started_value =
-  testable
-    ~pp:(fun ppf (s : M.Revert.Started.t) ->
-      Format.fprintf ppf "started(%a)" M.Revert.Id.pp s.M.Revert.Started.id)
-    ~equal:M.Revert.Started.equal ()
+  Testable.make ~pp:(fun ppf (s : M.Revert.Started.t) ->
+      Format.fprintf ppf "started(%a)" M.Revert.Id.pp s.M.Revert.Started.id) ~equal:M.Revert.Started.equal
 
 let settled_value =
-  testable
-    ~pp:(fun ppf (s : M.Revert.Settled.t) ->
-      Format.fprintf ppf "settled(%a)" M.Revert.Id.pp s.M.Revert.Settled.revert)
-    ~equal:M.Revert.Settled.equal ()
+  Testable.make ~pp:(fun ppf (s : M.Revert.Settled.t) ->
+      Format.fprintf ppf "settled(%a)" M.Revert.Id.pp s.M.Revert.Settled.revert) ~equal:M.Revert.Settled.equal
 
 let net_entry_equal (a : M.Change.Net.entry) (b : M.Change.Net.entry) =
   W.Path.equal a.M.Change.Net.path b.M.Change.Net.path
@@ -235,14 +231,12 @@ let net_entry_equal (a : M.Change.Net.entry) (b : M.Change.Net.entry) =
   && List.equal M.Change.Id.equal a.M.Change.Net.sources b.M.Change.Net.sources
 
 let net_entry_value =
-  testable
-    ~pp:(fun ppf (e : M.Change.Net.entry) ->
+  Testable.make ~pp:(fun ppf (e : M.Change.Net.entry) ->
       Format.fprintf ppf "net(%a, %a -> %a, contiguous=%b)" W.Path.pp
         e.M.Change.Net.path M.Image.pp e.M.Change.Net.before M.Image.pp
-        e.M.Change.Net.after e.M.Change.Net.contiguous)
-    ~equal:net_entry_equal ()
+        e.M.Change.Net.after e.M.Change.Net.contiguous) ~equal:net_entry_equal
 
-let state_error_value = testable ~pp:M.State.Error.pp ~equal:( = ) ()
+let state_error_value = Testable.make ~pp:M.State.Error.pp ~equal:( = )
 
 (* Two states are equivalent when every projection protocol reads agrees. Each
    claim's change rows carry their turn, so equal per-claim changes prove the
@@ -587,7 +581,7 @@ let lowering_group =
                   equal image_value (text_image "b1\n") (M.Change.after row);
                   equal change_id_value (claim_derive "c1" p1) (M.Change.id row)
               | rows -> failf "expected one row, got %d" (List.length rows));
-              some path_value p2 uncertain
+              equal (option path_value) (Some p2) uncertain
           | _ -> fail "expected an edit event");
       test
         "of_attempt lowers a first-write commit failure to an uncertain-only \
@@ -844,12 +838,13 @@ let fold_group =
           let cp = checkpoint (M.Checkpoint.Before_turn_tools (turn "t1")) in
           let e1 = base_history ~checkpoint:(M.Checkpoint.id cp) () in
           let st = state_exn [ M.Event.checkpoint cp; e1 ] in
-          some
-            (testable ~pp:M.Checkpoint.pp ~equal:M.Checkpoint.equal ())
-            cp
+          equal
+            (option (Testable.make ~pp:M.Checkpoint.pp ~equal:M.Checkpoint.equal))
+            (Some cp)
             (M.State.checkpoint_at st (M.Checkpoint.boundary cp));
           (* An uncaptured boundary has no recorded capture. *)
-          is_none
+          equal (option pass)
+            None
             (M.State.checkpoint_at st (M.Checkpoint.After_recovery (turn "t1"))));
       test "a settlement with no prior start is unmatched" (fun () ->
           let st = state_exn [ base_history () ] in
@@ -1004,7 +999,7 @@ let fold_group =
           | Some found ->
               equal change_id_value (M.Change.id row) (M.Change.id found)
           | None -> fail "a recorded change must resolve by id");
-          is_none (M.State.change st (M.Change.Id.of_string "no-such-change")));
+          equal (option pass) None (M.State.change st (M.Change.Id.of_string "no-such-change")));
       test "observed paths merge and sort across windows of one claim"
         (fun () ->
           let st =
@@ -1285,7 +1280,7 @@ let at_claim_group =
     [
       test "an unreferenced claim has no prefix" (fun () ->
           let st = state_exn [ base_history () ] in
-          is_none (M.State.at_claim st ~claim:(claim "ghost")));
+          equal (option pass) None (M.State.at_claim st ~claim:(claim "ghost")));
       test "the prefix answer survives later superseding changes" (fun () ->
           let e1 =
             edit_event ~turn:"t1" ~claim:"c1"
@@ -1480,7 +1475,7 @@ let model_net steps_with_ids =
             List.map snd deltas ))
     (paths_seen [] steps_with_ids)
 
-let steps_testable =
+let steps_gen =
   let texts = [ None; Some "l1\n"; Some "l2\n"; Some "l3\n" ] in
   let valid_pairs =
     List.concat_map
@@ -1495,22 +1490,21 @@ let steps_testable =
   let step_gen =
     Gen.map
       (fun (index, (before, after)) -> (index, before, after))
-      (Gen.pair (Gen.int_range 0 2) (Gen.oneofl valid_pairs))
+      (Gen.pair (Gen.int_range 0 2) (Gen.of_list valid_pairs))
   in
   let pp_step ppf (i, b, a) =
     let text = function None -> "-" | Some s -> String.escaped s in
     Format.fprintf ppf "(%d, %s, %s)" i (text b) (text a)
   in
-  testable
-    ~pp:(Format.pp_print_list pp_step)
-    ~gen:Gen.(list_size (int_range 1 10) step_gen)
-    ()
+  Gen.with_pp
+    (Format.pp_print_list pp_step)
+    (Gen.list ~size:(Gen.int_range 1 10) step_gen)
 
 let netting_group =
   group "netting"
     [
-      prop' "net agrees with the endpoint model over generated sequences"
-        steps_testable (fun steps ->
+      prop "net agrees with the endpoint model over generated sequences"
+        steps_gen (fun steps ->
           let steps_with_ids =
             List.mapi
               (fun index step ->
@@ -2185,7 +2179,8 @@ let preparation_group =
                 target.M.Revert.Target.restore
           | _ -> fail "expected one target");
           (* The consent is frozen into the started fact. *)
-          is_some (M.Revert.Plan.started plan).M.Revert.Started.override);
+          ignore
+            (require_some (M.Revert.Plan.started plan).M.Revert.Started.override));
       test "an override naming a contiguous path is refused" (fun () ->
           let st =
             state_exn
@@ -2276,7 +2271,7 @@ let preparation_group =
              p1 is untouched by the plan, and p2 is contiguous, so no consent
              is frozen at all — and the started invariant (override paths are
              target paths) holds. *)
-          is_none (M.Revert.Plan.started plan).M.Revert.Started.override);
+          equal (option pass) None (M.Revert.Plan.started plan).M.Revert.Started.override);
       test "evidence refuses duplicate reads and mismatched blob bytes"
         (fun () ->
           expect_invalid_arg
@@ -2676,7 +2671,7 @@ let totals_group =
                 else None)
               store
           in
-          is_ok (M.Change.hunks ~blob change);
+          ignore (require_ok (M.Change.hunks ~blob change));
           match M.Change.hunks ~blob:(fun _ -> None) change with
           | Error (M.Change.Hunks_error.Missing_blob reference) ->
               check "names the before image"
@@ -3212,12 +3207,10 @@ let codec_group =
 (* Netted display diff (Diff.compute). *)
 
 let operation_value =
-  testable
-    ~pp:(fun ppf -> function
+  Testable.make ~pp:(fun ppf -> function
       | `Added -> Format.pp_print_string ppf "Added"
       | `Deleted -> Format.pp_print_string ppf "Deleted"
-      | `Modified -> Format.pp_print_string ppf "Modified")
-    ~equal:( = ) ()
+      | `Modified -> Format.pp_print_string ppf "Modified") ~equal:( = )
 
 (* A blob reader over known texts: content-addressed, so a reference resolves to
    the text whose bytes it names. Bytes not in [texts] resolve to [None] — the

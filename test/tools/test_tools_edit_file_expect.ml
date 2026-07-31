@@ -851,4 +851,3 @@ let%expect_test "durable output is summary-only and mutation truth stays scoped"
     claim observations: 0
     disk: "dog dog dog\n" |}]
 
-[%%run_tests "mentat.tools.edit_file"]

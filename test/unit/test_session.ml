@@ -147,55 +147,53 @@ let transcript_text transcript =
 
 (* Testables. *)
 
-let state_error = testable ~pp:State.Error.pp ~equal:( = ) ()
-let session_error = testable ~pp:Session.Error.pp ~equal:( = ) ()
-let event_value = testable ~pp:Event.pp ~equal:Event.equal ()
+let state_error = Testable.make ~pp:State.Error.pp ~equal:( = )
+let session_error = Testable.make ~pp:Session.Error.pp ~equal:( = )
+let event_value = Testable.make ~pp:Event.pp ~equal:Event.equal
 
 let turn_id_value =
-  testable ~pp:Session.Turn.Id.pp ~equal:Session.Turn.Id.equal ()
+  Testable.make ~pp:Session.Turn.Id.pp ~equal:Session.Turn.Id.equal
 
-let turn_value = testable ~pp:Session.Turn.pp ~equal:Session.Turn.equal ()
+let turn_value = Testable.make ~pp:Session.Turn.pp ~equal:Session.Turn.equal
 
 let outcome_value =
-  testable ~pp:Session.Turn.Outcome.pp ~equal:Session.Turn.Outcome.equal ()
+  Testable.make ~pp:Session.Turn.Outcome.pp ~equal:Session.Turn.Outcome.equal
 
-let message_value = testable ~pp:(fun _ _ -> ()) ~equal:Llm.Message.equal ()
-let usage_value = testable ~pp:Llm.Usage.pp ~equal:Llm.Usage.equal ()
+let message_value = Testable.make ~pp:(fun _ _ -> ()) ~equal:Llm.Message.equal
+let usage_value = Testable.make ~pp:Llm.Usage.pp ~equal:Llm.Usage.equal
 
 let contract_value =
-  testable ~pp:Session.Contract.pp ~equal:Session.Contract.equal ()
+  Testable.make ~pp:Session.Contract.pp ~equal:Session.Contract.equal
 
 let queue_entry_value =
-  testable ~pp:Session.Queue.Entry.pp ~equal:Session.Queue.Entry.equal ()
+  Testable.make ~pp:Session.Queue.Entry.pp ~equal:Session.Queue.Entry.equal
 
 let board_value =
-  testable ~pp:Session.Task.Board.pp ~equal:Session.Task.Board.equal ()
+  Testable.make ~pp:Session.Task.Board.pp ~equal:Session.Task.Board.equal
 
-let goal_value = testable ~pp:Session.Goal.pp ~equal:Session.Goal.equal ()
+let goal_value = Testable.make ~pp:Session.Goal.pp ~equal:Session.Goal.equal
 
 let delegation_value =
-  testable ~pp:Session.Delegation.pp ~equal:Session.Delegation.equal ()
+  Testable.make ~pp:Session.Delegation.pp ~equal:Session.Delegation.equal
 
 let compaction_value =
-  testable ~pp:Session.Compaction.pp ~equal:Session.Compaction.equal ()
+  Testable.make ~pp:Session.Compaction.pp ~equal:Session.Compaction.equal
 
 let metrics_value =
-  testable ~pp:Session.Metrics.pp ~equal:Session.Metrics.equal ()
+  Testable.make ~pp:Session.Metrics.pp ~equal:Session.Metrics.equal
 
 let prepared_value =
-  testable
-    ~pp:(fun ppf p ->
+  Testable.make ~pp:(fun ppf p ->
       Format.fprintf ppf "prepared(%s, %s)" (Tool.Prepared.tool p)
-        (Tool.Prepared.description p))
-    ~equal:Tool.Prepared.equal ()
+        (Tool.Prepared.description p)) ~equal:Tool.Prepared.equal
 
 let rule_value =
-  testable ~pp:Permission.Policy.Rule.pp ~equal:Permission.Policy.Rule.equal ()
+  Testable.make ~pp:Permission.Policy.Rule.pp ~equal:Permission.Policy.Rule.equal
 
 let resolve_error_value =
-  testable ~pp:Session.Decision.Resolve_error.pp ~equal:( = ) ()
+  Testable.make ~pp:Session.Decision.Resolve_error.pp ~equal:( = )
 
-let json_value = testable ~pp:pp_json ~equal:Json.equal ()
+let json_value = Testable.make ~pp:pp_json ~equal:Json.equal
 
 (* Permission fixtures. *)
 
@@ -444,7 +442,7 @@ let pp_suspension ppf = function
   | State.Decision d ->
       Format.fprintf ppf "decision(%a)" Session.Decision.Requested.pp d
 
-let suspension_value = testable ~pp:pp_suspension ~equal:suspension_equal ()
+let suspension_value = Testable.make ~pp:pp_suspension ~equal:suspension_equal
 
 (* Structural equality of two replayed states over every exposed projection:
    the observable meaning of "equal inputs fold to equal states". *)
@@ -702,7 +700,7 @@ let saved ?(id = "session-1") events =
 let ident_gen =
   Gen.(
     let+ c = char_range 'a' 'z'
-    and+ rest = string_size (int_range 0 8) (char_range 'a' 'z') in
+    and+ rest = string_of ~size:(int_range 0 8) (char_range 'a' 'z') in
     String.make 1 c ^ rest)
 
 let goal_id_gen = Gen.map (fun s -> goal_id s) ident_gen
@@ -710,7 +708,7 @@ let budget_gen = Gen.option (Gen.int_range 0 10_000)
 
 let goal_update_gen =
   let open Session.Goal.Update in
-  Gen.oneof
+  Gen.one_of
     [
       Gen.(
         let+ id = goal_id_gen and+ objective = ident_gen and+ b = budget_gen in
@@ -747,9 +745,9 @@ let queue_update_gen =
         List.mapi
           (fun i text -> queue_entry ~id:(Printf.sprintf "q-%d" i) text)
           texts)
-      (Gen.list_size (Gen.int_range 0 4) ident_gen)
+      (Gen.list ~size:(Gen.int_range 0 4) ident_gen)
   in
-  Gen.oneof
+  Gen.one_of
     [
       Gen.map
         (fun text ->
@@ -760,9 +758,9 @@ let queue_update_gen =
     ]
 
 let status_gen =
-  Gen.oneofl Session.Task.Status.[ Pending; In_progress; Completed; Cancelled ]
+  Gen.of_list Session.Task.Status.[ Pending; In_progress; Completed; Cancelled ]
 
-let priority_gen = Gen.oneofl Session.Task.Priority.[ High; Medium; Low ]
+let priority_gen = Gen.of_list Session.Task.Priority.[ High; Medium; Low ]
 
 let board_gen =
   Gen.map
@@ -786,11 +784,11 @@ let board_gen =
           rows
       in
       board items)
-    (Gen.list_size (Gen.int_range 0 5)
+    (Gen.list ~size:(Gen.int_range 0 5)
        (Gen.triple ident_gen status_gen priority_gen))
 
 let origin_gen =
-  Gen.oneof
+  Gen.one_of
     [
       Gen.pure Session.Turn.Origin.User;
       Gen.pure Session.Turn.Origin.Goal_continuation;
@@ -801,7 +799,7 @@ let origin_gen =
     ]
 
 let outcome_gen =
-  Gen.oneof
+  Gen.one_of
     [
       Gen.pure Session.Turn.Outcome.completed;
       Gen.pure Session.Turn.Outcome.step_limit;
@@ -814,7 +812,7 @@ let outcome_gen =
     ]
 
 let event_gen =
-  Gen.oneof
+  Gen.one_of
     [
       Gen.map Event.goal_updated goal_update_gen;
       Gen.map Event.queue_updated queue_update_gen;
@@ -1063,10 +1061,8 @@ let ids_group =
               Session.Delegation.Id.of_string "");
           assert_decode_error "turn id decode" Session.Turn.Id.jsont
             (Json.string ""));
-      prop' "claim id derivation is deterministic over its inputs"
-        (Testable.with_gen
-           (Gen.triple ident_gen ident_gen ident_gen)
-           (triple string string string))
+      prop "claim id derivation is deterministic over its inputs"
+        (Gen.triple ident_gen ident_gen ident_gen)
         (fun (turn, call_id, seed) ->
           let t = turn_id turn in
           let a = claim ~seed t and b = claim ~seed t in
@@ -1335,8 +1331,8 @@ let event_codec_group =
               equal event_value ~msg:"event round-trips" event
                 (decode Event.jsont (encode Event.jsont event)))
             events);
-      prop' "generated algebraic events round-trip through jsont"
-        (Testable.with_gen event_gen event_value) (fun event ->
+      prop "generated algebraic events round-trip through jsont"
+        (Gen.with_pp (Testable.pp event_value) event_gen) (fun event ->
           equal event_value ~msg:"round-trip" event
             (decode Event.jsont (encode Event.jsont event)));
       test "unknown event tags fail loudly, including old wire shapes"
@@ -2563,8 +2559,7 @@ let staged_group =
           let prepared = prepared_payload "alpha" in
           equal
             (list
-               (testable ~pp:Permission.Request.pp
-                  ~equal:Permission.Request.equal ()))
+               (Testable.make ~pp:Permission.Request.pp ~equal:Permission.Request.equal))
             ~msg:"final requests come from the plan"
             [ request_for "alpha" ]
             (Tool.Prepared.requests prepared));
@@ -2701,11 +2696,11 @@ let decision_group =
                { index = 0; count = 0 })
             free_question ~call ~by:Session.Principal.local_user
             (Session.Decision.Answer.Question (Session.Question.Answer.choice 0));
-          is_ok ~msg:"a valid choice resolves"
+          ignore (require_ok ~msg:"a valid choice resolves"
             (Session.Decision.resolve with_choices ~call
                ~by:Session.Principal.local_user
                (Session.Decision.Answer.Question
-                  (Session.Question.Answer.choice 1))));
+                  (Session.Question.Answer.choice 1)))));
       test "an unattended policy principal may only deny a permission"
         (fun () ->
           let call = tool_call () in
@@ -3082,18 +3077,18 @@ let decision_group =
           assert_decode_error "free-string principal" Session.Principal.jsont
             (Json.string "remote_reviewer"));
       test "question and plan constructors validate their shapes" (fun () ->
-          is_error ~msg:"empty prompt" (Session.Question.make ~prompt:"" ());
-          is_error ~msg:"empty choice list"
-            (Session.Question.make ~prompt:"Pick" ~choices:[] ());
-          is_error ~msg:"empty choice"
-            (Session.Question.make ~prompt:"Pick" ~choices:[ "a"; "" ] ());
+          ignore (require_error ~msg:"empty prompt" (Session.Question.make ~prompt:"" ()));
+          ignore (require_error ~msg:"empty choice list"
+            (Session.Question.make ~prompt:"Pick" ~choices:[] ()));
+          ignore (require_error ~msg:"empty choice"
+            (Session.Question.make ~prompt:"Pick" ~choices:[ "a"; "" ] ()));
           expect_invalid_arg "negative choice index" (fun () ->
               Session.Question.Answer.choice (-1));
           expect_invalid_arg "empty free answer" (fun () ->
               Session.Question.Answer.free "");
-          is_error ~msg:"empty plan body" (Session.Plan.make ~body:"" ());
-          is_error ~msg:"empty plan title"
-            (Session.Plan.make ~title:"" ~body:"1. Go" ());
+          ignore (require_error ~msg:"empty plan body" (Session.Plan.make ~body:"" ()));
+          ignore (require_error ~msg:"empty plan title"
+            (Session.Plan.make ~title:"" ~body:"1. Go" ()));
           expect_invalid_arg "empty revise feedback" (fun () ->
               Session.Plan.Answer.revise ""));
     ]
@@ -4758,7 +4753,7 @@ let document_group =
           let archived = ok_or "archive" (Session.archive session) in
           is_true ~msg:"archived"
             (Session.Metadata.is_archived (Session.metadata archived));
-          is_ok ~msg:"archive is idempotent" (Session.archive archived);
+          ignore (require_ok ~msg:"archive is idempotent" (Session.archive archived));
           let restored = ok_or "restore" (Session.restore archived) in
           is_true ~msg:"restored"
             (Session.Metadata.is_active (Session.metadata restored));
@@ -4767,7 +4762,7 @@ let document_group =
             (Session.restore deleted);
           expect_session_error ~msg:"archive after delete" Session.Error.Deleted
             (Session.archive deleted);
-          is_ok ~msg:"delete is idempotent" (Session.delete deleted);
+          ignore (require_ok ~msg:"delete is idempotent" (Session.delete deleted));
           let active =
             saved ~id:"session-active" [ Event.turn_started (turn ()) ]
           in
@@ -4915,26 +4910,26 @@ let branch_group =
                   (Session.Queue.Update.enqueued (queue_entry "queued"));
               ]
           in
-          is_ok ~msg:"queue reset"
+          ignore (require_ok ~msg:"queue reset"
             (reconstruct_branch queue_prefix
-               [ Event.queue_updated Session.Queue.Update.cleared ]);
-          is_ok ~msg:"goal reset"
+               [ Event.queue_updated Session.Queue.Update.cleared ]));
+          ignore (require_ok ~msg:"goal reset"
             (reconstruct_branch goal_prefix
                [
                  Event.goal_updated
                    (Session.Goal.Update.pause ~id:(goal_id "goal-1"));
-               ]);
-          is_ok ~msg:"delegation reset"
+               ]));
+          ignore (require_ok ~msg:"delegation reset"
             (reconstruct_branch delegation_prefix
-               [ Event.delegations_detached ]);
-          is_ok ~msg:"combined reset"
+               [ Event.delegations_detached ]));
+          ignore (require_ok ~msg:"combined reset"
             (reconstruct_branch all_prefix
                [
                  Event.queue_updated Session.Queue.Update.cleared;
                  Event.goal_updated
                    (Session.Goal.Update.pause ~id:(goal_id "goal-1"));
                  Event.delegations_detached;
-               ]));
+               ])));
       test "reconstruction reports the first missing or different reset event"
         (fun () ->
           let queue_prefix =
@@ -5534,8 +5529,7 @@ let document_version_of session =
   | None -> fail "encoded session has no version member"
 
 let content_ref =
-  testable ~pp:Mentat_digest.Content_ref.pp
-    ~equal:Mentat_digest.Content_ref.equal ()
+  Testable.make ~pp:Mentat_digest.Content_ref.pp ~equal:Mentat_digest.Content_ref.equal
 
 let media_refs_group =
   group "media refs"
@@ -5749,8 +5743,7 @@ let undo_group =
           List.iter
             (fun update ->
               equal
-                (testable ~pp:Session.Undo.Update.pp
-                   ~equal:Session.Undo.Update.equal ())
+                (Testable.make ~pp:Session.Undo.Update.pp ~equal:Session.Undo.Update.equal)
                 ~msg:"undo update round-trips" update
                 (decode Session.Undo.Update.jsont
                    (encode Session.Undo.Update.jsont update)))

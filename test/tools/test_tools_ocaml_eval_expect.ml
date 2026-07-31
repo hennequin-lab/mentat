@@ -1147,4 +1147,3 @@ let%expect_test "constructor rejects invalid immutable program prefixes" =
     invocations: 0
     |}]
 
-[%%run_tests "mentat.tools.ocaml_eval"]

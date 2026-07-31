@@ -12,57 +12,61 @@ let%expect_test "bare invocation opens the complete Home UI and restores it" =
   Pty.run project @@ fun terminal ->
   Screen.print ~project (Pty.screen terminal);
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-07 |
-08 |                          dev · openai/gpt-5.6-sol medium
-09 |
-10 |      ▎ welcome — and thanks for trying mentat this early.
-11 |      ▎ it's experimental: sessions and config may change without migration.
-12 |
-13 |
-14 | ────────────────────────────────────────────────────────────────────────────────
-15 | ❯ message mentat
-16 | ────────────────────────────────────────────────────────────────────────────────
-17 |
-18 |                          ! /login — no connected account
-19 |                               ∅ no recent sessions
-20 |
-21 |
-22 |
-23 |
-24 |   ! not logged in · /login · ~/me… · openai/gpt-5.6-sol … · ! full access ? f…|}];
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    07 |
+    08 |                          dev · openai/gpt-5.6-sol medium
+    09 |
+    10 |      ▎ welcome — and thanks for trying mentat this early.
+    11 |      ▎ it's experimental: sessions and config may change without migration.
+    12 |
+    13 |
+    14 | ────────────────────────────────────────────────────────────────────────────────
+    15 | ❯ message mentat
+    16 | ────────────────────────────────────────────────────────────────────────────────
+    17 |
+    18 |                          ! /login — no connected account
+    19 |                               ∅ no recent sessions
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ! not logged in · /login · ~/me… · openai/gpt-5.6-sol … · ! full access ? f…
+    |}];
   Pty.quit terminal;
   Screen.print ~project (Pty.screen terminal);
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-04 |
-05 |
-06 |
-07 |
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 ||}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    04 |
+    05 |
+    06 |
+    07 |
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |
+    |}]
 
 let print_resume_case name command expected =
   Project.with_temp name @@ fun project ->
@@ -177,30 +181,32 @@ let%expect_test "a launch draft is visible in the complete Home screen" =
   Screen.print ~project (Pty.screen terminal);
   Pty.quit ~discard_draft:true terminal;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-07 |
-08 |                          dev · openai/gpt-5.6-sol medium
-09 |
-10 |      ▎ welcome — and thanks for trying mentat this early.
-11 |      ▎ it's experimental: sessions and config may change without migration.
-12 |
-13 |
-14 | ────────────────────────────────────────────────────────────────────────────────
-15 | ❯ fix the parser first
-16 | ────────────────────────────────────────────────────────────────────────────────
-17 |
-18 |                          ! /login — no connected account
-19 |                               ∅ no recent sessions
-20 |
-21 |
-22 |
-23 |
-24 |   ! not logged in · /login · ~/me… · openai/gpt-5.6-sol … · ! full access ? f…|}]
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    07 |
+    08 |                          dev · openai/gpt-5.6-sol medium
+    09 |
+    10 |      ▎ welcome — and thanks for trying mentat this early.
+    11 |      ▎ it's experimental: sessions and config may change without migration.
+    12 |
+    13 |
+    14 | ────────────────────────────────────────────────────────────────────────────────
+    15 | ❯ fix the parser first
+    16 | ────────────────────────────────────────────────────────────────────────────────
+    17 |
+    18 |                          ! /login — no connected account
+    19 |                               ∅ no recent sessions
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ! not logged in · /login · ~/me… · openai/gpt-5.6-sol … · ! full access ? f…
+    |}]
 
 let%expect_test
     "a fresh launch prompt visibly starts and settles its first turn" =
@@ -222,30 +228,32 @@ let%expect_test
   Screen.print ~project (Pty.screen terminal);
   Pty.quit terminal;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.6-sol medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-launca9d0807a
-04 |
-05 | ❯ explain the fresh launch path
-06 |
-07 | ⏺ The fresh prompt crossed the executable boundary.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ~/mentat-tui-cli-laun… · openai/gpt-5.6-sol med… · ! full access ? for shor…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.6-sol medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-launc75ea3897
+    04 |
+    05 | ❯ explain the fresh launch path
+    06 |
+    07 | ⏺ The fresh prompt crossed the executable boundary.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ~/mentat-tui-cli-laun… · openai/gpt-5.6-sol med… · ! full access ? for shor…
+    |}]
 
 (* A manual /compact is an engine-side model call, so it takes time. While the
    summary response is held, the composer-issued compaction must show the live
@@ -282,30 +290,32 @@ let%expect_test "manual compaction shows a live indicator while it summarizes" =
   Screen.print ~project (Pty.screen terminal);
   Pty.quit terminal;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.6-sol medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-compact-icdd8c8f1
-04 |
-05 | ❯ summarize the parser investigation
-06 |
-07 | ⏺ The parser investigation is complete.
-08 |
-09 |  ─────────────────────────────────  compacted  ────────────────────────────────
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ~/mentat-tui-cli-compa… · openai/gpt-5.6-sol med… · ! full access ? for sho…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.6-sol medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-compact-i9824a6c7
+    04 |
+    05 | ❯ summarize the parser investigation
+    06 |
+    07 | ⏺ The parser investigation is complete.
+    08 |
+    09 |  ─────────────────────────────────  compacted  ────────────────────────────────
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ~/mentat-tui-cli-compa… · openai/gpt-5.6-sol med… · ! full access ? for sho…
+    |}]
 
 let%expect_test
     "the live main TUI relayouts as a complete screen after a real PTY resize" =
@@ -323,48 +333,50 @@ let%expect_test
   Screen.print ~project (Pty.screen terminal);
   Pty.quit terminal;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.6-sol medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-mai91a37260
-04 |
-05 | ❯ This resumed transcript must reflow after a real PTY resize.
-06 |
-07 |
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/me… · openai/gpt-5.6-sol … · ! full access ? f…
-01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-04 |  dev · openai/gpt-5.6-sol medium
-05 |  ~/mentat-tui-cli-mai91a37260
-06 |
-07 | ❯ This resumed transcript must reflow after
-08 |   a real PTY resize.
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 | ────────────────────────────────────────────
-16 | ❯ message mentat
-17 | ────────────────────────────────────────────
-18 |   ! not logged in · /log…… · ! full acce…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.6-sol medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-mai48c1dd3f
+    04 |
+    05 | ❯ This resumed transcript must reflow after a real PTY resize.
+    06 |
+    07 |
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/me… · openai/gpt-5.6-sol … · ! full access ? f…
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    04 |  dev · openai/gpt-5.6-sol medium
+    05 |  ~/mentat-tui-cli-mai48c1dd3f
+    06 |
+    07 | ❯ This resumed transcript must reflow after
+    08 |   a real PTY resize.
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 | ────────────────────────────────────────────
+    16 | ❯ message mentat
+    17 | ────────────────────────────────────────────
+    18 |   ! not logged in · /log…… · ! full acce…
+    |}]
 
 let%expect_test "an explicit local shell command settles in the complete UI" =
   Project.with_temp "cli-local-shell" @@ fun project ->
@@ -378,30 +390,32 @@ let%expect_test "an explicit local shell command settles in the complete UI" =
   Pty.screen terminal |> censor_shell_elapsed_ms |> Screen.print ~project;
   Pty.quit terminal;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.6-sol medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-locb399b4ad
-04 |
-05 | ⏺ Shell(printf 'local shell from tui\n')
-06 |   ⎿  Completed in $TIME ms
-07 |       local shell from tui
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/me… · openai/gpt-5.6-sol … · ! full access ? f…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.6-sol medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-loce0564a90
+    04 |
+    05 | ⏺ Shell(printf 'local shell from tui\n')
+    06 |   ⎿  Completed in $TIME ms
+    07 |       local shell from tui
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/me… · openai/gpt-5.6-sol … · ! full access ? f…
+    |}]
 
 let%expect_test
     "a resumed launch prompt stays visibly editable instead of submitting" =
@@ -419,30 +433,32 @@ let%expect_test
   Screen.print ~project (Pty.screen terminal);
   Pty.quit ~discard_draft:true terminal;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.6-sol medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-resum6a08e58d
-04 |
-05 | ❯ saved conversation
-06 |
-07 |
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ follow up safely
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/me… · openai/gpt-5.6-sol … · ! full access ? f…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.6-sol medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-resum1c8cb68c
+    04 |
+    05 | ❯ saved conversation
+    06 |
+    07 |
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ follow up safely
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/me… · openai/gpt-5.6-sol … · ! full access ? f…
+    |}]
 
 let%expect_test
     "a resumed launch paints the session first, never the home stage" =
@@ -464,30 +480,32 @@ let%expect_test
   Screen.print ~project (Pty.screen terminal);
   Pty.quit terminal;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.6-sol medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-resume-fir22095f55
-04 |
-05 | ❯ resumed first frame
-06 |
-07 |
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/men… · openai/gpt-5.6-sol … · ! full acce… ? f…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.6-sol medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-resume-fir7050a468
+    04 |
+    05 | ❯ resumed first frame
+    06 |
+    07 |
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/men… · openai/gpt-5.6-sol … · ! full acce… ? f…
+    |}]
 
 let%expect_test
     "quitting an active session leaves a complete farewell with its resume hint"
@@ -507,54 +525,56 @@ let%expect_test
   Pty.quit terminal;
   Screen.print ~project (Pty.screen terminal);
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.6-sol medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-activecdbca8fc
-04 |
-05 | ❯ keep this conversation
-06 |
-07 |
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/men… · openai/gpt-5.6-sol… · ! full access ? f…
-01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-04 |
-05 |  continue  mentat resume session-goodbye
-06 |
-07 |
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 ||}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.6-sol medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-activeae73e616
+    04 |
+    05 | ❯ keep this conversation
+    06 |
+    07 |
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/men… · openai/gpt-5.6-sol… · ! full access ? f…
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    04 |
+    05 |  continue  mentat resume session-goodbye
+    06 |
+    07 |
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |
+    |}]
 
 (* These two trust-gate journeys wrap a fixture path across terminal rows, so
    the exe-qualified fixture-root digest (Project.with_temp, harness project.ml)
@@ -573,42 +593,44 @@ let%expect_test
   Pty.settle terminal;
   Screen.print ~project (Pty.screen terminal);
   [%expect
-    {|01 |
-02 |  Mentat repository activation
-03 |
-04 |  Repository root: ~/mentat-tui-cli-trust-
-05 |  narrow-workspace-root-with-a-deliberately-
-06 |  laf3532a1
-07 |  Selection: 1 — continue restricted
-08 |
-09 |  This repository can control config,
-10 |  instructions, skills, Dune rules, local
-11 |  tools, evaluator, and Build-mode project
-12 |  processes. Activation does not approve
-13 |  operations or widen the selected sandbox.
-14 |
-15 |  ❯ 1. Continue restricted — remember this
-16 |       choice
-17 |     Native reads, searches, and sandboxed
-18 |     edits remain available. Repository-
-19 |     controlled code will not run. Files
-20 |     edited now may execute if you activate
-21 |     the repository later.
-22 |    2. Trust and activate this repository —
-23 |       remember this choice
-24 |     Repository inputs and Build processes
-25 |     activate after reload.
-26 |    3. Exit
-27 |     Save nothing and start no project
-28 |     process.
-29 |
-30 |
-31 |
-32 |
-33 |
-34 |  Use ↑/↓ and Enter, or press 1–3. Escape
-35 |  or Ctrl+C exits.
-36 ||}];
+    {|
+    01 |
+    02 |  Mentat repository activation
+    03 |
+    04 |  Repository root: ~/mentat-tui-cli-trust-
+    05 |  narrow-workspace-root-with-a-deliberately-
+    06 |  l9c9d8e52
+    07 |  Selection: 1 — continue restricted
+    08 |
+    09 |  This repository can control config,
+    10 |  instructions, skills, Dune rules, local
+    11 |  tools, evaluator, and Build-mode project
+    12 |  processes. Activation does not approve
+    13 |  operations or widen the selected sandbox.
+    14 |
+    15 |  ❯ 1. Continue restricted — remember this
+    16 |       choice
+    17 |     Native reads, searches, and sandboxed
+    18 |     edits remain available. Repository-
+    19 |     controlled code will not run. Files
+    20 |     edited now may execute if you activate
+    21 |     the repository later.
+    22 |    2. Trust and activate this repository —
+    23 |       remember this choice
+    24 |     Repository inputs and Build processes
+    25 |     activate after reload.
+    26 |    3. Exit
+    27 |     Save nothing and start no project
+    28 |     process.
+    29 |
+    30 |
+    31 |
+    32 |
+    33 |
+    34 |  Use ↑/↓ and Enter, or press 1–3. Escape
+    35 |  or Ctrl+C exits.
+    36 |
+    |}];
   Pty.send terminal "3";
   Pty.wait_exit terminal
 
@@ -619,113 +641,118 @@ let%expect_test "the live trust gate relayouts after a real terminal resize" =
   Pty.settle terminal;
   Screen.print ~project (Pty.screen terminal);
   [%expect
-    {|01 |
-02 |  Mentat repository activation
-03 |
-04 |  Repository root: ~/mentat-tui-cli-trust-liv94277a70
-05 |  Selection: 1 — continue restricted
-06 |
-07 |  This repository can control config, instructions, skills, Dune rules, local
-08 |  tools, evaluator, and Build-mode project processes. Activation does not
-09 |  approve operations or widen the selected sandbox.
-10 |
-11 |  ❯ 1. Continue restricted — remember this choice
-12 |     Native reads, searches, and sandboxed edits remain available. Repository-
-13 |     controlled code will not run. Files edited now may execute if you activate
-14 |     the repository later.
-15 |    2. Trust and activate this repository — remember this choice
-16 |     Repository inputs and Build processes activate after reload.
-17 |    3. Exit
-18 |     Save nothing and start no project process.
-19 |
-20 |
-21 |
-22 |
-23 |  Use ↑/↓ and Enter, or press 1–3. Escape or Ctrl+C exits.
-24 ||}];
+    {|
+    01 |
+    02 |  Mentat repository activation
+    03 |
+    04 |  Repository root: ~/mentat-tui-cli-trust-livcca687f9
+    05 |  Selection: 1 — continue restricted
+    06 |
+    07 |  This repository can control config, instructions, skills, Dune rules, local
+    08 |  tools, evaluator, and Build-mode project processes. Activation does not
+    09 |  approve operations or widen the selected sandbox.
+    10 |
+    11 |  ❯ 1. Continue restricted — remember this choice
+    12 |     Native reads, searches, and sandboxed edits remain available. Repository-
+    13 |     controlled code will not run. Files edited now may execute if you activate
+    14 |     the repository later.
+    15 |    2. Trust and activate this repository — remember this choice
+    16 |     Repository inputs and Build processes activate after reload.
+    17 |    3. Exit
+    18 |     Save nothing and start no project process.
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |  Use ↑/↓ and Enter, or press 1–3. Escape or Ctrl+C exits.
+    24 |
+    |}];
   Pty.resize terminal ~rows:36 ~cols:44;
   Pty.wait terminal (Screen.has "Selection: 1");
   Pty.settle terminal;
   Screen.print ~project (Pty.screen terminal);
   [%expect
-    {|01 |
-02 |  Mentat repository activation
-03 |
-04 |  Repository root: ~/mentat-tui-cli-trust-
-05 |  liv94277a70
-06 |  Selection: 1 — continue restricted
-07 |
-08 |  This repository can control config,
-09 |  instructions, skills, Dune rules, local
-10 |  tools, evaluator, and Build-mode project
-11 |  processes. Activation does not approve
-12 |  operations or widen the selected sandbox.
-13 |
-14 |  ❯ 1. Continue restricted — remember this
-15 |       choice
-16 |     Native reads, searches, and sandboxed
-17 |     edits remain available. Repository-
-18 |     controlled code will not run. Files
-19 |     edited now may execute if you activate
-20 |     the repository later.
-21 |    2. Trust and activate this repository —
-22 |       remember this choice
-23 |     Repository inputs and Build processes
-24 |     activate after reload.
-25 |    3. Exit
-26 |     Save nothing and start no project
-27 |     process.
-28 |
-29 |
-30 |
-31 |
-32 |
-33 |
-34 |  Use ↑/↓ and Enter, or press 1–3. Escape
-35 |  or Ctrl+C exits.
-36 ||}];
+    {|
+    01 |
+    02 |  Mentat repository activation
+    03 |
+    04 |  Repository root: ~/mentat-tui-cli-trust-
+    05 |  livcca687f9
+    06 |  Selection: 1 — continue restricted
+    07 |
+    08 |  This repository can control config,
+    09 |  instructions, skills, Dune rules, local
+    10 |  tools, evaluator, and Build-mode project
+    11 |  processes. Activation does not approve
+    12 |  operations or widen the selected sandbox.
+    13 |
+    14 |  ❯ 1. Continue restricted — remember this
+    15 |       choice
+    16 |     Native reads, searches, and sandboxed
+    17 |     edits remain available. Repository-
+    18 |     controlled code will not run. Files
+    19 |     edited now may execute if you activate
+    20 |     the repository later.
+    21 |    2. Trust and activate this repository —
+    22 |       remember this choice
+    23 |     Repository inputs and Build processes
+    24 |     activate after reload.
+    25 |    3. Exit
+    26 |     Save nothing and start no project
+    27 |     process.
+    28 |
+    29 |
+    30 |
+    31 |
+    32 |
+    33 |
+    34 |  Use ↑/↓ and Enter, or press 1–3. Escape
+    35 |  or Ctrl+C exits.
+    36 |
+    |}];
   Pty.send terminal "\027[B";
   Pty.wait terminal (Screen.has "Selection: 2");
   Pty.settle terminal;
   Screen.print ~project (Pty.screen terminal);
   [%expect
-    {|01 |
-02 |  Mentat repository activation
-03 |
-04 |  Repository root: ~/mentat-tui-cli-trust-
-05 |  liv94277a70
-06 |  Selection: 2 — trust and activate this
-07 |  repository
-08 |
-09 |  This repository can control config,
-10 |  instructions, skills, Dune rules, local
-11 |  tools, evaluator, and Build-mode project
-12 |  processes. Activation does not approve
-13 |  operations or widen the selected sandbox.
-14 |
-15 |    1. Continue restricted — remember this
-16 |       choice
-17 |     Native reads, searches, and sandboxed
-18 |     edits remain available. Repository-
-19 |     controlled code will not run. Files
-20 |     edited now may execute if you activate
-21 |     the repository later.
-22 |  ❯ 2. Trust and activate this repository —
-23 |       remember this choice
-24 |     Repository inputs and Build processes
-25 |     activate after reload.
-26 |    3. Exit
-27 |     Save nothing and start no project
-28 |     process.
-29 |
-30 |
-31 |
-32 |
-33 |
-34 |  Use ↑/↓ and Enter, or press 1–3. Escape
-35 |  or Ctrl+C exits.
-36 ||}];
+    {|
+    01 |
+    02 |  Mentat repository activation
+    03 |
+    04 |  Repository root: ~/mentat-tui-cli-trust-
+    05 |  livcca687f9
+    06 |  Selection: 2 — trust and activate this
+    07 |  repository
+    08 |
+    09 |  This repository can control config,
+    10 |  instructions, skills, Dune rules, local
+    11 |  tools, evaluator, and Build-mode project
+    12 |  processes. Activation does not approve
+    13 |  operations or widen the selected sandbox.
+    14 |
+    15 |    1. Continue restricted — remember this
+    16 |       choice
+    17 |     Native reads, searches, and sandboxed
+    18 |     edits remain available. Repository-
+    19 |     controlled code will not run. Files
+    20 |     edited now may execute if you activate
+    21 |     the repository later.
+    22 |  ❯ 2. Trust and activate this repository —
+    23 |       remember this choice
+    24 |     Repository inputs and Build processes
+    25 |     activate after reload.
+    26 |    3. Exit
+    27 |     Save nothing and start no project
+    28 |     process.
+    29 |
+    30 |
+    31 |
+    32 |
+    33 |
+    34 |  Use ↑/↓ and Enter, or press 1–3. Escape
+    35 |  or Ctrl+C exits.
+    36 |
+    |}];
   Pty.send terminal "3";
   Pty.wait_exit terminal
 
-[%%run_tests "mentat.tui.pty.cli_launch"]

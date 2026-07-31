@@ -50,12 +50,11 @@ let project_src = C.Source.Project { path = project_path }
 let project_local_src = C.Source.Project_local { path = project_local_path }
 let source_str s = Format.asprintf "%a" C.Source.pp s
 let source_equal a b = String.equal (source_str a) (source_str b)
-let source = testable ~pp:C.Source.pp ~equal:source_equal ()
-let mode_t = testable ~pp:C.Mode.pp ~equal:C.Mode.equal ()
+let source = Testable.make ~pp:C.Source.pp ~equal:source_equal
+let mode_t = Testable.make ~pp:C.Mode.pp ~equal:C.Mode.equal
 
 let unattended_t =
-  testable ~pp:Mentat_permission.Unattended.pp
-    ~equal:Mentat_permission.Unattended.equal ()
+  Testable.make ~pp:Mentat_permission.Unattended.pp ~equal:Mentat_permission.Unattended.equal
 
 (* Distinct constant rules for precedence and duplicate-id examples. *)
 let rule_a = Rule.deny_all
@@ -150,17 +149,13 @@ let jsont_roundtrip codec value =
 
 (* Generators *)
 
-let alpha = Gen.string_size (Gen.int_range 1 4) (Gen.char_range 'a' 'z')
+let alpha = Gen.string_of ~size:(Gen.int_range 1 4) (Gen.char_range 'a' 'z')
 
 let selector_gen =
   Gen.bind alpha (fun p -> Gen.map (fun m -> p ^ "/" ^ m) alpha)
 
-let opt g = Gen.oneof [ Gen.pure None; Gen.map Option.some g ]
+let opt g = Gen.one_of [ Gen.pure None; Gen.map Option.some g ]
 
-let selector_t =
-  testable
-    ~pp:(fun ppf s -> Format.fprintf ppf "%S" s)
-    ~equal:String.equal ~gen:selector_gen ()
 
 (* The precedence property draws (user, override) scenarios with an EXPLICIT
    distribution: 40% unconfigured (both layers absent), 60% configured split
@@ -179,15 +174,13 @@ let scenario_gen =
             Gen.map (fun o -> (Some u, Some o)) selector_gen) );
     ]
 
-let scenario_t =
-  testable
-    ~pp:(fun ppf (u, o) ->
+let scenario_gen =
+  Gen.with_pp
+    (fun ppf (u, o) ->
       Format.fprintf ppf "(user=%s, override=%s)"
         (Option.value u ~default:"-")
         (Option.value o ~default:"-"))
-    ~equal:(fun (a, b) (c, d) ->
-      Option.equal String.equal a c && Option.equal String.equal b d)
-    ~gen:scenario_gen ()
+    scenario_gen
 
 (* 1. Field vocabulary. *)
 
@@ -719,7 +712,7 @@ let typed_surface =
               | Ok config -> config
               | Error error -> failf "set: %s" (C.Error.message error)
             in
-            is_some ~msg:"typed set/find" (C.find field config);
+            ignore (require_some ~msg:"typed set/find" (C.find field config));
             equal (option string) ~msg:"text projection" (Some raw)
               (C.text field config);
             let bytes =
@@ -735,7 +728,7 @@ let typed_surface =
               | Ok config -> config
               | Error error -> failf "decode: %s" (C.Error.message error)
             in
-            is_some ~msg:"typed JSON round-trip" (C.find field decoded);
+            ignore (require_some ~msg:"typed JSON round-trip" (C.find field decoded));
             equal (option string) ~msg:"JSON spelling round-trip" (Some raw)
               (C.text field decoded)
           in
@@ -817,11 +810,13 @@ let precedence =
                 (C.Resolved.text C.Field.compaction_auto r)
           | None -> failf "expected a default origin");
           (* unconfigured without a default: no origin, no value *)
-          is_none ~msg:"no origin for an unconfigured no-default field"
+          equal (option pass) ~msg:"no origin for an unconfigured no-default field"
+            None
             (C.Resolved.origin C.Field.sandbox_mode r);
-          is_none ~msg:"configured is None"
+          equal (option pass) ~msg:"configured is None"
+            None
             (C.Resolved.configured C.Field.sandbox_mode r);
-          is_none ~msg:"text is None" (C.Resolved.text C.Field.sandbox_mode r));
+          equal (option pass) ~msg:"text is None" None (C.Resolved.text C.Field.sandbox_mode r));
       test "permission.rules groups follow first-match precedence" (fun () ->
           let user_doc = C.set_permission_rules [ rule_a ] C.empty in
           let extra_doc = C.set_permission_rules [ rule_b ] C.empty in
@@ -839,10 +834,10 @@ let precedence =
             | [ (_, [ x ]); (_, [ y ]) ] ->
                 Rule.equal x rule_b && Rule.equal y rule_a
             | _ -> false));
-      prop'
+      prop
         "configured agrees with the highest configuring layer; configured \
          fields have origins"
-        scenario_t (fun (user_m, over_m) ->
+        scenario_gen (fun (user_m, over_m) ->
           let user_doc =
             match user_m with
             | None -> C.empty
@@ -867,11 +862,12 @@ let precedence =
             (Option.is_some (C.Resolved.configured C.Field.model r));
           match expected with
           | None ->
-              is_none ~msg:"no origin when unconfigured"
+              equal (option pass) ~msg:"no origin when unconfigured"
+                None
                 (C.Resolved.origin C.Field.model r)
           | Some _ ->
-              is_some ~msg:"origin when configured"
-                (C.Resolved.origin C.Field.model r));
+              ignore (require_some ~msg:"origin when configured"
+                (C.Resolved.origin C.Field.model r)));
     ]
 
 (* 5. Workspace sanitization / trust gating. *)
@@ -907,7 +903,8 @@ let workspace =
           equal (option int) ~msg:"widening budget is clamped to the user value"
             (Some 50)
             (C.Resolved.configured C.Field.run_max_steps r);
-          is_none ~msg:"non-allowlist key does not configure the value"
+          equal (option pass) ~msg:"non-allowlist key does not configure the value"
+            None
             (C.Resolved.configured C.Field.tui_thinking r);
           equal (option string) ~msg:"stripped key falls back to its default"
             (Some "true")
@@ -1027,13 +1024,13 @@ let workspace =
           equal (list string) ~msg:"warnings name the present files"
             [ source_str project_src; source_str project_local_src ]
             (List.map (fun w -> source_str (C.Warning.source w)) ws_warnings));
-      prop' "no trusted workspace doc can raise a budget or introduce a rule"
+      prop "no trusted workspace doc can raise a budget or introduce a rule"
         (let ws_doc_gen =
            Gen.bind
              (opt (Gen.int_range 1 200))
              (fun steps ->
                Gen.bind
-                 (Gen.oneofl [ true; false ])
+                 (Gen.of_list [ true; false ])
                  (fun with_rules ->
                    Gen.map
                      (fun thinking ->
@@ -1051,14 +1048,14 @@ let workspace =
                        in
                        if thinking then set_exn C.Field.tui_thinking "false" d
                        else d)
-                     (Gen.oneofl [ true; false ])))
+                     (Gen.of_list [ true; false ])))
          in
-         testable
-           ~pp:(fun ppf d ->
+         Gen.with_pp
+           (fun ppf d ->
              Format.fprintf ppf "doc[max_steps=%s rules=%d]"
                (Option.value (C.text C.Field.run_max_steps d) ~default:"-")
                (List.length (C.permission_rules d)))
-           ~equal:C.equal ~gen:ws_doc_gen ())
+           ws_doc_gen)
         (fun project_doc ->
           let user_doc = doc_exn (nested "run.max_steps" (ji 50)) in
           let ws =
@@ -1287,7 +1284,7 @@ let edit_planning =
                (fun steps ->
                  Gen.map
                    (fun thinking -> (model, steps, thinking))
-                   (opt (Gen.oneofl [ true; false ]))))
+                   (opt (Gen.of_list [ true; false ]))))
        in
        let apply (model, steps, thinking) d =
          let* d =
@@ -1310,24 +1307,24 @@ let edit_planning =
          | Ok C.Plan.Unchanged -> ""
          | Error e -> failf "orig: %s" (C.Error.message e)
        in
-       let sample_t =
-         testable
-           ~pp:(fun ppf (m, s, t) ->
+       let sample_gen =
+         Gen.with_pp
+           (fun ppf (m, s, t) ->
              Format.fprintf ppf "(%s, %s, %s)"
                (Option.value m ~default:"-")
                (Option.fold ~none:"-" ~some:string_of_int s)
                (Option.fold ~none:"-" ~some:string_of_bool t))
-           ~equal:( = ) ~gen:sample_gen ()
+           sample_gen
        in
        group "edit planning properties"
          [
-           prop' "a no-op edit is always Unchanged" sample_t (fun sample ->
+           prop "a no-op edit is always Unchanged" sample_gen (fun sample ->
                let original = original_of sample in
                match C.plan ~source:"config" ~original ~f:(fun d -> Ok d) with
                | Ok C.Plan.Unchanged -> ()
                | Ok (C.Plan.Write b) -> failf "expected Unchanged, got %s" b
                | Error e -> failf "plan: %s" (C.Error.message e));
-           prop' "any Write re-parses to f's output" (pair sample_t selector_t)
+           prop "any Write re-parses to f's output" (Gen.pair sample_gen selector_gen)
              (fun (sample, fresh) ->
                let original = original_of sample in
                let f d = C.set_text C.Field.model fresh d in
@@ -1699,8 +1696,7 @@ let rule_row_json ~id ~rule ~source =
   jo [ ("id", js id); ("rule", rule_json rule); ("source", source_json source) ]
 
 let permission_rule_row =
-  testable ~pp:C.Resolved.View.Permission_rule.pp
-    ~equal:C.Resolved.View.Permission_rule.equal ()
+  Testable.make ~pp:C.Resolved.View.Permission_rule.pp ~equal:C.Resolved.View.Permission_rule.equal
 
 let rule_row_decode_rejected json =
   Result.is_error (Jsont.Json.decode C.Resolved.View.Permission_rule.jsont json)

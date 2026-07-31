@@ -9,7 +9,7 @@ module Output = Mentat_tools_output
 module Tool = Mentat_tool
 module Json = Jsont.Json
 
-let json_value = testable ~pp:Json.pp ~equal:Json.equal ()
+let json_value = Testable.make ~pp:Json.pp ~equal:Json.equal
 let semantic_equal codec a b = Json.equal (encode codec a) (encode codec b)
 
 let expect_round_trip ~msg codec value =

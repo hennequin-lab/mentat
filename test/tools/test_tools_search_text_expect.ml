@@ -1066,4 +1066,3 @@ tree unchanged: true
 mutation applies: 0
 attributed opaque observations: 0|}]
 
-[%%run_tests "mentat.tools.search_text"]

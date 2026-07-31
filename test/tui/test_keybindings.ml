@@ -57,30 +57,32 @@ let%expect_test "the former default no longer opens history search" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-keybindingsce235cce
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt-… · ! full access ? for…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-keybindings013eb6b0
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt-… · ! full access ? for…
+    |}]
 
 let%expect_test "the remapped chord opens history search" =
   let history = history [ "beta two"; "alpha one" ] in
@@ -92,29 +94,30 @@ let%expect_test "the remapped chord opens history search" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-keybindings47b4ffcf
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 | reverse-i-search:
-19 | ❯ alpha one
-20 |   beta two
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ⌕ search history
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ↵ insert · esc cancel · type to search                             ⌕ history|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-keybindings05eb9c65
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 | reverse-i-search:
+    19 | ❯ alpha one
+    20 |   beta two
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ⌕ search history
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ↵ insert · esc cancel · type to search                             ⌕ history
+    |}]
 
-[%%run_tests "mentat.tui.keybindings"]

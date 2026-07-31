@@ -54,32 +54,28 @@ let llm ?(provider = openai) ?(api = responses) id =
   Llm_model.make ~provider ~api ~id
 
 (* Testables. Selector has no [pp]; render via [to_string]. *)
-let provider_value = testable ~pp:Llm_provider.pp ~equal:Llm_provider.equal ()
-let llm_model_value = testable ~pp:Llm_model.pp ~equal:Llm_model.equal ()
-let model_value = testable ~pp:Model.pp ~equal:Model.equal ()
-let date_value = testable ~pp:Date.pp ~equal:Date.equal ()
-let month_value = testable ~pp:Month.pp ~equal:Month.equal ()
-let modality_value = testable ~pp:Modality.pp ~equal:Modality.equal ()
-let capability_value = testable ~pp:Capability.pp ~equal:Capability.equal ()
-let kind_value = testable ~pp:Kind.pp ~equal:Kind.equal ()
-let source_value = testable ~pp:Source.pp ~equal:Source.equal ()
-let name_value = testable ~pp:Name.pp ~equal:Name.equal ()
-let problem_value = testable ~pp:Problem.pp ~equal:Problem.equal ()
-let profile_value = testable ~pp:Profile.pp ~equal:Profile.equal ()
-let org_value = testable ~pp:Org.pp ~equal:Org.equal ()
-let phase_value = testable ~pp:Account.Phase.pp ~equal:Account.Phase.equal ()
-let float_value = testable ~pp:Format.pp_print_float ~equal:Float.equal ()
+let provider_value = Testable.make ~pp:Llm_provider.pp ~equal:Llm_provider.equal
+let llm_model_value = Testable.make ~pp:Llm_model.pp ~equal:Llm_model.equal
+let model_value = Testable.make ~pp:Model.pp ~equal:Model.equal
+let date_value = Testable.make ~pp:Date.pp ~equal:Date.equal
+let month_value = Testable.make ~pp:Month.pp ~equal:Month.equal
+let modality_value = Testable.make ~pp:Modality.pp ~equal:Modality.equal
+let capability_value = Testable.make ~pp:Capability.pp ~equal:Capability.equal
+let kind_value = Testable.make ~pp:Kind.pp ~equal:Kind.equal
+let source_value = Testable.make ~pp:Source.pp ~equal:Source.equal
+let name_value = Testable.make ~pp:Name.pp ~equal:Name.equal
+let problem_value = Testable.make ~pp:Problem.pp ~equal:Problem.equal
+let profile_value = Testable.make ~pp:Profile.pp ~equal:Profile.equal
+let org_value = Testable.make ~pp:Org.pp ~equal:Org.equal
+let phase_value = Testable.make ~pp:Account.Phase.pp ~equal:Account.Phase.equal
+let float_value = Testable.make ~pp:Format.pp_print_float ~equal:Float.equal
 
 let reasoning_value =
-  testable ~pp:Reasoning.pp
-    ~equal:(fun a b ->
+  Testable.make ~pp:Reasoning.pp ~equal:(fun a b ->
       String.equal (Reasoning.to_string a) (Reasoning.to_string b))
-    ()
 
 let selector_value =
-  testable
-    ~pp:(fun ppf s -> Format.pp_print_string ppf (Selector.to_string s))
-    ~equal:Selector.equal ()
+  Testable.make ~pp:(fun ppf s -> Format.pp_print_string ppf (Selector.to_string s)) ~equal:Selector.equal
 
 (* A selector error carries no equality; compare structurally, ignoring the
    provider diagnostic message which comes from [Mentat_llm.Provider.make]. *)
@@ -98,7 +94,7 @@ let equal_selector_error a b =
       false
 
 let selector_error_value =
-  testable ~pp:Selector.Error.pp ~equal:equal_selector_error ()
+  Testable.make ~pp:Selector.Error.pp ~equal:equal_selector_error
 
 let equal_catalog_error a b =
   let open Catalog.Error in
@@ -117,7 +113,7 @@ let equal_catalog_error a b =
   | (Invalid_selector _ | Unknown_provider _ | Unknown_model _), _ -> false
 
 let catalog_error_value =
-  testable ~pp:Catalog.Error.pp ~equal:equal_catalog_error ()
+  Testable.make ~pp:Catalog.Error.pp ~equal:equal_catalog_error
 
 (* A structural view of a secret's payload, for exposing and comparing. *)
 type secret_view =
@@ -156,7 +152,7 @@ let equal_secret_view a b =
       && Option.equal String.equal a.account_id b.account_id
   | (Api_key_secret _ | Bearer_secret _ | OAuth_secret _), _ -> false
 
-let secret_view_value = testable ~pp:pp_secret_view ~equal:equal_secret_view ()
+let secret_view_value = Testable.make ~pp:pp_secret_view ~equal:equal_secret_view
 
 let secret_view secret =
   Secret.expose secret
@@ -189,7 +185,7 @@ let equal_cred_view a b =
   && Source.equal a.cv_source b.cv_source
   && equal_secret_view a.cv_secret b.cv_secret
 
-let cred_view_value = testable ~pp:pp_cred_view ~equal:equal_cred_view ()
+let cred_view_value = Testable.make ~pp:pp_cred_view ~equal:equal_cred_view
 
 (* Assert a JSON codec rejects a value, optionally checking a message fragment. *)
 let assert_decode_error ?contains msg codec json =
@@ -286,24 +282,21 @@ let selector_group =
             (s |> encode Selector.jsont |> decode Selector.jsont);
           assert_decode_error ~contains:"provider/model"
             "jsont rejects no slash" Selector.jsont (Json.string "openai"));
-      prop' "of_string parses back any valid provider/model"
-        (testable
-           ~pp:(fun ppf (p, m) -> Format.fprintf ppf "%S/%S" p m)
-           ~gen:
-             (Gen.pair
-                (let open Gen in
-                 let tail =
-                   oneofl
-                     (List.init 26 (fun i -> Char.chr (Char.code 'a' + i))
-                     @ List.init 10 (fun i -> Char.chr (Char.code '0' + i))
-                     @ [ '-' ])
-                 in
-                 let+ head = char_range 'a' 'z'
-                 and+ rest = string_size (int_range 0 7) tail in
-                 String.make 1 head ^ rest)
-                (Gen.string_size (Gen.int_range 1 10)
-                   (Gen.oneofl [ 'a'; 'z'; '0'; '9'; '-'; '.'; '_'; '/'; 'A' ])))
-           ())
+      prop "of_string parses back any valid provider/model"
+        (Gen.with_pp (fun ppf (p, m) -> Format.fprintf ppf "%S/%S" p m)
+           (Gen.pair
+              (let open Gen in
+               let tail =
+                 of_list
+                   (List.init 26 (fun i -> Char.chr (Char.code 'a' + i))
+                   @ List.init 10 (fun i -> Char.chr (Char.code '0' + i))
+                   @ [ '-' ])
+               in
+               let+ head = char_range 'a' 'z'
+               and+ rest = string_of ~size:(int_range 0 7) tail in
+               String.make 1 head ^ rest)
+              (Gen.string_of ~size:(Gen.int_range 1 10)
+                 (Gen.of_list [ 'a'; 'z'; '0'; '9'; '-'; '.'; '_'; '/'; 'A' ]))))
         (fun (p, m) ->
           let raw = p ^ "/" ^ m in
           match Selector.of_string raw with
@@ -870,11 +863,8 @@ let model_cost_group =
                (Model.cost model
                   (usage ~input:max_int ~cache_read:1 ~output:0 ()))));
       prop "cost is monotonic in a lane under a flat positive rate"
-        (testable
-           ~pp:(fun ppf (a, b) -> Format.fprintf ppf "(%d,%d)" a b)
-           ~gen:
-             (Gen.pair (Gen.int_range 0 5_000_000) (Gen.int_range 0 5_000_000))
-           ())
+        (Gen.with_pp (fun ppf (a, b) -> Format.fprintf ppf "(%d,%d)" a b)
+           (Gen.pair (Gen.int_range 0 5_000_000) (Gen.int_range 0 5_000_000)))
         (fun (a, b) ->
           let low, high = if a <= b then (a, b) else (b, a) in
           let model =
@@ -886,8 +876,8 @@ let model_cost_group =
             ( Model.cost model (usage ~input:low ()),
               Model.cost model (usage ~input:high ()) )
           with
-          | Some cl, Some ch -> cl <= ch
-          | _ -> false);
+          | Some cl, Some ch -> is_true ~msg:"monotonic" (cl <= ch)
+          | _ -> fail "expected costs for both usages");
     ]
 
 let model_rate_group =
@@ -1095,24 +1085,21 @@ let account_fingerprint_group =
                (Credential.make ~provider:openai ~source:Source.process
                   (Secret.api_key "sk-test-f234"))));
       prop "no fingerprint discloses more than 4 characters"
-        (testable
-           ~pp:(fun ppf s -> Format.fprintf ppf "%S" s)
-           ~gen:
-             (Gen.string_size (Gen.int_range 1 20)
-                (Gen.oneofl [ 'a'; 'b'; 'c'; '1'; '2'; '3'; '-'; '_' ]))
-           ())
+        (Gen.string_of ~size:(Gen.int_range 1 20)
+           (Gen.of_list [ 'a'; 'b'; 'c'; '1'; '2'; '3'; '-'; '_' ]))
         (fun material ->
-          if String.length material = 0 then true
-          else
-            let bounded = function
-              | None -> true
-              | Some s -> String.length s <= 4
-            in
-            bounded (Secret.fingerprint (Secret.api_key material))
-            && bounded (Secret.fingerprint (Secret.bearer material))
-            && bounded
-                 (Secret.fingerprint
-                    (Secret.oauth ~access_token:material ~account_id:material ())));
+          let bounded = function
+            | None -> true
+            | Some s -> String.length s <= 4
+          in
+          is_true ~msg:"api key"
+            (bounded (Secret.fingerprint (Secret.api_key material)));
+          is_true ~msg:"bearer"
+            (bounded (Secret.fingerprint (Secret.bearer material)));
+          is_true ~msg:"oauth"
+            (bounded
+               (Secret.fingerprint
+                  (Secret.oauth ~access_token:material ~account_id:material ()))));
     ]
 
 let account_credential_group =
@@ -2039,9 +2026,8 @@ let resolve_credential_group =
                 ~msg:"empty accepted set rejects everything" [] accepted
           | _ -> failf "expected Unsupported_credential_kind for Auth.none");
       prop "the highest-precedence rung commits, never falling through"
-        (testable ~pp:Kind.pp
-           ~gen:(Gen.oneofl [ Kind.Api_key; Kind.Bearer; Kind.OAuth ])
-           ())
+        (Gen.with_pp Kind.pp
+           (Gen.of_list [ Kind.Api_key; Kind.Bearer; Kind.OAuth ]))
         (fun kind ->
           let secret =
             match kind with
@@ -2060,16 +2046,19 @@ let resolve_credential_group =
                 (Store.empty
                 |> Store.set ~provider:openai (Secret.api_key "sk-store"))
           with
-          | Ok (Some c) -> (
+          | Ok (Some c) ->
               (* An accepted process credential resolves; it is never the env or
                  store secret. *)
-              Kind.equal kind Kind.Api_key
-              &&
-              match Credential.source c with
-              | Source.Process -> true
-              | Source.Env _ | Source.Store _ -> false)
-          | Error _ -> not (Kind.equal kind Kind.Api_key)
-          | Ok None -> false);
+              is_true ~msg:"only the accepted kind resolves"
+                (Kind.equal kind Kind.Api_key);
+              is_true ~msg:"the process rung committed"
+                (match Credential.source c with
+                | Source.Process -> true
+                | Source.Env _ | Source.Store _ -> false)
+          | Error _ ->
+              is_false ~msg:"an accepted kind must resolve"
+                (Kind.equal kind Kind.Api_key)
+          | Ok None -> fail "resolution fell through to None");
     ]
 
 (* Catalog. *)

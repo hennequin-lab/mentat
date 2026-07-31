@@ -8,9 +8,7 @@ open Test_support
 module Diagnostic = Mentat_diagnostic
 
 let diagnostic =
-  testable
-    ~pp:(fun ppf d -> Format.pp_print_string ppf (Diagnostic.to_string d))
-    ~equal:Diagnostic.equal ()
+  Testable.make ~pp:(fun ppf d -> Format.pp_print_string ppf (Diagnostic.to_string d)) ~equal:Diagnostic.equal
 
 let make_invariants () =
   expect_invalid_arg "empty message raises" (fun () -> Diagnostic.make "");

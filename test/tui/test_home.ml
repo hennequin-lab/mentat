@@ -68,89 +68,95 @@ let%expect_test "home boots to a stable complete frame" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-07 |
-08 |                            dev · openai/gpt-5.5 medium
-09 |
-10 |      ▎ welcome — and thanks for trying mentat this early.
-11 |      ▎ it's experimental: sessions and config may change without migration.
-12 |
-13 |
-14 | ────────────────────────────────────────────────────────────────────────────────
-15 | ❯ message mentat
-16 | ────────────────────────────────────────────────────────────────────────────────
-17 |
-18 |                          ! /login — no connected account
-19 |                               ∅ no recent sessions
-20 |
-21 |
-22 |
-23 |
-24 |   ! not logged in · /login · ~/men… · openai/gpt-5.5 m… · ! full access ? for…|}]
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    07 |
+    08 |                            dev · openai/gpt-5.5 medium
+    09 |
+    10 |      ▎ welcome — and thanks for trying mentat this early.
+    11 |      ▎ it's experimental: sessions and config may change without migration.
+    12 |
+    13 |
+    14 | ────────────────────────────────────────────────────────────────────────────────
+    15 | ❯ message mentat
+    16 | ────────────────────────────────────────────────────────────────────────────────
+    17 |
+    18 |                          ! /login — no connected account
+    19 |                               ∅ no recent sessions
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ! not logged in · /login · ~/men… · openai/gpt-5.5 m… · ! full access ? for…
+    |}]
 
 let%expect_test "snapshot normalizes all external display facts" =
   Tui.run ~name:"snapshot-boundary" ~snapshot:adversarial_snapshot @@ fun t ->
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-07 |
-08 |                            v�� 2 · [model unavailable]
-09 |
-10 |      ▎ welcome — and thanks for trying mentat this early.
-11 |      ▎ it's experimental: sessions and config may change without migration.
-12 |
-13 |
-14 | ────────────────────────────────────────────────────────────────────────────────
-15 | ❯ message mentat
-16 | ────────────────────────────────────────────────────────────────────────────────
-17 |
-18 |                          ! /login — no connected account
-19 |                               ∅ no recent sessions
-20 |
-21 |
-22 |
-23 |
-24 |   ! not logged in · /login · ~/mentat-tui-snap… · [model unavailab… ? for sho…|}];
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    07 |
+    08 |                            v�� 2 · [model unavailable]
+    09 |
+    10 |      ▎ welcome — and thanks for trying mentat this early.
+    11 |      ▎ it's experimental: sessions and config may change without migration.
+    12 |
+    13 |
+    14 | ────────────────────────────────────────────────────────────────────────────────
+    15 | ❯ message mentat
+    16 | ────────────────────────────────────────────────────────────────────────────────
+    17 |
+    18 |                          ! /login — no connected account
+    19 |                               ∅ no recent sessions
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ! not logged in · /login · ~/mentat-tui-snap… · [model unavailab… ? for sho…
+    |}];
   Tui.keys t "/status";
   Tui.enter t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  settings ────────────────────────────────────────────────────────── 1 providers
-02 |
-03 | config  status  usage
-04 |
-05 | Runtime
-06 |   version         v�� 2
-07 |   current model   [model unavailable]
-08 |   workspace       ~/mentat-tui-snapshot-8b5dc17e
-09 |   context window  —
-10 |   launch sandbox  �danger full
-11 |
-12 | Session
-13 |   No active session.
-14 |
-15 | Providers
-16 |   openai  missing
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   tab page · esc back|}]
+    {|
+    01 |  settings ────────────────────────────────────────────────────────── 1 providers
+    02 |
+    03 | config  status  usage
+    04 |
+    05 | Runtime
+    06 |   version         v�� 2
+    07 |   current model   [model unavailable]
+    08 |   workspace       ~/mentat-tui-snapshot-5dd2a348
+    09 |   context window  —
+    10 |   launch sandbox  �danger full
+    11 |
+    12 | Session
+    13 |   No active session.
+    14 |
+    15 | Providers
+    16 |   openai  missing
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   tab page · esc back
+    |}]
 
 let%expect_test "typing lands in the home composer" =
   Tui.run ~name:"home-typing" @@ fun t ->
@@ -159,30 +165,32 @@ let%expect_test "typing lands in the home composer" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-07 |
-08 |                            dev · openai/gpt-5.5 medium
-09 |
-10 |      ▎ welcome — and thanks for trying mentat this early.
-11 |      ▎ it's experimental: sessions and config may change without migration.
-12 |
-13 |
-14 | ────────────────────────────────────────────────────────────────────────────────
-15 | ❯ hello mentat
-16 | ────────────────────────────────────────────────────────────────────────────────
-17 |
-18 |                          ! /login — no connected account
-19 |                               ∅ no recent sessions
-20 |
-21 |
-22 |
-23 |
-24 |   ! not logged in · /login · ~/ment… · openai/gpt-5.5 m… · ! full access ? fo…|}]
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    07 |
+    08 |                            dev · openai/gpt-5.5 medium
+    09 |
+    10 |      ▎ welcome — and thanks for trying mentat this early.
+    11 |      ▎ it's experimental: sessions and config may change without migration.
+    12 |
+    13 |
+    14 | ────────────────────────────────────────────────────────────────────────────────
+    15 | ❯ hello mentat
+    16 | ────────────────────────────────────────────────────────────────────────────────
+    17 |
+    18 |                          ! /login — no connected account
+    19 |                               ∅ no recent sessions
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ! not logged in · /login · ~/ment… · openai/gpt-5.5 m… · ! full access ? fo…
+    |}]
 
 let%expect_test "a recent session renders its title and owner metadata" =
   Tui.run ~name:"home-title" ~sessions:(fun project ->
@@ -194,30 +202,32 @@ let%expect_test "a recent session renders its title and owner metadata" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-07 |
-08 |                            dev · openai/gpt-5.5 medium
-09 |
-10 |      ▎ welcome — and thanks for trying mentat this early.
-11 |      ▎ it's experimental: sessions and config may change without migration.
-12 |
-13 |
-14 | ────────────────────────────────────────────────────────────────────────────────
-15 | ❯ message mentat
-16 | ────────────────────────────────────────────────────────────────────────────────
-17 |
-18 |                          ! /login — no connected account
-19 |                   ↵ "Parser refactor spike" · just now · 1 turn
-20 |
-21 |
-22 |
-23 |
-24 |   ! not logged in · /login · ~/men… · openai/gpt-5.5 me… · ! full acce… ? for…|}]
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    07 |
+    08 |                            dev · openai/gpt-5.5 medium
+    09 |
+    10 |      ▎ welcome — and thanks for trying mentat this early.
+    11 |      ▎ it's experimental: sessions and config may change without migration.
+    12 |
+    13 |
+    14 | ────────────────────────────────────────────────────────────────────────────────
+    15 | ❯ message mentat
+    16 | ────────────────────────────────────────────────────────────────────────────────
+    17 |
+    18 |                          ! /login — no connected account
+    19 |                   ↵ "Parser refactor spike" · just now · 1 turn
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ! not logged in · /login · ~/men… · openai/gpt-5.5 me… · ! full acce… ? for…
+    |}]
 
 let%expect_test "an untitled recent session falls back to its first prompt" =
   Tui.run ~name:"home-preview" ~sessions:(fun project ->
@@ -229,30 +239,32 @@ let%expect_test "an untitled recent session falls back to its first prompt" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-07 |
-08 |                            dev · openai/gpt-5.5 medium
-09 |
-10 |      ▎ welcome — and thanks for trying mentat this early.
-11 |      ▎ it's experimental: sessions and config may change without migration.
-12 |
-13 |
-14 | ────────────────────────────────────────────────────────────────────────────────
-15 | ❯ message mentat
-16 | ────────────────────────────────────────────────────────────────────────────────
-17 |
-18 |                          ! /login — no connected account
-19 |                ↵ "reproduce the parser crash" · just now · 1 turn
-20 |
-21 |
-22 |
-23 |
-24 |   ! not logged in · /login · ~/ment… · openai/gpt-5.5 m… · ! full access ? fo…|}]
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    07 |
+    08 |                            dev · openai/gpt-5.5 medium
+    09 |
+    10 |      ▎ welcome — and thanks for trying mentat this early.
+    11 |      ▎ it's experimental: sessions and config may change without migration.
+    12 |
+    13 |
+    14 | ────────────────────────────────────────────────────────────────────────────────
+    15 | ❯ message mentat
+    16 | ────────────────────────────────────────────────────────────────────────────────
+    17 |
+    18 |                          ! /login — no connected account
+    19 |                ↵ "reproduce the parser crash" · just now · 1 turn
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ! not logged in · /login · ~/ment… · openai/gpt-5.5 m… · ! full access ? fo…
+    |}]
 
 let%expect_test "delegated child sessions do not replace the parent recent" =
   Tui.run ~name:"home-child" ~sessions:(fun project ->
@@ -274,30 +286,32 @@ let%expect_test "delegated child sessions do not replace the parent recent" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-07 |
-08 |                            dev · openai/gpt-5.5 medium
-09 |
-10 |      ▎ welcome — and thanks for trying mentat this early.
-11 |      ▎ it's experimental: sessions and config may change without migration.
-12 |
-13 |
-14 | ────────────────────────────────────────────────────────────────────────────────
-15 | ❯ message mentat
-16 | ────────────────────────────────────────────────────────────────────────────────
-17 |
-18 |                          ! /login — no connected account
-19 |                    ↵ "Main investigation" · just now · 1 turn
-20 |
-21 |
-22 |
-23 |
-24 |   ! not logged in · /login · ~/men… · openai/gpt-5.5 me… · ! full acce… ? for…|}]
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    07 |
+    08 |                            dev · openai/gpt-5.5 medium
+    09 |
+    10 |      ▎ welcome — and thanks for trying mentat this early.
+    11 |      ▎ it's experimental: sessions and config may change without migration.
+    12 |
+    13 |
+    14 | ────────────────────────────────────────────────────────────────────────────────
+    15 | ❯ message mentat
+    16 | ────────────────────────────────────────────────────────────────────────────────
+    17 |
+    18 |                          ! /login — no connected account
+    19 |                    ↵ "Main investigation" · just now · 1 turn
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ! not logged in · /login · ~/men… · openai/gpt-5.5 me… · ! full acce… ? for…
+    |}]
 
 let%expect_test
     "more than five newer child sessions do not hide a top-level recent" =
@@ -334,30 +348,32 @@ let%expect_test
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-07 |
-08 |                            dev · openai/gpt-5.5 medium
-09 |
-10 |      ▎ welcome — and thanks for trying mentat this early.
-11 |      ▎ it's experimental: sessions and config may change without migration.
-12 |
-13 |
-14 | ────────────────────────────────────────────────────────────────────────────────
-15 | ❯ message mentat
-16 | ────────────────────────────────────────────────────────────────────────────────
-17 |
-18 |                          ! /login — no connected account
-19 |                 ↵ "Resume the top-level work" · just now · 1 turn
-20 |
-21 |
-22 |
-23 |
-24 |   ! not logged in · /login · ~/mentat… · openai/gpt-5.5 … · ! full access ? f…|}]
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    07 |
+    08 |                            dev · openai/gpt-5.5 medium
+    09 |
+    10 |      ▎ welcome — and thanks for trying mentat this early.
+    11 |      ▎ it's experimental: sessions and config may change without migration.
+    12 |
+    13 |
+    14 | ────────────────────────────────────────────────────────────────────────────────
+    15 | ❯ message mentat
+    16 | ────────────────────────────────────────────────────────────────────────────────
+    17 |
+    18 |                          ! /login — no connected account
+    19 |                 ↵ "Resume the top-level work" · just now · 1 turn
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ! not logged in · /login · ~/mentat… · openai/gpt-5.5 … · ! full access ? f…
+    |}]
 
 let%expect_test "enter on an empty home draft resumes the newest session" =
   Tui.run ~name:"home-resume" ~sessions:(fun project ->
@@ -371,30 +387,32 @@ let%expect_test "enter on an empty home draft resumes the newest session" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-hom2c01e335
-04 |
-05 | ❯ spike it
-06 |
-07 |
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-… · openai/gpt-… · ! full access ? for …|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-hom5f72e9d6
+    04 |
+    05 | ❯ spike it
+    06 |
+    07 |
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-… · openai/gpt-… · ! full access ? for …
+    |}]
 
 let%expect_test
     "partial session listings retain every warning and keep rows interactive" =
@@ -422,89 +440,95 @@ let%expect_test
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |                                               █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-06 |                                               █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-07 |
-08 |                                                dev · openai/gpt-5.5 medium
-09 |
-10 |                          ▎ welcome — and thanks for trying mentat this early.
-11 |                          ▎ it's experimental: sessions and config may change without migration.
-12 |
-13 |
-14 |           ────────────────────────────────────────────────────────────────────────────────────────────────────
-15 |           ❯ message mentat
-16 |           ────────────────────────────────────────────────────────────────────────────────────────────────────
-17 |
-18 |                                              ! /login — no connected account
-19 |                                     ! first corrupt session · second corrupt session
-20 |                                     ↵ "Healthy retained session" · just now · 1 turn
-21 |
-22 |
-23 |
-24 |   ! not logged in · /login · ~/mentat-tui-home-partial-606333… · openai/gpt-5.5 medium · ! full access ? for shortcuts|}];
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |                                               █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    06 |                                               █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    07 |
+    08 |                                                dev · openai/gpt-5.5 medium
+    09 |
+    10 |                          ▎ welcome — and thanks for trying mentat this early.
+    11 |                          ▎ it's experimental: sessions and config may change without migration.
+    12 |
+    13 |
+    14 |           ────────────────────────────────────────────────────────────────────────────────────────────────────
+    15 |           ❯ message mentat
+    16 |           ────────────────────────────────────────────────────────────────────────────────────────────────────
+    17 |
+    18 |                                              ! /login — no connected account
+    19 |                                     ! first corrupt session · second corrupt session
+    20 |                                     ↵ "Healthy retained session" · just now · 1 turn
+    21 |
+    22 |
+    23 |
+    24 |   ! not logged in · /login · ~/mentat-tui-home-partial-fdb72c… · openai/gpt-5.5 medium · ! full access ? for shortcuts
+    |}];
 
   Tui.keys t "/sessions";
   Tui.enter t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |                                               █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-06 |                                               █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-07 |
-08 |                                                dev · openai/gpt-5.5 medium
-09 |
-10 |                          ▎ welcome — and thanks for trying mentat this early.
-11 |                          ▎ it's experimental: sessions and config may change without migration.
-12 |
-13 |
-14 |
-15 |
-16 |
-17 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-18 |    sessions
-19 |
-20 |   ! first corrupt session · second corrupt session
-21 |  ❯   Healthy retained session                                                                         idle     just now
-22 |
-23 |
-24 ||}];
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |                                               █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    06 |                                               █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    07 |
+    08 |                                                dev · openai/gpt-5.5 medium
+    09 |
+    10 |                          ▎ welcome — and thanks for trying mentat this early.
+    11 |                          ▎ it's experimental: sessions and config may change without migration.
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    18 |    sessions
+    19 |
+    20 |   ! first corrupt session · second corrupt session
+    21 |  ❯   Healthy retained session                                                                         idle     just now
+    22 |
+    23 |
+    24 |
+    |}];
 
   Tui.enter t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-home-partial-6063337e
-04 |
-05 | ❯ healthy transcript
-06 |
-07 |
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tui-home-partial-6063337e · openai/gpt-5.5 · ! full access       ? for shortcuts|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-home-partial-fdb72c6e
+    04 |
+    05 | ❯ healthy transcript
+    06 |
+    07 |
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tui-home-partial-fdb72c6e · openai/gpt-5.5 · ! full access       ? for shortcuts
+    |}]
 
 let rec advance_until t ~marker remaining =
   if Screen.contains (Tui.screen t) marker then ()
@@ -524,87 +548,93 @@ let%expect_test "home animation advances and freezes on the first keystroke" =
   advance_until t ~marker:pouring_row 30;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀
-06 |                           █ █ █▄▄ █ █  █  █▀█  █   ▂▄▂
-07 |
-08 |                            dev · openai/gpt-5.5 medium
-09 |
-10 |      ▎ welcome — and thanks for trying mentat this early.
-11 |      ▎ it's experimental: sessions and config may change without migration.
-12 |
-13 |
-14 | ────────────────────────────────────────────────────────────────────────────────
-15 | ❯ message mentat
-16 | ────────────────────────────────────────────────────────────────────────────────
-17 |
-18 |                          ! /login — no connected account
-19 |                               ∅ no recent sessions
-20 |
-21 |
-22 |
-23 |
-24 |   ! not logged in · /login · ~/ment… · openai/gpt-5.5 m… · ! full access ? fo…|}];
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀
+    06 |                           █ █ █▄▄ █ █  █  █▀█  █   ▂▄▂
+    07 |
+    08 |                            dev · openai/gpt-5.5 medium
+    09 |
+    10 |      ▎ welcome — and thanks for trying mentat this early.
+    11 |      ▎ it's experimental: sessions and config may change without migration.
+    12 |
+    13 |
+    14 | ────────────────────────────────────────────────────────────────────────────────
+    15 | ❯ message mentat
+    16 | ────────────────────────────────────────────────────────────────────────────────
+    17 |
+    18 |                          ! /login — no connected account
+    19 |                               ∅ no recent sessions
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ! not logged in · /login · ~/ment… · openai/gpt-5.5 m… · ! full access ? fo…
+    |}];
   advance_until t ~marker:resting_row 30;
   advance_until t ~marker:pouring_row 30;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀
-06 |                           █ █ █▄▄ █ █  █  █▀█  █   ▂▄▂
-07 |
-08 |                            dev · openai/gpt-5.5 medium
-09 |
-10 |      ▎ welcome — and thanks for trying mentat this early.
-11 |      ▎ it's experimental: sessions and config may change without migration.
-12 |
-13 |
-14 | ────────────────────────────────────────────────────────────────────────────────
-15 | ❯ message mentat
-16 | ────────────────────────────────────────────────────────────────────────────────
-17 |
-18 |                          ! /login — no connected account
-19 |                               ∅ no recent sessions
-20 |
-21 |
-22 |
-23 |
-24 |   ! not logged in · /login · ~/ment… · openai/gpt-5.5 m… · ! full access ? fo…|}];
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀
+    06 |                           █ █ █▄▄ █ █  █  █▀█  █   ▂▄▂
+    07 |
+    08 |                            dev · openai/gpt-5.5 medium
+    09 |
+    10 |      ▎ welcome — and thanks for trying mentat this early.
+    11 |      ▎ it's experimental: sessions and config may change without migration.
+    12 |
+    13 |
+    14 | ────────────────────────────────────────────────────────────────────────────────
+    15 | ❯ message mentat
+    16 | ────────────────────────────────────────────────────────────────────────────────
+    17 |
+    18 |                          ! /login — no connected account
+    19 |                               ∅ no recent sessions
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ! not logged in · /login · ~/ment… · openai/gpt-5.5 m… · ! full access ? fo…
+    |}];
   Tui.keys t "x";
   Tui.settle t;
   Tui.advance t 1.;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-07 |
-08 |                            dev · openai/gpt-5.5 medium
-09 |
-10 |      ▎ welcome — and thanks for trying mentat this early.
-11 |      ▎ it's experimental: sessions and config may change without migration.
-12 |
-13 |
-14 | ────────────────────────────────────────────────────────────────────────────────
-15 | ❯ x
-16 | ────────────────────────────────────────────────────────────────────────────────
-17 |
-18 |                          ! /login — no connected account
-19 |                               ∅ no recent sessions
-20 |
-21 |
-22 |
-23 |
-24 |   ! not logged in · /login · ~/ment… · openai/gpt-5.5 m… · ! full access ? fo…|}]
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    07 |
+    08 |                            dev · openai/gpt-5.5 medium
+    09 |
+    10 |      ▎ welcome — and thanks for trying mentat this early.
+    11 |      ▎ it's experimental: sessions and config may change without migration.
+    12 |
+    13 |
+    14 | ────────────────────────────────────────────────────────────────────────────────
+    15 | ❯ x
+    16 | ────────────────────────────────────────────────────────────────────────────────
+    17 |
+    18 |                          ! /login — no connected account
+    19 |                               ∅ no recent sessions
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ! not logged in · /login · ~/ment… · openai/gpt-5.5 m… · ! full access ? fo…
+    |}]
 
 let%expect_test "reduced motion keeps the complete home frame static" =
   Tui.run ~name:"home-reduced-motion" @@ fun t ->
@@ -612,30 +642,32 @@ let%expect_test "reduced motion keeps the complete home frame static" =
   Tui.advance t 1.;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-07 |
-08 |                            dev · openai/gpt-5.5 medium
-09 |
-10 |      ▎ welcome — and thanks for trying mentat this early.
-11 |      ▎ it's experimental: sessions and config may change without migration.
-12 |
-13 |
-14 | ────────────────────────────────────────────────────────────────────────────────
-15 | ❯ message mentat
-16 | ────────────────────────────────────────────────────────────────────────────────
-17 |
-18 |                          ! /login — no connected account
-19 |                               ∅ no recent sessions
-20 |
-21 |
-22 |
-23 |
-24 |   ! not logged in · /login · ~/menta… · openai/gpt-5.5 … · ! full access ? fo…|}]
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    07 |
+    08 |                            dev · openai/gpt-5.5 medium
+    09 |
+    10 |      ▎ welcome — and thanks for trying mentat this early.
+    11 |      ▎ it's experimental: sessions and config may change without migration.
+    12 |
+    13 |
+    14 | ────────────────────────────────────────────────────────────────────────────────
+    15 | ❯ message mentat
+    16 | ────────────────────────────────────────────────────────────────────────────────
+    17 |
+    18 |                          ! /login — no connected account
+    19 |                               ∅ no recent sessions
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ! not logged in · /login · ~/menta… · openai/gpt-5.5 … · ! full access ? fo…
+    |}]
 
 let%expect_test "Mosaic truncates the full model line in a narrow terminal" =
   Tui.run ~name:"home-narrow" ~size:(40, 12) @@ fun t ->
@@ -643,18 +675,20 @@ let%expect_test "Mosaic truncates the full model line in a narrow terminal" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |       █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-02 |
-03 |        dev · openai/gpt-5.5 medium
-04 |
-05 | ▎ welcome — and thanks for trying mentat
-06 |
-07 | ────────────────────────────────────────
-08 | ❯ message mentat
-09 | ────────────────────────────────────────
-10 |
-11 |      ! /login — no connected account
-12 |   ! not logged in · /l… · ! full acc…|}]
+    {|
+    01 |       █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    02 |
+    03 |        dev · openai/gpt-5.5 medium
+    04 |
+    05 | ▎ welcome — and thanks for trying mentat
+    06 |
+    07 | ────────────────────────────────────────
+    08 | ❯ message mentat
+    09 | ────────────────────────────────────────
+    10 |
+    11 |      ! /login — no connected account
+    12 |   ! not logged in · /l… · ! full acc…
+    |}]
 
 let%expect_test "a wide footer shows the full provider and model" =
   Tui.run ~name:"home-model-wide" ~size:(160, 24) ~home:(fun project ->
@@ -663,30 +697,32 @@ let%expect_test "a wide footer shows the full provider and model" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |                                                                   █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-06 |                                                                   █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-07 |
-08 |                                                                    dev · openai/gpt-5.5 medium
-09 |
-10 |                                              ▎ welcome — and thanks for trying mentat this early.
-11 |                                              ▎ it's experimental: sessions and config may change without migration.
-12 |
-13 |
-14 |                               ────────────────────────────────────────────────────────────────────────────────────────────────────
-15 |                               ❯ message mentat
-16 |                               ────────────────────────────────────────────────────────────────────────────────────────────────────
-17 |
-18 |                                                                  ! /login — no connected account
-19 |                                                                       ∅ no recent sessions
-20 |
-21 |
-22 |
-23 |
-24 |   ! not logged in · /login · ~ · openai/gpt-5.5 medium · ! full access                                                                         ? for shortcuts|}]
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |                                                                   █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    06 |                                                                   █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    07 |
+    08 |                                                                    dev · openai/gpt-5.5 medium
+    09 |
+    10 |                                              ▎ welcome — and thanks for trying mentat this early.
+    11 |                                              ▎ it's experimental: sessions and config may change without migration.
+    12 |
+    13 |
+    14 |                               ────────────────────────────────────────────────────────────────────────────────────────────────────
+    15 |                               ❯ message mentat
+    16 |                               ────────────────────────────────────────────────────────────────────────────────────────────────────
+    17 |
+    18 |                                                                  ! /login — no connected account
+    19 |                                                                       ∅ no recent sessions
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ! not logged in · /login · ~ · openai/gpt-5.5 medium · ! full access                                                                         ? for shortcuts
+    |}]
 
 let%expect_test "path spelling follows the injected home boundary" =
   Tui.run ~name:"home-injected-equal" ~home:(fun project ->
@@ -695,30 +731,32 @@ let%expect_test "path spelling follows the injected home boundary" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-07 |
-08 |                            dev · openai/gpt-5.5 medium
-09 |
-10 |      ▎ welcome — and thanks for trying mentat this early.
-11 |      ▎ it's experimental: sessions and config may change without migration.
-12 |
-13 |
-14 | ────────────────────────────────────────────────────────────────────────────────
-15 | ❯ message mentat
-16 | ────────────────────────────────────────────────────────────────────────────────
-17 |
-18 |                          ! /login — no connected account
-19 |                               ∅ no recent sessions
-20 |
-21 |
-22 |
-23 |
-24 |   ! not logged in · /login ·… · openai/gpt-5.5 med… · ! full access ? for sho…|}];
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    07 |
+    08 |                            dev · openai/gpt-5.5 medium
+    09 |
+    10 |      ▎ welcome — and thanks for trying mentat this early.
+    11 |      ▎ it's experimental: sessions and config may change without migration.
+    12 |
+    13 |
+    14 | ────────────────────────────────────────────────────────────────────────────────
+    15 | ❯ message mentat
+    16 | ────────────────────────────────────────────────────────────────────────────────
+    17 |
+    18 |                          ! /login — no connected account
+    19 |                               ∅ no recent sessions
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ! not logged in · /login ·… · openai/gpt-5.5 med… · ! full access ? for sho…
+    |}];
 
   Tui.run ~name:"home-injected-child" ~home:(fun project ->
       Some (Lpath.Abs.of_string_exn (Filename.dirname (Project.root project))))
@@ -726,30 +764,32 @@ let%expect_test "path spelling follows the injected home boundary" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-07 |
-08 |                            dev · openai/gpt-5.5 medium
-09 |
-10 |      ▎ welcome — and thanks for trying mentat this early.
-11 |      ▎ it's experimental: sessions and config may change without migration.
-12 |
-13 |
-14 | ────────────────────────────────────────────────────────────────────────────────
-15 | ❯ message mentat
-16 | ────────────────────────────────────────────────────────────────────────────────
-17 |
-18 |                          ! /login — no connected account
-19 |                               ∅ no recent sessions
-20 |
-21 |
-22 |
-23 |
-24 |   ! not logged in · /login · ~/menta… · openai/gpt-5.5 … · ! full access ? fo…|}];
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    07 |
+    08 |                            dev · openai/gpt-5.5 medium
+    09 |
+    10 |      ▎ welcome — and thanks for trying mentat this early.
+    11 |      ▎ it's experimental: sessions and config may change without migration.
+    12 |
+    13 |
+    14 | ────────────────────────────────────────────────────────────────────────────────
+    15 | ❯ message mentat
+    16 | ────────────────────────────────────────────────────────────────────────────────
+    17 |
+    18 |                          ! /login — no connected account
+    19 |                               ∅ no recent sessions
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ! not logged in · /login · ~/menta… · openai/gpt-5.5 … · ! full access ? fo…
+    |}];
 
   Tui.run ~name:"home-injected-outside" ~size:(120, 24) ~home:(fun project ->
       Some (Lpath.Abs.of_string_exn (Project.scratch project "unrelated-home")))
@@ -757,30 +797,32 @@ let%expect_test "path spelling follows the injected home boundary" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |                                               █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-06 |                                               █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-07 |
-08 |                                                dev · openai/gpt-5.5 medium
-09 |
-10 |                          ▎ welcome — and thanks for trying mentat this early.
-11 |                          ▎ it's experimental: sessions and config may change without migration.
-12 |
-13 |
-14 |           ────────────────────────────────────────────────────────────────────────────────────────────────────
-15 |           ❯ message mentat
-16 |           ────────────────────────────────────────────────────────────────────────────────────────────────────
-17 |
-18 |                                              ! /login — no connected account
-19 |                                                   ∅ no recent sessions
-20 |
-21 |
-22 |
-23 |
-24 |   ! not logged in · /login · /tmp/mentat-tui-home-injectedc99ae1d6.hom… · openai/gpt-5.5 me… · ! full access ? for sh…|}]
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |                                               █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    06 |                                               █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    07 |
+    08 |                                                dev · openai/gpt-5.5 medium
+    09 |
+    10 |                          ▎ welcome — and thanks for trying mentat this early.
+    11 |                          ▎ it's experimental: sessions and config may change without migration.
+    12 |
+    13 |
+    14 |           ────────────────────────────────────────────────────────────────────────────────────────────────────
+    15 |           ❯ message mentat
+    16 |           ────────────────────────────────────────────────────────────────────────────────────────────────────
+    17 |
+    18 |                                              ! /login — no connected account
+    19 |                                                   ∅ no recent sessions
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ! not logged in · /login · /tmp/mentat-tui-home-injected32a48f18.hom… · openai/gpt-5.5 me… · ! full access ? for sh…
+    |}]
 
 let%expect_test "the absolute root is a valid injected home ancestor" =
   Tui.run ~name:"home-injected-root" ~size:(160, 24) ~home:(fun _ ->
@@ -789,30 +831,32 @@ let%expect_test "the absolute root is a valid injected home ancestor" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |                                                                   █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-06 |                                                                   █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-07 |
-08 |                                                                    dev · openai/gpt-5.5 medium
-09 |
-10 |                                              ▎ welcome — and thanks for trying mentat this early.
-11 |                                              ▎ it's experimental: sessions and config may change without migration.
-12 |
-13 |
-14 |                               ────────────────────────────────────────────────────────────────────────────────────────────────────
-15 |                               ❯ message mentat
-16 |                               ────────────────────────────────────────────────────────────────────────────────────────────────────
-17 |
-18 |                                                                  ! /login — no connected account
-19 |                                                                       ∅ no recent sessions
-20 |
-21 |
-22 |
-23 |
-24 |   ! not logged in · /login · ~$TESTCASE_ROOT · openai/gpt-5.5 medium · ! full access    ? for shortcuts|}]
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |                                                                   █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    06 |                                                                   █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    07 |
+    08 |                                                                    dev · openai/gpt-5.5 medium
+    09 |
+    10 |                                              ▎ welcome — and thanks for trying mentat this early.
+    11 |                                              ▎ it's experimental: sessions and config may change without migration.
+    12 |
+    13 |
+    14 |                               ────────────────────────────────────────────────────────────────────────────────────────────────────
+    15 |                               ❯ message mentat
+    16 |                               ────────────────────────────────────────────────────────────────────────────────────────────────────
+    17 |
+    18 |                                                                  ! /login — no connected account
+    19 |                                                                       ∅ no recent sessions
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ! not logged in · /login · ~$TESTCASE_ROOT · openai/gpt-5.5 medium · ! full access    ? for shortcuts
+    |}]
 
 (* Theme palette threading: a user theme recolours the accent role,
    and that resolved colour must reach the frame's bytes — the brand lockup and
@@ -869,29 +913,30 @@ let%expect_test "a wrapping draft grows the home composer without overlap" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |                                                         █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-06 |                                                         █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-07 |
-08 |                                                          dev · openai/gpt-5.5 medium
-09 |
-10 |                                    ▎ welcome — and thanks for trying mentat this early.
-11 |                                    ▎ it's experimental: sessions and config may change without migration.
-12 |
-13 |
-14 |                     ────────────────────────────────────────────────────────────────────────────────────────────────────
-15 |                     ❯ this long draft wraps across the sixty column home inset and must push the resume hint down
-16 |                       instead of overlapping it
-17 |                     ────────────────────────────────────────────────────────────────────────────────────────────────────
-18 |
-19 |                                                        ! /login — no connected account
-20 |                                                      ↵ "Hello world" · just now · 1 turn
-21 |
-22 |
-23 |
-24 |   ! not logged in · /login · ~/mentat-tui-home-grown-b5f11b99 · openai/gpt-5.5 medium · ! full access                      ? for shortcuts|}]
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |                                                         █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    06 |                                                         █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    07 |
+    08 |                                                          dev · openai/gpt-5.5 medium
+    09 |
+    10 |                                    ▎ welcome — and thanks for trying mentat this early.
+    11 |                                    ▎ it's experimental: sessions and config may change without migration.
+    12 |
+    13 |
+    14 |                     ────────────────────────────────────────────────────────────────────────────────────────────────────
+    15 |                     ❯ this long draft wraps across the sixty column home inset and must push the resume hint down
+    16 |                       instead of overlapping it
+    17 |                     ────────────────────────────────────────────────────────────────────────────────────────────────────
+    18 |
+    19 |                                                        ! /login — no connected account
+    20 |                                                      ↵ "Hello world" · just now · 1 turn
+    21 |
+    22 |
+    23 |
+    24 |   ! not logged in · /login · ~/mentat-tui-home-grown-01bb285a · openai/gpt-5.5 medium · ! full access                      ? for shortcuts
+    |}]
 
-[%%run_tests "mentat.tui.home"]

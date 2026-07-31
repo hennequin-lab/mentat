@@ -51,24 +51,16 @@ let json_decode codec json =
 (* Testables. [ws_error] (not [error]) so the windtrap {!error} result assertion
    stays reachable for the durable [`Unknown_root] check. *)
 
-let syntax_error = testable ~pp:Syntax.Error.pp ~equal:Syntax.Error.equal ()
-let ws_error = testable ~pp:Workspace.Error.pp ~equal:Workspace.Error.equal ()
+let syntax_error = Testable.make ~pp:Syntax.Error.pp ~equal:Syntax.Error.equal
+let ws_error = Testable.make ~pp:Workspace.Error.pp ~equal:Workspace.Error.equal
 
 let resolve_error =
-  testable ~pp:Workspace.Resolve_error.pp ~equal:Workspace.Resolve_error.equal
-    ()
+  Testable.make ~pp:Workspace.Resolve_error.pp ~equal:Workspace.Resolve_error.equal
 
-let root_value = testable ~pp:Workspace.Root.pp ~equal:Workspace.Root.equal ()
-let path_value = testable ~pp:Workspace.Path.pp ~equal:Workspace.Path.equal ()
-let rel_value = testable ~pp:Syntax.Rel.pp ~equal:Syntax.Rel.equal ()
-let workspace_value = testable ~pp:Workspace.pp ~equal:Workspace.equal ()
-
-(* [cases] names each row from this pretty-printer; print the label only. *)
-let labelled =
-  testable
-    ~pp:(fun ppf (label, _) -> Format.pp_print_string ppf label)
-    ~equal:(fun (a, _) (b, _) -> String.equal a b)
-    ()
+let root_value = Testable.make ~pp:Workspace.Root.pp ~equal:Workspace.Root.equal
+let path_value = Testable.make ~pp:Workspace.Path.pp ~equal:Workspace.Path.equal
+let rel_value = Testable.make ~pp:Syntax.Rel.pp ~equal:Syntax.Rel.equal
+let workspace_value = Testable.make ~pp:Workspace.pp ~equal:Workspace.equal
 
 (* Generators for roots, rels, and paths.
 
@@ -82,11 +74,11 @@ let component_char =
     [
       (5, Gen.char_range 'a' 'z');
       (2, Gen.char_range 'A' 'Z');
-      (2, Gen.oneofl [ '0'; '9'; '-'; '_' ]);
+      (2, Gen.of_list [ '0'; '9'; '-'; '_' ]);
     ]
 
-let component_gen = Gen.string_size (Gen.int_range 1 5) component_char
-let components_gen min max = Gen.list_size (Gen.int_range min max) component_gen
+let component_gen = Gen.string_of ~size:(Gen.int_range 1 5) component_char
+let components_gen min max = Gen.list ~size:(Gen.int_range min max) component_gen
 
 let rel_of_components = function
   | [] -> Syntax.Rel.root
@@ -104,15 +96,14 @@ let path_gen =
             (rel_of_components rel_components))
         (components_gen 0 5))
 
-let path_value_gen =
-  testable ~pp:Workspace.Path.pp ~equal:Workspace.Path.equal ~gen:path_gen ()
+let path_value_gen = Gen.with_pp Workspace.Path.pp path_gen
 
 let small_rel_gen = Gen.map rel_of_components (components_gen 0 3)
 
 (* Path pairs biased to hit equal, same-root descendant, and disjoint, so the
    is_within/relativize agreement property sees both boolean outcomes. *)
 let path_pair_gen =
-  Gen.oneof
+  Gen.one_of
     [
       Gen.map (fun p -> (p, p)) path_gen;
       Gen.bind path_gen (fun base ->
@@ -122,16 +113,16 @@ let path_pair_gen =
       Gen.bind path_gen (fun a -> Gen.map (fun b -> (a, b)) path_gen);
     ]
 
-let path_pair =
-  testable
-    ~pp:(fun ppf (a, b) ->
+let path_pair_gen =
+  Gen.with_pp
+    (fun ppf (a, b) ->
       Format.fprintf ppf "(%a, %a)" Workspace.Path.pp a Workspace.Path.pp b)
-    ~gen:path_pair_gen ()
+    path_pair_gen
 
-let dir_components =
-  testable
-    ~pp:(fun ppf cs -> Format.fprintf ppf "[%s]" (String.concat "; " cs))
-    ~equal:(List.equal String.equal) ~gen:(components_gen 1 3) ()
+let dir_components_gen =
+  Gen.with_pp
+    (fun ppf cs -> Format.fprintf ppf "[%s]" (String.concat "; " cs))
+    (components_gen 1 3)
 
 (* A base root, a nested root strictly below it, and a target below the nested
    root, as both an absolute path and its root-relative suffix. Drives the
@@ -164,13 +155,13 @@ let nested_case_gen =
               })
             (components_gen 0 4)))
 
-let nested_case =
-  testable
-    ~pp:(fun ppf case ->
+let nested_case_gen =
+  Gen.with_pp
+    (fun ppf case ->
       Format.fprintf ppf "{ base = %a; nested = %a; target = %a }"
         Workspace.Root.pp case.base Workspace.Root.pp case.nested Syntax.Abs.pp
         case.target_abs)
-    ~gen:nested_case_gen ()
+    nested_case_gen
 
 (* Root keys are JSON-safe text: non-empty valid UTF-8 without ASCII control
    characters. The property generator covers the printable ASCII subset;
@@ -180,15 +171,10 @@ let key_char =
     [
       (5, Gen.char_range 'a' 'z');
       (2, Gen.char_range 'A' 'Z');
-      (2, Gen.oneofl [ '0'; '9'; '-'; '_'; ' '; '/' ]);
+      (2, Gen.of_list [ '0'; '9'; '-'; '_'; ' '; '/' ]);
     ]
 
-let key_text_gen = Gen.string_size (Gen.int_range 1 12) key_char
-
-let key_text =
-  testable
-    ~pp:(fun ppf s -> Format.fprintf ppf "%S" s)
-    ~equal:String.equal ~gen:key_text_gen ()
+let key_text_gen = Gen.string_of ~size:(Gen.int_range 1 12) key_char
 
 let keyed_path_gen =
   Gen.bind key_text_gen (fun key ->
@@ -199,9 +185,7 @@ let keyed_path_gen =
             (rel_of_components rel_components))
         (components_gen 0 4))
 
-let keyed_path =
-  testable ~pp:Workspace.Path.pp ~equal:Workspace.Path.equal ~gen:keyed_path_gen
-    ()
+let keyed_path_gen = Gen.with_pp Workspace.Path.pp keyed_path_gen
 
 (* Raw resolver fuzz: empty, dot-soup, deep climbs, and malformed bytes (NUL,
    backslash, drive-ish colon), so resolve_string's total two-case taxonomy is
@@ -210,16 +194,11 @@ let raw_char =
   Gen.frequency
     [
       (5, Gen.char_range 'a' 'z');
-      (3, Gen.oneofl [ '/'; '.'; '-' ]);
-      (1, Gen.oneofl [ '\000'; '\\'; ':' ]);
+      (3, Gen.of_list [ '/'; '.'; '-' ]);
+      (1, Gen.of_list [ '\000'; '\\'; ':' ]);
     ]
 
-let raw_input =
-  testable
-    ~pp:(fun ppf s -> Format.fprintf ppf "%S" s)
-    ~equal:String.equal
-    ~gen:(Gen.string_size (Gen.int_range 0 12) raw_char)
-    ()
+let raw_input_gen = Gen.string_of ~size:(Gen.int_range 0 12) raw_char
 
 let root_keys =
   group "root keys"
@@ -253,19 +232,23 @@ let root_keys =
                 ~msg:("reject " ^ String.escaped raw)
                 (Result.is_error (Workspace.Root.Key.of_string raw)))
             [ "nul\000byte"; "\127" ];
-          ok
-            (testable ~pp:Workspace.Root.Key.pp ~equal:Workspace.Root.Key.equal
-               ())
+          equal
+            (result
+               (Testable.make ~pp:Workspace.Root.Key.pp
+                  ~equal:Workspace.Root.Key.equal)
+               pass)
             ~msg:"Unicode text is valid"
-            (Workspace.Root.Key.of_string_exn "projet-caf\195\169")
+            (Ok (Workspace.Root.Key.of_string_exn "projet-caf\195\169"))
             (Workspace.Root.Key.of_string "projet-caf\195\169"));
-      prop' "constructors, equality, ordering, and codec agree" key_text
+      prop "constructors, equality, ordering, and codec agree" key_text_gen
         (fun name ->
           let key = Workspace.Root.Key.of_string_exn name in
-          ok
-            (testable ~pp:Workspace.Root.Key.pp ~equal:Workspace.Root.Key.equal
-               ())
-            ~msg:"parse printed key" key
+          equal
+            (result
+               (Testable.make ~pp:Workspace.Root.Key.pp
+                  ~equal:Workspace.Root.Key.equal)
+               pass)
+            ~msg:"parse printed key" (Ok key)
             (Workspace.Root.Key.of_string (Workspace.Root.Key.to_string key));
           equal int ~msg:"compare agrees with equality" 0
             (Workspace.Root.Key.compare key key);
@@ -337,8 +320,8 @@ let roots =
           in
           equal (list root_value) ~msg:"both admitted" [ upper; lower ]
             (Workspace.roots workspace));
-      prop' "root identity tracks the directory bytes"
-        (pair dir_components dir_components) (fun (a, b) ->
+      prop "root identity tracks the directory bytes"
+        (Gen.pair dir_components_gen dir_components_gen) (fun (a, b) ->
           let ra = root_of_components a and rb = root_of_components b in
           let same_dir =
             Syntax.Abs.equal (Workspace.Root.dir ra) (Workspace.Root.dir rb)
@@ -427,7 +410,7 @@ let addresses =
             (Some "file")
             (Workspace.Path.Map.find_opt b
                (Workspace.Path.Map.singleton a "file")));
-      prop' "is_within agrees with relativize (decision ii)" path_pair
+      prop "is_within agrees with relativize (decision ii)" path_pair_gen
         (fun (root, p) ->
           let within = Option.is_some (Workspace.Path.relativize ~root p) in
           cover ~label:"within" ~at_least:25.0 within;
@@ -539,7 +522,8 @@ let workspace =
           equal (option root_value) ~msg:"root_by_key rebinds an admitted key"
             (Some vendor)
             (Workspace.root_by_key workspace (Workspace.Root.key vendor));
-          is_none ~msg:"root_by_key on an unknown key is None"
+          equal (option pass) ~msg:"root_by_key on an unknown key is None"
+            None
             (Workspace.root_by_key workspace
                (Workspace.Root.Key.of_string_exn "absent")));
       test "root_path is the primary, independent of cwd" (fun () ->
@@ -603,7 +587,8 @@ let workspace =
           is_false ~msg:"the primary participates"
             (Workspace.equal w w_reprimaried);
           is_false ~msg:"cwd participates" (Workspace.equal w w_recwd));
-      prop' "duplicate roots are canonicalized to the admitted set" nested_case
+      prop "duplicate roots are canonicalized to the admitted set"
+        nested_case_gen
         (fun case ->
           let workspace =
             ok_ws
@@ -730,8 +715,8 @@ let resolution =
             (Error
                (Workspace.Resolve_error.Outside_workspace (abs "/escape.ml")))
             (Workspace.resolve_string workspace "../../../escape.ml"));
-      prop' "import_abs of (root_dir / rel) round-trips to the nested root"
-        nested_case (fun case ->
+      prop "import_abs of (root_dir / rel) round-trips to the nested root"
+        nested_case_gen (fun case ->
           let workspace =
             ok_ws
               (Workspace.make ~primary:case.base ~read_only:[ case.nested ] ())
@@ -755,7 +740,7 @@ let resolution =
             ~msg:"a sibling string-prefix is Outside_workspace"
             (Error (Workspace.Resolve_error.Outside_workspace sibling))
             (Workspace.import_abs workspace sibling));
-      prop' "import_abs round-trips a path through the workspace binding"
+      prop "import_abs round-trips a path through the workspace binding"
         path_value_gen (fun path ->
           let key = Workspace.Path.root_key path in
           let root =
@@ -772,8 +757,8 @@ let resolution =
             (result path_value resolve_error)
             ~msg:"bound path re-imports to itself" (Ok path)
             (Workspace.import_abs workspace projected));
-      prop' "resolve_string is total: it never raises and Ok is contained"
-        raw_input (fun input ->
+      prop "resolve_string is total: it never raises and Ok is contained"
+        raw_input_gen (fun input ->
           let workspace = Workspace.single (make_root "/workspace") in
           match Workspace.resolve_string workspace input with
           | Error _ -> ()
@@ -801,8 +786,9 @@ let bindings =
           let workspace = Workspace.single (make_root "/workspace") in
           let foreign_key = Workspace.Root.Key.of_string_exn "not-admitted" in
           let path = Workspace.Path.make ~root_key:foreign_key (rel "a.ml") in
-          error resolve_error ~msg:"carries the exact foreign key"
-            (Workspace.Resolve_error.Unknown_root foreign_key)
+          equal (result pass resolve_error)
+            ~msg:"carries the exact foreign key"
+            (Error (Workspace.Resolve_error.Unknown_root foreign_key))
             (Workspace.to_abs workspace path));
       test "writability is an admission role, not path representation"
         (fun () ->
@@ -895,14 +881,15 @@ let path_wire =
             (Json.equal
                (path_object "the-key" "src/a.ml")
                (json_encode Workspace.Path.jsont path));
-          ok path_value ~msg:"decode inverts encode" path
+          equal (result path_value pass) ~msg:"decode inverts encode"
+            (Ok path)
             (Json.decode Workspace.Path.jsont
                (path_object "the-key" "src/a.ml")));
-      prop "round-trips through jsont" keyed_path (fun path ->
-          Workspace.Path.equal path
+      prop "round-trips through jsont" keyed_path_gen (fun path ->
+          equal path_value path
             (json_decode Workspace.Path.jsont
                (json_encode Workspace.Path.jsont path)));
-      cases labelled path_rejections "decode fails closed" (fun (_, json) ->
+      cases "decode fails closed" ~name:fst path_rejections (fun (_, json) ->
           is_true (Result.is_error (Json.decode Workspace.Path.jsont json)));
     ]
 
@@ -911,22 +898,22 @@ let path_wire =
    journaled. *)
 
 let notice_value =
-  testable ~pp:Workspace.Notice.pp ~equal:Workspace.Notice.equal ()
+  Testable.make ~pp:Workspace.Notice.pp ~equal:Workspace.Notice.equal
 
 (* Notice text is otherwise unconstrained producer prose — the generator mixes
    letters with separators and newlines so bodies exercise multi-line text on
    the wire — but never empty, per the constructor invariant. *)
 let notice_text_gen =
-  Gen.string_size (Gen.int_range 1 12)
+  Gen.string_of ~size:(Gen.int_range 1 12)
     (Gen.frequency
        [
          (8, Gen.char_range 'a' 'z');
-         (2, Gen.oneofl [ ' '; '\n'; ':'; '/'; '.' ]);
+         (2, Gen.of_list [ ' '; '\n'; ':'; '/'; '.' ]);
        ])
 
 let notice_gen =
   Gen.bind
-    (Gen.oneofl
+    (Gen.of_list
        [
          Workspace.Notice.Severity.Info;
          Workspace.Notice.Severity.Warning;
@@ -936,8 +923,8 @@ let notice_gen =
       Gen.bind notice_text_gen (fun source ->
           Gen.bind notice_text_gen (fun title ->
               Gen.bind
-                (Gen.oneof
-                   [ Gen.map Option.some notice_text_gen; Gen.oneofl [ None ] ])
+                (Gen.one_of
+                   [ Gen.map Option.some notice_text_gen; Gen.of_list [ None ] ])
                 (fun body ->
                   Gen.map
                     (fun key ->
@@ -945,9 +932,7 @@ let notice_gen =
                         ())
                     notice_text_gen))))
 
-let notice_case =
-  testable ~pp:Workspace.Notice.pp ~equal:Workspace.Notice.equal ~gen:notice_gen
-    ()
+let notice_case_gen = Gen.with_pp Workspace.Notice.pp notice_gen
 
 let notice_json mems =
   Json.object' (List.map (fun (name, v) -> Json.mem (Json.name name) v) mems)
@@ -1044,17 +1029,17 @@ let notices =
             Workspace.Notice.make ~source
               ~severity:Workspace.Notice.Severity.Info ~title ?body ~key ()
           in
-          raises_invalid_arg ~msg:"empty source"
-            "Mentat_workspace.Notice.make: source is empty" (fun () ->
+          raises ~msg:"empty source"
+            (Invalid_argument "Mentat_workspace.Notice.make: source is empty") (fun () ->
               make ~source:"" ());
-          raises_invalid_arg ~msg:"empty title"
-            "Mentat_workspace.Notice.make: title is empty" (fun () ->
+          raises ~msg:"empty title"
+            (Invalid_argument "Mentat_workspace.Notice.make: title is empty") (fun () ->
               make ~title:"" ());
-          raises_invalid_arg ~msg:"empty key"
-            "Mentat_workspace.Notice.make: key is empty" (fun () ->
+          raises ~msg:"empty key"
+            (Invalid_argument "Mentat_workspace.Notice.make: key is empty") (fun () ->
               make ~key:"" ());
-          raises_invalid_arg ~msg:"empty present body"
-            "Mentat_workspace.Notice.make: body is empty" (fun () ->
+          raises ~msg:"empty present body"
+            (Invalid_argument "Mentat_workspace.Notice.make: body is empty") (fun () ->
               make ~body:"" ());
           equal (option string) ~msg:"an absent body stays valid" None
             (Workspace.Notice.body (make ())));
@@ -1108,14 +1093,15 @@ let notices =
           is_true ~msg:"an absent body is omitted, never null"
             (Json.equal (notice_object ())
                (json_encode Workspace.Notice.jsont bare));
-          ok notice_value ~msg:"decode inverts encode" full
+          equal (result notice_value pass) ~msg:"decode inverts encode"
+            (Ok full)
             (Json.decode Workspace.Notice.jsont
                (notice_object ~body:"3 errors in lib/foo" ())));
-      prop "round-trips through jsont" notice_case (fun notice ->
-          Workspace.Notice.equal notice
+      prop "round-trips through jsont" notice_case_gen (fun notice ->
+          equal notice_value notice
             (json_decode Workspace.Notice.jsont
                (json_encode Workspace.Notice.jsont notice)));
-      cases labelled notice_rejections "notice decode fails closed"
+      cases "notice decode fails closed" ~name:fst notice_rejections
         (fun (_, json) ->
           is_true (Result.is_error (Json.decode Workspace.Notice.jsont json)));
     ]

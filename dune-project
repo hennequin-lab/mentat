@@ -57,6 +57,18 @@
  (package
   (name thumper)))
 
+; Windtrap 0.2.0 pre-release dogfood: pin the upstream repository until
+; the release lands in the package repository.
+(pin
+ (url "git+ssh://git@github.com/invariant-hq/windtrap.git")
+ (package
+  (name windtrap)))
+
+(pin
+ (url "git+ssh://git@github.com/invariant-hq/windtrap.git")
+ (package
+  (name ppx_windtrap)))
+
 (package
  (name mentat)
  (synopsis "The OCaml coding agent")
@@ -124,11 +136,11 @@
   (windtrap
    (and
     :with-test
-    (>= 0.1.0)))
+    (>= 0.2.0)))
   (ppx_windtrap
    (and
     :with-test
-    (>= 0.1.0)))
+    (>= 0.2.0)))
   ; House benchmarking harness for the bench/ suites.
   (thumper :with-test))
  (tags

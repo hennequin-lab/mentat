@@ -66,87 +66,93 @@ let%expect_test
      not [request in flight]. Left made no request, so nothing can revert. *)
   Tui.print t;
   [%expect
-    {|01 |  settings ────────────────────────────────────────────────────────────────────────────── unavailable
-02 |
-03 | config  status  usage
-04 |
-05 | Session controls below apply to the next turn only.
-06 |
-07 | !  configuration unavailable in the visual harness
-08 |
-09 |      setting                    value                                    source
-10 |      model                      openai/gpt-5.5                           next turn
-11 |  ›   permission review          candidate: bypass                        next turn
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   ↑↓ move · ←→ change · ↵ apply · tab page · / filter · esc back|}];
+    {|
+    01 |  settings ────────────────────────────────────────────────────────────────────────────── unavailable
+    02 |
+    03 | config  status  usage
+    04 |
+    05 | Session controls below apply to the next turn only.
+    06 |
+    07 | !  configuration unavailable in the visual harness
+    08 |
+    09 |      setting                    value                                    source
+    10 |      model                      openai/gpt-5.5                           next turn
+    11 |  ›   permission review          candidate: bypass                        next turn
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ↑↓ move · ←→ change · ↵ apply · tab page · / filter · esc back
+    |}];
 
   apply t;
   Tui.print t;
   [%expect
-    {|01 |  settings ─────────────────────────────────────────────────────────────────────────────── requesting
-02 |
-03 | config  status  usage
-04 |
-05 | ⚠  Request in flight: permission review bypass for the next turn.
-06 |
-07 | Session controls below apply to the next turn only.
-08 |
-09 | !  configuration unavailable in the visual harness
-10 |
-11 |      setting                    value                                    source
-12 |      model                      openai/gpt-5.5                           next turn
-13 |  ›   permission review          requesting: bypass                       next turn
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   request in flight · tab page · esc back|}];
+    {|
+    01 |  settings ─────────────────────────────────────────────────────────────────────────────── requesting
+    02 |
+    03 | config  status  usage
+    04 |
+    05 | ⚠  Request in flight: permission review bypass for the next turn.
+    06 |
+    07 | Session controls below apply to the next turn only.
+    08 |
+    09 | !  configuration unavailable in the visual harness
+    10 |
+    11 |      setting                    value                                    source
+    12 |      model                      openai/gpt-5.5                           next turn
+    13 |  ›   permission review          requesting: bypass                       next turn
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   request in flight · tab page · esc back
+    |}];
 
   Tui.finish_permission_review t (Ok ());
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  settings ───────────────────────────────────────────────────────────────────────────────── accepted
-02 |
-03 | config  status  usage
-04 |
-05 | ✓  Client accepted permission review bypass for the next turn.
-06 |
-07 | Session controls below apply to the next turn only.
-08 |
-09 | !  configuration unavailable in the visual harness
-10 |
-11 |      setting                    value                                    source
-12 |      model                      openai/gpt-5.5                           next turn
-13 |  ›   permission review          choose a next-turn request               next turn
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   ↑↓ move · ←→ change · ↵ apply · tab page · / filter · esc back|}];
+    {|
+    01 |  settings ───────────────────────────────────────────────────────────────────────────────── accepted
+    02 |
+    03 | config  status  usage
+    04 |
+    05 | ✓  Client accepted permission review bypass for the next turn.
+    06 |
+    07 | Session controls below apply to the next turn only.
+    08 |
+    09 | !  configuration unavailable in the visual harness
+    10 |
+    11 |      setting                    value                                    source
+    12 |      model                      openai/gpt-5.5                           next turn
+    13 |  ›   permission review          choose a next-turn request               next turn
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ↑↓ move · ←→ change · ↵ apply · tab page · / filter · esc back
+    |}];
 
   (* Switching page dismisses the acceptance acknowledgement; it does not
      linger as stale chrome on the read-only pages. *)
@@ -154,88 +160,94 @@ let%expect_test
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  settings ────────────────────────────────────────────────────────────────────────────── 1 providers
-02 |
-03 | config  status  usage
-04 |
-05 | Runtime
-06 |   version         dev
-07 |   current model   openai/gpt-5.5
-08 |   workspace       ~/mentat-tui-settings-review-1672fe37
-09 |   context window  128,000 tokens
-10 |   launch sandbox  danger-full-access
-11 |
-12 | Session
-13 |   id            session-visual-00001
-14 |   lifecycle     active
-15 |   phase         idle
-16 |   active model  openai/gpt-5.5
-17 |   waiting       none
-18 |   workflow      build
-19 |   last outcome  completed
-20 |
-21 | Providers
-22 |   openai  missing
-23 |
-24 |   tab page · esc back|}];
+    {|
+    01 |  settings ────────────────────────────────────────────────────────────────────────────── 1 providers
+    02 |
+    03 | config  status  usage
+    04 |
+    05 | Runtime
+    06 |   version         dev
+    07 |   current model   openai/gpt-5.5
+    08 |   workspace       ~/mentat-tui-settings-review-144d487f
+    09 |   context window  128,000 tokens
+    10 |   launch sandbox  danger-full-access
+    11 |
+    12 | Session
+    13 |   id            session-visual-00001
+    14 |   lifecycle     active
+    15 |   phase         idle
+    16 |   active model  openai/gpt-5.5
+    17 |   waiting       none
+    18 |   workflow      build
+    19 |   last outcome  completed
+    20 |
+    21 | Providers
+    22 |   openai  missing
+    23 |
+    24 |   tab page · esc back
+    |}];
 
   Tui.keys t Key.escape;
   Tui.settle t;
   submit t "use accepted review";
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-settings-review-1672fe37
-04 |
-05 | ❯ establish review owner
-06 |
-07 | ⏺ The settings owner is ready.
-08 |
-09 | ❯ use accepted review
-10 |
-11 | ⠋ Working… (0s · esc to interrupt)
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────────────────────────
-22 | ❯ queue a message — sends after this turn
-23 | ────────────────────────────────────────────────────────────────────────────────────────────────────
-24 |   ! never ask · /settings · ! not logged in · /login · ~/menta… · openai/gpt… · ! full access ? f…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-settings-review-144d487f
+    04 |
+    05 | ❯ establish review owner
+    06 |
+    07 | ⏺ The settings owner is ready.
+    08 |
+    09 | ❯ use accepted review
+    10 |
+    11 | ⠋ Working… (0s · esc to interrupt)
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ queue a message — sends after this turn
+    23 | ────────────────────────────────────────────────────────────────────────────────────────────────────
+    24 |   ! never ask · /settings · ! not logged in · /login · ~/menta… · openai/gpt… · ! full access ? f…
+    |}];
   Tui.finish_turn t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-settings-review-1672fe37
-04 |
-05 | ❯ establish review owner
-06 |
-07 | ⏺ The settings owner is ready.
-08 |
-09 | ❯ use accepted review
-10 |
-11 | ⏺ The accepted review was sealed.
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────────────────────────
-24 |   ! never ask · /settings · ! not logged in · /login · ~/menta… · openai/gpt… · ! full access ? f…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-settings-review-144d487f
+    04 |
+    05 | ❯ establish review owner
+    06 |
+    07 | ⏺ The settings owner is ready.
+    08 |
+    09 | ❯ use accepted review
+    10 |
+    11 | ⏺ The accepted review was sealed.
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────────────────────────
+    24 |   ! never ask · /settings · ! not logged in · /login · ~/menta… · openai/gpt… · ! full access ? f…
+    |}]
 
 let%expect_test
     "rejected review retains its candidate and cannot change the next turn" =
@@ -259,30 +271,32 @@ let%expect_test
   apply t;
   Tui.print t;
   [%expect
-    {|01 |  settings ─────────────────────────────────────────────────────────────────────────────── requesting
-02 |
-03 | config  status  usage
-04 |
-05 | ⚠  Request in flight: permission review bypass for the next turn.
-06 |
-07 | Session controls below apply to the next turn only.
-08 |
-09 | !  configuration unavailable in the visual harness
-10 |
-11 |      setting                    value                                    source
-12 |      model                      openai/gpt-5.5                           next turn
-13 |  ›   permission review          requesting: bypass                       next turn
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   request in flight · tab page · esc back|}];
+    {|
+    01 |  settings ─────────────────────────────────────────────────────────────────────────────── requesting
+    02 |
+    03 | config  status  usage
+    04 |
+    05 | ⚠  Request in flight: permission review bypass for the next turn.
+    06 |
+    07 | Session controls below apply to the next turn only.
+    08 |
+    09 | !  configuration unavailable in the visual harness
+    10 |
+    11 |      setting                    value                                    source
+    12 |      model                      openai/gpt-5.5                           next turn
+    13 |  ›   permission review          requesting: bypass                       next turn
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   request in flight · tab page · esc back
+    |}];
 
   Tui.finish_permission_review t
     (Error
@@ -292,87 +306,92 @@ let%expect_test
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  settings ──────────────────────────────────────────────────────────────────────────────────── error
-02 |
-03 | config  status  usage
-04 |
-05 | !  Client rejected permission review bypass.
-06 |
-07 | permission overlay rejected by the owner
-08 | enforced review remains effective
-09 |
-10 | Session controls below apply to the next turn only.
-11 |
-12 | !  configuration unavailable in the visual harness
-13 |
-14 |      setting                    value                                    source
-15 |      model                      openai/gpt-5.5                           next turn
-16 |  ›   permission review          candidate: bypass                        next turn
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   scroll error · ↑↓ move · ←→ change · ↵ apply · tab page · / filter · esc back|}];
+    {|
+    01 |  settings ──────────────────────────────────────────────────────────────────────────────────── error
+    02 |
+    03 | config  status  usage
+    04 |
+    05 | !  Client rejected permission review bypass.
+    06 |
+    07 | permission overlay rejected by the owner
+    08 | enforced review remains effective
+    09 |
+    10 | Session controls below apply to the next turn only.
+    11 |
+    12 | !  configuration unavailable in the visual harness
+    13 |
+    14 |      setting                    value                                    source
+    15 |      model                      openai/gpt-5.5                           next turn
+    16 |  ›   permission review          candidate: bypass                        next turn
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   scroll error · ↑↓ move · ←→ change · ↵ apply · tab page · / filter · esc back
+    |}];
 
   Tui.keys t Key.escape;
   Tui.settle t;
   submit t "keep enforced review";
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-settings-review-35b8d80f
-04 |
-05 | ❯ establish enforced review
-06 |
-07 | ⏺ Enforced review is active.
-08 |
-09 | ❯ keep enforced review
-10 |
-11 | ⠋ Working… (0s · esc to interrupt)
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────────────────────────
-22 | ❯ queue a message — sends after this turn
-23 | ────────────────────────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tui-settings-rev… · openai/gpt-… · ! full access ? for shor…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-settings-review-ae81276f
+    04 |
+    05 | ❯ establish enforced review
+    06 |
+    07 | ⏺ Enforced review is active.
+    08 |
+    09 | ❯ keep enforced review
+    10 |
+    11 | ⠋ Working… (0s · esc to interrupt)
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ queue a message — sends after this turn
+    23 | ────────────────────────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tui-settings-rev… · openai/gpt-… · ! full access ? for shor…
+    |}];
   Tui.finish_turn t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-settings-review-35b8d80f
-04 |
-05 | ❯ establish enforced review
-06 |
-07 | ⏺ Enforced review is active.
-08 |
-09 | ❯ keep enforced review
-10 |
-11 | ⏺ The rejected candidate was not applied.
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tui-settings-rev… · openai/gpt-… · ! full access ? for shor…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-settings-review-ae81276f
+    04 |
+    05 | ❯ establish enforced review
+    06 |
+    07 | ⏺ Enforced review is active.
+    08 |
+    09 | ❯ keep enforced review
+    10 |
+    11 | ⏺ The rejected candidate was not applied.
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tui-settings-rev… · openai/gpt-… · ! full access ? for shor…
+    |}]
 
-[%%run_tests "mentat.tui.settings_mutations"]

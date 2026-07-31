@@ -1054,4 +1054,3 @@ claim applies: 1
 claim observations: 0
 durable.ml: "let hit = fresh secret_value\n"|}]
 
-[%%run_tests "mentat.tools.ocaml_replace_expressions"]

@@ -1332,4 +1332,3 @@ let%expect_test
     semantic: version=1 references=2 files=2 truncated=false
     invocations: 3 |}]
 
-[%%run_tests "mentat.tools.ocaml_find_references"]

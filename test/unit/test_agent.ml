@@ -1140,15 +1140,15 @@ let config_defaults_are_the_documented_ones () =
   | Some _ -> fail "the explicit continuation choice must round-trip"
 
 let config_rejects_non_positive_knobs () =
-  raises_invalid_arg "max_steps must be positive" (fun () ->
+  raises (Invalid_argument "max_steps must be positive") (fun () ->
       Agent.Config.make ~model ~continuation_turn_limit:None ~max_steps:0 ());
-  raises_invalid_arg "max_spawn_depth must be positive" (fun () ->
+  raises (Invalid_argument "max_spawn_depth must be positive") (fun () ->
       Agent.Config.make ~model ~continuation_turn_limit:None ~max_spawn_depth:0
         ());
-  raises_invalid_arg "max_exchanges must be positive" (fun () ->
+  raises (Invalid_argument "max_exchanges must be positive") (fun () ->
       Agent.Config.make ~model ~continuation_turn_limit:None ~max_exchanges:(-1)
         ());
-  raises_invalid_arg "continuation_turn_limit must be positive" (fun () ->
+  raises (Invalid_argument "continuation_turn_limit must be positive") (fun () ->
       Agent.Config.make ~model ~continuation_turn_limit:(Some 0) ())
 
 let admission_depends_on_the_continuation_limit_scalar () =
@@ -1845,7 +1845,7 @@ let process_view =
       (Protocol.Process.View.status v)
       (Protocol.Process.View.age_ms v)
   in
-  testable ~pp ~equal:Protocol.Process.View.equal ()
+  Testable.make ~pp ~equal:Protocol.Process.View.equal
 
 let running_processes_reads_the_drivers_live_view () =
   let view =
@@ -4648,7 +4648,7 @@ let an_observation_made_while_waiting_reaches_the_parent () =
           failf "expected three parent requests, got %d" (List.length requests))
 
 let mutation_event_value =
-  testable ~pp:Mutation.Event.pp ~equal:Mutation.Event.equal ()
+  Testable.make ~pp:Mutation.Event.pp ~equal:Mutation.Event.equal
 
 (* The branch flows copy the driver's mutation ledger into the child, keyed on
    the turns the child retains: a fork keeps every turn (the whole ledger), a

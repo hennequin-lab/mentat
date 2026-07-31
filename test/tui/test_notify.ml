@@ -127,7 +127,7 @@ let drive ~name ~notify_policy () =
 
 let%expect_test "a finished turn notifies the command hook when unfocused" =
   drive ~name:"notify-fires" ~notify_policy:(policy ()) ();
-  [%expect {| mentat — mentat-tui-noti548eab01 | Turn finished |}]
+  [%expect {| mentat — mentat-tui-notibb8575ad | Turn finished |}]
 
 let%expect_test "an event outside notify.on does not notify" =
   drive ~name:"notify-event-filter"
@@ -176,8 +176,7 @@ let%expect_test "a parked decision notifies the command hook" =
   (match List.rev !captured with
   | [] -> print_endline "(no notification)"
   | lines -> List.iter print_endline lines);
-  [%expect
-    {| mentat — mentat-tui-notify-45335b45 | Waiting for your response |}]
+  [%expect {| mentat — mentat-tui-notify-4a1bb783 | Waiting for your response |}]
 
 let%expect_test "a bell/OSC-only channel emits nothing to the command hook" =
   (* Auto resolves to bell + OSC 9, both seamed on Gap A; with no command channel
@@ -188,4 +187,3 @@ let%expect_test "a bell/OSC-only channel emits nothing to the command hook" =
     ();
   [%expect {| (no notification) |}]
 
-[%%run_tests "mentat.tui.notify"]

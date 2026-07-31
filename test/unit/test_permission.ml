@@ -175,11 +175,11 @@ let component_char =
     [
       (5, Gen.char_range 'a' 'z');
       (2, Gen.char_range 'A' 'Z');
-      (2, Gen.oneofl [ '0'; '1'; '-'; '_' ]);
+      (2, Gen.of_list [ '0'; '1'; '-'; '_' ]);
     ]
 
-let component_gen = Gen.string_size (Gen.int_range 1 5) component_char
-let components_gen lo hi = Gen.list_size (Gen.int_range lo hi) component_gen
+let component_gen = Gen.string_of ~size:(Gen.int_range 1 5) component_char
+let components_gen lo hi = Gen.list ~size:(Gen.int_range lo hi) component_gen
 
 let rel_of_components = function
   | [] -> Lpath.Rel.root
@@ -196,12 +196,12 @@ let root_key_char =
       (5, Gen.char_range 'a' 'z');
       (2, Gen.char_range 'A' 'Z');
       (2, Gen.char_range '0' '9');
-      (1, Gen.oneofl [ '-'; '_'; '.' ]);
+      (1, Gen.of_list [ '-'; '_'; '.' ]);
     ]
 
 let root_key_gen =
   Gen.map Workspace.Root.Key.of_string_exn
-    (Gen.string_size (Gen.int_range 1 6) root_key_char)
+    (Gen.string_of ~size:(Gen.int_range 1 6) root_key_char)
 
 (* Free (opaque) strings for command text, hosts, custom names/subjects, and
    custom protocol names: non-empty, with NUL, shell-ish bytes, and high bytes. *)
@@ -212,32 +212,32 @@ let free_char =
       (2, Gen.char_range 'A' 'Z');
       (* [':'] is the stable_text field separator: including it stresses the
          length-framing that keeps stable_text injective. *)
-      (2, Gen.oneofl [ ' '; '-'; '/'; '.'; '$'; '|'; '&'; ':' ]);
+      (2, Gen.of_list [ ' '; '-'; '/'; '.'; '$'; '|'; '&'; ':' ]);
       (1, Gen.pure '\000');
       (1, Gen.map Char.chr (Gen.int_range 128 255));
     ]
 
-let free_str_gen = Gen.string_size (Gen.int_range 1 6) free_char
-let path_op_gen = Gen.oneofl [ `Read; `Create; `Modify; `Delete ]
-let kind_gen = Gen.oneofl [ `Read; `Write; `Command; `Network; `Custom ]
+let free_str_gen = Gen.string_of ~size:(Gen.int_range 1 6) free_char
+let path_op_gen = Gen.of_list [ `Read; `Create; `Modify; `Delete ]
+let kind_gen = Gen.of_list [ `Read; `Write; `Command; `Network; `Custom ]
 
 let protocol_gen =
   Gen.frequency
     [
-      (5, Gen.oneofl [ `Http; `Https; `Ssh; `Tcp; `Udp ]);
+      (5, Gen.of_list [ `Http; `Https; `Ssh; `Tcp; `Udp ]);
       (2, Gen.map (fun name -> `Other name) free_str_gen);
     ]
 
 let confinement_gen =
   Gen.bind
-    (Gen.oneofl Access.Command.Confinement.[ Project; All ])
+    (Gen.of_list Access.Command.Confinement.[ Project; All ])
     (fun read ->
       Gen.bind
-        (Gen.oneofl Access.Command.Confinement.[ Read_only; Workspace ])
+        (Gen.of_list Access.Command.Confinement.[ Read_only; Workspace ])
         (fun write ->
           Gen.map
             (fun network -> Access.Command.Confinement.{ read; write; network })
-            (Gen.oneofl Access.Command.Confinement.[ Restricted; Enabled ])))
+            (Gen.of_list Access.Command.Confinement.[ Restricted; Enabled ])))
 
 let execution_gen =
   Gen.frequency
@@ -277,7 +277,7 @@ let command_gen =
                     Gen.map
                       (fun args ->
                         Access.Command.argv ~cwd ~execution ~program args)
-                      (Gen.list_size (Gen.int_range 0 3) free_str_gen)))) );
+                      (Gen.list ~size:(Gen.int_range 0 3) free_str_gen)))) );
       ( 1,
         Gen.bind scope_gen (fun cwd ->
             Gen.bind execution_gen (fun execution ->
@@ -355,7 +355,7 @@ let command_match_gen =
                       (fun args ->
                         Policy.Match.Command.argv_prefix ~execution ~cwd
                           ~program ~args ())
-                      (Gen.list_size (Gen.int_range 0 3) free_str_gen)))) );
+                      (Gen.list ~size:(Gen.int_range 0 3) free_str_gen)))) );
     ]
 
 let matcher_gen =
@@ -383,14 +383,14 @@ let matcher_gen =
               (Gen.option free_str_gen)) );
     ]
 
-let action_gen = Gen.oneofl Policy.Rule.[ Allow; Review; Deny ]
+let action_gen = Gen.of_list Policy.Rule.[ Allow; Review; Deny ]
 
 let rule_gen =
   Gen.bind action_gen (fun action ->
       Gen.map (fun matcher -> Policy.Rule.make action matcher) matcher_gen)
 
 let policy_gen =
-  Gen.map Policy.make (Gen.list_size (Gen.int_range 0 4) rule_gen)
+  Gen.map Policy.make (Gen.list ~size:(Gen.int_range 0 4) rule_gen)
 
 let change_gen =
   Gen.frequency
@@ -413,14 +413,14 @@ let item_gen =
 
 let request_gen =
   Gen.bind
-    (Gen.list_size (Gen.int_range 1 3) item_gen)
+    (Gen.list ~size:(Gen.int_range 1 3) item_gen)
     (fun items ->
       Gen.bind (Gen.option free_str_gen) (fun source ->
           Gen.map
             (fun display -> Request.make ?source ?display items)
             (Gen.option free_str_gen)))
 
-let lifetime_gen = Gen.oneofl Answer.[ Conversation; User ]
+let lifetime_gen = Gen.of_list Answer.[ Conversation; User ]
 
 let family_gen =
   Gen.bind lifetime_gen (fun lifetime ->
@@ -432,7 +432,7 @@ let family_gen =
             List.map (fun n -> Policy.Rule.allow (Policy.Match.custom n)) names
           in
           Answer.family ~lifetime ~rules)
-        (Gen.list_size (Gen.int_range 1 3) free_str_gen))
+        (Gen.list ~size:(Gen.int_range 1 3) free_str_gen))
 
 let answer_gen =
   Gen.frequency
@@ -445,28 +445,28 @@ let answer_gen =
 
 (* Testables. *)
 
-let access_value = testable ~pp:Access.pp ~equal:Access.equal ~gen:access_gen ()
+let access_value = Testable.make ~pp:Access.pp ~equal:Access.equal
 
 let request_value =
-  testable ~pp:Request.pp ~equal:Request.equal ~gen:request_gen ()
+  Testable.make ~pp:Request.pp ~equal:Request.equal
 
 let item_value =
-  testable ~pp:Request.Item.pp ~equal:Request.Item.equal ~gen:item_gen ()
+  Testable.make ~pp:Request.Item.pp ~equal:Request.Item.equal
 
-let change_value = testable ~pp:Request.Change.pp ~equal:Request.Change.equal ()
+let change_value = Testable.make ~pp:Request.Change.pp ~equal:Request.Change.equal
 
 let rule_value =
-  testable ~pp:Policy.Rule.pp ~equal:Policy.Rule.equal ~gen:rule_gen ()
+  Testable.make ~pp:Policy.Rule.pp ~equal:Policy.Rule.equal
 
-let policy_value = testable ~pp:Policy.pp ~equal:Policy.equal ~gen:policy_gen ()
-let answer_value = testable ~pp:Answer.pp ~equal:Answer.equal ~gen:answer_gen ()
+let policy_value = Testable.make ~pp:Policy.pp ~equal:Policy.equal
+let answer_value = Testable.make ~pp:Answer.pp ~equal:Answer.equal
 
-(* [cases] rows print their label only. *)
-let labelled =
-  testable
-    ~pp:(fun ppf (label, _) -> Format.pp_print_string ppf label)
-    ~equal:(fun (a, _) (b, _) -> String.equal a b)
-    ()
+(* Property inputs: the generators above with counterexample printers. *)
+let access_gen = Gen.with_pp Access.pp access_gen
+let request_gen = Gen.with_pp Request.pp request_gen
+let rule_gen = Gen.with_pp Policy.Rule.pp rule_gen
+let policy_gen = Gen.with_pp Policy.pp policy_gen
+let answer_gen = Gen.with_pp Answer.pp answer_gen
 
 (* Access facts: construction and validation *)
 
@@ -503,11 +503,11 @@ let access_constructor_validation () =
       ignore (Access.custom ~subject:"" "capability"))
 
 let validation_errors_name_the_function_and_constraint () =
-  raises_invalid_arg ~msg:"shell command error is actionable"
-    "Mentat_permission.Access.Command.shell: text must not be empty" (fun () ->
+  raises ~msg:"shell command error is actionable"
+    (Invalid_argument "Mentat_permission.Access.Command.shell: text must not be empty") (fun () ->
       ignore (shell ""));
-  raises_invalid_arg ~msg:"request access error is actionable"
-    "Mentat_permission.Request.of_accesses: accesses must not be empty"
+  raises ~msg:"request access error is actionable"
+    (Invalid_argument "Mentat_permission.Request.of_accesses: accesses must not be empty")
     (fun () -> ignore (Request.of_accesses []))
 
 let shell_and_exec_have_distinct_keys () =
@@ -612,16 +612,16 @@ let request_constructor_validation () =
     (Access.Set.cardinal (Request.unique_accesses with_duplicates))
 
 let change_validation_and_lookup () =
-  raises_invalid_arg ~msg:"change diff cannot be empty"
-    "Mentat_permission.Request.Change.make: diff must not be empty" (fun () ->
+  raises ~msg:"change diff cannot be empty"
+    (Invalid_argument "Mentat_permission.Request.Change.make: diff must not be empty") (fun () ->
       Request.Change.make ~diff:"" ());
   raises_invalid "change additions must be non-negative" (fun () ->
       ignore (Request.Change.make ~additions:(-1) ()));
   raises_invalid "change removals must be non-negative" (fun () ->
       ignore (Request.Change.make ~removals:(-1) ()));
-  raises_invalid_arg ~msg:"change needs at least one field"
-    "Mentat_permission.Request.Change.make: change must contain at least one \
-     field" (fun () -> Request.Change.make ());
+  raises ~msg:"change needs at least one field"
+    (Invalid_argument "Mentat_permission.Request.Change.make: change must contain at least one \
+     field") (fun () -> Request.Change.make ());
   let change = Request.Change.make ~diff:"+x" ~additions:1 ~removals:0 () in
   let later_change =
     Request.Change.make ~diff:"-y\n+z" ~additions:1 ~removals:1 ()
@@ -908,8 +908,8 @@ let evaluation =
       test "reviews capture the deciding reason"
         reviews_capture_the_deciding_reason;
       (* all rules over the same matcher match; the head decides. *)
-      prop' "first matching rule decides regardless of later same-matcher rules"
-        access_value (fun a ->
+      prop "first matching rule decides regardless of later same-matcher rules"
+        access_gen (fun a ->
           let m = Policy.Match.exact a in
           let tag_of = function
             | Policy.Rule.Allow -> `Allowed
@@ -933,8 +933,8 @@ let evaluation =
                 = tag_of head))
             Policy.Rule.[ Allow; Review; Deny ]);
       (* a deny reports every normalized access in normalized order. *)
-      prop' "deny_all denies and reports every access in normalized order"
-        request_value (fun r ->
+      prop "deny_all denies and reports every access in normalized order"
+        request_gen (fun r ->
           match Policy.decide (Policy.make [ Policy.Rule.deny_all ]) r with
           | Policy.Decision.Denied (first, rest) ->
               equal (list access_value) ~msg:"denials in normalized order"
@@ -943,7 +943,7 @@ let evaluation =
           | Policy.Decision.Allowed | Policy.Decision.Review _ ->
               failf "deny_all must deny");
       (* allow-all allows every request; default reviews every request. *)
-      prop' "grouped decision is all-or-review" request_value (fun r ->
+      prop "grouped decision is all-or-review" request_gen (fun r ->
           is_true ~msg:"allow-all allows the whole group"
             (decision_tag
                (Policy.decide
@@ -1516,7 +1516,7 @@ let grants_and_review =
       test "confinement is exact command and grant identity"
         confinement_is_exact_command_and_grant_identity;
       (* a grant matches only the exact reviewed access. *)
-      prop' "remember grants every reviewed access" request_value (fun r ->
+      prop "remember grants every reviewed access" request_gen (fun r ->
           let accesses = Request.normalized_accesses r in
           let review = restore_review r accesses in
           let grants = Policy.Review.remember review Policy.Grants.empty in
@@ -1525,8 +1525,8 @@ let grants_and_review =
               is_true ~msg:"reviewed access is granted"
                 (Policy.Grants.allows grants access))
             accesses);
-      prop' "a grant never broadens to a distinct access"
-        (pair access_value access_value) (fun (a, b) ->
+      prop "a grant never broadens to a distinct access"
+        (Gen.pair access_gen access_gen) (fun (a, b) ->
           if Access.equal a b then ()
           else begin
             let review = restore_review (request a) [ a ] in
@@ -1536,7 +1536,7 @@ let grants_and_review =
               (not (Policy.Grants.allows grants b))
           end);
       (* restore reconstructs the subset without rerunning policy. *)
-      prop' "restore reconstructs a non-empty request subset" request_value
+      prop "restore reconstructs a non-empty request subset" request_gen
         (fun r ->
           let accesses = Request.normalized_accesses r in
           let review = restore_review r accesses in
@@ -1558,16 +1558,16 @@ let grants_and_review =
 (* Answer *)
 
 let answer_family_construction_validates () =
-  raises_invalid_arg ~msg:"empty family rules rejected"
-    "Mentat_permission.Answer.family: rules must not be empty" (fun () ->
+  raises ~msg:"empty family rules rejected"
+    (Invalid_argument "Mentat_permission.Answer.family: rules must not be empty") (fun () ->
       ignore (Answer.family ~lifetime:Answer.User ~rules:[]));
-  raises_invalid_arg ~msg:"non-allow family rule rejected"
-    "Mentat_permission.Answer.family: rules must all allow" (fun () ->
+  raises ~msg:"non-allow family rule rejected"
+    (Invalid_argument "Mentat_permission.Answer.family: rules must all allow") (fun () ->
       ignore
         (Answer.family ~lifetime:Answer.User
            ~rules:[ Policy.Rule.deny (Policy.Match.kind `Read) ]));
-  raises_invalid_arg ~msg:"duplicate family rules rejected"
-    "Mentat_permission.Answer.family: rules must not contain duplicates"
+  raises ~msg:"duplicate family rules rejected"
+    (Invalid_argument "Mentat_permission.Answer.family: rules must not contain duplicates")
     (fun () ->
       let r = Policy.Rule.allow (Policy.Match.kind `Read) in
       ignore (Answer.family ~lifetime:Answer.Conversation ~rules:[ r; r ]));
@@ -1735,11 +1735,12 @@ let answer =
       test "allow and deny are exclusive" answer_allow_deny_exclusivity;
       test "answer equality is authority equality" answer_equality;
       test "answer wire is a versioned tagged enum" answer_wire_golden;
-      cases labelled (answer_rejections ()) "answer decode fails closed"
+      cases "answer decode fails closed" ~name:fst (answer_rejections ())
         (fun (_, json) ->
           is_true (Result.is_error (Json.decode Answer.jsont json)));
-      prop "answer jsont round-trips" answer_value (fun a ->
-          Answer.equal a (json_decode Answer.jsont (json_encode Answer.jsont a)));
+      prop "answer jsont round-trips" answer_gen (fun a ->
+          equal answer_value a
+            (json_decode Answer.jsont (json_encode Answer.jsont a)));
     ]
 
 (* Codecs *)
@@ -1936,9 +1937,7 @@ let json_rejections () =
   ]
 
 let review_value =
-  testable
-    ~pp:(fun ppf _ -> Format.pp_print_string ppf "<review>")
-    ~equal:Policy.Review.equal ()
+  Testable.make ~pp:(fun ppf _ -> Format.pp_print_string ppf "<review>") ~equal:Policy.Review.equal
 
 let review_json_roundtrips () =
   let read = workspace_read "README.md" in
@@ -2022,12 +2021,12 @@ let codecs =
     [
       test "json roundtrips core values" json_roundtrips_core_values;
       test "review json roundtrips captured reasons" review_json_roundtrips;
-      cases labelled (review_json_rejections ())
-        "review json decode fails closed" (fun (_, json) ->
+      cases ~name:fst "review json decode fails closed"
+        (review_json_rejections ()) (fun (_, json) ->
           is_true (Result.is_error (Json.decode Policy.Review.jsont json)));
       test "access json normalizes outside paths"
         access_json_normalizes_outside_workspace_paths;
-      cases labelled (json_rejections ()) "json decode fails closed"
+      cases "json decode fails closed" ~name:fst (json_rejections ())
         (fun (_, json) ->
           (* Each row targets a specific codec; probe both access and rule
              codecs so the row rejects under whichever owns it. *)
@@ -2036,22 +2035,24 @@ let codecs =
             && Result.is_error (Json.decode Policy.Rule.jsont json)
             && Result.is_error (Json.decode Request.jsont json)
             && Result.is_error (Json.decode Policy.jsont json)));
-      prop "access jsont round-trips generated accesses" access_value (fun a ->
-          Access.equal a (json_decode Access.jsont (json_encode Access.jsont a)));
-      prop "rule jsont round-trips generated rules" rule_value (fun r ->
-          Policy.Rule.equal r
+      prop "access jsont round-trips generated accesses" access_gen (fun a ->
+          equal access_value a
+            (json_decode Access.jsont (json_encode Access.jsont a)));
+      prop "rule jsont round-trips generated rules" rule_gen (fun r ->
+          equal rule_value r
             (json_decode Policy.Rule.jsont (json_encode Policy.Rule.jsont r)));
-      prop "policy jsont round-trips generated policies" policy_value (fun p ->
-          Policy.equal p (json_decode Policy.jsont (json_encode Policy.jsont p)));
-      prop "request jsont round-trips generated requests" request_value
+      prop "policy jsont round-trips generated policies" policy_gen (fun p ->
+          equal policy_value p
+            (json_decode Policy.jsont (json_encode Policy.jsont p)));
+      prop "request jsont round-trips generated requests" request_gen
         (fun r ->
-          Request.equal r
+          equal request_value r
             (json_decode Request.jsont (json_encode Request.jsont r)));
       (* Obligation C: security semantics survive a codec round-trip. A request
          denied (or reviewed, or allowed) under a policy keeps that verdict
          after both are re-decoded from their wire. *)
-      prop' "decide verdict survives a jsont round-trip of policy and request"
-        (pair policy_value request_value) (fun (p, r) ->
+      prop "decide verdict survives a jsont round-trip of policy and request"
+        (Gen.pair policy_gen request_gen) (fun (p, r) ->
           let p' = json_decode Policy.jsont (json_encode Policy.jsont p) in
           let r' = json_decode Request.jsont (json_encode Request.jsont r) in
           is_true ~msg:"same verdict"
@@ -2062,7 +2063,7 @@ let codecs =
 (* Review behavior: the per-run posture over review outcomes. *)
 
 let behavior_value =
-  testable ~pp:Review_behavior.pp ~equal:Review_behavior.equal ()
+  Testable.make ~pp:Review_behavior.pp ~equal:Review_behavior.equal
 
 let review_behavior_vocabulary =
   group "review behavior"
@@ -2246,11 +2247,11 @@ let path_scope_codec =
         outside_and_unknown_keep_flat_path;
       test "path matcher composes Workspace.Path.jsont"
         path_matcher_composes_workspace_path;
-      cases labelled (ws_access_rejections ())
-        "workspace access decode fails closed" (fun (_, json) ->
+      cases ~name:fst "workspace access decode fails closed"
+        (ws_access_rejections ()) (fun (_, json) ->
           is_true (Result.is_error (Json.decode Access.jsont json)));
-      cases labelled (path_matcher_rejections ())
-        "path matcher decode fails closed" (fun (_, json) ->
+      cases ~name:fst "path matcher decode fails closed"
+        (path_matcher_rejections ()) (fun (_, json) ->
           is_true (Result.is_error (Json.decode Policy.Rule.jsont json)));
     ]
 
@@ -2413,28 +2414,28 @@ let stable_text =
         rule_stable_text_distinguishes_rules;
       test "rule ids are stable digests" rule_ids_are_stable_digests;
       test "rule ids have a validated typed wire codec" rule_id_codec_contract;
-      prop' "derived rule ids round-trip through their typed wire codec"
-        rule_value rule_id_roundtrips_for_generated_rules;
+      prop "derived rule ids round-trip through their typed wire codec"
+        rule_gen rule_id_roundtrips_for_generated_rules;
       test "stable text bytes are pinned" stable_text_bytes_are_pinned;
       test "stable_text is collision resistant"
         stable_text_is_collision_resistant;
       (* length framing makes stable_text injective, so a collision on the
          digest input can only be a genuinely equal authority. *)
-      prop' "access stable_text collisions imply equal accesses"
-        (pair access_value access_value)
+      prop "access stable_text collisions imply equal accesses"
+        (Gen.pair access_gen access_gen)
         stable_text_injective_over_generated_accesses;
-      prop' "rule stable_text collisions imply equal rules"
-        (pair rule_value rule_value)
+      prop "rule stable_text collisions imply equal rules"
+        (Gen.pair rule_gen rule_gen)
         stable_text_injective_over_generated_rules;
       (* stable_text is a pure function of the value, hence invariant under
          a jsont round-trip (digest input must not drift on re-decode). *)
-      prop' "access stable_text is invariant under a jsont round-trip"
-        access_value (fun a ->
+      prop "access stable_text is invariant under a jsont round-trip"
+        access_gen (fun a ->
           equal string ~msg:"access stable_text stable across round-trip"
             (Access.stable_text a)
             (Access.stable_text
                (json_decode Access.jsont (json_encode Access.jsont a))));
-      prop' "rule stable_text is invariant under a jsont round-trip" rule_value
+      prop "rule stable_text is invariant under a jsont round-trip" rule_gen
         (fun r ->
           equal string ~msg:"rule stable_text stable across round-trip"
             (Policy.Rule.stable_text r)

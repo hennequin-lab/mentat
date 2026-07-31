@@ -784,4 +784,3 @@ claim applies: 1
 claim observations: 0
 disk: "one\r\ntwo"|}]
 
-[%%run_tests "mentat.tools.write_file"]

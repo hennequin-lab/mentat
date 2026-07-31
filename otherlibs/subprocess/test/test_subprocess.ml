@@ -61,9 +61,9 @@ let capture_head_tail () =
     (split ~head:2 ~tail:0 [ "abcdef" ])
 
 let capture_rejects_negative () =
-  raises_invalid_arg "capture limit must be non-negative" (fun () ->
+  raises (Invalid_argument "capture limit must be non-negative") (fun () ->
       Capture.create (Capture.Limit (-1)));
-  raises_invalid_arg "capture head and tail must be non-negative" (fun () ->
+  raises (Invalid_argument "capture head and tail must be non-negative") (fun () ->
       Capture.create (Capture.Head_tail { head = -1; tail = 0 }))
 
 (* Supervised real children. *)

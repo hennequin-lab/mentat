@@ -39,23 +39,22 @@ module Rel = Lpath.Rel
 
 let abs = Abs.of_string_exn
 let rel = Rel.of_string_exn
-let abs_value = testable ~pp:Abs.pp ~equal:Abs.equal ()
-let path_value = testable ~pp:Workspace.Path.pp ~equal:Workspace.Path.equal ()
+let abs_value = Testable.make ~pp:Abs.pp ~equal:Abs.equal
+let path_value = Testable.make ~pp:Workspace.Path.pp ~equal:Workspace.Path.equal
 
 let key_value =
-  testable ~pp:Workspace.Root.Key.pp ~equal:Workspace.Root.Key.equal ()
+  Testable.make ~pp:Workspace.Root.Key.pp ~equal:Workspace.Root.Key.equal
 
-let status_value = testable ~pp:Eio.Process.pp_status ~equal:( = ) ()
+let status_value = Testable.make ~pp:Eio.Process.pp_status ~equal:( = )
 
 let sandbox_error_value =
-  testable ~pp:Sandbox.Error.pp ~equal:Sandbox.Error.equal ()
+  Testable.make ~pp:Sandbox.Error.pp ~equal:Sandbox.Error.equal
 
 let evidence_value =
-  testable ~pp:Sandbox.Evidence.pp ~equal:Sandbox.Evidence.equal ()
+  Testable.make ~pp:Sandbox.Evidence.pp ~equal:Sandbox.Evidence.equal
 
 let resolve_error_value =
-  testable ~pp:Workspace.Resolve_error.pp ~equal:Workspace.Resolve_error.equal
-    ()
+  Testable.make ~pp:Workspace.Resolve_error.pp ~equal:Workspace.Resolve_error.equal
 
 let ws_path root text =
   Workspace.Path.make ~root_key:(Workspace.Root.key root) (rel text)
@@ -1218,7 +1217,7 @@ let a_new_claim_scope_supersedes_an_abandoned_one () =
     apply_exn w
       (Edit.create ~path:(ws_path w.primary "two.txt") ~contents:"2\n")
   in
-  raises_invalid_arg "claim scope is closed" (fun () ->
+  raises (Invalid_argument "claim scope is closed") (fun () ->
       Wio.Claim_scope.observe abandoned (ws_path w.primary "late.txt"));
   let abandoned_evidence = Wio.Claim_scope.close abandoned in
   (match abandoned_evidence.Edit.Apply_evidence.applies with
@@ -1227,7 +1226,7 @@ let a_new_claim_scope_supersedes_an_abandoned_one () =
         (only == first)
   | applies ->
       failf "expected one superseded apply, got %d" (List.length applies));
-  raises_invalid_arg "claim scope is closed" (fun () ->
+  raises (Invalid_argument "claim scope is closed") (fun () ->
       Wio.Claim_scope.close abandoned);
   let evidence = Wio.Claim_scope.close current in
   (match evidence.Edit.Apply_evidence.applies with
@@ -1502,9 +1501,9 @@ let head_tail_elision_law () =
 let negative_capture_bounds_raise () =
   with_direct "run-negative" @@ fun w ->
   let none = Eio.Time.Timeout.none in
-  raises_invalid_arg "capture limit must be non-negative" (fun () ->
+  raises (Invalid_argument "capture limit must be non-negative") (fun () ->
       Command.run w.io ~capture:(Command.Limit (-1)) ~timeout:none (sh "exit 0"));
-  raises_invalid_arg "capture head and tail must be non-negative" (fun () ->
+  raises (Invalid_argument "capture head and tail must be non-negative") (fun () ->
       Command.run w.io
         ~capture:(Command.Head_tail { head = -1; tail = 0 })
         ~timeout:none (sh "exit 0"))
@@ -2288,8 +2287,8 @@ let unavailable_backend_fails_closed () =
   (match Wio.evidence w.io with
   | Sandbox.Evidence.Refused _ -> ()
   | _ -> fail "the seam must seal a refused confinement");
-  is_ok ~msg:"requirement off admits a refused seal"
-    (Wio.check w.io ~requirement:Sandbox.Requirement.Off);
+  ignore (require_ok ~msg:"requirement off admits a refused seal"
+    (Wio.check w.io ~requirement:Sandbox.Requirement.Off));
   (match Wio.check w.io ~requirement:Sandbox.Requirement.Enforced with
   | Error
       (Sandbox.Requirement.Rejection.Unenforceable (Sandbox.Error.Unavailable _))
@@ -2307,8 +2306,8 @@ let startup_gate_admits_an_enforced_capability () =
   require_enforced w.io;
   List.iter
     (fun requirement ->
-      is_ok ~msg:"a fresh enforced capability passes every requirement level"
-        (Wio.check w.io ~requirement))
+      ignore (require_ok ~msg:"a fresh enforced capability passes every requirement level"
+        (Wio.check w.io ~requirement)))
     Sandbox.Requirement.all
 
 (* Suite. *)

@@ -35,84 +35,90 @@ let%expect_test
   submit t "also update the changelog";
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-fc164f18
-04 |
-05 | ❯ hold the first turn open
-06 |
-07 | ⠋ Working… (0s · esc to interrupt)
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |   ↥ queued · "also update the changelog" (↑ edits)
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ queue a message — sends after this turn
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-d56d5b5c
+    04 |
+    05 | ❯ hold the first turn open
+    06 |
+    07 | ⠋ Working… (0s · esc to interrupt)
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |   ↥ queued · "also update the changelog" (↑ edits)
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ queue a message — sends after this turn
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…
+    |}];
   finish_turn t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-fc164f18
-04 |
-05 | ❯ hold the first turn open
-06 |
-07 | ⏺ First turn done.
-08 |
-09 | ❯ also update the changelog
-10 |
-11 | ⠋ Working… (0s · esc to interrupt)
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ queue a message — sends after this turn
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-d56d5b5c
+    04 |
+    05 | ❯ hold the first turn open
+    06 |
+    07 | ⏺ First turn done.
+    08 |
+    09 | ❯ also update the changelog
+    10 |
+    11 | ⠋ Working… (0s · esc to interrupt)
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ queue a message — sends after this turn
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…
+    |}];
   finish_turn t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-fc164f18
-04 |
-05 | ❯ hold the first turn open
-06 |
-07 | ⏺ First turn done.
-08 |
-09 | ❯ also update the changelog
-10 |
-11 | ⏺ Changelog updated.
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-d56d5b5c
+    04 |
+    05 | ❯ hold the first turn open
+    06 |
+    07 | ⏺ First turn done.
+    08 |
+    09 | ❯ also update the changelog
+    10 |
+    11 | ⏺ Changelog updated.
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…
+    |}]
 
 let%expect_test "up recovers the newest draft while preserving the older queue"
     =
@@ -130,58 +136,62 @@ let%expect_test "up recovers the newest draft while preserving the older queue"
   submit t "recover these release notes";
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-fc164f18
-04 |
-05 | ❯ hold the turn for queue editing
-06 |
-07 | ⠋ Working… (0s · esc to interrupt)
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |   ↥ queued · "keep the changelog queued" (↑ edits)
-19 |   ↥ queued · "recover these release notes" (↑ edits)
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ queue a message — sends after this turn
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-d56d5b5c
+    04 |
+    05 | ❯ hold the turn for queue editing
+    06 |
+    07 | ⠋ Working… (0s · esc to interrupt)
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |   ↥ queued · "keep the changelog queued" (↑ edits)
+    19 |   ↥ queued · "recover these release notes" (↑ edits)
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ queue a message — sends after this turn
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…
+    |}];
   Tui.keys t Key.up;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-fc164f18
-04 |
-05 | ❯ hold the turn for queue editing
-06 |
-07 | ⠋ Working… (0s · esc to interrupt)
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |   ↥ queued · "keep the changelog queued" (↑ edits)
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ recover these release notes
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-d56d5b5c
+    04 |
+    05 | ❯ hold the turn for queue editing
+    06 |
+    07 | ⠋ Working… (0s · esc to interrupt)
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |   ↥ queued · "keep the changelog queued" (↑ edits)
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ recover these release notes
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…
+    |}];
   finish_turn t;
   finish_turn t
 
@@ -201,58 +211,62 @@ let%expect_test
   submit t "keep this queued exactly once";
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-fc164f18
-04 |
-05 | ❯ hold the turn during recovery
-06 |
-07 | ⠋ Working… (0s · esc to interrupt)
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |   ↥ queued · "keep this queued exactly once" (↑ edits)
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ queue a message — sends after this turn
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-d56d5b5c
+    04 |
+    05 | ❯ hold the turn during recovery
+    06 |
+    07 | ⠋ Working… (0s · esc to interrupt)
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |   ↥ queued · "keep this queued exactly once" (↑ edits)
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ queue a message — sends after this turn
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…
+    |}];
   Tui.keys t Key.up;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-fc164f18
-04 |
-05 | ❯ hold the turn during recovery
-06 |
-07 | ✗ queued draft edit unavailable
-08 |   retry when ready
-09 |
-10 | ⠋ Working… (0s · esc to interrupt)
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |   ↥ queued · "keep this queued exactly once" (↑ edits)
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ queue a message — sends after this turn
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   queued draft edit unavailable|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-d56d5b5c
+    04 |
+    05 | ❯ hold the turn during recovery
+    06 |
+    07 | ✗ queued draft edit unavailable
+    08 |   retry when ready
+    09 |
+    10 | ⠋ Working… (0s · esc to interrupt)
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |   ↥ queued · "keep this queued exactly once" (↑ edits)
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ queue a message — sends after this turn
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   queued draft edit unavailable
+    |}]
 
 let%expect_test
     "a pending up edit cannot pop the factual queue twice or overwrite newer \
@@ -276,58 +290,62 @@ let%expect_test
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-fc164f18
-04 |
-05 | ❯ hold the turn during a late failure
-06 |
-07 | ⠋ Working… (0s · esc to interrupt)
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |   ↥ queued · "preserve this queued correction" (↑ edits)
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ queue a message — sends after this turn
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   queue edit in progress|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-d56d5b5c
+    04 |
+    05 | ❯ hold the turn during a late failure
+    06 |
+    07 | ⠋ Working… (0s · esc to interrupt)
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |   ↥ queued · "preserve this queued correction" (↑ edits)
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ queue a message — sends after this turn
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   queue edit in progress
+    |}];
   Tui.finish_queue_edit_result t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-fc164f18
-04 |
-05 | ❯ hold the turn during a late failure
-06 |
-07 | ✗ late queue edit failure
-08 |   retry when ready
-09 |
-10 | ⠋ Working… (0s · esc to interrupt)
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |   ↥ queued · "preserve this queued correction" (↑ edits)
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ queue a message — sends after this turn
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   late queue edit failure|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-d56d5b5c
+    04 |
+    05 | ❯ hold the turn during a late failure
+    06 |
+    07 | ✗ late queue edit failure
+    08 |   retry when ready
+    09 |
+    10 | ⠋ Working… (0s · esc to interrupt)
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |   ↥ queued · "preserve this queued correction" (↑ edits)
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ queue a message — sends after this turn
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   late queue edit failure
+    |}]
 
 let%expect_test
     "cooperative interrupt visibly drains and runs the queued correction" =
@@ -346,84 +364,89 @@ let%expect_test
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-fc164f18
-04 |
-05 | ❯ go in the wrong direction
-06 |
-07 | ⠋ Working… (0s · esc to interrupt)
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |   ↥ queued · "also update the changelog" (↑ edits)
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ queue a message — sends after this turn
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   press esc again to interrupt|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-d56d5b5c
+    04 |
+    05 | ❯ go in the wrong direction
+    06 |
+    07 | ⠋ Working… (0s · esc to interrupt)
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |   ↥ queued · "also update the changelog" (↑ edits)
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ queue a message — sends after this turn
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   press esc again to interrupt
+    |}];
   Tui.keys t Key.escape;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-fc164f18
-04 |
-05 | ❯ go in the wrong direction
-06 |
-07 | ◌ Interrupted — tell mentat what to do differently.
-08 |
-09 | ❯ also update the changelog
-10 |
-11 | ⠙ Working… (0s · esc to interrupt)
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ queue a message — sends after this turn
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-d56d5b5c
+    04 |
+    05 | ❯ go in the wrong direction
+    06 |
+    07 | ◌ Interrupted — tell mentat what to do differently.
+    08 |
+    09 | ❯ also update the changelog
+    10 |
+    11 | ⠙ Working… (0s · esc to interrupt)
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ queue a message — sends after this turn
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…
+    |}];
   finish_turn t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-fc164f18
-04 |
-05 | ❯ go in the wrong direction
-06 |
-07 | ◌ Interrupted — tell mentat what to do differently.
-08 |
-09 | ❯ also update the changelog
-10 |
-11 | ⏺ Changelog updated after the interrupt.
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-d56d5b5c
+    04 |
+    05 | ❯ go in the wrong direction
+    06 |
+    07 | ◌ Interrupted — tell mentat what to do differently.
+    08 |
+    09 | ❯ also update the changelog
+    10 |
+    11 | ⏺ Changelog updated after the interrupt.
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…
+    |}]
 
-[%%run_tests "mentat.tui.queue"]

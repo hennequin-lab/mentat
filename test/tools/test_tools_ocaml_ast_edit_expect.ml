@@ -1256,4 +1256,3 @@ let%expect_test "durable output is summary-only and mutation truth stays scoped"
     disk: "module M = struct\n  type t = int\n  let add x = x + 1\n  let keep = 9\nend\n\ntype same = A\nlet same = 7\nlet companion = 8\nlet same = 2\nlet calc : int = outer (inner 1)\nlet pair = (10, 20)\nlet (left, right) = (1, 2)\n"
     |}]
 
-[%%run_tests "mentat.tools.ocaml_ast_edit"]

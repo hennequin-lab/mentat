@@ -112,86 +112,92 @@ let%expect_test
   open_pending t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permission8b592900.home/mentat…
-04 |
-05 | ❯ inspect the workspace
-06 |
-07 | ⋯ Waiting for your answer
-08 |
-09 |
-10 |
-11 |
-12 |
-13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-14 |    permission
-15 |
-16 |   Run this command?
-17 |   $ git status --short && dune build @check                                    ▀
-18 |   access · command
-19 | ❯ 1. Yes, run once
-20 |   2. Yes, allow this exact command for this conversation
-21 |   3. No, deny
-22 |   4. No, deny and tell the model what to do differently
-23 |
-24 |   1-4 select · ↵ choose · ^O more|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permission1ba14efa.home/mentat…
+    04 |
+    05 | ❯ inspect the workspace
+    06 |
+    07 | ⋯ Waiting for your answer
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    14 |    permission
+    15 |
+    16 |   Run this command?
+    17 |   $ git status --short && dune build @check                                    ▀
+    18 |   access · command
+    19 | ❯ 1. Yes, run once
+    20 |   2. Yes, allow this exact command for this conversation
+    21 |   3. No, deny
+    22 |   4. No, deny and tell the model what to do differently
+    23 |
+    24 |   1-4 select · ↵ choose · ^O more
+    |}];
   Tui.keys t "2";
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permission8b592900.home/mentat…
-04 |
-05 | ❯ inspect the workspace
-06 |
-07 | ⋯ Waiting for your answer
-08 |
-09 |
-10 |
-11 |
-12 |
-13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-14 |    permission
-15 |
-16 |   Run this command?
-17 |   $ git status --short && dune build @check                                    ▀
-18 |   access · command
-19 |   1. Yes, run once
-20 | ❯ 2. Yes, allow this exact command for this conversation
-21 |   3. No, deny
-22 |   4. No, deny and tell the model what to do differently
-23 |
-24 |   1-4 select · ↵ choose · ^O more|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permission1ba14efa.home/mentat…
+    04 |
+    05 | ❯ inspect the workspace
+    06 |
+    07 | ⋯ Waiting for your answer
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    14 |    permission
+    15 |
+    16 |   Run this command?
+    17 |   $ git status --short && dune build @check                                    ▀
+    18 |   access · command
+    19 |   1. Yes, run once
+    20 | ❯ 2. Yes, allow this exact command for this conversation
+    21 |   3. No, deny
+    22 |   4. No, deny and tell the model what to do differently
+    23 |
+    24 |   1-4 select · ↵ choose · ^O more
+    |}];
   Tui.enter t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permission8b592900.home/mentat…
-04 |
-05 | ❯ inspect the workspace
-06 |
-07 | ⠋ Working… (0s · esc to interrupt)
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ queue a message — sends after this turn
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · /tmp/mentat-tu… · openai/gp… · ! full access ? f…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permission1ba14efa.home/mentat…
+    04 |
+    05 | ❯ inspect the workspace
+    06 |
+    07 | ⠋ Working… (0s · esc to interrupt)
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ queue a message — sends after this turn
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · /tmp/mentat-tu… · openai/gp… · ! full access ? f…
+    |}]
 
 let%expect_test "decision failure re-enables the exact open dialog" =
   let answer =
@@ -218,30 +224,32 @@ let%expect_test "decision failure re-enables the exact open dialog" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permission-retry-reb5117737.ho…
-04 |
-05 | ❯ retry exact answer
-06 |
-07 | ✗ answer unavailable
-08 |   retry when ready
-09 |
-10 | ⋯ Waiting for your answer
-11 |
-12 |
-13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-14 |    permission
-15 |
-16 |   Run this command?
-17 |   $ git status --short && dune build @check                                    ▀
-18 |   access · command
-19 |   1. Yes, run once
-20 | ❯ 2. Yes, allow this exact command for this conversation
-21 |   3. No, deny
-22 |   4. No, deny and tell the model what to do differently
-23 |
-24 |   1-4 select · ↵ choose · ^O more|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permission-retry-re4d16f242.ho…
+    04 |
+    05 | ❯ retry exact answer
+    06 |
+    07 | ✗ answer unavailable
+    08 |   retry when ready
+    09 |
+    10 | ⋯ Waiting for your answer
+    11 |
+    12 |
+    13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    14 |    permission
+    15 |
+    16 |   Run this command?
+    17 |   $ git status --short && dune build @check                                    ▀
+    18 |   access · command
+    19 |   1. Yes, run once
+    20 | ❯ 2. Yes, allow this exact command for this conversation
+    21 |   3. No, deny
+    22 |   4. No, deny and tell the model what to do differently
+    23 |
+    24 |   1-4 select · ↵ choose · ^O more
+    |}];
   Tui.enter t;
   Tui.settle t;
   Tui.acknowledge_decision t;
@@ -249,30 +257,32 @@ let%expect_test "decision failure re-enables the exact open dialog" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permission-retry-reb5117737.ho…
-04 |
-05 | ❯ retry exact answer
-06 |
-07 | ✗ answer unavailable
-08 |   retry when ready
-09 |
-10 | ⠋ Working… (0s · esc to interrupt)
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ queue a message — sends after this turn
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · /tmp/mentat-tu… · openai/gpt… · ! full access ? …|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permission-retry-re4d16f242.ho…
+    04 |
+    05 | ❯ retry exact answer
+    06 |
+    07 | ✗ answer unavailable
+    08 |   retry when ready
+    09 |
+    10 | ⠋ Working… (0s · esc to interrupt)
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ queue a message — sends after this turn
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · /tmp/mentat-tu… · openai/gpt… · ! full access ? …
+    |}]
 
 let%expect_test "decision acknowledgement waits for durable resolution" =
   Tui.run ~name:"permission-held-resolution" ~home:no_home
@@ -301,58 +311,62 @@ let%expect_test "decision acknowledgement waits for durable resolution" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permission-held-rebbaf9c0c.hom…
-04 |
-05 | ❯ inspect before settling
-06 |
-07 | ⋯ Waiting for your answer
-08 |
-09 |
-10 |
-11 |
-12 |
-13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-14 |    permission
-15 |
-16 |   Run this command?
-17 |   $ git status --short && dune build @check                                    ▀
-18 |   access · command
-19 |   1. Yes, run once
-20 | ❯ 2. Yes, allow this exact command for this conversation
-21 |   3. No, deny
-22 |   4. No, deny and tell the model what to do differently
-23 |
-24 |   1-4 select · ↵ choose · ^O more|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permission-held-re1dcc9889.hom…
+    04 |
+    05 | ❯ inspect before settling
+    06 |
+    07 | ⋯ Waiting for your answer
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    14 |    permission
+    15 |
+    16 |   Run this command?
+    17 |   $ git status --short && dune build @check                                    ▀
+    18 |   access · command
+    19 |   1. Yes, run once
+    20 | ❯ 2. Yes, allow this exact command for this conversation
+    21 |   3. No, deny
+    22 |   4. No, deny and tell the model what to do differently
+    23 |
+    24 |   1-4 select · ↵ choose · ^O more
+    |}];
   Tui.resolve_decision t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permission-held-rebbaf9c0c.hom…
-04 |
-05 | ❯ inspect before settling
-06 |
-07 | ⠋ Working… (0s · esc to interrupt)
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ queue a message — sends after this turn
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · /tmp/mentat-tu… · openai/gpt… · ! full access ? …|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permission-held-re1dcc9889.hom…
+    04 |
+    05 | ❯ inspect before settling
+    06 |
+    07 | ⠋ Working… (0s · esc to interrupt)
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ queue a message — sends after this turn
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · /tmp/mentat-tu… · openai/gpt… · ! full access ? …
+    |}]
 
 let diff first last =
   let middle =
@@ -398,114 +412,122 @@ let%expect_test
   open_pending t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permiss1f5e42a5.home/mentat-tu…
-04 |
-05 | ❯ apply the parser patch
-06 |
-07 | ⋯ Waiting for your answer
-08 |
-09 |
-10 |
-11 |
-12 |
-13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-14 |    permission
-15 |
-16 |   Apply these changes?
-17 |   2 changes · +24 −?
-18 |   item 1/2 · lib/parser.ml · +12 −2                                            ▀
-19 | ❯ 1. Yes, apply these changes
-20 |   2. Yes, allow these exact accesses for this conversation
-21 |   3. No, deny
-22 |   4. No, deny and tell the model what to do differently
-23 |
-24 |   1-4 select · ↵ choose · ^O more|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permissfcde6fc4.home/mentat-tu…
+    04 |
+    05 | ❯ apply the parser patch
+    06 |
+    07 | ⋯ Waiting for your answer
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    14 |    permission
+    15 |
+    16 |   Apply these changes?
+    17 |   2 changes · +24 −?
+    18 |   item 1/2 · lib/parser.ml · +12 −2                                            ▀
+    19 | ❯ 1. Yes, apply these changes
+    20 |   2. Yes, allow these exact accesses for this conversation
+    21 |   3. No, deny
+    22 |   4. No, deny and tell the model what to do differently
+    23 |
+    24 |   1-4 select · ↵ choose · ^O more
+    |}];
   Tui.keys t Key.ctrl_o;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permiss1f5e42a5.home/mentat-tu…
-04 |
-05 | ❯ apply the parser patch
-06 |
-07 | ⋯ Waiting for your answer
-08 |
-09 |
-10 |
-11 |
-12 |
-13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-14 |    permission
-15 |
-16 |   item 1/2 · lib/parser.ml · +12 −2                                            ▀
-17 |   item 2/2 · lib/lexer.ml · +12 −?
-18 |   1 + let visual_line_01 = 0
-19 | ❯ 1. Yes, apply these changes
-20 |   2. Yes, allow these exact accesses for this conversation
-21 |   3. No, deny
-22 |   4. No, deny and tell the model what to do differently
-23 |
-24 |   1-4 select · ↵ choose · ^O less|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permissfcde6fc4.home/mentat-tu…
+    04 |
+    05 | ❯ apply the parser patch
+    06 |
+    07 | ⋯ Waiting for your answer
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    14 |    permission
+    15 |
+    16 |   item 1/2 · lib/parser.ml · +12 −2                                            ▀
+    17 |   item 2/2 · lib/lexer.ml · +12 −?
+    18 |   1 + let visual_line_01 = 0
+    19 | ❯ 1. Yes, apply these changes
+    20 |   2. Yes, allow these exact accesses for this conversation
+    21 |   3. No, deny
+    22 |   4. No, deny and tell the model what to do differently
+    23 |
+    24 |   1-4 select · ↵ choose · ^O less
+    |}];
   Tui.keys t Key.up;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permiss1f5e42a5.home/mentat-tu…
-04 |
-05 | ❯ apply the parser patch
-06 |
-07 | ⋯ Waiting for your answer
-08 |
-09 |
-10 |
-11 |
-12 |
-13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-14 |    permission
-15 |
-16 |   item 1/2 · lib/parser.ml · +12 −2                                            ▀
-17 |   item 2/2 · lib/lexer.ml · +12 −?
-18 |   1 + let visual_line_01 = 0
-19 |   1. Yes, apply these changes
-20 |   2. Yes, allow these exact accesses for this conversation
-21 |   3. No, deny
-22 | ❯ 4. No, deny and tell the model what to do differently
-23 |
-24 |   1-4 select · ↵ choose · ^O less|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permissfcde6fc4.home/mentat-tu…
+    04 |
+    05 | ❯ apply the parser patch
+    06 |
+    07 | ⋯ Waiting for your answer
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    14 |    permission
+    15 |
+    16 |   item 1/2 · lib/parser.ml · +12 −2                                            ▀
+    17 |   item 2/2 · lib/lexer.ml · +12 −?
+    18 |   1 + let visual_line_01 = 0
+    19 |   1. Yes, apply these changes
+    20 |   2. Yes, allow these exact accesses for this conversation
+    21 |   3. No, deny
+    22 | ❯ 4. No, deny and tell the model what to do differently
+    23 |
+    24 |   1-4 select · ↵ choose · ^O less
+    |}];
   Tui.keys t "n";
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permiss1f5e42a5.home/mentat-tu…
-04 |
-05 | ❯ apply the parser patch
-06 |
-07 | ⠋ Working… (0s · esc to interrupt)
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ queue a message — sends after this turn
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · /tmp/mentat-t… · openai/gpt… · ! full access ? f…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permissfcde6fc4.home/mentat-tu…
+    04 |
+    05 | ❯ apply the parser patch
+    06 |
+    07 | ⠋ Working… (0s · esc to interrupt)
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ queue a message — sends after this turn
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · /tmp/mentat-t… · openai/gpt… · ! full access ? f…
+    |}]
 
 let network_custom_request () =
   let network =
@@ -545,53 +567,56 @@ let%expect_test
   open_pending t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-04 |  dev · openai/gpt-5.5 medium
-05 |  /tmp/mentat-tui-permission-networ8e2b…
-06 |
-07 | ❯ contact deployment services
-08 |
-09 | ⋯ Waiting for your answer
-10 |
-11 |
-12 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-13 |    permission
-14 |
-15 |   Allow these accesses?
-16 |   Connect to the deployment services   ▀
-17 | ❯ 1. Yes, allow once
-18 |   2. Yes, allow these exact accesses ...
-19 |   3. No, deny
-20 |   4. No, deny and tell the model what...
-21 |
-22 |   1-4 select · ↵ choose · ^O more|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    04 |  dev · openai/gpt-5.5 medium
+    05 |  /tmp/mentat-tui-permission-networde8d…
+    06 |
+    07 | ❯ contact deployment services
+    08 |
+    09 | ⋯ Waiting for your answer
+    10 |
+    11 |
+    12 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    13 |    permission
+    14 |
+    15 |   Allow these accesses?
+    16 |   Connect to the deployment services   ▀
+    17 | ❯ 1. Yes, allow once
+    18 |   2. Yes, allow these exact accesses ...
+    19 |   3. No, deny
+    20 |   4. No, deny and tell the model what...
+    21 |
+    22 |   1-4 select · ↵ choose · ^O more
+    |}];
   Tui.keys t "y";
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-04 |  dev · openai/gpt-5.5 medium
-05 |  /tmp/mentat-tui-permission-networ8e2b…
-06 |
-07 | ❯ contact deployment services
-08 |
-09 | ⠋ Working… (0s · esc to interrupt)
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 | ────────────────────────────────────────
-20 | ❯ queue a message — sends after this tur
-21 | ────────────────────────────────────────
-22 |   ! not logged in · /l… · ! full acc…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    04 |  dev · openai/gpt-5.5 medium
+    05 |  /tmp/mentat-tui-permission-networde8d…
+    06 |
+    07 | ❯ contact deployment services
+    08 |
+    09 | ⠋ Working… (0s · esc to interrupt)
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 | ────────────────────────────────────────
+    20 | ❯ queue a message — sends after this tur
+    21 | ────────────────────────────────────────
+    22 |   ! not logged in · /l… · ! full acc…
+    |}]
 
-[%%run_tests "mentat.tui.permission"]

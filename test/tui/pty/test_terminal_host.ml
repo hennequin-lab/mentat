@@ -382,4 +382,3 @@ let%expect_test
     child reaped: true
     PTY resources closed: true |}]
 
-[%%run_tests "mentat.tui.pty.terminal_host"]

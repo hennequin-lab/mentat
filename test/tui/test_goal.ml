@@ -104,114 +104,122 @@ let%expect_test "pause waits for the authoritative goal fact" =
   open_goal t;
   Tui.print t;
   [%expect
-    {|01 |  goal ─────────────────────────────────────────────────────────────────── active
-02 |
-03 |   status  active
-04 |
-05 |   goal id  goal-release-parser
-06 |
-07 |   objective
-08 |
-09 |     Ship the parser without regressions
-10 |
-11 |   activity  0 continuation turns
-12 |
-13 |   tokens  0 / 24,000 used · 24,000 remaining
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 | ❯ 1. pause goal
-21 |   2. edit objective
-22 |   3. clear goal
-23 |
-24 |   pgup/pgdn details · ↑↓ select · 1-3 choose · ↵ action · esc back|}];
+    {|
+    01 |  goal ─────────────────────────────────────────────────────────────────── active
+    02 |
+    03 |   status  active
+    04 |
+    05 |   goal id  goal-release-parser
+    06 |
+    07 |   objective
+    08 |
+    09 |     Ship the parser without regressions
+    10 |
+    11 |   activity  0 continuation turns
+    12 |
+    13 |   tokens  0 / 24,000 used · 24,000 remaining
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 | ❯ 1. pause goal
+    21 |   2. edit objective
+    22 |   3. clear goal
+    23 |
+    24 |   pgup/pgdn details · ↑↓ select · 1-3 choose · ↵ action · esc back
+    |}];
   Tui.enter t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  goal ─────────────────────────────────────────────────────────────────── active
-02 |
-03 |   status  active
-04 |
-05 |   goal id  goal-release-parser
-06 |
-07 |   objective
-08 |
-09 |     Ship the parser without regressions
-10 |
-11 |   activity  0 continuation turns
-12 |
-13 |   tokens  0 / 24,000 used · 24,000 remaining
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 | ⠋ requesting pause goal…
-23 |
-24 |   pgup/pgdn details · request in flight · esc back|}];
+    {|
+    01 |  goal ─────────────────────────────────────────────────────────────────── active
+    02 |
+    03 |   status  active
+    04 |
+    05 |   goal id  goal-release-parser
+    06 |
+    07 |   objective
+    08 |
+    09 |     Ship the parser without regressions
+    10 |
+    11 |   activity  0 continuation turns
+    12 |
+    13 |   tokens  0 / 24,000 used · 24,000 remaining
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 | ⠋ requesting pause goal…
+    23 |
+    24 |   pgup/pgdn details · request in flight · esc back
+    |}];
   Tui.acknowledge_goal_mutation t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  goal ─────────────────────────────────────────────────────────────────── active
-02 |
-03 |   status  active
-04 |
-05 |   goal id  goal-release-parser
-06 |
-07 |   objective
-08 |
-09 |     Ship the parser without regressions
-10 |
-11 |   activity  0 continuation turns
-12 |
-13 |   tokens  0 / 24,000 used · 24,000 remaining
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 | ✓ client accepted pause goal; waiting for the goal fact…
-23 |
-24 |   pgup/pgdn details · request in flight · esc back|}];
+    {|
+    01 |  goal ─────────────────────────────────────────────────────────────────── active
+    02 |
+    03 |   status  active
+    04 |
+    05 |   goal id  goal-release-parser
+    06 |
+    07 |   objective
+    08 |
+    09 |     Ship the parser without regressions
+    10 |
+    11 |   activity  0 continuation turns
+    12 |
+    13 |   tokens  0 / 24,000 used · 24,000 remaining
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 | ✓ client accepted pause goal; waiting for the goal fact…
+    23 |
+    24 |   pgup/pgdn details · request in flight · esc back
+    |}];
   Tui.commit_goal_mutation t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  goal ─────────────────────────────────────────────────────────────────── paused
-02 |
-03 |   status  paused
-04 |
-05 |   goal id  goal-release-parser
-06 |
-07 |   objective
-08 |
-09 |     Ship the parser without regressions
-10 |
-11 |   activity  0 continuation turns
-12 |
-13 |   tokens  0 / 24,000 used · 24,000 remaining
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 | ❯ 1. resume goal
-21 |   2. edit objective
-22 |   3. clear goal
-23 |
-24 |   pgup/pgdn details · ↑↓ select · 1-3 choose · ↵ action · esc back|}]
+    {|
+    01 |  goal ─────────────────────────────────────────────────────────────────── paused
+    02 |
+    03 |   status  paused
+    04 |
+    05 |   goal id  goal-release-parser
+    06 |
+    07 |   objective
+    08 |
+    09 |     Ship the parser without regressions
+    10 |
+    11 |   activity  0 continuation turns
+    12 |
+    13 |   tokens  0 / 24,000 used · 24,000 remaining
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 | ❯ 1. resume goal
+    21 |   2. edit objective
+    22 |   3. clear goal
+    23 |
+    24 |   pgup/pgdn details · ↑↓ select · 1-3 choose · ↵ action · esc back
+    |}]
 
 let%expect_test "narrow wrapped goal detail is keyboard-pageable" =
   let updates =
@@ -232,66 +240,74 @@ let%expect_test "narrow wrapped goal detail is keyboard-pageable" =
   open_goal t;
   Tui.print t;
   [%expect
-    {|01 |  goal ────────────────────────────────────────────────────────────────── blocked
-02 |
-03 |   status  blocked                                                              █
-04 |
-05 |   goal id  goal-release-parser
-06 |
-07 |
-08 | ❯ 1. resume goal
-09 |   2. edit objective
-10 |   3. clear goal
-11 |
-12 |   pgup/pgdn details · ↑↓ select · 1-3 choose · ↵ action · esc back|}];
+    {|
+    01 |  goal ────────────────────────────────────────────────────────────────── blocked
+    02 |
+    03 |   status  blocked                                                              █
+    04 |
+    05 |   goal id  goal-release-parser
+    06 |
+    07 |
+    08 | ❯ 1. resume goal
+    09 |   2. edit objective
+    10 |   3. clear goal
+    11 |
+    12 |   pgup/pgdn details · ↑↓ select · 1-3 choose · ↵ action · esc back
+    |}];
   Tui.keys t Key.page_down;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  goal ────────────────────────────────────────────────────────────────── blocked
-02 |
-03 |   objective
-04 |                                                                                █
-05 |     Ship the parser across narrow terminals, Unicode paths, and wrapped
-06 |     diagnostics without regressing navigation
-07 |
-08 | ❯ 1. resume goal
-09 |   2. edit objective
-10 |   3. clear goal
-11 |
-12 |   pgup/pgdn details · ↑↓ select · 1-3 choose · ↵ action · esc back|}];
+    {|
+    01 |  goal ────────────────────────────────────────────────────────────────── blocked
+    02 |
+    03 |   objective
+    04 |                                                                                █
+    05 |     Ship the parser across narrow terminals, Unicode paths, and wrapped
+    06 |     diagnostics without regressing navigation
+    07 |
+    08 | ❯ 1. resume goal
+    09 |   2. edit objective
+    10 |   3. clear goal
+    11 |
+    12 |   pgup/pgdn details · ↑↓ select · 1-3 choose · ↵ action · esc back
+    |}];
   Tui.keys t Key.page_down;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  goal ────────────────────────────────────────────────────────────────── blocked
-02 |
-03 |
-04 |   blocked: Waiting for the upstream parser release and its signed mirror to
-05 |   become available                                                             █
-06 |
-07 |
-08 | ❯ 1. resume goal
-09 |   2. edit objective
-10 |   3. clear goal
-11 |
-12 |   pgup/pgdn details · ↑↓ select · 1-3 choose · ↵ action · esc back|}];
+    {|
+    01 |  goal ────────────────────────────────────────────────────────────────── blocked
+    02 |
+    03 |
+    04 |   blocked: Waiting for the upstream parser release and its signed mirror to
+    05 |   become available                                                             █
+    06 |
+    07 |
+    08 | ❯ 1. resume goal
+    09 |   2. edit objective
+    10 |   3. clear goal
+    11 |
+    12 |   pgup/pgdn details · ↑↓ select · 1-3 choose · ↵ action · esc back
+    |}];
   Tui.keys t Key.page_down;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  goal ────────────────────────────────────────────────────────────────── blocked
-02 |
-03 |
-04 |   activity  0 continuation turns
-05 |
-06 |   tokens  0 / 8,000 used · 8,000 remaining                                     █
-07 |
-08 | ❯ 1. resume goal
-09 |   2. edit objective
-10 |   3. clear goal
-11 |
-12 |   pgup/pgdn details · ↑↓ select · 1-3 choose · ↵ action · esc back|}]
+    {|
+    01 |  goal ────────────────────────────────────────────────────────────────── blocked
+    02 |
+    03 |
+    04 |   activity  0 continuation turns
+    05 |
+    06 |   tokens  0 / 8,000 used · 8,000 remaining                                     █
+    07 |
+    08 | ❯ 1. resume goal
+    09 |   2. edit objective
+    10 |   3. clear goal
+    11 |
+    12 |   pgup/pgdn details · ↑↓ select · 1-3 choose · ↵ action · esc back
+    |}]
 
 (* The exact current objective is visible in the real Mosaic input. An
    unchanged submission remains local, and a structured client rejection
@@ -304,58 +320,62 @@ let%expect_test "edit is prefilled, validated, rejected, and retried" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  goal ─────────────────────────────────────────────────────────────────── active
-02 |
-03 |   status  active
-04 |
-05 |   goal id  goal-release-parser
-06 |
-07 |   objective
-08 |
-09 |     Ship the parser without regressions
-10 |
-11 |   activity  0 continuation turns
-12 |
-13 |   tokens  0 used · no token budget
-14 |
-15 |
-16 |
-17 |
-18 | new objective
-19 |
-20 | ────────────────────────────────────────────────────────────────────────────────
-21 |   ❯ Ship the parser without regressions
-22 | ────────────────────────────────────────────────────────────────────────────────
-23 |
-24 |   type objective · ↵ save · esc cancel · paste works|}];
+    {|
+    01 |  goal ─────────────────────────────────────────────────────────────────── active
+    02 |
+    03 |   status  active
+    04 |
+    05 |   goal id  goal-release-parser
+    06 |
+    07 |   objective
+    08 |
+    09 |     Ship the parser without regressions
+    10 |
+    11 |   activity  0 continuation turns
+    12 |
+    13 |   tokens  0 used · no token budget
+    14 |
+    15 |
+    16 |
+    17 |
+    18 | new objective
+    19 |
+    20 | ────────────────────────────────────────────────────────────────────────────────
+    21 |   ❯ Ship the parser without regressions
+    22 | ────────────────────────────────────────────────────────────────────────────────
+    23 |
+    24 |   type objective · ↵ save · esc cancel · paste works
+    |}];
   Tui.enter t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  goal ─────────────────────────────────────────────────────────────────── active
-02 |
-03 |   status  active
-04 |
-05 |   goal id  goal-release-parser
-06 |
-07 |   objective
-08 |
-09 |     Ship the parser without regressions
-10 |
-11 |   activity  0 continuation turns
-12 |
-13 |   tokens  0 used · no token budget
-14 |
-15 |
-16 | new objective
-17 |
-18 | ────────────────────────────────────────────────────────────────────────────────
-19 |   ❯ Ship the parser without regressions
-20 | ────────────────────────────────────────────────────────────────────────────────
-21 |
-22 | ! the objective is unchanged
-23 |
-24 |   type objective · ↵ save · esc cancel · paste works|}];
+    {|
+    01 |  goal ─────────────────────────────────────────────────────────────────── active
+    02 |
+    03 |   status  active
+    04 |
+    05 |   goal id  goal-release-parser
+    06 |
+    07 |   objective
+    08 |
+    09 |     Ship the parser without regressions
+    10 |
+    11 |   activity  0 continuation turns
+    12 |
+    13 |   tokens  0 used · no token budget
+    14 |
+    15 |
+    16 | new objective
+    17 |
+    18 | ────────────────────────────────────────────────────────────────────────────────
+    19 |   ❯ Ship the parser without regressions
+    20 | ────────────────────────────────────────────────────────────────────────────────
+    21 |
+    22 | ! the objective is unchanged
+    23 |
+    24 |   type objective · ↵ save · esc cancel · paste works
+    |}];
   Tui.paste t " — including Unicode paths";
   Tui.enter t;
   Tui.settle t;
@@ -364,30 +384,32 @@ let%expect_test "edit is prefilled, validated, rejected, and retried" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  goal ─────────────────────────────────────────────────────────────────── active
-02 |
-03 |   status  active
-04 |
-05 |   goal id  goal-release-parser
-06 |
-07 |   objective
-08 |
-09 |     Ship the parser without regressions
-10 |
-11 |   activity  0 continuation turns
-12 |
-13 |   tokens  0 used · no token budget
-14 |
-15 |
-16 | ! could not edit objective
-17 |
-18 | goal changed concurrently; reload the displayed owner fact
-19 |
-20 |   1. pause goal
-21 | ❯ 2. edit objective
-22 |   3. clear goal
-23 |
-24 |   pgup/pgdn details · ↑↓ select · 1-3 choose · ↵ action · esc back|}];
+    {|
+    01 |  goal ─────────────────────────────────────────────────────────────────── active
+    02 |
+    03 |   status  active
+    04 |
+    05 |   goal id  goal-release-parser
+    06 |
+    07 |   objective
+    08 |
+    09 |     Ship the parser without regressions
+    10 |
+    11 |   activity  0 continuation turns
+    12 |
+    13 |   tokens  0 used · no token budget
+    14 |
+    15 |
+    16 | ! could not edit objective
+    17 |
+    18 | goal changed concurrently; reload the displayed owner fact
+    19 |
+    20 |   1. pause goal
+    21 | ❯ 2. edit objective
+    22 |   3. clear goal
+    23 |
+    24 |   pgup/pgdn details · ↑↓ select · 1-3 choose · ↵ action · esc back
+    |}];
   Tui.enter t;
   Tui.settle t;
   Tui.paste t " safely";
@@ -399,30 +421,32 @@ let%expect_test "edit is prefilled, validated, rejected, and retried" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  goal ─────────────────────────────────────────────────────────────────── active
-02 |
-03 |   status  active
-04 |
-05 |   goal id  goal-release-parser
-06 |
-07 |   objective
-08 |
-09 |     Ship the parser without regressions safely
-10 |
-11 |   activity  0 continuation turns
-12 |
-13 |   tokens  0 used · no token budget
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 | ❯ 1. pause goal
-21 |   2. edit objective
-22 |   3. clear goal
-23 |
-24 |   pgup/pgdn details · ↑↓ select · 1-3 choose · ↵ action · esc back|}]
+    {|
+    01 |  goal ─────────────────────────────────────────────────────────────────── active
+    02 |
+    03 |   status  active
+    04 |
+    05 |   goal id  goal-release-parser
+    06 |
+    07 |   objective
+    08 |
+    09 |     Ship the parser without regressions safely
+    10 |
+    11 |   activity  0 continuation turns
+    12 |
+    13 |   tokens  0 used · no token budget
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 | ❯ 1. pause goal
+    21 |   2. edit objective
+    22 |   3. clear goal
+    23 |
+    24 |   pgup/pgdn details · ↑↓ select · 1-3 choose · ↵ action · esc back
+    |}]
 
 (* Blocking is model-owned. Resume exposes the optional replacement budget,
    keeps malformed input visible, and transitions only after the real owner
@@ -439,30 +463,32 @@ let%expect_test "blocked goal resumes with a validated replacement budget" =
   open_goal t;
   Tui.print t;
   [%expect
-    {|01 |  goal ────────────────────────────────────────────────────────────────── blocked
-02 |
-03 |   status  blocked
-04 |
-05 |   goal id  goal-release-parser
-06 |
-07 |   objective
-08 |
-09 |     Ship the parser without regressions
-10 |
-11 |   blocked: Waiting for the upstream parser release
-12 |
-13 |   activity  0 continuation turns
-14 |
-15 |   tokens  0 / 8,000 used · 8,000 remaining
-16 |
-17 |
-18 |
-19 |
-20 | ❯ 1. resume goal
-21 |   2. edit objective
-22 |   3. clear goal
-23 |
-24 |   pgup/pgdn details · ↑↓ select · 1-3 choose · ↵ action · esc back|}];
+    {|
+    01 |  goal ────────────────────────────────────────────────────────────────── blocked
+    02 |
+    03 |   status  blocked
+    04 |
+    05 |   goal id  goal-release-parser
+    06 |
+    07 |   objective
+    08 |
+    09 |     Ship the parser without regressions
+    10 |
+    11 |   blocked: Waiting for the upstream parser release
+    12 |
+    13 |   activity  0 continuation turns
+    14 |
+    15 |   tokens  0 / 8,000 used · 8,000 remaining
+    16 |
+    17 |
+    18 |
+    19 |
+    20 | ❯ 1. resume goal
+    21 |   2. edit objective
+    22 |   3. clear goal
+    23 |
+    24 |   pgup/pgdn details · ↑↓ select · 1-3 choose · ↵ action · esc back
+    |}];
   Tui.enter t;
   Tui.settle t;
   Tui.paste t "-1";
@@ -470,30 +496,32 @@ let%expect_test "blocked goal resumes with a validated replacement budget" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  goal ────────────────────────────────────────────────────────────────── blocked
-02 |
-03 |   status  blocked                                                              █
-04 |                                                                                █
-05 |   goal id  goal-release-parser                                                 █
-06 |                                                                                █
-07 |   objective                                                                    █
-08 |                                                                                █
-09 |     Ship the parser without regressions
-10 |
-11 |   blocked: Waiting for the upstream parser release
-12 |
-13 |   activity  0 continuation turns
-14 |
-15 |
-16 | token budget (blank keeps the current budget)
-17 |
-18 | ────────────────────────────────────────────────────────────────────────────────
-19 |   ❯ -1
-20 | ────────────────────────────────────────────────────────────────────────────────
-21 |
-22 | ! enter a nonnegative whole-token budget, or leave it blank
-23 |
-24 |   type budget or leave blank · ↵ resume · esc cancel|}];
+    {|
+    01 |  goal ────────────────────────────────────────────────────────────────── blocked
+    02 |
+    03 |   status  blocked                                                              █
+    04 |                                                                                █
+    05 |   goal id  goal-release-parser                                                 █
+    06 |                                                                                █
+    07 |   objective                                                                    █
+    08 |                                                                                █
+    09 |     Ship the parser without regressions
+    10 |
+    11 |   blocked: Waiting for the upstream parser release
+    12 |
+    13 |   activity  0 continuation turns
+    14 |
+    15 |
+    16 | token budget (blank keeps the current budget)
+    17 |
+    18 | ────────────────────────────────────────────────────────────────────────────────
+    19 |   ❯ -1
+    20 | ────────────────────────────────────────────────────────────────────────────────
+    21 |
+    22 | ! enter a nonnegative whole-token budget, or leave it blank
+    23 |
+    24 |   type budget or leave blank · ↵ resume · esc cancel
+    |}];
   Tui.keys t (Key.backspace ^ Key.backspace);
   Tui.paste t "12000";
   Tui.enter t;
@@ -504,30 +532,32 @@ let%expect_test "blocked goal resumes with a validated replacement budget" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  goal ─────────────────────────────────────────────────────────────────── active
-02 |
-03 |   status  active
-04 |
-05 |   goal id  goal-release-parser
-06 |
-07 |   objective
-08 |
-09 |     Ship the parser without regressions
-10 |
-11 |   activity  0 continuation turns
-12 |
-13 |   tokens  0 / 12,000 used · 12,000 remaining
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 | ❯ 1. pause goal
-21 |   2. edit objective
-22 |   3. clear goal
-23 |
-24 |   pgup/pgdn details · ↑↓ select · 1-3 choose · ↵ action · esc back|}]
+    {|
+    01 |  goal ─────────────────────────────────────────────────────────────────── active
+    02 |
+    03 |   status  active
+    04 |
+    05 |   goal id  goal-release-parser
+    06 |
+    07 |   objective
+    08 |
+    09 |     Ship the parser without regressions
+    10 |
+    11 |   activity  0 continuation turns
+    12 |
+    13 |   tokens  0 / 12,000 used · 12,000 remaining
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 | ❯ 1. pause goal
+    21 |   2. edit objective
+    22 |   3. clear goal
+    23 |
+    24 |   pgup/pgdn details · ↑↓ select · 1-3 choose · ↵ action · esc back
+    |}]
 
 (* Clear has an explicit second-Enter confirmation. Terminal projections have
    no mounted action table, while the 80x12 frame remains a complete screen
@@ -540,30 +570,32 @@ let%expect_test "clear confirms and terminal goals are read-only" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  goal ─────────────────────────────────────────────────────────────────── active
-02 |
-03 |   status  active
-04 |
-05 |   goal id  goal-release-parser
-06 |
-07 |   objective
-08 |
-09 |     Ship the parser without regressions
-10 |
-11 |   activity  0 continuation turns
-12 |
-13 |   tokens  0 used · no token budget
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 | Permanently clear this goal?
-21 |
-22 | Press Enter again to CLEAR. Escape cancels.
-23 |
-24 |   pgup/pgdn details · ↵ CLEAR · esc cancel|}];
+    {|
+    01 |  goal ─────────────────────────────────────────────────────────────────── active
+    02 |
+    03 |   status  active
+    04 |
+    05 |   goal id  goal-release-parser
+    06 |
+    07 |   objective
+    08 |
+    09 |     Ship the parser without regressions
+    10 |
+    11 |   activity  0 continuation turns
+    12 |
+    13 |   tokens  0 used · no token budget
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 | Permanently clear this goal?
+    21 |
+    22 | Press Enter again to CLEAR. Escape cancels.
+    23 |
+    24 |   pgup/pgdn details · ↵ CLEAR · esc cancel
+    |}];
   Tui.enter t;
   Tui.settle t;
   Tui.acknowledge_goal_mutation t;
@@ -572,134 +604,144 @@ let%expect_test "clear confirms and terminal goals are read-only" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  goal ────────────────────────────────────────────────────────────────── cleared
-02 |
-03 |   status  cleared
-04 |
-05 |   goal id  goal-release-parser
-06 |
-07 |   objective
-08 |
-09 |     Ship the parser without regressions
-10 |
-11 |   activity  0 continuation turns
-12 |
-13 |   tokens  0 used · no token budget
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   pgup/pgdn details · esc back|}];
+    {|
+    01 |  goal ────────────────────────────────────────────────────────────────── cleared
+    02 |
+    03 |   status  cleared
+    04 |
+    05 |   goal id  goal-release-parser
+    06 |
+    07 |   objective
+    08 |
+    09 |     Ship the parser without regressions
+    10 |
+    11 |   activity  0 continuation turns
+    12 |
+    13 |   tokens  0 used · no token budget
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   pgup/pgdn details · esc back
+    |}];
   Tui.resize t ~width:80 ~height:12;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  goal ────────────────────────────────────────────────────────────────── cleared
-02 |
-03 |   status  cleared                                                              █
-04 |                                                                                █
-05 |   goal id  goal-release-parser                                                 █
-06 |                                                                                █
-07 |   objective
-08 |
-09 |     Ship the parser without regressions
-10 |
-11 |
-12 |   pgup/pgdn details · esc back|}]
+    {|
+    01 |  goal ────────────────────────────────────────────────────────────────── cleared
+    02 |
+    03 |   status  cleared                                                              █
+    04 |                                                                                █
+    05 |   goal id  goal-release-parser                                                 █
+    06 |                                                                                █
+    07 |   objective
+    08 |
+    09 |     Ship the parser without regressions
+    10 |
+    11 |
+    12 |   pgup/pgdn details · esc back
+    |}]
 
 let%expect_test "loaded session without a goal is an honest read-only screen" =
   run ~name:"goal-none" [] @@ fun t ->
   open_goal t;
   Tui.print t;
   [%expect
-    {|01 |  goal ────────────────────────────────────────────────────────────────── no goal
-02 |
-03 |   No goal is set for this session.
-04 |
-05 |   Declare one with /goal <objective> from the prompt — it rides your next
-06 |   turn. A model may also declare a goal while working.
-07 |
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   pgup/pgdn details · esc back|}]
+    {|
+    01 |  goal ────────────────────────────────────────────────────────────────── no goal
+    02 |
+    03 |   No goal is set for this session.
+    04 |
+    05 |   Declare one with /goal <objective> from the prompt — it rides your next
+    06 |   turn. A model may also declare a goal while working.
+    07 |
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   pgup/pgdn details · esc back
+    |}]
 
 let%expect_test "goal query states remain honest and structured" =
   run ~name:"goal-loading" ~hold_session_view_results:true [] @@ fun t ->
   open_goal t;
   Tui.print t;
   [%expect
-    {|01 |  goal ────────────────────────────────────────────────────────────────── loading
-02 |
-03 |   ⠋ loading goal…
-04 |
-05 |
-06 |
-07 |
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   esc back|}];
+    {|
+    01 |  goal ────────────────────────────────────────────────────────────────── loading
+    02 |
+    03 |   ⠋ loading goal…
+    04 |
+    05 |
+    06 |
+    07 |
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   esc back
+    |}];
   Tui.finish_session_view_results t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  goal ────────────────────────────────────────────────────────────────── no goal
-02 |
-03 |   No goal is set for this session.
-04 |
-05 |   Declare one with /goal <objective> from the prompt — it rides your next
-06 |   turn. A model may also declare a goal while working.
-07 |
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   pgup/pgdn details · esc back|}];
+    {|
+    01 |  goal ────────────────────────────────────────────────────────────────── no goal
+    02 |
+    03 |   No goal is set for this session.
+    04 |
+    05 |   Declare one with /goal <objective> from the prompt — it rides your next
+    06 |   turn. A model may also declare a goal while working.
+    07 |
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   pgup/pgdn details · esc back
+    |}];
   let failure = unavailable "session detail owner is temporarily unavailable" in
   run ~name:"goal-unavailable"
     ~session_view_results:[ Error failure; Error failure ]
@@ -708,30 +750,32 @@ let%expect_test "goal query states remain honest and structured" =
   open_goal t;
   Tui.print t;
   [%expect
-    {|01 |  goal ────────────────────────────────────────────────────────────── unavailable
-02 |
-03 |   ! goal unavailable
-04 |
-05 |   session detail owner is temporarily unavailable
-06 |
-07 |
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   pgup/pgdn details · esc back|}];
+    {|
+    01 |  goal ────────────────────────────────────────────────────────────── unavailable
+    02 |
+    03 |   ! goal unavailable
+    04 |
+    05 |   session detail owner is temporarily unavailable
+    06 |
+    07 |
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   pgup/pgdn details · esc back
+    |}];
   let refresh_failure = unavailable "session detail refresh timed out" in
   run ~name:"goal-retained-refresh"
     ~session_view_results:[ Ok (); Ok (); Error refresh_failure ]
@@ -744,30 +788,32 @@ let%expect_test "goal query states remain honest and structured" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  goal ─────────────────────────────────────────────────────────────────── active
-02 |
-03 |   ! could not refresh goal; showing retained state
-04 |
-05 |   session detail refresh timed out
-06 |
-07 |   status  active
-08 |
-09 |   goal id  goal-release-parser
-10 |
-11 |   objective
-12 |
-13 |     Ship the parser without regressions
-14 |
-15 |   activity  0 continuation turns
-16 |
-17 |   tokens  0 used · no token budget
-18 |
-19 |
-20 | ❯ 1. pause goal
-21 |   2. edit objective
-22 |   3. clear goal
-23 |
-24 |   pgup/pgdn details · ↑↓ select · 1-3 choose · ↵ action · esc back|}]
+    {|
+    01 |  goal ─────────────────────────────────────────────────────────────────── active
+    02 |
+    03 |   ! could not refresh goal; showing retained state
+    04 |
+    05 |   session detail refresh timed out
+    06 |
+    07 |   status  active
+    08 |
+    09 |   goal id  goal-release-parser
+    10 |
+    11 |   objective
+    12 |
+    13 |     Ship the parser without regressions
+    14 |
+    15 |   activity  0 continuation turns
+    16 |
+    17 |   tokens  0 used · no token budget
+    18 |
+    19 |
+    20 | ❯ 1. pause goal
+    21 |   2. edit objective
+    22 |   3. clear goal
+    23 |
+    24 |   pgup/pgdn details · ↑↓ select · 1-3 choose · ↵ action · esc back
+    |}]
 
 let%expect_test "engine terminal and budget states are read-only or actionable"
     =
@@ -782,60 +828,64 @@ let%expect_test "engine terminal and budget states are read-only or actionable"
   open_goal t;
   Tui.print t;
   [%expect
-    {|01 |  goal ──────────────────────────────────────────────────────────────── completed
-02 |
-03 |   status  completed
-04 |
-05 |   goal id  goal-release-parser
-06 |
-07 |   objective
-08 |
-09 |     Ship the parser without regressions
-10 |
-11 |   completed: Parser release verified across all supported terminals
-12 |
-13 |   activity  0 continuation turns
-14 |
-15 |   tokens  0 used · no token budget
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   pgup/pgdn details · esc back|}];
+    {|
+    01 |  goal ──────────────────────────────────────────────────────────────── completed
+    02 |
+    03 |   status  completed
+    04 |
+    05 |   goal id  goal-release-parser
+    06 |
+    07 |   objective
+    08 |
+    09 |     Ship the parser without regressions
+    10 |
+    11 |   completed: Parser release verified across all supported terminals
+    12 |
+    13 |   activity  0 continuation turns
+    14 |
+    15 |   tokens  0 used · no token budget
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   pgup/pgdn details · esc back
+    |}];
   Tui.run ~name:"goal-budget-limited" ~size:(80, 24) ~session:session_id
     ~sessions:(fun project -> [ accounted_document project ])
   @@ fun t ->
   open_goal t;
   Tui.print t;
   [%expect
-    {|01 |  goal ─────────────────────────────────────────────────────────── budget limited
-02 |
-03 |   status  budget limited
-04 |
-05 |   goal id  goal-release-parser
-06 |
-07 |   objective
-08 |
-09 |     Ship the parser without regressions
-10 |
-11 |   activity  1 continuation turn
-12 |
-13 |   tokens  3,250 / 8,000 used · 4,750 remaining
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 | ❯ 1. resume goal
-21 |   2. edit objective
-22 |   3. clear goal
-23 |
-24 |   pgup/pgdn details · ↑↓ select · 1-3 choose · ↵ action · esc back|}]
+    {|
+    01 |  goal ─────────────────────────────────────────────────────────── budget limited
+    02 |
+    03 |   status  budget limited
+    04 |
+    05 |   goal id  goal-release-parser
+    06 |
+    07 |   objective
+    08 |
+    09 |     Ship the parser without regressions
+    10 |
+    11 |   activity  1 continuation turn
+    12 |
+    13 |   tokens  3,250 / 8,000 used · 4,750 remaining
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 | ❯ 1. resume goal
+    21 |   2. edit objective
+    22 |   3. clear goal
+    23 |
+    24 |   pgup/pgdn details · ↑↓ select · 1-3 choose · ↵ action · esc back
+    |}]
 
 let stage_goal t objective =
   Tui.keys t objective;
@@ -854,60 +904,64 @@ let%expect_test "an objective staged with /goal rides the next turn and clears"
   stage_goal t "/goal Ship the parser without regressions";
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-07 |
-08 |                            dev · openai/gpt-5.5 medium
-09 |
-10 |      ▎ welcome — and thanks for trying mentat this early.
-11 |      ▎ it's experimental: sessions and config may change without migration.
-12 |
-13 |   ◇ goal staged: Ship the parser without regressions · /goal cancels
-14 |
-15 | ────────────────────────────────────────────────────────────────────────────────
-16 | ❯ message mentat
-17 | ────────────────────────────────────────────────────────────────────────────────
-18 |
-19 |                          ! /login — no connected account
-20 |                               ∅ no recent sessions
-21 |
-22 |
-23 |
-24 |   ! not logged in · /login · ~/men… · openai/gpt-5.5 me… · ! full acce… ? for…|}];
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    07 |
+    08 |                            dev · openai/gpt-5.5 medium
+    09 |
+    10 |      ▎ welcome — and thanks for trying mentat this early.
+    11 |      ▎ it's experimental: sessions and config may change without migration.
+    12 |
+    13 |   ◇ goal staged: Ship the parser without regressions · /goal cancels
+    14 |
+    15 | ────────────────────────────────────────────────────────────────────────────────
+    16 | ❯ message mentat
+    17 | ────────────────────────────────────────────────────────────────────────────────
+    18 |
+    19 |                          ! /login — no connected account
+    20 |                               ∅ no recent sessions
+    21 |
+    22 |
+    23 |
+    24 |   ! not logged in · /login · ~/men… · openai/gpt-5.5 me… · ! full acce… ? for…
+    |}];
   Tui.keys t "begin";
   Tui.enter t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|goal declared on prompt: Ship the parser without regressions
-01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-go9cf83268
-04 |
-05 | ❯ begin
-06 |
-07 | ⠋ Working… (0s · esc to interrupt)
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ queue a message — sends after this turn
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-… · openai/gpt-… · ! full access ? for …|}]
+    {|
+    goal declared on prompt: Ship the parser without regressions
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-go5917f9de
+    04 |
+    05 | ❯ begin
+    06 |
+    07 | ⠋ Working… (0s · esc to interrupt)
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ queue a message — sends after this turn
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-… · openai/gpt-… · ! full access ? for …
+    |}]
 
 (* A bare [/goal] with an objective staged is the cancellation path advertised in
    the cue; without a staged objective it opens the honest management screen. The
@@ -918,30 +972,32 @@ let%expect_test "a bare /goal cancels a staged objective" =
   stage_goal t "/goal Ship the parser without regressions";
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-07 |
-08 |                            dev · openai/gpt-5.5 medium
-09 |
-10 |      ▎ welcome — and thanks for trying mentat this early.
-11 |      ▎ it's experimental: sessions and config may change without migration.
-12 |
-13 |   ◇ goal staged: Ship the parser without regressions · /goal cancels
-14 |
-15 | ────────────────────────────────────────────────────────────────────────────────
-16 | ❯ message mentat
-17 | ────────────────────────────────────────────────────────────────────────────────
-18 |
-19 |                          ! /login — no connected account
-20 |                               ∅ no recent sessions
-21 |
-22 |
-23 |
-24 |   ! not logged in · /login · ~/ment… · openai/gpt-5.5 m… · ! full access ? fo…|}];
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    07 |
+    08 |                            dev · openai/gpt-5.5 medium
+    09 |
+    10 |      ▎ welcome — and thanks for trying mentat this early.
+    11 |      ▎ it's experimental: sessions and config may change without migration.
+    12 |
+    13 |   ◇ goal staged: Ship the parser without regressions · /goal cancels
+    14 |
+    15 | ────────────────────────────────────────────────────────────────────────────────
+    16 | ❯ message mentat
+    17 | ────────────────────────────────────────────────────────────────────────────────
+    18 |
+    19 |                          ! /login — no connected account
+    20 |                               ∅ no recent sessions
+    21 |
+    22 |
+    23 |
+    24 |   ! not logged in · /login · ~/ment… · openai/gpt-5.5 m… · ! full access ? fo…
+    |}];
   Tui.keys t "/goal";
   Tui.enter t;
   Tui.settle t;
@@ -949,30 +1005,32 @@ let%expect_test "a bare /goal cancels a staged objective" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-07 |
-08 |                            dev · openai/gpt-5.5 medium
-09 |
-10 |      ▎ welcome — and thanks for trying mentat this early.
-11 |      ▎ it's experimental: sessions and config may change without migration.
-12 |
-13 |
-14 | ────────────────────────────────────────────────────────────────────────────────
-15 | ❯ message mentat
-16 | ────────────────────────────────────────────────────────────────────────────────
-17 |
-18 |                          ! /login — no connected account
-19 |                               ∅ no recent sessions
-20 |
-21 |
-22 |
-23 |
-24 |   goal staging cancelled|}]
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    07 |
+    08 |                            dev · openai/gpt-5.5 medium
+    09 |
+    10 |      ▎ welcome — and thanks for trying mentat this early.
+    11 |      ▎ it's experimental: sessions and config may change without migration.
+    12 |
+    13 |
+    14 | ────────────────────────────────────────────────────────────────────────────────
+    15 | ❯ message mentat
+    16 | ────────────────────────────────────────────────────────────────────────────────
+    17 |
+    18 |                          ! /login — no connected account
+    19 |                               ∅ no recent sessions
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   goal staging cancelled
+    |}]
 
 (* Declaration is engine-owned and a live goal is edited from the management
    screen, so staging a second objective over a live goal is refused, not
@@ -993,29 +1051,30 @@ let%expect_test "declaring an objective is refused while a goal is live" =
   stage_goal t "/goal A competing objective";
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-goal-liv9dd9093a
-04 |
-05 | ❯ start
-06 |
-07 | ⏺ Declaring a goal now.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 | ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
-19 |   goal · Ship the parser without regressions
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   a goal is already active; edit it from /goal|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-goal-livccbdaeaf
+    04 |
+    05 | ❯ start
+    06 |
+    07 | ⏺ Declaring a goal now.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 | ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
+    19 |   goal · Ship the parser without regressions
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   a goal is already active; edit it from /goal
+    |}]
 
-[%%run_tests "mentat.tui.goal"]

@@ -48,8 +48,8 @@ depends: [
   "matrix-eio"
   "tree-sitter"
   "pp" {with-test}
-  "windtrap" {with-test & >= "0.1.0"}
-  "ppx_windtrap" {with-test & >= "0.1.0"}
+  "windtrap" {with-test & >= "0.2.0"}
+  "ppx_windtrap" {with-test & >= "0.2.0"}
   "thumper" {with-test}
   "odoc" {with-doc}
 ]

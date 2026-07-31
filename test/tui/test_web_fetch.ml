@@ -192,36 +192,38 @@ let%expect_test
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
-04 |
-05 | ❯ inspect the web outcomes
-06 |
-07 | ⏺ Fetch(https://example.com/guide)
-08 |   ⎿  Fetched 1 byte (HTTP 200)
-09 |
-10 | ⏺ Fetch(https://example.com/old)
-11 |   ⎿  Redirected (HTTP 307)
-12 |
-13 | ⏺ Fetch(https://example.com/unavailable)
-14 |   ⎿  web server returned HTTP status 503
-15 |
-16 |      HTTP error 503 (19 bytes)
-17 |
-18 | ⏺ Fetch(https://example.com/future)
-19 |   ⎿  details unavailable · output truncated
-20 |
-21 | ⏺ All four web outcomes are recorded.
-22 |
-23 |
-24 |
-25 |
-26 |
-27 | ────────────────────────────────────────────────────────────────────────────────────────────
-28 | ❯ message mentat
-29 | ────────────────────────────────────────────────────────────────────────────────────────────
-30 |   ! not logged in · /login · /tmp/mentat-tui-1cb1e… · openai/gpt-… · ! full access ? for …|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+    04 |
+    05 | ❯ inspect the web outcomes
+    06 |
+    07 | ⏺ Fetch(https://example.com/guide)
+    08 |   ⎿  Fetched 1 byte (HTTP 200)
+    09 |
+    10 | ⏺ Fetch(https://example.com/old)
+    11 |   ⎿  Redirected (HTTP 307)
+    12 |
+    13 | ⏺ Fetch(https://example.com/unavailable)
+    14 |   ⎿  web server returned HTTP status 503
+    15 |
+    16 |      HTTP error 503 (19 bytes)
+    17 |
+    18 | ⏺ Fetch(https://example.com/future)
+    19 |   ⎿  details unavailable · output truncated
+    20 |
+    21 | ⏺ All four web outcomes are recorded.
+    22 |
+    23 |
+    24 |
+    25 |
+    26 |
+    27 | ────────────────────────────────────────────────────────────────────────────────────────────
+    28 | ❯ message mentat
+    29 | ────────────────────────────────────────────────────────────────────────────────────────────
+    30 |   ! not logged in · /login · /tmp/mentat-tui-36e36… · openai/gpt-… · ! full access ? for …
+    |}]
 
 let%expect_test
     "replayed web fetch results preserve summaries and unavailable details" =
@@ -236,35 +238,36 @@ let%expect_test
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
-04 |
-05 | ❯ inspect the web outcomes
-06 |
-07 | ⏺ Fetch(https://example.com/guide)
-08 |   ⎿  Fetched 1 byte (HTTP 200)
-09 |
-10 | ⏺ Fetch(https://example.com/old)
-11 |   ⎿  Redirected (HTTP 307)
-12 |
-13 | ⏺ Fetch(https://example.com/unavailable)
-14 |   ⎿  web server returned HTTP status 503
-15 |
-16 |      HTTP error 503 (19 bytes)
-17 |
-18 | ⏺ Fetch(https://example.com/future)
-19 |   ⎿  details unavailable · output truncated
-20 |
-21 | ⏺ All four web outcomes are recorded.
-22 |
-23 |
-24 |
-25 |
-26 |
-27 | ────────────────────────────────────────────────────────────────────────────────────────────
-28 | ❯ message mentat
-29 | ────────────────────────────────────────────────────────────────────────────────────────────
-30 |   ! not logged in · /login · /tmp/mentat-tui-1cb1e… · openai/gpt-… · ! full access ? for …|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+    04 |
+    05 | ❯ inspect the web outcomes
+    06 |
+    07 | ⏺ Fetch(https://example.com/guide)
+    08 |   ⎿  Fetched 1 byte (HTTP 200)
+    09 |
+    10 | ⏺ Fetch(https://example.com/old)
+    11 |   ⎿  Redirected (HTTP 307)
+    12 |
+    13 | ⏺ Fetch(https://example.com/unavailable)
+    14 |   ⎿  web server returned HTTP status 503
+    15 |
+    16 |      HTTP error 503 (19 bytes)
+    17 |
+    18 | ⏺ Fetch(https://example.com/future)
+    19 |   ⎿  details unavailable · output truncated
+    20 |
+    21 | ⏺ All four web outcomes are recorded.
+    22 |
+    23 |
+    24 |
+    25 |
+    26 |
+    27 | ────────────────────────────────────────────────────────────────────────────────────────────
+    28 | ❯ message mentat
+    29 | ────────────────────────────────────────────────────────────────────────────────────────────
+    30 |   ! not logged in · /login · /tmp/mentat-tui-36e36… · openai/gpt-… · ! full access ? for …
+    |}]
 
-[%%run_tests "mentat.tui.web_fetch"]

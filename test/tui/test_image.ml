@@ -39,30 +39,32 @@ let%expect_test "an image mention attaches and lands in the transcript" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-imagec65b7575
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ [Image #1]
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-… · openai/gpt-… · ! full access ? for …|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-image2bdf2df1
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ [Image #1]
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-… · openai/gpt-… · ! full access ? for …
+    |}];
   Tui.keys t " look at this";
   Tui.enter t;
   Tui.settle t;
@@ -70,30 +72,32 @@ let%expect_test "an image mention attaches and lands in the transcript" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-imagec65b7575
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 | ❯ [media: image/png] · attachment
-10 |
-11 |   look at this
-12 |
-13 | ⏺ I see a screenshot.
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-… · openai/gpt-… · ! full access ? for …|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-image2bdf2df1
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 | ❯ [media: image/png] · attachment
+    10 |
+    11 |   look at this
+    12 |
+    13 | ⏺ I see a screenshot.
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-… · openai/gpt-… · ! full access ? for …
+    |}]
 
 let%expect_test "an attached image is removable with a single backspace" =
   Tui.run ~name:"image-remove" ~enumerate_files ~file_enumeration:true
@@ -106,58 +110,62 @@ let%expect_test "an attached image is removable with a single backspace" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-imag4f530d33
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ [Image #1]
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-… · openai/gpt-… · ! full access ? for …|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-imagc8ae0cf9
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ [Image #1]
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-… · openai/gpt-… · ! full access ? for …
+    |}];
   Tui.keys t Key.backspace;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-imag4f530d33
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-… · openai/gpt-… · ! full access ? for …|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-imagc8ae0cf9
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-… · openai/gpt-… · ! full access ? for …
+    |}]
 
 let%expect_test "the image count cap pre-warns before exceeding it" =
   Tui.run ~name:"image-cap" ~enumerate_files ~file_enumeration:true
@@ -176,30 +184,32 @@ let%expect_test "the image count cap pre-warns before exceeding it" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-i5d69ba46
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ [Image #1]
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   image limit reached (1)|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-iecb1568f
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ [Image #1]
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   image limit reached (1)
+    |}]
 
 let%expect_test "a rejected attach surfaces a notice" =
   let rejection =
@@ -219,30 +229,32 @@ let%expect_test "a rejected attach surfaces a notice" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-imag81053e1b
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   attach failed: image is too large (9000000 bytes, cap 5242880 bytes)|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-imag25e017f6
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   attach failed: image is too large (9000000 bytes, cap 5242880 bytes)
+    |}]
 
 let%expect_test "a clipboard image paste attaches" =
   Tui.run ~name:"image-clipboard" ~image_attach:true
@@ -254,29 +266,30 @@ let%expect_test "a clipboard image paste attaches" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-image-c6d896a52
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ [Image #1]
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt… · ! full access ? for …|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-image-c44c08a37
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ [Image #1]
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt… · ! full access ? for …
+    |}]
 
-[%%run_tests "mentat.tui.image"]

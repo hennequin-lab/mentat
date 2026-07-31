@@ -112,86 +112,92 @@ let%expect_test "a numbered choice selects first and resolves only on Enter" =
   open_pending t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-questiof59856ac.home/mentat-tu…
-04 |
-05 | ❯ choose the visual test location
-06 |
-07 | ⋯ Waiting for your answer
-08 |
-09 |
-10 |
-11 |
-12 |
-13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-14 |    question
-15 |
-16 |   Where should the visual journey live?
-17 |
-18 | ❯ 1. next/test/tui
-19 |   2. legacy test/tui
-20 |   3. ✎ type your own answer
-21 |
-22 |
-23 |
-24 |   1-9 jump · ↑↓ move · enter answer · esc custom|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-questioeb98a6ab.home/mentat-tu…
+    04 |
+    05 | ❯ choose the visual test location
+    06 |
+    07 | ⋯ Waiting for your answer
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    14 |    question
+    15 |
+    16 |   Where should the visual journey live?
+    17 |
+    18 | ❯ 1. next/test/tui
+    19 |   2. legacy test/tui
+    20 |   3. ✎ type your own answer
+    21 |
+    22 |
+    23 |
+    24 |   1-9 jump · ↑↓ move · enter answer · esc custom
+    |}];
   Tui.keys t "2";
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-questiof59856ac.home/mentat-tu…
-04 |
-05 | ❯ choose the visual test location
-06 |
-07 | ⋯ Waiting for your answer
-08 |
-09 |
-10 |
-11 |
-12 |
-13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-14 |    question
-15 |
-16 |   Where should the visual journey live?
-17 |
-18 |   1. next/test/tui
-19 | ❯ 2. legacy test/tui
-20 |   3. ✎ type your own answer
-21 |
-22 |
-23 |
-24 |   1-9 jump · ↑↓ move · enter answer · esc custom|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-questioeb98a6ab.home/mentat-tu…
+    04 |
+    05 | ❯ choose the visual test location
+    06 |
+    07 | ⋯ Waiting for your answer
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    14 |    question
+    15 |
+    16 |   Where should the visual journey live?
+    17 |
+    18 |   1. next/test/tui
+    19 | ❯ 2. legacy test/tui
+    20 |   3. ✎ type your own answer
+    21 |
+    22 |
+    23 |
+    24 |   1-9 jump · ↑↓ move · enter answer · esc custom
+    |}];
   Tui.enter t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-questiof59856ac.home/mentat-tu…
-04 |
-05 | ❯ choose the visual test location
-06 |
-07 | ⠋ Working… (0s · esc to interrupt)
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ queue a message — sends after this turn
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · /tmp/mentat-t… · openai/gpt… · ! full access ? f…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-questioeb98a6ab.home/mentat-tu…
+    04 |
+    05 | ❯ choose the visual test location
+    06 |
+    07 | ⠋ Working… (0s · esc to interrupt)
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ queue a message — sends after this turn
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · /tmp/mentat-t… · openai/gpt… · ! full access ? f…
+    |}]
 
 let%expect_test
     "a tool result follows the question whose answer resumed the turn" =
@@ -225,60 +231,64 @@ let%expect_test
   open_pending t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-question-tool-cont50469e35.hom…
-04 |
-05 | ❯ check the ordered continuation
-06 |
-07 | ⋯ Waiting for your answer
-08 |
-09 |
-10 |
-11 |
-12 |
-13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-14 |    question
-15 |
-16 |   May the tool verification continue?
-17 |
-18 | ❯ 1. continue
-19 |   2. ✎ type your own answer
-20 |
-21 |
-22 |
-23 |
-24 |   1-9 jump · ↑↓ move · enter answer · esc custom|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-question-tool-contffa5dc42.hom…
+    04 |
+    05 | ❯ check the ordered continuation
+    06 |
+    07 | ⋯ Waiting for your answer
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    14 |    question
+    15 |
+    16 |   May the tool verification continue?
+    17 |
+    18 | ❯ 1. continue
+    19 |   2. ✎ type your own answer
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   1-9 jump · ↑↓ move · enter answer · esc custom
+    |}];
   Tui.keys t "1";
   Tui.settle t;
   Tui.enter t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-question-tool-cont50469e35.hom…
-04 |
-05 | ❯ check the ordered continuation
-06 |
-07 | ⏺ Verify_contract
-08 |   ⎿  done
-09 |       The post-answer contract is visible in transcript order.
-10 |
-11 | ⠋ Working… (0s · esc to interrupt)
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ queue a message — sends after this turn
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · /tmp/mentat-tu… · openai/gpt… · ! full access ? …|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-question-tool-contffa5dc42.hom…
+    04 |
+    05 | ❯ check the ordered continuation
+    06 |
+    07 | ⏺ Verify_contract
+    08 |   ⎿  done
+    09 |       The post-answer contract is visible in transcript order.
+    10 |
+    11 | ⠋ Working… (0s · esc to interrupt)
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ queue a message — sends after this turn
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · /tmp/mentat-tu… · openai/gpt… · ! full access ? …
+    |}]
 
 let%expect_test
     "many choices remain whole and keep the selected row visible when narrow" =
@@ -314,74 +324,80 @@ let%expect_test
   open_pending t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 m…
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-quest8…
-04 |
-05 | ❯ choose checks
-06 |
-07 | ⋯ Waiting for your answer
-08 |
-09 |
-10 |
-11 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-12 |    question
-13 |
-14 |   Which checks should run?
-15 |   Keep the selected row visible at narrow widths.
-16 |
-17 | ❯ 1. parser unit suite
-18 |   2. [blank choice]
-19 |
-20 |   1-9 jump · ↑↓ move · enter answer · esc custom|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 m…
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-quest8…
+    04 |
+    05 | ❯ choose checks
+    06 |
+    07 | ⋯ Waiting for your answer
+    08 |
+    09 |
+    10 |
+    11 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    12 |    question
+    13 |
+    14 |   Which checks should run?
+    15 |   Keep the selected row visible at narrow widths.
+    16 |
+    17 | ❯ 1. parser unit suite
+    18 |   2. [blank choice]
+    19 |
+    20 |   1-9 jump · ↑↓ move · enter answer · esc custom
+    |}];
   press_down t 10;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 m…
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-quest8…
-04 |
-05 | ❯ choose checks
-06 |
-07 | ⋯ Waiting for your answer
-08 |
-09 |
-10 |
-11 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-12 |    question
-13 |
-14 |   Which checks should run?
-15 |   Keep the selected row visible at narrow widths.
-16 |
-17 |   10. Windows
-18 | ❯ 11. FreeBSD
-19 |
-20 |   1-9 jump · ↑↓ move · enter answer · esc custom|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 m…
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-quest8…
+    04 |
+    05 | ❯ choose checks
+    06 |
+    07 | ⋯ Waiting for your answer
+    08 |
+    09 |
+    10 |
+    11 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    12 |    question
+    13 |
+    14 |   Which checks should run?
+    15 |   Keep the selected row visible at narrow widths.
+    16 |
+    17 |   10. Windows
+    18 | ❯ 11. FreeBSD
+    19 |
+    20 |   1-9 jump · ↑↓ move · enter answer · esc custom
+    |}];
   Tui.enter t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 m…
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-quest8…
-04 |
-05 | ❯ choose checks
-06 |
-07 | ⠋ Working… (0s · esc to interrupt)
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 | ────────────────────────────────────────────────────────
-18 | ❯ queue a message — sends after this turn
-19 | ────────────────────────────────────────────────────────
-20 |   ! not logged in · /login · openai/… · ! full access|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 m…
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-quest8…
+    04 |
+    05 | ❯ choose checks
+    06 |
+    07 | ⠋ Working… (0s · esc to interrupt)
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 | ────────────────────────────────────────────────────────
+    18 | ❯ queue a message — sends after this turn
+    19 | ────────────────────────────────────────────────────────
+    20 |   ! not logged in · /login · openai/… · ! full access
+    |}]
 
 let%expect_test
     "custom text validates, edits, cancels, pastes, and resolves inline" =
@@ -406,146 +422,156 @@ let%expect_test
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-questio523b6bc8.home/mentat-tu…
-04 |
-05 | ❯ choose safely
-06 |
-07 | ⋯ Waiting for your answer
-08 |
-09 |
-10 |
-11 |
-12 |
-13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-14 |    question
-15 |
-16 |   Choose safely
-17 |
-18 | ────────────────────────────────────────────────────────────────────────────────
-19 |   ❯
-20 | ────────────────────────────────────────────────────────────────────────────────
-21 |
-22 |   type an answer
-23 |
-24 |   type answer · enter submit · esc cancel · paste works|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-questiod37dede7.home/mentat-tu…
+    04 |
+    05 | ❯ choose safely
+    06 |
+    07 | ⋯ Waiting for your answer
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    14 |    question
+    15 |
+    16 |   Choose safely
+    17 |
+    18 | ────────────────────────────────────────────────────────────────────────────────
+    19 |   ❯
+    20 | ────────────────────────────────────────────────────────────────────────────────
+    21 |
+    22 |   type an answer
+    23 |
+    24 |   type answer · enter submit · esc cancel · paste works
+    |}];
   Tui.keys t "ac";
   Tui.keys t Key.left;
   Tui.keys t "b";
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-questio523b6bc8.home/mentat-tu…
-04 |
-05 | ❯ choose safely
-06 |
-07 | ⋯ Waiting for your answer
-08 |
-09 |
-10 |
-11 |
-12 |
-13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-14 |    question
-15 |
-16 |   Choose safely
-17 |
-18 | ────────────────────────────────────────────────────────────────────────────────
-19 |   ❯ abc
-20 | ────────────────────────────────────────────────────────────────────────────────
-21 |
-22 |
-23 |
-24 |   type answer · enter submit · esc cancel · paste works|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-questiod37dede7.home/mentat-tu…
+    04 |
+    05 | ❯ choose safely
+    06 |
+    07 | ⋯ Waiting for your answer
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    14 |    question
+    15 |
+    16 |   Choose safely
+    17 |
+    18 | ────────────────────────────────────────────────────────────────────────────────
+    19 |   ❯ abc
+    20 | ────────────────────────────────────────────────────────────────────────────────
+    21 |
+    22 |
+    23 |
+    24 |   type answer · enter submit · esc cancel · paste works
+    |}];
   Tui.keys t Key.escape;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-questio523b6bc8.home/mentat-tu…
-04 |
-05 | ❯ choose safely
-06 |
-07 | ⋯ Waiting for your answer
-08 |
-09 |
-10 |
-11 |
-12 |
-13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-14 |    question
-15 |
-16 |   Choose safely
-17 |
-18 | ❯ 1. stable
-19 |   2. experimental
-20 |   3. ✎ type your own answer
-21 |
-22 |
-23 |
-24 |   1-9 jump · ↑↓ move · enter answer · esc custom|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-questiod37dede7.home/mentat-tu…
+    04 |
+    05 | ❯ choose safely
+    06 |
+    07 | ⋯ Waiting for your answer
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    14 |    question
+    15 |
+    16 |   Choose safely
+    17 |
+    18 | ❯ 1. stable
+    19 |   2. experimental
+    20 |   3. ✎ type your own answer
+    21 |
+    22 |
+    23 |
+    24 |   1-9 jump · ↑↓ move · enter answer · esc custom
+    |}];
   Tui.keys t Key.escape;
   Tui.settle t;
   Tui.paste t "criterion β";
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-questio523b6bc8.home/mentat-tu…
-04 |
-05 | ❯ choose safely
-06 |
-07 | ⋯ Waiting for your answer
-08 |
-09 |
-10 |
-11 |
-12 |
-13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-14 |    question
-15 |
-16 |   Choose safely
-17 |
-18 | ────────────────────────────────────────────────────────────────────────────────
-19 |   ❯ criterion β
-20 | ────────────────────────────────────────────────────────────────────────────────
-21 |
-22 |
-23 |
-24 |   type answer · enter submit · esc cancel · paste works|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-questiod37dede7.home/mentat-tu…
+    04 |
+    05 | ❯ choose safely
+    06 |
+    07 | ⋯ Waiting for your answer
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    14 |    question
+    15 |
+    16 |   Choose safely
+    17 |
+    18 | ────────────────────────────────────────────────────────────────────────────────
+    19 |   ❯ criterion β
+    20 | ────────────────────────────────────────────────────────────────────────────────
+    21 |
+    22 |
+    23 |
+    24 |   type answer · enter submit · esc cancel · paste works
+    |}];
   Tui.enter t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-questio523b6bc8.home/mentat-tu…
-04 |
-05 | ❯ choose safely
-06 |
-07 | ⠙ Working… (0s · esc to interrupt)
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ queue a message — sends after this turn
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · /tmp/mentat-t… · openai/gpt… · ! full access ? f…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-questiod37dede7.home/mentat-tu…
+    04 |
+    05 | ❯ choose safely
+    06 |
+    07 | ⠙ Working… (0s · esc to interrupt)
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ queue a message — sends after this turn
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · /tmp/mentat-t… · openai/gpt… · ! full access ? f…
+    |}]
 
 let%expect_test
     "activating the free-form choice edits inline under a live terminal caret" =
@@ -567,95 +593,101 @@ let%expect_test
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-question-inli805518f9.home/men…
-04 |
-05 | ❯ choose safely
-06 |
-07 | ⋯ Waiting for your answer
-08 |
-09 |
-10 |
-11 |
-12 |
-13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-14 |    question
-15 |
-16 |   Choose safely
-17 |
-18 | ────────────────────────────────────────────────────────────────────────────────
-19 |   ❯
-20 | ────────────────────────────────────────────────────────────────────────────────
-21 |
-22 |
-23 |
-24 |   type answer · enter submit · esc cancel · paste works|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-question-inli5991495a.home/men…
+    04 |
+    05 | ❯ choose safely
+    06 |
+    07 | ⋯ Waiting for your answer
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    14 |    question
+    15 |
+    16 |   Choose safely
+    17 |
+    18 | ────────────────────────────────────────────────────────────────────────────────
+    19 |   ❯
+    20 | ────────────────────────────────────────────────────────────────────────────────
+    21 |
+    22 |
+    23 |
+    24 |   type answer · enter submit · esc cancel · paste works
+    |}];
   let caret t =
     match Tui.cursor t with
     | None -> print_string "hidden"
     | Some (row, col) -> Printf.printf "row %d col %d" row col
   in
   caret t;
-  [%expect {|row 19 col 5|}];
+  [%expect {| row 19 col 5 |}];
   Tui.keys t answer;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-question-inli805518f9.home/men…
-04 |
-05 | ❯ choose safely
-06 |
-07 | ⋯ Waiting for your answer
-08 |
-09 |
-10 |
-11 |
-12 |
-13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-14 |    question
-15 |
-16 |   Choose safely
-17 |
-18 | ────────────────────────────────────────────────────────────────────────────────
-19 |   ❯ typed right here
-20 | ────────────────────────────────────────────────────────────────────────────────
-21 |
-22 |
-23 |
-24 |   type answer · enter submit · esc cancel · paste works|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-question-inli5991495a.home/men…
+    04 |
+    05 | ❯ choose safely
+    06 |
+    07 | ⋯ Waiting for your answer
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    14 |    question
+    15 |
+    16 |   Choose safely
+    17 |
+    18 | ────────────────────────────────────────────────────────────────────────────────
+    19 |   ❯ typed right here
+    20 | ────────────────────────────────────────────────────────────────────────────────
+    21 |
+    22 |
+    23 |
+    24 |   type answer · enter submit · esc cancel · paste works
+    |}];
   caret t;
-  [%expect {|row 19 col 21|}];
+  [%expect {| row 19 col 21 |}];
   Tui.enter t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-question-inli805518f9.home/men…
-04 |
-05 | ❯ choose safely
-06 |
-07 | ⠋ Working… (0s · esc to interrupt)
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ queue a message — sends after this turn
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · /tmp/mentat-tu… · openai/gpt… · ! full access ? …|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-question-inli5991495a.home/men…
+    04 |
+    05 | ❯ choose safely
+    06 |
+    07 | ⠋ Working… (0s · esc to interrupt)
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ queue a message — sends after this turn
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · /tmp/mentat-tu… · openai/gpt… · ! full access ? …
+    |}]
 
 let%expect_test "answering a question preserves the visible prompt draft" =
   let draft = "FOLLOW-UP-DRAFT" in
@@ -674,58 +706,62 @@ let%expect_test "answering a question preserves the visible prompt draft" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-questi68a2c4e5.home/mentat-tui…
-04 |
-05 | ❯ ask with draft
-06 |
-07 | ⋯ Waiting for your answer
-08 |
-09 |
-10 |
-11 |
-12 |
-13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-14 |    question
-15 |
-16 |   Which value?
-17 |
-18 | ❯ 1. default
-19 |   2. ✎ type your own answer
-20 |
-21 |
-22 |
-23 |
-24 |   1-9 jump · ↑↓ move · enter answer · esc custom|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-questid3494820.home/mentat-tui…
+    04 |
+    05 | ❯ ask with draft
+    06 |
+    07 | ⋯ Waiting for your answer
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    14 |    question
+    15 |
+    16 |   Which value?
+    17 |
+    18 | ❯ 1. default
+    19 |   2. ✎ type your own answer
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   1-9 jump · ↑↓ move · enter answer · esc custom
+    |}];
   Tui.enter t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-questi68a2c4e5.home/mentat-tui…
-04 |
-05 | ❯ ask with draft
-06 |
-07 | ⠋ Working… (0s · esc to interrupt)
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ FOLLOW-UP-DRAFT
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · /tmp/mentat-t… · openai/gpt… · ! full access ? f…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-questid3494820.home/mentat-tui…
+    04 |
+    05 | ❯ ask with draft
+    06 |
+    07 | ⠋ Working… (0s · esc to interrupt)
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ FOLLOW-UP-DRAFT
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · /tmp/mentat-t… · openai/gpt… · ! full access ? f…
+    |}]
 
 let%expect_test "custom answers stay out of visible prompt history" =
   let recalled = "history question" in
@@ -750,29 +786,30 @@ let%expect_test "custom answers stay out of visible prompt history" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-questionb7ddb6b6.home/mentat-t…
-04 |
-05 | ❯ history question
-06 |
-07 | ⠋ Working… (0s · esc to interrupt)
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ history question
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · /tmp/mentat-t… · openai/gpt… · ! full access ? f…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-questiond6c10c9c.home/mentat-t…
+    04 |
+    05 | ❯ history question
+    06 |
+    07 | ⠋ Working… (0s · esc to interrupt)
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ history question
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · /tmp/mentat-t… · openai/gpt… · ! full access ? f…
+    |}]
 
-[%%run_tests "mentat.tui.question"]

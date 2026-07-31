@@ -60,7 +60,7 @@ let rec pp_json ppf = function
            pp_member)
         members
 
-let json_value = testable ~pp:pp_json ~equal:Json.equal ()
+let json_value = Testable.make ~pp:pp_json ~equal:Json.equal
 
 let assert_decode_error ?contains msg codec json =
   match Json.decode codec json with
@@ -388,46 +388,42 @@ let mutation_state events =
 (* Testables. *)
 
 let position_value =
-  testable ~pp:Protocol.Position.pp ~equal:Protocol.Position.equal ()
+  Testable.make ~pp:Protocol.Position.pp ~equal:Protocol.Position.equal
 
-let fact_value = testable ~pp:Protocol.Fact.pp ~equal:Protocol.Fact.equal ()
+let fact_value = Testable.make ~pp:Protocol.Fact.pp ~equal:Protocol.Fact.equal
 let projected_value = pair position_value fact_value
 
 let update_value =
-  testable ~pp:Protocol.Update.pp ~equal:Protocol.Update.equal ()
+  Testable.make ~pp:Protocol.Update.pp ~equal:Protocol.Update.equal
 
 let progress_value =
-  testable ~pp:Protocol.Progress.pp ~equal:Protocol.Progress.equal ()
+  Testable.make ~pp:Protocol.Progress.pp ~equal:Protocol.Progress.equal
 
 let command_value =
-  testable ~pp:Protocol.Command.pp
-    ~equal:(fun a b ->
+  Testable.make ~pp:Protocol.Command.pp ~equal:(fun a b ->
       Json.equal
         (encode Protocol.Command.jsont a)
         (encode Protocol.Command.jsont b))
-    ()
 
 let error_value =
-  testable ~pp:Protocol.Error.pp
-    ~equal:(fun a b ->
+  Testable.make ~pp:Protocol.Error.pp ~equal:(fun a b ->
       Json.equal (encode Protocol.Error.jsont a) (encode Protocol.Error.jsont b))
-    ()
 
 let stats_value =
   let pp ppf (s : Textdiff.stats) =
     Format.fprintf ppf "{files=%d; additions=%d; deletions=%d}" s.Textdiff.files
       s.Textdiff.additions s.Textdiff.deletions
   in
-  testable ~pp ~equal:Textdiff.Stats.equal ()
+  Testable.make ~pp ~equal:Textdiff.Stats.equal
 
 let paths_value =
-  list (testable ~pp:Workspace.Path.pp ~equal:Workspace.Path.equal ())
+  list (Testable.make ~pp:Workspace.Path.pp ~equal:Workspace.Path.equal)
 
 let revertability_value =
-  testable ~pp:Mutation.Revertability.pp ~equal:Mutation.Revertability.equal ()
+  Testable.make ~pp:Mutation.Revertability.pp ~equal:Mutation.Revertability.equal
 
 let change_value =
-  testable ~pp:Mutation.Change.pp ~equal:Mutation.Change.equal ()
+  Testable.make ~pp:Mutation.Change.pp ~equal:Mutation.Change.equal
 
 (* The canonical journey. *)
 
@@ -2035,26 +2031,24 @@ let command_parity_group =
             ~tag:"goal.resume"
             ~corrupt:(set_member "budget" (Json.int (-1))));
       prop "goal_edit accepts and round-trips any non-empty objective"
-        (Testable.with_gen
-           Gen.(
-             let+ c = char_range 'a' 'z'
-             and+ rest = string_size (int_range 0 12) (char_range 'a' 'z') in
-             String.make 1 c ^ rest)
-           string)
+        Gen.(
+          let+ c = char_range 'a' 'z'
+          and+ rest = string_of ~size:(int_range 0 12) (char_range 'a' 'z') in
+          String.make 1 c ^ rest)
         (fun objective ->
           match
             Protocol.Command.goal_edit ~session:fix_session_id ~goal:fix_goal_id
               ~objective
           with
-          | Error _ -> false
+          | Error _ -> fail "goal_edit rejected a non-empty objective"
           | Ok command ->
-              Json.equal
-                (encode Protocol.Command.jsont command)
-                (encode Protocol.Command.jsont
-                   (decode Protocol.Command.jsont
-                      (encode Protocol.Command.jsont command))));
-      prop "prompt accepts any positive step cap"
-        (Testable.with_gen (Gen.int_range 1 500) int)
+              is_true
+                (Json.equal
+                   (encode Protocol.Command.jsont command)
+                   (encode Protocol.Command.jsont
+                      (decode Protocol.Command.jsont
+                         (encode Protocol.Command.jsont command)))));
+      prop "prompt accepts any positive step cap" (Gen.int_range 1 500)
         (fun max_steps ->
           match
             Protocol.Command.prompt ~session:fix_session_id
@@ -2062,8 +2056,8 @@ let command_parity_group =
               ~input:[ Llm.Content.text "Go." ]
               ~max_steps ()
           with
-          | Ok _ -> true
-          | Error _ -> false);
+          | Ok _ -> ()
+          | Error _ -> fail "prompt rejected a positive step cap");
     ]
 
 (* Error codec. *)
@@ -2229,12 +2223,10 @@ let position_group =
    byte-identically, and [before]'s membership check is [Projection.after]'s. *)
 
 let page_value =
-  testable ~pp:Protocol.Transcript.Page.pp ~equal:Protocol.Transcript.Page.equal
-    ()
+  Testable.make ~pp:Protocol.Transcript.Page.pp ~equal:Protocol.Transcript.Page.equal
 
 let tail_value =
-  testable ~pp:Protocol.Transcript.Tail.pp ~equal:Protocol.Transcript.Tail.equal
-    ()
+  Testable.make ~pp:Protocol.Transcript.Tail.pp ~equal:Protocol.Transcript.Tail.equal
 
 let transcript_array j = Array.of_list (project_all j)
 
@@ -2760,15 +2752,12 @@ let wire_corpus_group =
 (* User command codec. *)
 
 let user_command_value =
-  testable
-    ~pp:(fun ppf t ->
+  Testable.make ~pp:(fun ppf t ->
       Format.pp_print_string ppf
-        (Protocol.User_command.Name.to_string t.Protocol.User_command.name))
-    ~equal:(fun a b ->
+        (Protocol.User_command.Name.to_string t.Protocol.User_command.name)) ~equal:(fun a b ->
       Json.equal
         (encode Protocol.User_command.jsont a)
         (encode Protocol.User_command.jsont b))
-    ()
 
 let user_command_name s = Result.get_ok (Protocol.User_command.Name.of_string s)
 

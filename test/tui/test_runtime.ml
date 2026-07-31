@@ -1108,4 +1108,3 @@ let%expect_test
 23 | ────────────────────────────────────────────────────────────────────────────────
 24 |   ~ · openai/gpt-5.5                                           ? for shortcuts|}]
 
-[%%run_tests "mentat.tui.runtime"]

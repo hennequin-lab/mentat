@@ -14,30 +14,32 @@ let%expect_test "unknown workspace shows the complete trust gate" =
   Pty.settle terminal;
   Screen.print ~project (Pty.screen terminal);
   [%expect
-    {|01 |
-02 |  Mentat repository activation
-03 |
-04 |  Repository root: ~/mentat-tui-cli-trusf18b8278
-05 |  Selection: 1 — continue restricted
-06 |
-07 |  This repository can control config, instructions, skills, Dune rules, local
-08 |  tools, evaluator, and Build-mode project processes. Activation does not
-09 |  approve operations or widen the selected sandbox.
-10 |
-11 |  ❯ 1. Continue restricted — remember this choice
-12 |     Native reads, searches, and sandboxed edits remain available. Repository-
-13 |     controlled code will not run. Files edited now may execute if you activate
-14 |     the repository later.
-15 |    2. Trust and activate this repository — remember this choice
-16 |     Repository inputs and Build processes activate after reload.
-17 |    3. Exit
-18 |     Save nothing and start no project process.
-19 |
-20 |
-21 |
-22 |
-23 |  Use ↑/↓ and Enter, or press 1–3. Escape or Ctrl+C exits.
-24 ||}];
+    {|
+    01 |
+    02 |  Mentat repository activation
+    03 |
+    04 |  Repository root: ~/mentat-tui-cli-trusad658e9d
+    05 |  Selection: 1 — continue restricted
+    06 |
+    07 |  This repository can control config, instructions, skills, Dune rules, local
+    08 |  tools, evaluator, and Build-mode project processes. Activation does not
+    09 |  approve operations or widen the selected sandbox.
+    10 |
+    11 |  ❯ 1. Continue restricted — remember this choice
+    12 |     Native reads, searches, and sandboxed edits remain available. Repository-
+    13 |     controlled code will not run. Files edited now may execute if you activate
+    14 |     the repository later.
+    15 |    2. Trust and activate this repository — remember this choice
+    16 |     Repository inputs and Build processes activate after reload.
+    17 |    3. Exit
+    18 |     Save nothing and start no project process.
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |  Use ↑/↓ and Enter, or press 1–3. Escape or Ctrl+C exits.
+    24 |
+    |}];
   Pty.send terminal "3";
   Pty.wait_exit terminal
 
@@ -51,59 +53,63 @@ let%expect_test "restricted choice is remembered by the next launch" =
   Pty.settle terminal;
   Screen.print ~project (Pty.screen terminal);
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-07 |
-08 |                          dev · openai/gpt-5.6-sol medium
-09 |
-10 |      ▎ welcome — and thanks for trying mentat this early.
-11 |      ▎ it's experimental: sessions and config may change without migration.
-12 |
-13 |
-14 | ────────────────────────────────────────────────────────────────────────────────
-15 | ❯ message mentat
-16 | ────────────────────────────────────────────────────────────────────────────────
-17 |
-18 |                          ! /login — no connected account
-19 |                               ∅ no recent sessions
-20 |
-21 |
-22 |
-23 |
-24 |   ! not logged in · /login · ~/men… · openai/gpt-5.6-sol… · ! full access ? f…|}];
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    07 |
+    08 |                          dev · openai/gpt-5.6-sol medium
+    09 |
+    10 |      ▎ welcome — and thanks for trying mentat this early.
+    11 |      ▎ it's experimental: sessions and config may change without migration.
+    12 |
+    13 |
+    14 | ────────────────────────────────────────────────────────────────────────────────
+    15 | ❯ message mentat
+    16 | ────────────────────────────────────────────────────────────────────────────────
+    17 |
+    18 |                          ! /login — no connected account
+    19 |                               ∅ no recent sessions
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ! not logged in · /login · ~/men… · openai/gpt-5.6-sol… · ! full access ? f…
+    |}];
   Pty.quit terminal;
   Pty.run ~trust:false project @@ fun remembered ->
   Pty.settle remembered;
   Screen.print ~project (Pty.screen remembered);
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-07 |
-08 |                          dev · openai/gpt-5.6-sol medium
-09 |
-10 |      ▎ welcome — and thanks for trying mentat this early.
-11 |      ▎ it's experimental: sessions and config may change without migration.
-12 |
-13 |
-14 | ────────────────────────────────────────────────────────────────────────────────
-15 | ❯ message mentat
-16 | ────────────────────────────────────────────────────────────────────────────────
-17 |
-18 |                          ! /login — no connected account
-19 |                               ∅ no recent sessions
-20 |
-21 |
-22 |
-23 |
-24 |   ! not logged in · /login · ~/men… · openai/gpt-5.6-sol… · ! full access ? f…|}];
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    07 |
+    08 |                          dev · openai/gpt-5.6-sol medium
+    09 |
+    10 |      ▎ welcome — and thanks for trying mentat this early.
+    11 |      ▎ it's experimental: sessions and config may change without migration.
+    12 |
+    13 |
+    14 | ────────────────────────────────────────────────────────────────────────────────
+    15 | ❯ message mentat
+    16 | ────────────────────────────────────────────────────────────────────────────────
+    17 |
+    18 |                          ! /login — no connected account
+    19 |                               ∅ no recent sessions
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ! not logged in · /login · ~/men… · openai/gpt-5.6-sol… · ! full access ? f…
+    |}];
   Pty.quit remembered
 
 let%expect_test
@@ -120,54 +126,56 @@ let%expect_test
   Screen.print ~project (Pty.screen terminal);
   Pty.quit terminal;
   [%expect
-    {|01 |
-02 |  Mentat repository activation
-03 |
-04 |  Repository root: ~/mentat-tui-cli-trust-enter75197b01
-05 |  Selection: 1 — continue restricted
-06 |
-07 |  This repository can control config, instructions, skills, Dune rules, local
-08 |  tools, evaluator, and Build-mode project processes. Activation does not
-09 |  approve operations or widen the selected sandbox.
-10 |
-11 |  ❯ 1. Continue restricted — remember this choice
-12 |     Native reads, searches, and sandboxed edits remain available. Repository-
-13 |     controlled code will not run. Files edited now may execute if you activate
-14 |     the repository later.
-15 |    2. Trust and activate this repository — remember this choice
-16 |     Repository inputs and Build processes activate after reload.
-17 |    3. Exit
-18 |     Save nothing and start no project process.
-19 |
-20 |
-21 |
-22 |
-23 |  Use ↑/↓ and Enter, or press 1–3. Escape or Ctrl+C exits.
-24 |
-01 |
-02 |
-03 |
-04 |
-05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-07 |
-08 |                          dev · openai/gpt-5.6-sol medium
-09 |
-10 |      ▎ welcome — and thanks for trying mentat this early.
-11 |      ▎ it's experimental: sessions and config may change without migration.
-12 |
-13 |
-14 | ────────────────────────────────────────────────────────────────────────────────
-15 | ❯ message mentat
-16 | ────────────────────────────────────────────────────────────────────────────────
-17 |
-18 |                          ! /login — no connected account
-19 |                               ∅ no recent sessions
-20 |
-21 |
-22 |
-23 |
-24 |   ! not logged in · /login · ~/men… · openai/gpt-5.6-sol … · ! full acce… ? f…|}]
+    {|
+    01 |
+    02 |  Mentat repository activation
+    03 |
+    04 |  Repository root: ~/mentat-tui-cli-trust-enter40afd874
+    05 |  Selection: 1 — continue restricted
+    06 |
+    07 |  This repository can control config, instructions, skills, Dune rules, local
+    08 |  tools, evaluator, and Build-mode project processes. Activation does not
+    09 |  approve operations or widen the selected sandbox.
+    10 |
+    11 |  ❯ 1. Continue restricted — remember this choice
+    12 |     Native reads, searches, and sandboxed edits remain available. Repository-
+    13 |     controlled code will not run. Files edited now may execute if you activate
+    14 |     the repository later.
+    15 |    2. Trust and activate this repository — remember this choice
+    16 |     Repository inputs and Build processes activate after reload.
+    17 |    3. Exit
+    18 |     Save nothing and start no project process.
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |  Use ↑/↓ and Enter, or press 1–3. Escape or Ctrl+C exits.
+    24 |
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    07 |
+    08 |                          dev · openai/gpt-5.6-sol medium
+    09 |
+    10 |      ▎ welcome — and thanks for trying mentat this early.
+    11 |      ▎ it's experimental: sessions and config may change without migration.
+    12 |
+    13 |
+    14 | ────────────────────────────────────────────────────────────────────────────────
+    15 | ❯ message mentat
+    16 | ────────────────────────────────────────────────────────────────────────────────
+    17 |
+    18 |                          ! /login — no connected account
+    19 |                               ∅ no recent sessions
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ! not logged in · /login · ~/men… · openai/gpt-5.6-sol … · ! full acce… ? f…
+    |}]
 
 let fake_dune project =
   let bin = Project.path project "fake-bin" in
@@ -200,60 +208,64 @@ let%expect_test "trusted selection is coherent and starts no project process" =
   Pty.settle terminal;
   Screen.print ~project (Pty.screen terminal);
   [%expect
-    {|01 |
-02 |  Mentat repository activation
-03 |
-04 |  Repository root: ~/mentat-tui-cli-trust-b8036cc9
-05 |  Selection: 2 — trust and activate this repository
-06 |
-07 |  This repository can control config, instructions, skills, Dune rules, local
-08 |  tools, evaluator, and Build-mode project processes. Activation does not
-09 |  approve operations or widen the selected sandbox.
-10 |
-11 |    1. Continue restricted — remember this choice
-12 |     Native reads, searches, and sandboxed edits remain available. Repository-
-13 |     controlled code will not run. Files edited now may execute if you activate
-14 |     the repository later.
-15 |  ❯ 2. Trust and activate this repository — remember this choice
-16 |     Repository inputs and Build processes activate after reload.
-17 |    3. Exit
-18 |     Save nothing and start no project process.
-19 |
-20 |
-21 |
-22 |
-23 |  Use ↑/↓ and Enter, or press 1–3. Escape or Ctrl+C exits.
-24 ||}];
+    {|
+    01 |
+    02 |  Mentat repository activation
+    03 |
+    04 |  Repository root: ~/mentat-tui-cli-trust-31a23c93
+    05 |  Selection: 2 — trust and activate this repository
+    06 |
+    07 |  This repository can control config, instructions, skills, Dune rules, local
+    08 |  tools, evaluator, and Build-mode project processes. Activation does not
+    09 |  approve operations or widen the selected sandbox.
+    10 |
+    11 |    1. Continue restricted — remember this choice
+    12 |     Native reads, searches, and sandboxed edits remain available. Repository-
+    13 |     controlled code will not run. Files edited now may execute if you activate
+    14 |     the repository later.
+    15 |  ❯ 2. Trust and activate this repository — remember this choice
+    16 |     Repository inputs and Build processes activate after reload.
+    17 |    3. Exit
+    18 |     Save nothing and start no project process.
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |  Use ↑/↓ and Enter, or press 1–3. Escape or Ctrl+C exits.
+    24 |
+    |}];
   Pty.send terminal "\r";
   Pty.wait terminal (Screen.has "no recent sessions");
   require_trust project "trusted";
   Pty.settle terminal;
   Screen.print ~project (Pty.screen terminal);
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-07 |
-08 |                          dev · openai/gpt-5.6-sol medium
-09 |
-10 |      ▎ welcome — and thanks for trying mentat this early.
-11 |      ▎ it's experimental: sessions and config may change without migration.
-12 |
-13 |
-14 | ────────────────────────────────────────────────────────────────────────────────
-15 | ❯ message mentat
-16 | ────────────────────────────────────────────────────────────────────────────────
-17 |
-18 |                          ! /login — no connected account
-19 |                               ∅ no recent sessions
-20 |
-21 |
-22 |
-23 |
-24 |   ! not logged in · /login · ~/men… · openai/gpt-5.6-sol… · ! full access ? f…|}];
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    07 |
+    08 |                          dev · openai/gpt-5.6-sol medium
+    09 |
+    10 |      ▎ welcome — and thanks for trying mentat this early.
+    11 |      ▎ it's experimental: sessions and config may change without migration.
+    12 |
+    13 |
+    14 | ────────────────────────────────────────────────────────────────────────────────
+    15 | ❯ message mentat
+    16 | ────────────────────────────────────────────────────────────────────────────────
+    17 |
+    18 |                          ! /login — no connected account
+    19 |                               ∅ no recent sessions
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ! not logged in · /login · ~/men… · openai/gpt-5.6-sol… · ! full access ? f…
+    |}];
   Pty.quit terminal
 
 let exit_prompt name input =
@@ -273,104 +285,108 @@ let exit_prompt name input =
 let%expect_test "Escape and EOF show the complete prompt before exiting" =
   exit_prompt "cli-trust-escape" "\027";
   [%expect
-    {|01 |
-02 |  Mentat repository activation
-03 |
-04 |  Repository root: ~/mentat-tui-cli-trus4d5a9316
-05 |  Selection: 1 — continue restricted
-06 |
-07 |  This repository can control config, instructions, skills, Dune rules, local
-08 |  tools, evaluator, and Build-mode project processes. Activation does not
-09 |  approve operations or widen the selected sandbox.
-10 |
-11 |  ❯ 1. Continue restricted — remember this choice
-12 |     Native reads, searches, and sandboxed edits remain available. Repository-
-13 |     controlled code will not run. Files edited now may execute if you activate
-14 |     the repository later.
-15 |    2. Trust and activate this repository — remember this choice
-16 |     Repository inputs and Build processes activate after reload.
-17 |    3. Exit
-18 |     Save nothing and start no project process.
-19 |
-20 |
-21 |
-22 |
-23 |  Use ↑/↓ and Enter, or press 1–3. Escape or Ctrl+C exits.
-24 |
-01 |
-02 | Exited without saving a workspace trust decision.
-03 |
-04 |
-05 |
-06 |
-07 |
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 ||}];
+    {|
+    01 |
+    02 |  Mentat repository activation
+    03 |
+    04 |  Repository root: ~/mentat-tui-cli-trus8e21c6be
+    05 |  Selection: 1 — continue restricted
+    06 |
+    07 |  This repository can control config, instructions, skills, Dune rules, local
+    08 |  tools, evaluator, and Build-mode project processes. Activation does not
+    09 |  approve operations or widen the selected sandbox.
+    10 |
+    11 |  ❯ 1. Continue restricted — remember this choice
+    12 |     Native reads, searches, and sandboxed edits remain available. Repository-
+    13 |     controlled code will not run. Files edited now may execute if you activate
+    14 |     the repository later.
+    15 |    2. Trust and activate this repository — remember this choice
+    16 |     Repository inputs and Build processes activate after reload.
+    17 |    3. Exit
+    18 |     Save nothing and start no project process.
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |  Use ↑/↓ and Enter, or press 1–3. Escape or Ctrl+C exits.
+    24 |
+    01 |
+    02 | Exited without saving a workspace trust decision.
+    03 |
+    04 |
+    05 |
+    06 |
+    07 |
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |
+    |}];
   exit_prompt "cli-trust-eof" "\004";
   [%expect
-    {|01 |
-02 |  Mentat repository activation
-03 |
-04 |  Repository root: ~/mentat-tui-cli-tdb608bfe
-05 |  Selection: 1 — continue restricted
-06 |
-07 |  This repository can control config, instructions, skills, Dune rules, local
-08 |  tools, evaluator, and Build-mode project processes. Activation does not
-09 |  approve operations or widen the selected sandbox.
-10 |
-11 |  ❯ 1. Continue restricted — remember this choice
-12 |     Native reads, searches, and sandboxed edits remain available. Repository-
-13 |     controlled code will not run. Files edited now may execute if you activate
-14 |     the repository later.
-15 |    2. Trust and activate this repository — remember this choice
-16 |     Repository inputs and Build processes activate after reload.
-17 |    3. Exit
-18 |     Save nothing and start no project process.
-19 |
-20 |
-21 |
-22 |
-23 |  Use ↑/↓ and Enter, or press 1–3. Escape or Ctrl+C exits.
-24 |
-01 |
-02 | Exited without saving a workspace trust decision.
-03 |
-04 |
-05 |
-06 |
-07 |
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 ||}]
+    {|
+    01 |
+    02 |  Mentat repository activation
+    03 |
+    04 |  Repository root: ~/mentat-tui-cli-t029989ac
+    05 |  Selection: 1 — continue restricted
+    06 |
+    07 |  This repository can control config, instructions, skills, Dune rules, local
+    08 |  tools, evaluator, and Build-mode project processes. Activation does not
+    09 |  approve operations or widen the selected sandbox.
+    10 |
+    11 |  ❯ 1. Continue restricted — remember this choice
+    12 |     Native reads, searches, and sandboxed edits remain available. Repository-
+    13 |     controlled code will not run. Files edited now may execute if you activate
+    14 |     the repository later.
+    15 |    2. Trust and activate this repository — remember this choice
+    16 |     Repository inputs and Build processes activate after reload.
+    17 |    3. Exit
+    18 |     Save nothing and start no project process.
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |  Use ↑/↓ and Enter, or press 1–3. Escape or Ctrl+C exits.
+    24 |
+    01 |
+    02 | Exited without saving a workspace trust decision.
+    03 |
+    04 |
+    05 |
+    06 |
+    07 |
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |
+    |}]
 
 let%expect_test "a trust-store failure stays visible and permits retry" =
   Project.with_temp "cli-trust-save-retry" @@ fun project ->
@@ -387,30 +403,32 @@ let%expect_test "a trust-store failure stays visible and permits retry" =
   Pty.settle terminal;
   Screen.print ~project (Pty.screen terminal);
   [%expect
-    {|01 |
-02 |  Mentat repository activation
-03 |
-04 |  Repository root: ~/mentat-tui-cli-trust-sa74885165
-05 |  Selection: 2 — trust and activate this repository
-06 |
-07 |  Could not save the decision: /tmp/mentat-tui-cli-trust-sa74885165.home/mentat-
-08 |  tui-cli-trust-sa74885165.xdg/config/mentat/trust.json: /tmp/mentat-tui-cli-
-09 |  trust-sa74885165.home/mentat-tui-cli-trust-sa74885165.xdg/config/mentat/
-10 |  trust.json.lock: Is a directory
-11 |
-12 |  This repository can control config, instructions, skills, Dune rules, local
-13 |  tools, evaluator, and Build-mode project processes. Activation does not
-14 |  approve operations or widen the selected sandbox.
-15 |
-16 |    1. Continue restricted — remember this choice
-17 |     Native reads, searches, and sandboxed edits remain available. Repository-
-18 |     controlled code will not run. Files edited now may execute if you activate
-19 |     the repository later.
-20 |  ❯ 2. Trust and activate this repository — remember this choice
-21 |     Repository inputs and Build processes activate after reload.
-22 |    3. Exit
-23 |  Use ↑/↓ and Enter, or press 1–3. Escape or Ctrl+C exits.
-24 ||}];
+    {|
+    01 |
+    02 |  Mentat repository activation
+    03 |
+    04 |  Repository root: ~/mentat-tui-cli-trust-sab9b540ba
+    05 |  Selection: 2 — trust and activate this repository
+    06 |
+    07 |  Could not save the decision: /tmp/mentat-tui-cli-trust-sab9b540ba.home/mentat-
+    08 |  tui-cli-trust-sab9b540ba.xdg/config/mentat/trust.json: /tmp/mentat-tui-cli-
+    09 |  trust-sab9b540ba.home/mentat-tui-cli-trust-sab9b540ba.xdg/config/mentat/
+    10 |  trust.json.lock: Is a directory
+    11 |
+    12 |  This repository can control config, instructions, skills, Dune rules, local
+    13 |  tools, evaluator, and Build-mode project processes. Activation does not
+    14 |  approve operations or widen the selected sandbox.
+    15 |
+    16 |    1. Continue restricted — remember this choice
+    17 |     Native reads, searches, and sandboxed edits remain available. Repository-
+    18 |     controlled code will not run. Files edited now may execute if you activate
+    19 |     the repository later.
+    20 |  ❯ 2. Trust and activate this repository — remember this choice
+    21 |     Repository inputs and Build processes activate after reload.
+    22 |    3. Exit
+    23 |  Use ↑/↓ and Enter, or press 1–3. Escape or Ctrl+C exits.
+    24 |
+    |}];
   Unix.rmdir lock;
   Pty.send terminal "2";
   Pty.wait terminal (fun screen ->
@@ -421,30 +439,32 @@ let%expect_test "a trust-store failure stays visible and permits retry" =
   Pty.settle terminal;
   Screen.print ~project (Pty.screen terminal);
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-07 |
-08 |                          dev · openai/gpt-5.6-sol medium
-09 |
-10 |      ▎ welcome — and thanks for trying mentat this early.
-11 |      ▎ it's experimental: sessions and config may change without migration.
-12 |
-13 |
-14 | ────────────────────────────────────────────────────────────────────────────────
-15 | ❯ message mentat
-16 | ────────────────────────────────────────────────────────────────────────────────
-17 |
-18 |                          ! /login — no connected account
-19 |                               ∅ no recent sessions
-20 |
-21 |
-22 |
-23 |
-24 |   ! not logged in · /login · ~/men… · openai/gpt-5.6-sol… · ! full access ? f…|}];
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    07 |
+    08 |                          dev · openai/gpt-5.6-sol medium
+    09 |
+    10 |      ▎ welcome — and thanks for trying mentat this early.
+    11 |      ▎ it's experimental: sessions and config may change without migration.
+    12 |
+    13 |
+    14 | ────────────────────────────────────────────────────────────────────────────────
+    15 | ❯ message mentat
+    16 | ────────────────────────────────────────────────────────────────────────────────
+    17 |
+    18 |                          ! /login — no connected account
+    19 |                               ∅ no recent sessions
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ! not logged in · /login · ~/men… · openai/gpt-5.6-sol… · ! full access ? f…
+    |}];
   Pty.quit terminal
 
 let%expect_test "failed activation rolls back visibly and permits retry" =
@@ -461,30 +481,32 @@ let%expect_test "failed activation rolls back visibly and permits retry" =
   Pty.settle terminal;
   Screen.print ~project (Pty.screen terminal);
   [%expect
-    {|01 |
-02 |  Mentat repository activation
-03 |
-04 |  Repository root: ~/mentat-tui-cli-trust-activati2b7fc6af
-05 |  Selection: 1 — continue restricted
-06 |
-07 |  Repository activation failed: unknown provider "missing"; known providers:
-08 |  openai, anthropic, google, local, ollama
-09 |  The repository was returned to restricted mode.
-10 |
-11 |  This repository can control config, instructions, skills, Dune rules, local
-12 |  tools, evaluator, and Build-mode project processes. Activation does not
-13 |  approve operations or widen the selected sandbox.
-14 |
-15 |  ❯ 1. Continue restricted — remember this choice
-16 |     Native reads, searches, and sandboxed edits remain available. Repository-
-17 |     controlled code will not run. Files edited now may execute if you activate
-18 |     the repository later.
-19 |    2. Trust and activate this repository — remember this choice
-20 |     Repository inputs and Build processes activate after reload.
-21 |    3. Exit
-22 |     Save nothing and start no project process.
-23 |  Use ↑/↓ and Enter, or press 1–3. Escape or Ctrl+C exits.
-24 ||}];
+    {|
+    01 |
+    02 |  Mentat repository activation
+    03 |
+    04 |  Repository root: ~/mentat-tui-cli-trust-activatib766510f
+    05 |  Selection: 1 — continue restricted
+    06 |
+    07 |  Repository activation failed: unknown provider "missing"; known providers:
+    08 |  openai, anthropic, google, local, ollama
+    09 |  The repository was returned to restricted mode.
+    10 |
+    11 |  This repository can control config, instructions, skills, Dune rules, local
+    12 |  tools, evaluator, and Build-mode project processes. Activation does not
+    13 |  approve operations or widen the selected sandbox.
+    14 |
+    15 |  ❯ 1. Continue restricted — remember this choice
+    16 |     Native reads, searches, and sandboxed edits remain available. Repository-
+    17 |     controlled code will not run. Files edited now may execute if you activate
+    18 |     the repository later.
+    19 |    2. Trust and activate this repository — remember this choice
+    20 |     Repository inputs and Build processes activate after reload.
+    21 |    3. Exit
+    22 |     Save nothing and start no project process.
+    23 |  Use ↑/↓ and Enter, or press 1–3. Escape or Ctrl+C exits.
+    24 |
+    |}];
   Unix.unlink (Project.path project ".mentat/config.json");
   Pty.send terminal "2";
   Pty.wait terminal (Screen.has "no recent sessions");
@@ -492,30 +514,31 @@ let%expect_test "failed activation rolls back visibly and permits retry" =
   Pty.settle terminal;
   Screen.print ~project (Pty.screen terminal);
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-07 |
-08 |                          dev · openai/gpt-5.6-sol medium
-09 |
-10 |      ▎ welcome — and thanks for trying mentat this early.
-11 |      ▎ it's experimental: sessions and config may change without migration.
-12 |
-13 |
-14 | ────────────────────────────────────────────────────────────────────────────────
-15 | ❯ message mentat
-16 | ────────────────────────────────────────────────────────────────────────────────
-17 |
-18 |                          ! /login — no connected account
-19 |                               ∅ no recent sessions
-20 |
-21 |
-22 |
-23 |
-24 |   ! not logged in · /login · ~/men… · openai/gpt-5.6-sol … · ! full access ? …|}];
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    07 |
+    08 |                          dev · openai/gpt-5.6-sol medium
+    09 |
+    10 |      ▎ welcome — and thanks for trying mentat this early.
+    11 |      ▎ it's experimental: sessions and config may change without migration.
+    12 |
+    13 |
+    14 | ────────────────────────────────────────────────────────────────────────────────
+    15 | ❯ message mentat
+    16 | ────────────────────────────────────────────────────────────────────────────────
+    17 |
+    18 |                          ! /login — no connected account
+    19 |                               ∅ no recent sessions
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ! not logged in · /login · ~/men… · openai/gpt-5.6-sol … · ! full access ? …
+    |}];
   Pty.quit terminal
 
-[%%run_tests "mentat.tui.pty.cli_launch_trust"]

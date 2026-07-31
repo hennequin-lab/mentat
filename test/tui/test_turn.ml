@@ -24,85 +24,91 @@ let%expect_test "a held turn ticks, then settles into durable transcript" =
   submit t "say hello";
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-862ee4e4
-04 |
-05 | ❯ say hello
-06 |
-07 | ⠋ Working… (0s · esc to interrupt)
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ queue a message — sends after this turn
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-82c3f290
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⠋ Working… (0s · esc to interrupt)
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ queue a message — sends after this turn
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…
+    |}];
   Tui.advance t 5.;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-862ee4e4
-04 |
-05 | ❯ say hello
-06 |
-07 | ⠋ Working… (5s · esc to interrupt)
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ queue a message — sends after this turn
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-82c3f290
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⠋ Working… (5s · esc to interrupt)
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ queue a message — sends after this turn
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…
+    |}];
   Tui.finish_turn t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-862ee4e4
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |   Worked for 5s
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-82c3f290
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |   Worked for 5s
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…
+    |}]
 
 (* An overloaded provider is outlasted by the adapter's announced retries. The
    working line must show the failure class, the attempt counter against its
@@ -122,86 +128,92 @@ let%expect_test "a retrying turn shows the announced wait in the working line" =
   submit t "say hello";
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-46c9c90f
-04 |
-05 | ❯ say hello
-06 |
-07 | ⠋ Provider overloaded — retry 3/10… (0s · next attempt in 8s · esc to interrupt)
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ queue a message — sends after this turn
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-db3bb3c9
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⠋ Provider overloaded — retry 3/10… (0s · next attempt in 8s · esc to interrupt)
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ queue a message — sends after this turn
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…
+    |}];
   (* The wait is live: five seconds later the same announcement counts down. *)
   Tui.advance t 5.;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-46c9c90f
-04 |
-05 | ❯ say hello
-06 |
-07 | ⠋ Provider overloaded — retry 3/10… (5s · next attempt in 3s · esc to interrupt)
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ queue a message — sends after this turn
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-db3bb3c9
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⠋ Provider overloaded — retry 3/10… (5s · next attempt in 3s · esc to interrupt)
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ queue a message — sends after this turn
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…
+    |}];
   Tui.finish_turn t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-46c9c90f
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |   Worked for 5s
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-db3bb3c9
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |   Worked for 5s
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…
+    |}]
 
 (* A local model auto-downloads its weights on first use, inside the turn's
    first provider call. The working line must name the artifact and its byte
@@ -226,58 +238,62 @@ let%expect_test "a downloading turn shows artifact progress in the working line"
   submit t "say hello";
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-756ad03f
-04 |
-05 | ❯ say hello
-06 |
-07 | ⠋ Downloading gpt-oss-20b… (0s · 1.2 / 12.1 GB (10%) · esc to interrupt)
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ queue a message — sends after this turn
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-330da242
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⠋ Downloading gpt-oss-20b… (0s · 1.2 / 12.1 GB (10%) · esc to interrupt)
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ queue a message — sends after this turn
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…
+    |}];
   Tui.finish_turn t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-756ad03f
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-330da242
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…
+    |}]
 
 let workspace_notice ~source ~severity ~title ?body ~key () =
   Mentat_workspace.Notice.make ~source ~severity ~title ?body ~key ()
@@ -302,30 +318,32 @@ let%expect_test
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-862ee4e4
-04 |
-05 | ❯ inspect workspace health
-06 |
-07 | ⊙ dune · Build is healthy
-08 |
-09 | ⊙ warning · fswatch · Generated files changed
-10 |
-11 | ⠋ Working… (0s · esc to interrupt)
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ queue a message — sends after this turn
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-82c3f290
+    04 |
+    05 | ❯ inspect workspace health
+    06 |
+    07 | ⊙ dune · Build is healthy
+    08 |
+    09 | ⊙ warning · fswatch · Generated files changed
+    10 |
+    11 | ⠋ Working… (0s · esc to interrupt)
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ queue a message — sends after this turn
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…
+    |}];
   Tui.notice t
     (workspace_notice ~source:"dune"
        ~severity:Mentat_workspace.Notice.Severity.Error ~title:"Build failed"
@@ -333,58 +351,62 @@ let%expect_test
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-862ee4e4
-04 |
-05 | ❯ inspect workspace health
-06 |
-07 | ⊙ error · dune · Build failed
-08 |
-09 | ⊙ warning · fswatch · Generated files changed
-10 |
-11 | ⠋ Working… (0s · esc to interrupt)
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ queue a message — sends after this turn
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-82c3f290
+    04 |
+    05 | ❯ inspect workspace health
+    06 |
+    07 | ⊙ error · dune · Build failed
+    08 |
+    09 | ⊙ warning · fswatch · Generated files changed
+    10 |
+    11 | ⠋ Working… (0s · esc to interrupt)
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ queue a message — sends after this turn
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…
+    |}];
   Tui.finish_turn t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-862ee4e4
-04 |
-05 | ❯ inspect workspace health
-06 |
-07 | ⏺ Workspace inspection is complete.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-82c3f290
+    04 |
+    05 | ❯ inspect workspace health
+    06 |
+    07 | ⏺ Workspace inspection is complete.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…
+    |}]
 
 (* The exact two shapes bin/workspace_notices.ml emits, on the shared
    [dune.build-health] owner key: [failing_notice] carries the count-titled
@@ -413,30 +435,32 @@ let%expect_test
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-862ee4e4
-04 |
-05 | ❯ trigger the build check
-06 |
-07 | ⊙ error · dune · Build failing (1 diagnostic)
-08 |
-09 | ⠋ Working… (0s · esc to interrupt)
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ queue a message — sends after this turn
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-82c3f290
+    04 |
+    05 | ❯ trigger the build check
+    06 |
+    07 | ⊙ error · dune · Build failing (1 diagnostic)
+    08 |
+    09 | ⠋ Working… (0s · esc to interrupt)
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ queue a message — sends after this turn
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…
+    |}];
   Tui.notice t
     (workspace_notice ~source:"dune"
        ~severity:Mentat_workspace.Notice.Severity.Info ~title:"Build recovered"
@@ -444,30 +468,32 @@ let%expect_test
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-862ee4e4
-04 |
-05 | ❯ trigger the build check
-06 |
-07 | ⊙ dune · Build recovered
-08 |
-09 | ⠋ Working… (0s · esc to interrupt)
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ queue a message — sends after this turn
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-82c3f290
+    04 |
+    05 | ❯ trigger the build check
+    06 |
+    07 | ⊙ dune · Build recovered
+    08 |
+    09 | ⠋ Working… (0s · esc to interrupt)
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ queue a message — sends after this turn
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…
+    |}]
 
 (* The durable half of decision 5: a workspace notice recorded against the turn
    renders its whole structured observation in the transcript — the level-colored
@@ -495,30 +521,32 @@ let%expect_test
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-862ee4e4
-04 |
-05 | ❯ check the build
-06 |
-07 | ✗ dune — Build failing (2 diagnostics)
-08 |   lib/a.ml:1:3-1:6: Error: Unbound value foo
-09 |   lib/b.ml:9:2-9:8: Error: This expression has type string but an expression
-10 |   was expected of type int
-11 |
-12 | ⠋ Working… (0s · esc to interrupt)
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ queue a message — sends after this turn
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-82c3f290
+    04 |
+    05 | ❯ check the build
+    06 |
+    07 | ✗ dune — Build failing (2 diagnostics)
+    08 |   lib/a.ml:1:3-1:6: Error: Unbound value foo
+    09 |   lib/b.ml:9:2-9:8: Error: This expression has type string but an expression
+    10 |   was expected of type int
+    11 |
+    12 | ⠋ Working… (0s · esc to interrupt)
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ queue a message — sends after this turn
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…
+    |}]
 
 let narrow_prompt =
   "Explain why this deliberately long prompt must wrap without Mentat choosing \
@@ -542,54 +570,58 @@ let%expect_test "streaming and settlement wrap in a narrow complete screen" =
   submit t narrow_prompt;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-04 |  dev · openai/gpt-5.5 medium
-05 |  ~/mentat-tui-862ee4e4
-06 |
-07 | ❯ Explain why this deliberately long prompt
-08 |   must wrap without Mentat choosing
-09 |   terminal columns itself.
-10 |
-11 | ⏺ Mosaic owns the available width, wraps
-12 |   this assistant response across the narrow
-13 |   transcript
-14 |
-15 | ⠋ Working… (0s · esc to interrupt)
-16 |
-17 |
-18 |
-19 | ────────────────────────────────────────────
-20 | ❯ queue a message — sends after this turn
-21 | ────────────────────────────────────────────
-22 |   ! not logged in · /log…… · ! full acce…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    04 |  dev · openai/gpt-5.5 medium
+    05 |  ~/mentat-tui-82c3f290
+    06 |
+    07 | ❯ Explain why this deliberately long prompt
+    08 |   must wrap without Mentat choosing
+    09 |   terminal columns itself.
+    10 |
+    11 | ⏺ Mosaic owns the available width, wraps
+    12 |   this assistant response across the narrow
+    13 |   transcript
+    14 |
+    15 | ⠋ Working… (0s · esc to interrupt)
+    16 |
+    17 |
+    18 |
+    19 | ────────────────────────────────────────────
+    20 | ❯ queue a message — sends after this turn
+    21 | ────────────────────────────────────────────
+    22 |   ! not logged in · /log…… · ! full acce…
+    |}];
   Tui.finish_turn t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-04 |  dev · openai/gpt-5.5 medium
-05 |  ~/mentat-tui-862ee4e4
-06 |
-07 | ❯ Explain why this deliberately long prompt
-08 |   must wrap without Mentat choosing
-09 |   terminal columns itself.
-10 |
-11 | ⏺ Mosaic owns the available width, wraps
-12 |   this assistant response across the narrow
-13 |   transcript, and keeps the complete
-14 |   application frame inspectable.
-15 |
-16 |
-17 |
-18 |
-19 | ────────────────────────────────────────────
-20 | ❯ message mentat
-21 | ────────────────────────────────────────────
-22 |   ! not logged in · /log…… · ! full acce…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    04 |  dev · openai/gpt-5.5 medium
+    05 |  ~/mentat-tui-82c3f290
+    06 |
+    07 | ❯ Explain why this deliberately long prompt
+    08 |   must wrap without Mentat choosing
+    09 |   terminal columns itself.
+    10 |
+    11 | ⏺ Mosaic owns the available width, wraps
+    12 |   this assistant response across the narrow
+    13 |   transcript, and keeps the complete
+    14 |   application frame inspectable.
+    15 |
+    16 |
+    17 |
+    18 |
+    19 | ────────────────────────────────────────────
+    20 | ❯ message mentat
+    21 | ────────────────────────────────────────────
+    22 |   ! not logged in · /log…… · ! full acce…
+    |}]
 
 let reasoning =
   [
@@ -612,66 +644,70 @@ let%expect_test "reasoning has collapsed and expanded whole-screen views" =
   submit t "think through the layout";
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-862ee4e4
-04 |
-05 | ❯ think through the layout
-06 |
-07 | ∴ Thinking
-08 |  Then compare the intrinsic layout at both widths without predicting any row count.
-09 |  Finally preserve the user's complete frame so clipped or displaced UI is obvious.
-10 |  The fourth line proves the collapsed viewport stays anchored to the live tail.
-11 |
-12 | ⠋ Thinking… (0s · ↓ 60 tokens · esc to interrupt)
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |
-25 | ────────────────────────────────────────────────────────────────────────────────────────────
-26 | ❯ queue a message — sends after this turn
-27 | ────────────────────────────────────────────────────────────────────────────────────────────
-28 |   ! not logged in · /login · ~/mentat-tui-86… · openai/gpt-5… · ! full access ? for short…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-82c3f290
+    04 |
+    05 | ❯ think through the layout
+    06 |
+    07 | ∴ Thinking
+    08 |  Then compare the intrinsic layout at both widths without predicting any row count.
+    09 |  Finally preserve the user's complete frame so clipped or displaced UI is obvious.
+    10 |  The fourth line proves the collapsed viewport stays anchored to the live tail.
+    11 |
+    12 | ⠋ Thinking… (0s · ↓ 60 tokens · esc to interrupt)
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |
+    25 | ────────────────────────────────────────────────────────────────────────────────────────────
+    26 | ❯ queue a message — sends after this turn
+    27 | ────────────────────────────────────────────────────────────────────────────────────────────
+    28 |   ! not logged in · /login · ~/mentat-tui-82… · openai/gpt-5… · ! full access ? for short…
+    |}];
   Tui.keys t Key.ctrl_o;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-862ee4e4
-04 |
-05 | ❯ think through the layout
-06 |
-07 | ∴ Thinking
-08 |   First inspect the durable input and identify the visible invariant.
-09 |   Then compare the intrinsic layout at both widths without predicting any row count.
-10 |   Finally preserve the user's complete frame so clipped or displaced UI is obvious.
-11 |   The fourth line proves the collapsed viewport stays anchored to the live tail.
-12 |
-13 | ⠋ Thinking… (0s · ↓ 60 tokens · esc to interrupt)
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |   ◎ verbose ctrl+o closes
-24 |
-25 | ────────────────────────────────────────────────────────────────────────────────────────────
-26 | ❯ queue a message — sends after this turn
-27 | ────────────────────────────────────────────────────────────────────────────────────────────
-28 |   ! not logged in · /login · ~/mentat-tui-86… · openai/gpt-5… · ! full access ? for short…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-82c3f290
+    04 |
+    05 | ❯ think through the layout
+    06 |
+    07 | ∴ Thinking
+    08 |   First inspect the durable input and identify the visible invariant.
+    09 |   Then compare the intrinsic layout at both widths without predicting any row count.
+    10 |   Finally preserve the user's complete frame so clipped or displaced UI is obvious.
+    11 |   The fourth line proves the collapsed viewport stays anchored to the live tail.
+    12 |
+    13 | ⠋ Thinking… (0s · ↓ 60 tokens · esc to interrupt)
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |   ◎ verbose ctrl+o closes
+    24 |
+    25 | ────────────────────────────────────────────────────────────────────────────────────────────
+    26 | ❯ queue a message — sends after this turn
+    27 | ────────────────────────────────────────────────────────────────────────────────────────────
+    28 |   ! not logged in · /login · ~/mentat-tui-82… · openai/gpt-5… · ! full access ? for short…
+    |}];
   Tui.finish_turn t;
   Tui.settle t
 
@@ -689,30 +725,32 @@ let%expect_test "an authentication failure settles as repairable UI" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-862ee4e4
-04 |
-05 | ❯ authenticate this request
-06 |
-07 | ✗ invalid API key
-08 |   Tell mentat how to proceed.
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-82c3f290
+    04 |
+    05 | ❯ authenticate this request
+    06 |
+    07 | ✗ invalid API key
+    08 |   Tell mentat how to proceed.
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…
+    |}]
 
 let%expect_test
     "control-c during an active turn arms quit without interrupting the turn" =
@@ -727,85 +765,91 @@ let%expect_test
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-turn-c8cb29e23
-04 |
-05 | ❯ keep this turn running
-06 |
-07 | ⏺ The live answer remains in progress.
-08 |
-09 | ⠋ Working… (0s · esc to interrupt)
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ queue a message — sends after this turn
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   press ctrl+c again to quit|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-turn-c236678e1
+    04 |
+    05 | ❯ keep this turn running
+    06 |
+    07 | ⏺ The live answer remains in progress.
+    08 |
+    09 | ⠋ Working… (0s · esc to interrupt)
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ queue a message — sends after this turn
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   press ctrl+c again to quit
+    |}];
   Tui.advance t 2.;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-turn-c8cb29e23
-04 |
-05 | ❯ keep this turn running
-06 |
-07 | ⏺ The live answer remains in progress.
-08 |
-09 | ⠋ Working… (2s · esc to interrupt)
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ queue a message — sends after this turn
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt… · ! full access ? for …|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-turn-c236678e1
+    04 |
+    05 | ❯ keep this turn running
+    06 |
+    07 | ⏺ The live answer remains in progress.
+    08 |
+    09 | ⠋ Working… (2s · esc to interrupt)
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ queue a message — sends after this turn
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt… · ! full access ? for …
+    |}];
   Tui.finish_turn t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-turn-c8cb29e23
-04 |
-05 | ❯ keep this turn running
-06 |
-07 | ⏺ The held turn completes normally after quit disarms.
-08 |
-09 |   Worked for 2s
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt… · ! full access ? for …|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-turn-c236678e1
+    04 |
+    05 | ❯ keep this turn running
+    06 |
+    07 | ⏺ The held turn completes normally after quit disarms.
+    08 |
+    09 |   Worked for 2s
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt… · ! full access ? for …
+    |}]
 
 let%expect_test
     "streamed assistant prose survives interruption and the next follow-up" =
@@ -829,59 +873,63 @@ let%expect_test
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-turn-interrupt3c5b3920
-04 |
-05 | ❯ start a careful explanation
-06 |
-07 | ⏺ The useful partial explanation remains visible after interruption.
-08 |
-09 | ◌ Interrupted — tell mentat what to do differently.
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-turn-interrupt82c87a3c
+    04 |
+    05 | ❯ start a careful explanation
+    06 |
+    07 | ⏺ The useful partial explanation remains visible after interruption.
+    08 |
+    09 | ◌ Interrupted — tell mentat what to do differently.
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…
+    |}];
   submit t "continue from that partial answer";
   Tui.finish_turn t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-turn-interrupt3c5b3920
-04 |
-05 | ❯ start a careful explanation
-06 |
-07 | ⏺ The useful partial explanation remains visible after interruption.
-08 |
-09 | ◌ Interrupted — tell mentat what to do differently.
-10 |
-11 | ❯ continue from that partial answer
-12 |
-13 | ⏺ The follow-up continues without losing the interrupted prose.
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-turn-interrupt82c87a3c
+    04 |
+    05 | ❯ start a careful explanation
+    06 |
+    07 | ⏺ The useful partial explanation remains visible after interruption.
+    08 |
+    09 | ◌ Interrupted — tell mentat what to do differently.
+    10 |
+    11 | ❯ continue from that partial answer
+    12 |
+    13 | ⏺ The follow-up continues without losing the interrupted prose.
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…
+    |}]
 
 let%expect_test
     "startup-disabled reasoning stays hidden and thinking toggles the live view"
@@ -901,112 +949,120 @@ let%expect_test
   submit t "reason without hiding the answer";
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-turn-thinking-vi85c7a7a9
-04 |
-05 | ❯ reason without hiding the answer
-06 |
-07 | ⏺ The visible assistant stream remains intact.
-08 |
-09 | ⠋ Working… (0s · esc to interrupt)
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ queue a message — sends after this turn
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-turn-thinking-vi5eb9d776
+    04 |
+    05 | ❯ reason without hiding the answer
+    06 |
+    07 | ⏺ The visible assistant stream remains intact.
+    08 |
+    09 | ⠋ Working… (0s · esc to interrupt)
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ queue a message — sends after this turn
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…
+    |}];
   submit t "/thinking";
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-turn-thinking-vi85c7a7a9
-04 |
-05 | ❯ reason without hiding the answer
-06 |
-07 | ❯ /thinking
-08 |
-09 | ∴ Thinking
-10 |  Private reasoning is visible only while thinking is enabled.
-11 |  The assistant answer remains independent from that preference.
-12 |
-13 | ⏺ The visible assistant stream remains intact.
-14 |
-15 | ⠋ Working… (0s · esc to interrupt)
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ queue a message — sends after this turn
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-turn-thinking-vi5eb9d776
+    04 |
+    05 | ❯ reason without hiding the answer
+    06 |
+    07 | ❯ /thinking
+    08 |
+    09 | ∴ Thinking
+    10 |  Private reasoning is visible only while thinking is enabled.
+    11 |  The assistant answer remains independent from that preference.
+    12 |
+    13 | ⏺ The visible assistant stream remains intact.
+    14 |
+    15 | ⠋ Working… (0s · esc to interrupt)
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ queue a message — sends after this turn
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…
+    |}];
   submit t "/thinking";
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-turn-thinking-vi85c7a7a9
-04 |
-05 | ❯ reason without hiding the answer
-06 |
-07 | ❯ /thinking
-08 |
-09 | ❯ /thinking
-10 |
-11 | ⏺ The visible assistant stream remains intact.
-12 |
-13 | ⠋ Working… (0s · esc to interrupt)
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ queue a message — sends after this turn
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-turn-thinking-vi5eb9d776
+    04 |
+    05 | ❯ reason without hiding the answer
+    06 |
+    07 | ❯ /thinking
+    08 |
+    09 | ❯ /thinking
+    10 |
+    11 | ⏺ The visible assistant stream remains intact.
+    12 |
+    13 | ⠋ Working… (0s · esc to interrupt)
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ queue a message — sends after this turn
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…
+    |}];
   Tui.finish_turn t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-turn-thinking-vi85c7a7a9
-04 |
-05 | ❯ reason without hiding the answer
-06 |
-07 | ❯ /thinking
-08 |
-09 | ❯ /thinking
-10 |
-11 | ⏺ The visible assistant answer remains intact.
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-turn-thinking-vi5eb9d776
+    04 |
+    05 | ❯ reason without hiding the answer
+    06 |
+    07 | ❯ /thinking
+    08 |
+    09 | ❯ /thinking
+    10 |
+    11 | ⏺ The visible assistant answer remains intact.
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…
+    |}]
 
 (* A goal wind-down commits its budget-limited transition between turns, so the
    [Journal_goal] fact reaches the transcript reducer with no active turn. That
@@ -1033,30 +1089,32 @@ let%expect_test "a goal transition between turns does not fault the transcript"
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-862ee4e4
-04 |
-05 | ❯ start the budgeted work
-06 |
-07 | ⏺ Work parked at the budget.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 | ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
-19 |   goal · Ship the parser
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-82c3f290
+    04 |
+    05 | ❯ start the budgeted work
+    06 |
+    07 | ⏺ Work parked at the budget.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 | ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
+    19 |   goal · Ship the parser
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…
+    |}]
 
 let%expect_test "a failed turn leaves the session usable for the next prompt" =
   let error =
@@ -1079,29 +1137,30 @@ let%expect_test "a failed turn leaves the session usable for the next prompt" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-862ee4e4
-04 |
-05 | ❯ first request
-06 |
-07 | ✗ the request was rejected
-08 |   Tell mentat how to proceed.
-09 |
-10 | ❯ second request
-11 |
-12 | ⏺ The next turn completed normally.
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-82c3f290
+    04 |
+    05 | ❯ first request
+    06 |
+    07 | ✗ the request was rejected
+    08 |   Tell mentat how to proceed.
+    09 |
+    10 | ❯ second request
+    11 |
+    12 | ⏺ The next turn completed normally.
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…
+    |}]
 
-[%%run_tests "mentat.tui.turn"]

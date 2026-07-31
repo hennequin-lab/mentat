@@ -780,21 +780,18 @@ module Modelfit_tests = struct
 
   let mib = 1024 * 1024
   let gib = 1024 * mib
-  let verdict = testable ~pp:Fit.Verdict.pp ~equal:Fit.Verdict.equal ()
+  let verdict = Testable.make ~pp:Fit.Verdict.pp ~equal:Fit.Verdict.equal
 
   let gguf_error =
-    testable ~pp:Fit.Gguf.Error.pp
-      ~equal:(fun a b ->
+    Testable.make ~pp:Fit.Gguf.Error.pp ~equal:(fun a b ->
         match (a, b) with
         | Fit.Gguf.Error.Truncated, Fit.Gguf.Error.Truncated -> true
         | Fit.Gguf.Error.Malformed a, Fit.Gguf.Error.Malformed b ->
             String.equal a b
         | (Fit.Gguf.Error.Truncated | Fit.Gguf.Error.Malformed _), _ -> false)
-      ()
 
   let gguf_model_error =
-    testable ~pp:Fit.Gguf.Model_error.pp
-      ~equal:(fun a b ->
+    Testable.make ~pp:Fit.Gguf.Model_error.pp ~equal:(fun a b ->
         match (a, b) with
         | ( Fit.Gguf.Model_error.Missing_metadata { key = a },
             Fit.Gguf.Model_error.Missing_metadata { key = b } ) ->
@@ -815,7 +812,6 @@ module Modelfit_tests = struct
             | Fit.Gguf.Model_error.Invalid_head_dimensions _ ),
             _ ) ->
             false)
-      ()
 
   (* A reference shape: 32 layers, 8 KV heads, head dim 128. At a 32768-token
    f16 cache this is exactly 4 GiB of KV. *)

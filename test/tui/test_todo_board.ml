@@ -105,86 +105,92 @@ let%expect_test
   submit t prompt;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-todo-repce0e2677
-04 |
-05 | ❯ plan the task-board port
-06 |
-07 | ⏺ Todo(3 tasks · 0 done · 1 running)
-08 |
-09 | ⠋ Working… (0s · esc to interrupt)
-10 |
-11 |
-12 |
-13 |
-14 |
-15 | ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
-16 |   ◻ 3 tasks · 0 done · 1 running
-17 |   ◼ scaffold the module
-18 |   ◻ write the public interface
-19 |   ◻ add complete-screen tests
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ queue a message — sends after this turn
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt-… · ! full acce… ? for …|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-todo-repa6856c9b
+    04 |
+    05 | ❯ plan the task-board port
+    06 |
+    07 | ⏺ Todo(3 tasks · 0 done · 1 running)
+    08 |
+    09 | ⠋ Working… (0s · esc to interrupt)
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 | ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
+    16 |   ◻ 3 tasks · 0 done · 1 running
+    17 |   ◼ scaffold the module
+    18 |   ◻ write the public interface
+    19 |   ◻ add complete-screen tests
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ queue a message — sends after this turn
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt-… · ! full acce… ? for …
+    |}];
   Tui.next_task_board t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-todo-repce0e2677
-04 |
-05 | ❯ plan the task-board port
-06 |
-07 | ⏺ Todo(3 tasks · 1 done · 1 running)
-08 |
-09 | ⠋ Working… (0s · esc to interrupt)
-10 |
-11 |
-12 |
-13 |
-14 |
-15 | ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
-16 |   ◻ 3 tasks · 1 done · 1 running
-17 |   ◼ write the public interface
-18 |   ◻ add complete-screen tests
-19 |   … 1 done
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ queue a message — sends after this turn
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt-… · ! full acce… ? for …|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-todo-repa6856c9b
+    04 |
+    05 | ❯ plan the task-board port
+    06 |
+    07 | ⏺ Todo(3 tasks · 1 done · 1 running)
+    08 |
+    09 | ⠋ Working… (0s · esc to interrupt)
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 | ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
+    16 |   ◻ 3 tasks · 1 done · 1 running
+    17 |   ◼ write the public interface
+    18 |   ◻ add complete-screen tests
+    19 |   … 1 done
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ queue a message — sends after this turn
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt-… · ! full acce… ? for …
+    |}];
   Tui.finish_turn t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-todo-repce0e2677
-04 |
-05 | ❯ plan the task-board port
-06 |
-07 | ⏺ Todo(3 tasks · 1 done · 1 running)
-08 |
-09 | ⏺ The port is ready for review.
-10 |
-11 |
-12 |
-13 |
-14 |
-15 | ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
-16 |   ◻ 3 tasks · 1 done · 1 running
-17 |   ◼ write the public interface
-18 |   ◻ add complete-screen tests
-19 |   … 1 done
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt-… · ! full acce… ? for …|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-todo-repa6856c9b
+    04 |
+    05 | ❯ plan the task-board port
+    06 |
+    07 | ⏺ Todo(3 tasks · 1 done · 1 running)
+    08 |
+    09 | ⏺ The port is ready for review.
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 | ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
+    16 |   ◻ 3 tasks · 1 done · 1 running
+    17 |   ◼ write the public interface
+    18 |   ◻ add complete-screen tests
+    19 |   … 1 done
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt-… · ! full acce… ? for …
+    |}]
 
 let%expect_test "an interrupted turn keeps its open task board visible" =
   let prompt = "continue until interrupted" in
@@ -200,30 +206,32 @@ let%expect_test "an interrupted turn keeps its open task board visible" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-todo-ib8b044a1
-04 |
-05 | ❯ continue until interrupted
-06 |
-07 | ⏺ Todo(7 tasks · 2 done · 1 running)
-08 |
-09 | ◌ Interrupted — tell mentat what to do differently.
-10 |
-11 |
-12 | ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
-13 |   ◻ 7 tasks · 2 done · 1 running
-14 |   ◼ scaffold the module
-15 |   ◻ write the public interface
-16 |   ◻ wire the application shell
-17 |   ◻ add complete-screen tests
-18 |   ◻ review the visual diff
-19 |   … 2 done
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt… · ! full access ? for …|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-todo-ida4869d5
+    04 |
+    05 | ❯ continue until interrupted
+    06 |
+    07 | ⏺ Todo(7 tasks · 2 done · 1 running)
+    08 |
+    09 | ◌ Interrupted — tell mentat what to do differently.
+    10 |
+    11 |
+    12 | ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
+    13 |   ◻ 7 tasks · 2 done · 1 running
+    14 |   ◼ scaffold the module
+    15 |   ◻ write the public interface
+    16 |   ◻ wire the application shell
+    17 |   ◻ add complete-screen tests
+    18 |   ◻ review the visual diff
+    19 |   … 2 done
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt… · ! full access ? for …
+    |}]
 
 let%expect_test "scarce height keeps the open board complete" =
   let prompt = "finish every task" in
@@ -235,18 +243,20 @@ let%expect_test "scarce height keeps the open board complete" =
   submit t prompt;
   Tui.print t;
   [%expect
-    {|01 | ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
-02 |   ◻ 7 tasks · 2 done · 1 running
-03 |   ◼ scaffold the module
-04 |   ◻ write the public interface
-05 |   ◻ wire the application shell
-06 |   ◻ add complete-screen tests
-07 |   ◻ review the visual diff
-08 |   … 2 done
-09 | ────────────────────────────────────────────────────────────────────────────────
-10 | ❯ queue a message — sends after this turn
-11 | ────────────────────────────────────────────────────────────────────────────────
-12 |   ! not logged in · /login · ~/mentat-t… · openai/gpt-… · ! full access ? for…|}]
+    {|
+    01 | ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
+    02 |   ◻ 7 tasks · 2 done · 1 running
+    03 |   ◼ scaffold the module
+    04 |   ◻ write the public interface
+    05 |   ◻ wire the application shell
+    06 |   ◻ add complete-screen tests
+    07 |   ◻ review the visual diff
+    08 |   … 2 done
+    09 | ────────────────────────────────────────────────────────────────────────────────
+    10 | ❯ queue a message — sends after this turn
+    11 | ────────────────────────────────────────────────────────────────────────────────
+    12 |   ! not logged in · /login · ~/mentat-t… · openai/gpt-… · ! full access ? for…
+    |}]
 
 let%expect_test "a completed board stays visible with its tasks checked" =
   let prompt = "finish every task" in
@@ -261,57 +271,60 @@ let%expect_test "a completed board stays visible with its tasks checked" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-todo-c33e9dac5
-04 |
-05 | ❯ finish every task
-06 |
-07 | ⏺ Todo(7 tasks · 7 done · 0 running)
-08 |
-09 | ⠋ Working… (0s · esc to interrupt)
-10 |
-11 | ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
-12 |   ◻ 7 tasks · 7 done · 0 running
-13 |   ☒ scaffold the module
-14 |   ☒ write the public interface
-15 |   ☒ wire the application shell
-16 |   ☒ add complete-screen tests
-17 |   ☒ review the visual diff
-18 |   ☒ read the layout RFC
-19 |   ☒ survey the legacy UI
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ queue a message — sends after this turn
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt… · ! full access ? for …|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-todo-c6deeeaba
+    04 |
+    05 | ❯ finish every task
+    06 |
+    07 | ⏺ Todo(7 tasks · 7 done · 0 running)
+    08 |
+    09 | ⠋ Working… (0s · esc to interrupt)
+    10 |
+    11 | ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
+    12 |   ◻ 7 tasks · 7 done · 0 running
+    13 |   ☒ scaffold the module
+    14 |   ☒ write the public interface
+    15 |   ☒ wire the application shell
+    16 |   ☒ add complete-screen tests
+    17 |   ☒ review the visual diff
+    18 |   ☒ read the layout RFC
+    19 |   ☒ survey the legacy UI
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ queue a message — sends after this turn
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt… · ! full access ? for …
+    |}];
   Tui.finish_turn t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-todo-c33e9dac5
-04 |
-05 | ❯ finish every task
-06 |
-07 | ⏺ Todo(7 tasks · 7 done · 0 running)
-08 |
-09 | ⏺ Every task is terminal.
-10 |
-11 | ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
-12 |   ◻ 7 tasks · 7 done · 0 running
-13 |   ☒ scaffold the module
-14 |   ☒ write the public interface
-15 |   ☒ wire the application shell
-16 |   ☒ add complete-screen tests
-17 |   ☒ review the visual diff
-18 |   ☒ read the layout RFC
-19 |   ☒ survey the legacy UI
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt… · ! full access ? for …|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-todo-c6deeeaba
+    04 |
+    05 | ❯ finish every task
+    06 |
+    07 | ⏺ Todo(7 tasks · 7 done · 0 running)
+    08 |
+    09 | ⏺ Every task is terminal.
+    10 |
+    11 | ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
+    12 |   ◻ 7 tasks · 7 done · 0 running
+    13 |   ☒ scaffold the module
+    14 |   ☒ write the public interface
+    15 |   ☒ wire the application shell
+    16 |   ☒ add complete-screen tests
+    17 |   ☒ review the visual diff
+    18 |   ☒ read the layout RFC
+    19 |   ☒ survey the legacy UI
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt… · ! full access ? for …
+    |}]
 
-[%%run_tests "mentat.tui.todo_board"]

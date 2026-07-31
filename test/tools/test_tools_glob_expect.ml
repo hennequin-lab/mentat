@@ -522,29 +522,31 @@ let%expect_test
       ("malformed glob deferred", input "[");
     ];
   [%expect
-    {|name: glob
-schema: {"type":"object","properties":{"pattern":{"type":"string","description":"Glob for workspace-relative file paths, for example **/*.ml or **/*.{ts,tsx}.","minLength":1},"path":{"type":"string","description":"Workspace-relative or workspace-contained absolute directory root. Defaults to the logical workspace current directory.","minLength":1},"offset":{"type":"integer","description":"One-based first matching file. Defaults to 1.","minimum":1,"maximum":9007199254740991},"limit":{"type":"integer","description":"Maximum matching files returned. Defaults to 100.","minimum":1,"maximum":1000},"sort":{"type":"string","description":"Ordering: path, or newest modification time with path as tie-breaker. Defaults to path.","enum":["path","modified"]}},"required":["pattern"],"additionalProperties":false}
-minimal: accepted canonical={"pattern":"**/*.ml","sort":"path"}
-full: accepted canonical={"limit":3,"offset":2,"path":"code","pattern":"**/*.ml","sort":"modified"}
-missing pattern: rejected diagnostic=true
-unknown member: rejected diagnostic=true
-duplicate pattern: rejected diagnostic=true
-pattern type: rejected diagnostic=true
-path type: rejected diagnostic=true
-offset string: rejected diagnostic=true
-offset fraction: rejected diagnostic=true
-offset unsafe: rejected diagnostic=true
-limit fraction: rejected diagnostic=true
-sort type: rejected diagnostic=true
-empty pattern: rejected diagnostic=true
-NUL pattern: rejected diagnostic=true
-empty path: rejected diagnostic=true
-NUL path: rejected diagnostic=true
-offset zero: rejected diagnostic=true
-limit zero: rejected diagnostic=true
-limit over max: rejected diagnostic=true
-bad sort: rejected diagnostic=true
-malformed glob deferred: accepted canonical={"pattern":"[","sort":"path"}|}]
+    {|
+    name: glob
+    schema: {"type":"object","properties":{"pattern":{"type":"string","description":"Glob for workspace-relative file paths, for example **/*.ml or **/*.{ts,tsx}.","minLength":1},"path":{"type":"string","description":"Workspace-relative or workspace-contained absolute directory root. Defaults to the logical workspace current directory.","minLength":1},"offset":{"type":"integer","description":"One-based first matching file. Defaults to 1.","minimum":1,"maximum":9007199254740991},"limit":{"type":"integer","description":"Maximum matching files returned. Defaults to 100.","minimum":1,"maximum":1000},"sort":{"type":"string","description":"Ordering: path, or newest modification time with path as tie-breaker. Defaults to path.","enum":["path","modified"]}},"required":["pattern"],"additionalProperties":false}
+    minimal: accepted canonical={"pattern":"**/*.ml","sort":"path"}
+    full: accepted canonical={"limit":3,"offset":2,"path":"code","pattern":"**/*.ml","sort":"modified"}
+    missing pattern: rejected diagnostic=true
+    unknown member: rejected diagnostic=true
+    duplicate pattern: rejected diagnostic=true
+    pattern type: rejected diagnostic=true
+    path type: rejected diagnostic=true
+    offset string: rejected diagnostic=true
+    offset fraction: rejected diagnostic=true
+    offset unsafe: rejected diagnostic=true
+    limit fraction: rejected diagnostic=true
+    sort type: rejected diagnostic=true
+    empty pattern: rejected diagnostic=true
+    NUL pattern: rejected diagnostic=true
+    empty path: rejected diagnostic=true
+    NUL path: rejected diagnostic=true
+    offset zero: rejected diagnostic=true
+    limit zero: rejected diagnostic=true
+    limit over max: rejected diagnostic=true
+    bad sort: rejected diagnostic=true
+    malformed glob deferred: accepted canonical={"pattern":"[","sort":"path"}
+    |}]
 
 let%expect_test "permissions cache the exact resolved root without observing it"
     =
@@ -571,36 +573,38 @@ let%expect_test "permissions cache the exact resolved root without observing it"
   Printf.printf "tree names unchanged: %b\n"
     (List.equal String.equal before after);
   [%expect
-    {|-- primary nested --
-requests: 1
-source: glob
-access: read key=main path=code change=false
-status: completed
--- missing --
-requests: 1
-source: glob
-access: read key=main path=missing change=false
-status: failed not_found
-message: missing: path does not exist
-metadata: false
--- file root --
-requests: 1
-source: glob
-access: read key=main path=file-root.txt change=false
-status: failed invalid_input
-message: file-root.txt: not a directory
-metadata: false
--- outside --
-requests: 0
-status: failed invalid_input
-message: path is outside workspace: /outside-glob-root
-metadata: false
--- auxiliary absolute --
-requests: 1
-source: glob
-access: read key=aux path=. change=false
-status: completed
-tree names unchanged: true|}]
+    {|
+    -- primary nested --
+    requests: 1
+    source: glob
+    access: read key=main path=code change=false
+    status: completed
+    -- missing --
+    requests: 1
+    source: glob
+    access: read key=main path=missing change=false
+    status: failed not_found
+    message: missing: path does not exist
+    metadata: false
+    -- file root --
+    requests: 1
+    source: glob
+    access: read key=main path=file-root.txt change=false
+    status: failed invalid_input
+    message: file-root.txt: not a directory
+    metadata: false
+    -- outside --
+    requests: 0
+    status: failed invalid_input
+    message: path is outside workspace: /outside-glob-root
+    metadata: false
+    -- auxiliary absolute --
+    requests: 1
+    source: glob
+    access: read key=aux path=. change=false
+    status: completed
+    tree names unchanged: true
+    |}]
 
 let%expect_test
     "logical cwd keeps matching root-relative but emits resolvable addresses" =
@@ -636,39 +640,41 @@ let%expect_test
   let next = input ~path:"." ~offset:2 ~limit:1 "*.ml" in
   run_case ~json:true world "nested cwd continuation" next;
   [%expect
-    {|default slash: ["cwd.ml","deep/nested.ml"]
-default basename: ["cwd.ml","deep/nested.ml"]
-nested root full path: ["<workspace>/next/lib/tools/glob.ml","<workspace>/next/lib/tools/read_file.ml"]
-nested root short path: ["No files"]
-nested root basename: ["<workspace>/next/lib/model.ml","<workspace>/next/lib/tools/glob.ml","<workspace>/next/lib/tools/read_file.ml"]
-contained absolute: ["<workspace>/next/lib/tools/glob.ml","<workspace>/next/lib/tools/read_file.ml"]
--- same-root sibling first page --
-status: completed
-text: "pattern=\"*.ml\" root=<workspace>/next/lib files=1/3 offset=1 limit=1 sort=path status=partial\n<workspace>/next/lib/model.ml\nnext: glob {\"pattern\":\"*.ml\",\"path\":\"../next/lib\",\"offset\":2,\"limit\":1,\"sort\":\"path\"}\n"
-truncated: true
-json: {"version":1,"shape":"files","total":3}
--- same-root sibling addresses --
-root <workspace>/next/lib -> key=main path=next/lib
-path <workspace>/next/lib/model.ml -> key=main path=next/lib/model.ml
--- same-root sibling continuation --
-status: completed
-text: "pattern=\"*.ml\" root=<workspace>/next/lib files=1/3 offset=2 limit=1 sort=path status=partial\n<workspace>/next/lib/tools/glob.ml\nnext: glob {\"pattern\":\"*.ml\",\"path\":\"../next/lib\",\"offset\":3,\"limit\":1,\"sort\":\"path\"}\n"
-truncated: true
-json: {"version":1,"shape":"files","total":3}
--- nested cwd first page --
-status: completed
-text: "pattern=\"*.ml\" root=. files=1/2 offset=1 limit=1 sort=path status=partial\ncwd.ml\nnext: glob {\"pattern\":\"*.ml\",\"path\":\".\",\"offset\":2,\"limit\":1,\"sort\":\"path\"}\n"
-truncated: true
-json: {"version":1,"shape":"files","total":2}
--- nested cwd addresses --
-root . -> key=main path=logical
-path cwd.ml -> key=main path=logical/cwd.ml
-nested cwd durable replay equal: true
--- nested cwd continuation --
-status: completed
-text: "pattern=\"*.ml\" root=. files=1/2 offset=2 limit=1 sort=path status=complete\ndeep/nested.ml\n"
-truncated: false
-json: {"version":1,"shape":"files","total":2}|}]
+    {|
+    default slash: ["cwd.ml","deep/nested.ml"]
+    default basename: ["cwd.ml","deep/nested.ml"]
+    nested root full path: ["<workspace>/next/lib/tools/glob.ml","<workspace>/next/lib/tools/read_file.ml"]
+    nested root short path: ["No files"]
+    nested root basename: ["<workspace>/next/lib/model.ml","<workspace>/next/lib/tools/glob.ml","<workspace>/next/lib/tools/read_file.ml"]
+    contained absolute: ["<workspace>/next/lib/tools/glob.ml","<workspace>/next/lib/tools/read_file.ml"]
+    -- same-root sibling first page --
+    status: completed
+    text: "pattern=\"*.ml\" root=<workspace>/next/lib files=1/3 offset=1 limit=1 sort=path status=partial\n<workspace>/next/lib/model.ml\nnext: glob {\"pattern\":\"*.ml\",\"path\":\"../next/lib\",\"offset\":2,\"limit\":1,\"sort\":\"path\"}\n"
+    truncated: true
+    json: {"version":1,"shape":"files","total":3}
+    -- same-root sibling addresses --
+    root <workspace>/next/lib -> key=main path=next/lib
+    path <workspace>/next/lib/model.ml -> key=main path=next/lib/model.ml
+    -- same-root sibling continuation --
+    status: completed
+    text: "pattern=\"*.ml\" root=<workspace>/next/lib files=1/3 offset=2 limit=1 sort=path status=partial\n<workspace>/next/lib/tools/glob.ml\nnext: glob {\"pattern\":\"*.ml\",\"path\":\"../next/lib\",\"offset\":3,\"limit\":1,\"sort\":\"path\"}\n"
+    truncated: true
+    json: {"version":1,"shape":"files","total":3}
+    -- nested cwd first page --
+    status: completed
+    text: "pattern=\"*.ml\" root=. files=1/2 offset=1 limit=1 sort=path status=partial\ncwd.ml\nnext: glob {\"pattern\":\"*.ml\",\"path\":\".\",\"offset\":2,\"limit\":1,\"sort\":\"path\"}\n"
+    truncated: true
+    json: {"version":1,"shape":"files","total":2}
+    -- nested cwd addresses --
+    root . -> key=main path=logical
+    path cwd.ml -> key=main path=logical/cwd.ml
+    nested cwd durable replay equal: true
+    -- nested cwd continuation --
+    status: completed
+    text: "pattern=\"*.ml\" root=. files=1/2 offset=2 limit=1 sort=path status=complete\ndeep/nested.ml\n"
+    truncated: false
+    json: {"version":1,"shape":"files","total":2}
+    |}]
 
 let%expect_test
     "wildcards classes ranges complements and slash classes match globset" =
@@ -686,14 +692,16 @@ let%expect_test
       ("slash or x", "match/chars/a[/x]b.txt");
     ];
   [%expect
-    {|star: ["wild/a.ml","wild/a1.ml","wild/ab.ml","wild/abc.ml"]
-question: ["wild/a1.ml","wild/ab.ml"]
-range: ["wild/a1.ml"]
-bang complement: ["wild/ab.ml"]
-caret complement: ["wild/a1.ml"]
-slash or dash: ["match/chars/a-b.txt","match/chars/a/b.txt"]
-slash: ["match/chars/a/b.txt"]
-slash or x: ["match/chars/a/b.txt","match/chars/axb.txt"]|}]
+    {|
+    star: ["wild/a.ml","wild/a1.ml","wild/ab.ml","wild/abc.ml"]
+    question: ["wild/a1.ml","wild/ab.ml"]
+    range: ["wild/a1.ml"]
+    bang complement: ["wild/ab.ml"]
+    caret complement: ["wild/a1.ml"]
+    slash or dash: ["match/chars/a-b.txt","match/chars/a/b.txt"]
+    slash: ["match/chars/a/b.txt"]
+    slash or x: ["match/chars/a/b.txt","match/chars/axb.txt"]
+    |}]
 
 let%expect_test
     "globstar placement and nested braces preserve globset boundaries" =
@@ -715,18 +723,20 @@ let%expect_test
       "match/a{,}c";
     ];
   [%expect
-    {|match/a/**/b.ml: ["match/a/b.ml","match/a/x/b.ml","match/a/x/y/b.ml","match/a/xxb/b.ml"]
-match/a/***/b.ml: ["match/a/x/b.ml","match/a/xxb/b.ml"]
-match/a**/b.ml: ["match/a/b.ml","match/axx/b.ml"]
-match/a/**b/b.ml: ["match/a/xxb/b.ml"]
-match/a/{**,x}/b.ml: ["match/a/x/b.ml","match/a/xxb/b.ml"]
-match/a/{**}/b.ml: ["match/a/x/b.ml","match/a/xxb/b.ml"]
-match/{**,x}/b.ml: ["match/a/b.ml","match/axx/b.ml","match/x/b.ml","match/y/b.ml"]
-match/{**/,}foo: ["match/foo","match/nested/foo"]
-match/a{b,}c: ["match/abc"]
-match/a{b,{c,d}}c: ["match/abc","match/acc","match/adc"]
-match/a{}c: ["match/ac"]
-match/a{,}c: ["match/ac"]|}]
+    {|
+    match/a/**/b.ml: ["match/a/b.ml","match/a/x/b.ml","match/a/x/y/b.ml","match/a/xxb/b.ml"]
+    match/a/***/b.ml: ["match/a/x/b.ml","match/a/xxb/b.ml"]
+    match/a**/b.ml: ["match/a/b.ml","match/axx/b.ml"]
+    match/a/**b/b.ml: ["match/a/xxb/b.ml"]
+    match/a/{**,x}/b.ml: ["match/a/x/b.ml","match/a/xxb/b.ml"]
+    match/a/{**}/b.ml: ["match/a/x/b.ml","match/a/xxb/b.ml"]
+    match/{**,x}/b.ml: ["match/a/b.ml","match/axx/b.ml","match/x/b.ml","match/y/b.ml"]
+    match/{**/,}foo: ["match/foo","match/nested/foo"]
+    match/a{b,}c: ["match/abc"]
+    match/a{b,{c,d}}c: ["match/abc","match/acc","match/adc"]
+    match/a{}c: ["match/ac"]
+    match/a{,}c: ["match/ac"]
+    |}]
 
 let%expect_test "anchoring and escaped metacharacters preserve globset syntax" =
   with_world @@ fun world ->
@@ -742,13 +752,15 @@ let%expect_test "anchoring and escaped metacharacters preserve globset syntax" =
       "syntax/\\*.ml";
     ];
   [%expect
-    {|/root.ml: ["root.ml"]
-root.ml: ["root.ml"]
-\!literal: ["syntax/!literal"]
-syntax/\[literal\]: ["syntax/[literal]"]
-syntax/\{literal\}: ["syntax/{literal}"]
-syntax/a,b: ["syntax/a,b"]
-syntax/\*.ml: ["syntax/*.ml"]|}]
+    {|
+    /root.ml: ["root.ml"]
+    root.ml: ["root.ml"]
+    \!literal: ["syntax/!literal"]
+    syntax/\[literal\]: ["syntax/[literal]"]
+    syntax/\{literal\}: ["syntax/{literal}"]
+    syntax/a,b: ["syntax/a,b"]
+    syntax/\*.ml: ["syntax/*.ml"]
+    |}]
 
 let%expect_test "high-risk match sets agree with real ripgrep globset" =
   (* This is the one case that reaches outside the workspace for a reference
@@ -776,69 +788,72 @@ let%expect_test "high-risk match sets agree with real ripgrep globset" =
       "syntax/\\*.ml";
     ];
   [%expect
-    {|match/a/**/b.ml
-equal: true
-tool: ["match/a/b.ml","match/a/x/b.ml","match/a/x/y/b.ml","match/a/xxb/b.ml"]
-rg:   ["match/a/b.ml","match/a/x/b.ml","match/a/x/y/b.ml","match/a/xxb/b.ml"]
-match/a/***/b.ml
-equal: true
-tool: ["match/a/x/b.ml","match/a/xxb/b.ml"]
-rg:   ["match/a/x/b.ml","match/a/xxb/b.ml"]
-match/a/{**,x}/b.ml
-equal: true
-tool: ["match/a/x/b.ml","match/a/xxb/b.ml"]
-rg:   ["match/a/x/b.ml","match/a/xxb/b.ml"]
-match/a/{**}/b.ml
-equal: true
-tool: ["match/a/x/b.ml","match/a/xxb/b.ml"]
-rg:   ["match/a/x/b.ml","match/a/xxb/b.ml"]
-match/{**,x}/b.ml
-equal: true
-tool: ["match/a/b.ml","match/axx/b.ml","match/x/b.ml","match/y/b.ml"]
-rg:   ["match/a/b.ml","match/axx/b.ml","match/x/b.ml","match/y/b.ml"]
-match/chars/a[/-]b.txt
-equal: true
-tool: ["match/chars/a-b.txt","match/chars/a/b.txt"]
-rg:   ["match/chars/a-b.txt","match/chars/a/b.txt"]
-match/a{b,}c
-equal: true
-tool: ["match/abc"]
-rg:   ["match/abc"]
-match/a{b,{c,d}}c
-equal: no oracle (rejected by the ripgrep globset)
-tool: ["match/abc","match/acc","match/adc"]
-match/{**/,}foo
-equal: true
-tool: ["match/foo","match/nested/foo"]
-rg:   ["match/foo","match/nested/foo"]
-ignore/*.ml*
-equal: true
-tool: ["ignore/double.ml","ignore/escaped.ml"]
-rg:   ["ignore/double.ml","ignore/escaped.ml"]
-/root.ml
-equal: true
-tool: ["root.ml"]
-rg:   ["root.ml"]
-\!literal
-equal: true
-tool: ["syntax/!literal"]
-rg:   ["syntax/!literal"]
-syntax/\[literal\]
-equal: true
-tool: ["syntax/[literal]"]
-rg:   ["syntax/[literal]"]
-syntax/\{literal\}
-equal: true
-tool: ["syntax/{literal}"]
-rg:   ["syntax/{literal}"]
-syntax/a,b
-equal: true
-tool: ["syntax/a,b"]
-rg:   ["syntax/a,b"]
-syntax/\*.ml
-equal: true
-tool: ["syntax/*.ml"]
-rg:   ["syntax/*.ml"]|}]
+    {|
+    match/a/**/b.ml
+    equal: true
+    tool: ["match/a/b.ml","match/a/x/b.ml","match/a/x/y/b.ml","match/a/xxb/b.ml"]
+    rg:   ["match/a/b.ml","match/a/x/b.ml","match/a/x/y/b.ml","match/a/xxb/b.ml"]
+    match/a/***/b.ml
+    equal: true
+    tool: ["match/a/x/b.ml","match/a/xxb/b.ml"]
+    rg:   ["match/a/x/b.ml","match/a/xxb/b.ml"]
+    match/a/{**,x}/b.ml
+    equal: true
+    tool: ["match/a/x/b.ml","match/a/xxb/b.ml"]
+    rg:   ["match/a/x/b.ml","match/a/xxb/b.ml"]
+    match/a/{**}/b.ml
+    equal: true
+    tool: ["match/a/x/b.ml","match/a/xxb/b.ml"]
+    rg:   ["match/a/x/b.ml","match/a/xxb/b.ml"]
+    match/{**,x}/b.ml
+    equal: true
+    tool: ["match/a/b.ml","match/axx/b.ml","match/x/b.ml","match/y/b.ml"]
+    rg:   ["match/a/b.ml","match/axx/b.ml","match/x/b.ml","match/y/b.ml"]
+    match/chars/a[/-]b.txt
+    equal: true
+    tool: ["match/chars/a-b.txt","match/chars/a/b.txt"]
+    rg:   ["match/chars/a-b.txt","match/chars/a/b.txt"]
+    match/a{b,}c
+    equal: true
+    tool: ["match/abc"]
+    rg:   ["match/abc"]
+    match/a{b,{c,d}}c
+    equal: true
+    tool: ["match/abc","match/acc","match/adc"]
+    rg:   ["match/abc","match/acc","match/adc"]
+    match/{**/,}foo
+    equal: true
+    tool: ["match/foo","match/nested/foo"]
+    rg:   ["match/foo","match/nested/foo"]
+    ignore/*.ml*
+    equal: true
+    tool: ["ignore/double.ml","ignore/escaped.ml"]
+    rg:   ["ignore/double.ml","ignore/escaped.ml"]
+    /root.ml
+    equal: true
+    tool: ["root.ml"]
+    rg:   ["root.ml"]
+    \!literal
+    equal: true
+    tool: ["syntax/!literal"]
+    rg:   ["syntax/!literal"]
+    syntax/\[literal\]
+    equal: true
+    tool: ["syntax/[literal]"]
+    rg:   ["syntax/[literal]"]
+    syntax/\{literal\}
+    equal: true
+    tool: ["syntax/{literal}"]
+    rg:   ["syntax/{literal}"]
+    syntax/a,b
+    equal: true
+    tool: ["syntax/a,b"]
+    rg:   ["syntax/a,b"]
+    syntax/\*.ml
+    equal: true
+    tool: ["syntax/*.ml"]
+    rg:   ["syntax/*.ml"]
+    |}]
 
 let%expect_test
     "leading negation prunes child directories but never the explicit root" =
@@ -855,12 +870,14 @@ let%expect_test
       ("double bang", "!!");
     ];
   [%expect
-    {|basename directory: ["prune/!","prune/tools/a.ml","prune/tools/nested/b.txt"]
-slashed directory: ["prune/!","prune/tools/a.ml","prune/tools/nested/b.txt"]
-explicit root: ["prune/!","prune/fs/a.ml","prune/fs/nested/b.txt","prune/tools/a.ml","prune/tools/nested/b.txt"]
-positive traversal: ["prune/tools/a.ml"]
-lone bang: ["No files"]
-double bang: ["prune/fs/a.ml","prune/fs/nested/b.txt","prune/tools/a.ml","prune/tools/nested/b.txt"]|}]
+    {|
+    basename directory: ["prune/!","prune/tools/a.ml","prune/tools/nested/b.txt"]
+    slashed directory: ["prune/!","prune/tools/a.ml","prune/tools/nested/b.txt"]
+    explicit root: ["prune/!","prune/fs/a.ml","prune/fs/nested/b.txt","prune/tools/a.ml","prune/tools/nested/b.txt"]
+    positive traversal: ["prune/tools/a.ml"]
+    lone bang: ["No files"]
+    double bang: ["prune/fs/a.ml","prune/fs/nested/b.txt","prune/tools/a.ml","prune/tools/nested/b.txt"]
+    |}]
 
 let%expect_test "hidden VCS symlink and special entries keep traversal confined"
     =
@@ -877,25 +894,27 @@ let%expect_test "hidden VCS symlink and special entries keep traversal confined"
   run_case world "escape through symlink"
     (input ~path:"outside_link/deeper" "**");
   [%expect
-    {|hidden: [".hidden/h.ml"]
-all protected VCS: ["No files"]
-symlink directory child: ["No files"]
-symlink file child: ["No files"]
-special child: ["No files"]
-explicit git root: ["No files"]
-explicit nested git root: ["No files"]
--- explicit in-root symlink --
-status: failed invalid_input
-message: code_link: symlink search roots are not supported
-metadata: false
--- explicit escape symlink --
-status: failed invalid_input
-message: outside_link: symlink search roots are not supported
-metadata: false
--- escape through symlink --
-status: failed invalid_input
-message: outside_link/deeper: path resolves outside workspace
-metadata: false|}]
+    {|
+    hidden: [".hidden/h.ml"]
+    all protected VCS: ["No files"]
+    symlink directory child: ["No files"]
+    symlink file child: ["No files"]
+    special child: ["No files"]
+    explicit git root: ["No files"]
+    explicit nested git root: ["No files"]
+    -- explicit in-root symlink --
+    status: failed invalid_input
+    message: code_link: symlink search roots are not supported
+    metadata: false
+    -- explicit escape symlink --
+    status: failed invalid_input
+    message: outside_link: symlink search roots are not supported
+    metadata: false
+    -- escape through symlink --
+    status: failed invalid_input
+    message: outside_link/deeper: path resolves outside workspace
+    metadata: false
+    |}]
 
 let%expect_test
     "ignore files compose by source ancestor child negation and spaces" =
@@ -915,17 +934,19 @@ let%expect_test
   print_paths world "basename ignore rule" (input "scoped/**/basename.ml");
   print_paths world "relative ignore rule" (input "scoped/**/path-only.ml");
   [%expect
-    {|ignored file: ["No files"]
-ignored directory: ["No files"]
-pruned re-inclusion: ["No files"]
-reopened parent: ["reopen/keep/visible.ml"]
-source order: ["order/second.ml"]
-ancestor and child precedence: ["ancestor/deep/ancestor-keep.ml","ancestor/deep/child-keep.ml"]
-ignored requested root: ["No files"]
-comments escapes and trailing spaces: ["ignore/double.ml","ignore/escaped.ml"]
-anchored ignore rule: ["scoped/nested/root-only.ml"]
-basename ignore rule: ["No files"]
-relative ignore rule: ["No files"]|}]
+    {|
+    ignored file: ["No files"]
+    ignored directory: ["No files"]
+    pruned re-inclusion: ["No files"]
+    reopened parent: ["reopen/keep/visible.ml"]
+    source order: ["order/second.ml"]
+    ancestor and child precedence: ["ancestor/deep/ancestor-keep.ml","ancestor/deep/child-keep.ml"]
+    ignored requested root: ["No files"]
+    comments escapes and trailing spaces: ["ignore/double.ml","ignore/escaped.ml"]
+    anchored ignore rule: ["scoped/nested/root-only.ml"]
+    basename ignore rule: ["No files"]
+    relative ignore rule: ["No files"]
+    |}]
 
 let%expect_test "typed enumeration shares ignore ordering and failure semantics"
     =
@@ -938,9 +959,11 @@ let%expect_test "typed enumeration shares ignore ordering and failure semantics"
   print_enumeration world "cancelled" ~root ~pattern:"**/*.ml"
     ~cancelled:(fun () -> true);
   [%expect
-    {|ordered paths: ["ancestor/deep/ancestor-keep.ml","ancestor/deep/child-keep.ml"]
-invalid pattern: invalid pattern: unclosed character class at byte 2
-cancelled: cancelled|}]
+    {|
+    ordered paths: ["ancestor/deep/ancestor-keep.ml","ancestor/deep/child-keep.ml"]
+    invalid pattern: invalid pattern: unclosed character class at byte 2
+    cancelled: cancelled
+    |}]
 
 let%expect_test "ignore-file I/O errors fail instead of changing the match set"
     =
@@ -955,10 +978,12 @@ let%expect_test "ignore-file I/O errors fail instead of changing the match set"
   Fun.protect ~finally:(fun () -> Unix.chmod ignore 0o644) @@ fun () ->
   run_case world "unreadable ignore" (input "unreadable/*.ml");
   [%expect
-    {|-- unreadable ignore --
-status: failed failed
-message: unreadable/.gitignore: filesystem I/O error
-metadata: false|}]
+    {|
+    -- unreadable ignore --
+    status: failed failed
+    message: unreadable/.gitignore: filesystem I/O error
+    metadata: false
+    |}]
 
 let%expect_test "oversized ignore files fail loudly instead of changing matches"
     =
@@ -968,10 +993,12 @@ let%expect_test "oversized ignore files fail loudly instead of changing matches"
     (String.make ((16 * 1024 * 1024) + 1) 'x');
   run_case world "oversized ignore" (input "**/*.ml");
   [%expect
-    {|-- oversized ignore --
-status: failed invalid_input
-message: .gitignore: file is too large (16777217 bytes, max 16777216)
-metadata: false|}]
+    {|
+    -- oversized ignore --
+    status: failed invalid_input
+    message: .gitignore: file is too large (16777217 bytes, max 16777216)
+    metadata: false
+    |}]
 
 let%expect_test
     "malformed patterns are structured run failures after permission planning" =
@@ -984,41 +1011,43 @@ let%expect_test
       print_result (Tool.Call.run call ~cancelled:(fun () -> false) |> finished))
     [ "["; "[]"; "[z-a]"; "abc\\"; "{a,b" ];
   [%expect
-    {|-- "[" --
-requests: 1
-source: glob
-access: read key=main path=. change=false
-status: failed invalid_input
-message: invalid glob pattern: unclosed character class at byte 2
-metadata: false
--- "[]" --
-requests: 1
-source: glob
-access: read key=main path=. change=false
-status: failed invalid_input
-message: invalid glob pattern: unclosed character class at byte 3
-metadata: false
--- "[z-a]" --
-requests: 1
-source: glob
-access: read key=main path=. change=false
-status: failed invalid_input
-message: invalid glob pattern: descending character-class range at byte 5
-metadata: false
--- "abc\\" --
-requests: 1
-source: glob
-access: read key=main path=. change=false
-status: failed invalid_input
-message: invalid glob pattern: trailing escape at byte 5
-metadata: false
--- "{a,b" --
-requests: 1
-source: glob
-access: read key=main path=. change=false
-status: failed invalid_input
-message: invalid glob pattern: unclosed brace expansion at byte 5
-metadata: false|}]
+    {|
+    -- "[" --
+    requests: 1
+    source: glob
+    access: read key=main path=. change=false
+    status: failed invalid_input
+    message: invalid glob pattern: unclosed character class at byte 2
+    metadata: false
+    -- "[]" --
+    requests: 1
+    source: glob
+    access: read key=main path=. change=false
+    status: failed invalid_input
+    message: invalid glob pattern: unclosed character class at byte 3
+    metadata: false
+    -- "[z-a]" --
+    requests: 1
+    source: glob
+    access: read key=main path=. change=false
+    status: failed invalid_input
+    message: invalid glob pattern: descending character-class range at byte 5
+    metadata: false
+    -- "abc\\" --
+    requests: 1
+    source: glob
+    access: read key=main path=. change=false
+    status: failed invalid_input
+    message: invalid glob pattern: trailing escape at byte 5
+    metadata: false
+    -- "{a,b" --
+    requests: 1
+    source: glob
+    access: read key=main path=. change=false
+    status: failed invalid_input
+    message: invalid glob pattern: unclosed brace expansion at byte 5
+    metadata: false
+    |}]
 
 let%expect_test "path and modified ordering are stable before exact pagination"
     =
@@ -1040,33 +1069,35 @@ let%expect_test "path and modified ordering are stable before exact pagination"
   run_case ~json:true world "beyond end"
     (input ~path:"sort" ~offset:99 ~limit:2 "*.ml");
   [%expect
-    {|path: ["sort/new.ml","sort/old.ml","sort/same-a.ml","sort/same-b.ml"]
-modified: ["sort/new.ml","sort/same-a.ml","sort/same-b.ml","sort/old.ml"]
--- first --
-status: completed
-text: "pattern=\"*.ml\" root=sort files=2/4 offset=1 limit=2 sort=path status=partial\nsort/new.ml\nsort/old.ml\nnext: glob {\"pattern\":\"*.ml\",\"path\":\"sort\",\"offset\":3,\"limit\":2,\"sort\":\"path\"}\n"
-truncated: true
-json: {"version":1,"shape":"files","total":4}
--- continuation --
-status: completed
-text: "pattern=\"*.ml\" root=sort files=2/4 offset=3 limit=2 sort=path status=complete\nsort/same-a.ml\nsort/same-b.ml\n"
-truncated: false
-json: {"version":1,"shape":"files","total":4}
--- modified first --
-status: completed
-text: "pattern=\"*.ml\" root=sort files=2/4 offset=1 limit=2 sort=modified status=partial\nsort/new.ml\nsort/same-a.ml\nnext: glob {\"pattern\":\"*.ml\",\"path\":\"sort\",\"offset\":3,\"limit\":2,\"sort\":\"modified\"}\n"
-truncated: true
-json: {"version":1,"shape":"files","total":4}
--- modified continuation --
-status: completed
-text: "pattern=\"*.ml\" root=sort files=2/4 offset=3 limit=2 sort=modified status=complete\nsort/same-b.ml\nsort/old.ml\n"
-truncated: false
-json: {"version":1,"shape":"files","total":4}
--- beyond end --
-status: completed
-text: "pattern=\"*.ml\" root=sort files=0/4 offset=99 limit=2 sort=path status=complete\nNo files\n"
-truncated: false
-json: {"version":1,"shape":"files","total":4}|}]
+    {|
+    path: ["sort/new.ml","sort/old.ml","sort/same-a.ml","sort/same-b.ml"]
+    modified: ["sort/new.ml","sort/same-a.ml","sort/same-b.ml","sort/old.ml"]
+    -- first --
+    status: completed
+    text: "pattern=\"*.ml\" root=sort files=2/4 offset=1 limit=2 sort=path status=partial\nsort/new.ml\nsort/old.ml\nnext: glob {\"pattern\":\"*.ml\",\"path\":\"sort\",\"offset\":3,\"limit\":2,\"sort\":\"path\"}\n"
+    truncated: true
+    json: {"version":1,"shape":"files","total":4}
+    -- continuation --
+    status: completed
+    text: "pattern=\"*.ml\" root=sort files=2/4 offset=3 limit=2 sort=path status=complete\nsort/same-a.ml\nsort/same-b.ml\n"
+    truncated: false
+    json: {"version":1,"shape":"files","total":4}
+    -- modified first --
+    status: completed
+    text: "pattern=\"*.ml\" root=sort files=2/4 offset=1 limit=2 sort=modified status=partial\nsort/new.ml\nsort/same-a.ml\nnext: glob {\"pattern\":\"*.ml\",\"path\":\"sort\",\"offset\":3,\"limit\":2,\"sort\":\"modified\"}\n"
+    truncated: true
+    json: {"version":1,"shape":"files","total":4}
+    -- modified continuation --
+    status: completed
+    text: "pattern=\"*.ml\" root=sort files=2/4 offset=3 limit=2 sort=modified status=complete\nsort/same-b.ml\nsort/old.ml\n"
+    truncated: false
+    json: {"version":1,"shape":"files","total":4}
+    -- beyond end --
+    status: completed
+    text: "pattern=\"*.ml\" root=sort files=0/4 offset=99 limit=2 sort=path status=complete\nNo files\n"
+    truncated: false
+    json: {"version":1,"shape":"files","total":4}
+    |}]
 
 let%expect_test "the omitted limit uses the bounded one-hundred-file page" =
   with_world @@ fun world ->
@@ -1086,8 +1117,10 @@ let%expect_test "the omitted limit uses the bounded one-hundred-file page" =
   print_page "default page" (input ~path:"many" "*.ml");
   print_page "default continuation" (input ~path:"many" ~offset:101 "*.ml");
   [%expect
-    {|default page: returned=100 first=many/file-000.ml last=many/file-099.ml truncated=true root=many
-default continuation: returned=5 first=many/file-100.ml last=many/file-104.ml truncated=false root=many|}]
+    {|
+    default page: returned=100 first=many/file-000.ml last=many/file-099.ml truncated=true root=many
+    default continuation: returned=5 first=many/file-100.ml last=many/file-104.ml truncated=false root=many
+    |}]
 
 let%expect_test
     "cancellation before and during traversal never returns a partial page" =
@@ -1107,22 +1140,24 @@ let%expect_test
         !polls)
     [ 1; 2; 5; 12 ];
   [%expect
-    {|-- poll 1 --
-status: interrupted cancelled=true
-reason: tool call cancelled
-output: false polls: 1
--- poll 2 --
-status: interrupted cancelled=true
-reason: tool call cancelled
-output: false polls: 2
--- poll 5 --
-status: interrupted cancelled=true
-reason: tool call cancelled
-output: false polls: 5
--- poll 12 --
-status: interrupted cancelled=true
-reason: tool call cancelled
-output: false polls: 12|}]
+    {|
+    -- poll 1 --
+    status: interrupted cancelled=true
+    reason: tool call cancelled
+    output: false polls: 1
+    -- poll 2 --
+    status: interrupted cancelled=true
+    reason: tool call cancelled
+    output: false polls: 2
+    -- poll 5 --
+    status: interrupted cancelled=true
+    reason: tool call cancelled
+    output: false polls: 5
+    -- poll 12 --
+    status: interrupted cancelled=true
+    reason: tool call cancelled
+    output: false polls: 12
+    |}]
 
 let%expect_test
     "auxiliary roots retain permission identity and durable addressing" =
@@ -1164,36 +1199,38 @@ let%expect_test
   with_world ~cwd:Auxiliary_root @@ fun auxiliary_cwd ->
   run_case ~json:true auxiliary_cwd "auxiliary cwd" (input "lib/*.{ml,mli}");
   [%expect
-    {|-- primary collision --
-status: completed
-text: "pattern=\"lib/*.{ml,mli}\" root=. files=1/2 offset=1 limit=1 sort=path status=partial\nlib/aux.ml\nnext: glob {\"pattern\":\"lib/*.{ml,mli}\",\"path\":\".\",\"offset\":2,\"limit\":1,\"sort\":\"path\"}\n"
-truncated: true
-json: {"version":1,"shape":"files","total":2}
--- auxiliary absolute canonicalized --
-requests: 1
-source: glob
-access: read key=aux path=. change=false
-status: completed
-text: "pattern=\"lib/*.{ml,mli}\" root=<auxiliary> files=1/2 offset=1 limit=1 sort=path status=partial\n<auxiliary>/lib/aux.ml\nnext: glob {\"pattern\":\"lib/*.{ml,mli}\",\"path\":\"<auxiliary>\",\"offset\":2,\"limit\":1,\"sort\":\"path\"}\n"
-truncated: true
-json: {"version":1,"shape":"files","total":2}
--- auxiliary addresses --
-root <auxiliary> -> key=aux path=.
-path <auxiliary>/lib/aux.ml -> key=aux path=lib/aux.ml
-auxiliary durable replay equal: true
--- auxiliary continuation --
-requests: 1
-source: glob
-access: read key=aux path=. change=false
-status: completed
-text: "pattern=\"lib/*.{ml,mli}\" root=<auxiliary> files=1/2 offset=2 limit=1 sort=path status=complete\n<auxiliary>/lib/aux.mli\n"
-truncated: false
-json: {"version":1,"shape":"files","total":2}
--- auxiliary cwd --
-status: completed
-text: "pattern=\"lib/*.{ml,mli}\" root=. files=2/2 offset=1 limit=100 sort=path status=complete\nlib/aux.ml\nlib/aux.mli\n"
-truncated: false
-json: {"version":1,"shape":"files","total":2}|}]
+    {|
+    -- primary collision --
+    status: completed
+    text: "pattern=\"lib/*.{ml,mli}\" root=. files=1/2 offset=1 limit=1 sort=path status=partial\nlib/aux.ml\nnext: glob {\"pattern\":\"lib/*.{ml,mli}\",\"path\":\".\",\"offset\":2,\"limit\":1,\"sort\":\"path\"}\n"
+    truncated: true
+    json: {"version":1,"shape":"files","total":2}
+    -- auxiliary absolute canonicalized --
+    requests: 1
+    source: glob
+    access: read key=aux path=. change=false
+    status: completed
+    text: "pattern=\"lib/*.{ml,mli}\" root=<auxiliary> files=1/2 offset=1 limit=1 sort=path status=partial\n<auxiliary>/lib/aux.ml\nnext: glob {\"pattern\":\"lib/*.{ml,mli}\",\"path\":\"<auxiliary>\",\"offset\":2,\"limit\":1,\"sort\":\"path\"}\n"
+    truncated: true
+    json: {"version":1,"shape":"files","total":2}
+    -- auxiliary addresses --
+    root <auxiliary> -> key=aux path=.
+    path <auxiliary>/lib/aux.ml -> key=aux path=lib/aux.ml
+    auxiliary durable replay equal: true
+    -- auxiliary continuation --
+    requests: 1
+    source: glob
+    access: read key=aux path=. change=false
+    status: completed
+    text: "pattern=\"lib/*.{ml,mli}\" root=<auxiliary> files=1/2 offset=2 limit=1 sort=path status=complete\n<auxiliary>/lib/aux.mli\n"
+    truncated: false
+    json: {"version":1,"shape":"files","total":2}
+    -- auxiliary cwd --
+    status: completed
+    text: "pattern=\"lib/*.{ml,mli}\" root=. files=2/2 offset=1 limit=100 sort=path status=complete\nlib/aux.ml\nlib/aux.mli\n"
+    truncated: false
+    json: {"version":1,"shape":"files","total":2}
+    |}]
 
 let%expect_test
     "durable replay preserves the complete presentation and no authority" =
@@ -1227,18 +1264,20 @@ let%expect_test
       Printf.printf "contains %s: %b\n" forbidden (List.mem forbidden names))
     [ "receipt"; "mutation"; "evidence"; "fingerprint"; "anchor"; "command" ];
   [%expect
-    {|text: "pattern=\"*.ml\" root=sort files=2/4 offset=1 limit=2 sort=path status=partial\nsort/new.ml\nsort/old.ml\nnext: glob {\"pattern\":\"*.ml\",\"path\":\"sort\",\"offset\":3,\"limit\":2,\"sort\":\"path\"}\n"
-json: {"version":1,"shape":"files","total":4}
-durable: {"status":"completed","output":{"text":"pattern=\"*.ml\" root=sort files=2/4 offset=1 limit=2 sort=path status=partial\nsort/new.ml\nsort/old.ml\nnext: glob {\"pattern\":\"*.ml\",\"path\":\"sort\",\"offset\":3,\"limit\":2,\"sort\":\"path\"}\n","json":{"version":1,"shape":"files","total":4},"truncated":true}}
-text replay equal: true
-json replay equal: true
-truncated replay equal: true
-contains receipt: false
-contains mutation: false
-contains evidence: false
-contains fingerprint: false
-contains anchor: false
-contains command: false|}]
+    {|
+    text: "pattern=\"*.ml\" root=sort files=2/4 offset=1 limit=2 sort=path status=partial\nsort/new.ml\nsort/old.ml\nnext: glob {\"pattern\":\"*.ml\",\"path\":\"sort\",\"offset\":3,\"limit\":2,\"sort\":\"path\"}\n"
+    json: {"version":1,"shape":"files","total":4}
+    durable: {"status":"completed","output":{"text":"pattern=\"*.ml\" root=sort files=2/4 offset=1 limit=2 sort=path status=partial\nsort/new.ml\nsort/old.ml\nnext: glob {\"pattern\":\"*.ml\",\"path\":\"sort\",\"offset\":3,\"limit\":2,\"sort\":\"path\"}\n","json":{"version":1,"shape":"files","total":4},"truncated":true}}
+    text replay equal: true
+    json replay equal: true
+    truncated replay equal: true
+    contains receipt: false
+    contains mutation: false
+    contains evidence: false
+    contains fingerprint: false
+    contains anchor: false
+    contains command: false
+    |}]
 
 let%expect_test "root ignore rules prune with gitignore semantics" =
   let rules =
@@ -1263,16 +1302,18 @@ let%expect_test "root ignore rules prune with gitignore semantics" =
       "deep/a/node_modules";
     ];
   [%expect
-    {|. -> false
-_ref -> true
-_reference -> true
-sub/_ref -> true
-dist -> true
-sub/dist -> false
-_autoresearch -> true
-x.log -> true
-keep.log -> false
-deep/a/node_modules -> true|}]
+    {|
+    . -> false
+    _ref -> true
+    _reference -> true
+    sub/_ref -> true
+    dist -> true
+    sub/dist -> false
+    _autoresearch -> true
+    x.log -> true
+    keep.log -> false
+    deep/a/node_modules -> true
+    |}]
 
 let%expect_test "later joined ignore rules have the final say" =
   let earlier = Glob.Ignore.parse "vendor/\n" in
@@ -1284,9 +1325,10 @@ let%expect_test "later joined ignore rules have the final say" =
   check earlier "vendor";
   check (Glob.Ignore.join earlier later) "vendor";
   check Glob.Ignore.empty "vendor";
-  [%expect {|
-vendor -> true
-vendor -> false
-vendor -> false|}]
+  [%expect
+    {|
+    vendor -> true
+    vendor -> false
+    vendor -> false
+    |}]
 
-[%%run_tests "mentat.tools.glob"]

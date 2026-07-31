@@ -49,30 +49,32 @@ let%expect_test "the slash palette lists /init" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-inite973a850
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 | ❯ /init   Generate or update AGENTS.md with project conventions
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ /ini
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-… · openai/gpt-… · ! full access ? for …|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-init6a9b57a1
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 | ❯ /init   Generate or update AGENTS.md with project conventions
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ /ini
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-… · openai/gpt-… · ! full access ? for …
+    |}]
 
 let%expect_test "/init is unavailable while a turn is in flight" =
   Tui.run ~name:"init-midturn" ~turns:[ busy_turn ] @@ fun t ->
@@ -82,30 +84,32 @@ let%expect_test "/init is unavailable while a turn is in flight" =
   submit t "/init";
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-init3db3b43f
-04 |
-05 | ❯ keep working
-06 |
-07 | ⠋ Working… (0s · esc to interrupt)
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ queue a message — sends after this turn
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   /init is available after the turn finishes|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-initaadf9b7c
+    04 |
+    05 | ❯ keep working
+    06 |
+    07 | ⠋ Working… (0s · esc to interrupt)
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ queue a message — sends after this turn
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   /init is available after the turn finishes
+    |}]
 
 let%expect_test "/init submits its built-in prompt as an ordinary turn" =
   Tui.run ~name:"init-submit" ~turns:[ hello_turn; init_turn ] @@ fun t ->
@@ -115,29 +119,30 @@ let%expect_test "/init submits its built-in prompt as an ordinary turn" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-ini706a3e24
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 | ❯ Explore this repository and write or update its AGENTS.md so a new
-10 |   contributor can get productive fast. Cover how to build, test, and run the
-11 |   project, the layout and where the key code lives, and the conventions and
-12 |   architectural rules to follow. Keep it concise, around 20-30 lines. If
-13 |   AGENTS.md already exists, improve it in place rather than replacing it, and
-14 |   fold in any conventions from other agent- or editor-instruction files.
-15 |   Document only what you can verify from the repository; do not invent anything.
-16 |
-17 | ⏺ Wrote AGENTS.md.
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-… · openai/gpt-… · ! full access ? for …|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-ini57895def
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 | ❯ Explore this repository and write or update its AGENTS.md so a new
+    10 |   contributor can get productive fast. Cover how to build, test, and run the
+    11 |   project, the layout and where the key code lives, and the conventions and
+    12 |   architectural rules to follow. Keep it concise, around 20-30 lines. If
+    13 |   AGENTS.md already exists, improve it in place rather than replacing it, and
+    14 |   fold in any conventions from other agent- or editor-instruction files.
+    15 |   Document only what you can verify from the repository; do not invent anything.
+    16 |
+    17 | ⏺ Wrote AGENTS.md.
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-… · openai/gpt-… · ! full access ? for …
+    |}]
 
-[%%run_tests "mentat.tui.init"]

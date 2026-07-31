@@ -95,49 +95,39 @@ let byte_gen =
       (7, Gen.map Char.chr (Gen.int_range 32 126));
     ]
 
-let content_gen = Gen.string_size (Gen.int_range 0 130) byte_gen
-
-let bytes_in =
-  testable
-    ~pp:(fun ppf s -> Format.fprintf ppf "%S" s)
-    ~equal:String.equal ~gen:content_gen ()
+let content_gen = Gen.string_of ~size:(Gen.int_range 0 130) byte_gen
 
 let digest =
-  testable ~pp:Mentat_digest.pp ~equal:Mentat_digest.equal
-    ~gen:(Gen.map Mentat_digest.string content_gen)
-    ()
+  Testable.make ~pp:Mentat_digest.pp ~equal:Mentat_digest.equal
+
+let digest_gen =
+  Gen.with_pp Mentat_digest.pp (Gen.map Mentat_digest.string content_gen)
 
 let content_ref =
-  testable ~pp:Mentat_digest.Content_ref.pp
+  Testable.make ~pp:Mentat_digest.Content_ref.pp
     ~equal:Mentat_digest.Content_ref.equal
-    ~gen:(Gen.map Mentat_digest.Content_ref.of_contents content_gen)
-    ()
+
+let content_ref_gen =
+  Gen.with_pp Mentat_digest.Content_ref.pp
+    (Gen.map Mentat_digest.Content_ref.of_contents content_gen)
 
 let error =
-  testable
-    ~pp:(fun ppf e ->
-      Format.pp_print_string ppf (Mentat_digest.Error.message e))
-    ~equal:( = ) ()
-
-(* cases names each row from its pretty-printer; print the label only. *)
-let labelled =
-  testable
-    ~pp:(fun ppf (label, _) -> Format.pp_print_string ppf label)
-    ~equal:( = ) ()
+  Testable.make ~pp:(fun ppf e ->
+      Format.pp_print_string ppf (Mentat_digest.Error.message e)) ~equal:( = )
 
 let key_input_gen =
   Gen.bind (Gen.int_range 0 64) (fun length ->
       Gen.map
         (fun parts -> (length, parts))
-        (Gen.list_size (Gen.int_range 0 4)
-           (Gen.string_size (Gen.int_range 0 8) Gen.char)))
+        (Gen.list ~size:(Gen.int_range 0 4)
+           (Gen.string_of ~size:(Gen.int_range 0 8) Gen.char)))
 
-let key_input =
-  testable
-    ~pp:(fun ppf (length, parts) ->
+let key_input_gen =
+  Gen.with_pp
+    (fun ppf (length, parts) ->
       Format.fprintf ppf "(length=%d, [%s])" length
         (String.concat "; " (List.map (Printf.sprintf "%S") parts)))
-    ~gen:key_input_gen ()
+    key_input_gen
 
 (* Known constants *)
 
@@ -218,7 +208,7 @@ let byte_model =
 let serialisation_laws =
   group "Serialisation laws"
     [
-      prop' "to_hex is 64 lowercase hexadecimal characters" bytes_in (fun s ->
+      prop "to_hex is 64 lowercase hexadecimal characters" content_gen (fun s ->
           let h = hex s in
           equal int ~msg:"length" 64 (String.length h);
           String.iter
@@ -226,15 +216,15 @@ let serialisation_laws =
               if not (is_lower_hex c) then
                 failf "non-lowercase-hex character: %C" c)
             h);
-      prop' "to_raw_string is exactly 32 bytes" bytes_in (fun s ->
+      prop "to_raw_string is exactly 32 bytes" content_gen (fun s ->
           equal int 32
             (String.length
                (Mentat_digest.to_raw_string (Mentat_digest.string s))));
-      prop' "raw bytes and hex encode the same digest" bytes_in (fun s ->
+      prop "raw bytes and hex encode the same digest" content_gen (fun s ->
           let d = Mentat_digest.string s in
           equal string (Mentat_digest.to_hex d)
             (hex_of_raw (Mentat_digest.to_raw_string d)));
-      prop' "pp renders to_hex" bytes_in (fun s ->
+      prop "pp renders to_hex" content_gen (fun s ->
           let d = Mentat_digest.string s in
           equal string (Mentat_digest.to_hex d)
             (Format.asprintf "%a" Mentat_digest.pp d));
@@ -288,18 +278,22 @@ let of_hex_codec =
   group "Digest codec: of_hex"
     [
       test "accepts a known lowercase digest" (fun () ->
-          ok digest (Mentat_digest.string "abc") (Mentat_digest.of_hex abc_hex));
-      prop' "round-trips to_hex over arbitrary bytes" bytes_in (fun s ->
+          equal (result digest pass)
+            (Ok (Mentat_digest.string "abc"))
+            (Mentat_digest.of_hex abc_hex));
+      prop "round-trips to_hex over arbitrary bytes" content_gen (fun s ->
           (* Prove the interesting regions are actually exercised. *)
           cover ~label:"contains NUL" ~at_least:20.0 (String.contains s '\000');
           cover ~label:"contains a high byte (invalid UTF-8)" ~at_least:20.0
             (String.exists (fun c -> Char.code c >= 128) s);
           let d = Mentat_digest.string s in
-          ok digest d (Mentat_digest.of_hex (Mentat_digest.to_hex d)));
+          equal (result digest pass) (Ok d)
+            (Mentat_digest.of_hex (Mentat_digest.to_hex d)));
       test "round-trips a NUL and invalid-UTF-8 digest" (fun () ->
           let d = Mentat_digest.string "a\000b\255\254\000\xf0\x28" in
-          ok digest d (Mentat_digest.of_hex (Mentat_digest.to_hex d)));
-      cases labelled of_hex_rejections "rejects" (fun (_, input) ->
+          equal (result digest pass) (Ok d)
+            (Mentat_digest.of_hex (Mentat_digest.to_hex d)));
+      cases "rejects" ~name:fst of_hex_rejections (fun (_, input) ->
           equal (result digest error) (Error Mentat_digest.Error.Not_hex)
             (Mentat_digest.of_hex input));
     ]
@@ -313,8 +307,8 @@ let digest_json =
           is_true
             (Json.equal (Json.string abc_hex)
                (json_encode Mentat_digest.jsont (Mentat_digest.string "abc"))));
-      prop "round-trips a random digest" digest (fun d ->
-          Mentat_digest.equal d
+      prop "round-trips a random digest" digest_gen (fun d ->
+          equal digest d
             (json_decode Mentat_digest.jsont
                (json_encode Mentat_digest.jsont d)));
       test "decode rejects a non-hex string with a useful diagnostic" (fun () ->
@@ -333,14 +327,12 @@ let digest_json =
 
 (* Incremental hashing: Fold *)
 
-let chunks_gen = Gen.list_size (Gen.int_range 0 6) content_gen
-
-let chunks_in =
-  testable
-    ~pp:(fun ppf cs ->
+let chunks_gen =
+  Gen.with_pp
+    (fun ppf cs ->
       Format.fprintf ppf "[%s]"
         (String.concat "; " (List.map (Printf.sprintf "%S") cs)))
-    ~equal:(List.equal String.equal) ~gen:chunks_gen ()
+    (Gen.list ~size:(Gen.int_range 0 6) content_gen)
 
 let fold_of chunks =
   let ctx = Mentat_digest.Fold.create () in
@@ -350,7 +342,7 @@ let fold_of chunks =
 let incremental_hashing =
   group "Incremental hashing: Fold"
     [
-      prop' "folding chunks equals hashing their concatenation" chunks_in
+      prop "folding chunks equals hashing their concatenation" chunks_gen
         (fun chunks ->
           cover ~label:"multiple chunks" ~at_least:20.0 (List.length chunks > 1);
           cover ~label:"contains NUL" ~at_least:20.0
@@ -370,13 +362,13 @@ let incremental_hashing =
           let ctx = Mentat_digest.Fold.create () in
           Mentat_digest.Fold.add ctx "abc";
           let (_ : Mentat_digest.t) = Mentat_digest.Fold.digest ctx in
-          raises_invalid_arg "Mentat_digest.Fold.add: context already finalized"
+          raises (Invalid_argument "Mentat_digest.Fold.add: context already finalized")
             (fun () -> Mentat_digest.Fold.add ctx "more"));
       test "digest after digest raises" (fun () ->
           let ctx = Mentat_digest.Fold.create () in
           let (_ : Mentat_digest.t) = Mentat_digest.Fold.digest ctx in
-          raises_invalid_arg
-            "Mentat_digest.Fold.digest: context already finalized" (fun () ->
+          raises
+            (Invalid_argument "Mentat_digest.Fold.digest: context already finalized") (fun () ->
               ignore (Mentat_digest.Fold.digest ctx)));
     ]
 
@@ -385,13 +377,15 @@ let incremental_hashing =
 let digest_order =
   group "Digest equality and order"
     [
-      prop "equal and compare are reflexive" digest (fun d ->
-          Mentat_digest.equal d d && Mentat_digest.compare d d = 0);
-      prop "compare = 0 agrees with equal" (pair digest digest) (fun (a, b) ->
-          Mentat_digest.compare a b = 0 = Mentat_digest.equal a b);
-      prop "compare sign is antisymmetric" (pair digest digest) (fun (a, b) ->
-          sign (Mentat_digest.compare a b) = -sign (Mentat_digest.compare b a));
-      prop' "compare is a transitive total order" (triple digest digest digest)
+      prop "equal and compare are reflexive" digest_gen (fun d ->
+          is_true (Mentat_digest.equal d d && Mentat_digest.compare d d = 0));
+      prop "compare = 0 agrees with equal" (Gen.pair digest_gen digest_gen) (fun (a, b) ->
+          is_true (Mentat_digest.compare a b = 0 = Mentat_digest.equal a b));
+      prop "compare sign is antisymmetric" (Gen.pair digest_gen digest_gen) (fun (a, b) ->
+          is_true
+            (sign (Mentat_digest.compare a b)
+            = -sign (Mentat_digest.compare b a)));
+      prop "compare is a transitive total order" (Gen.triple digest_gen digest_gen digest_gen)
         (fun (a, b, c) ->
           match List.sort Mentat_digest.compare [ a; b; c ] with
           | [ x; y; z ] ->
@@ -453,7 +447,7 @@ let key_derivation =
           differ ~msg:"domain a vs b"
             (full_key ~domain:"mentat.digest.test.a" [ "same" ])
             (full_key ~domain:"mentat.digest.test.b" [ "same" ]));
-      prop' "key has exactly length lowercase-hex characters" key_input
+      prop "key has exactly length lowercase-hex characters" key_input_gen
         (fun (length, parts) ->
           let k = Mentat_digest.key ~length ~domain:key_domain parts in
           equal int ~msg:"length" length (String.length k);
@@ -462,26 +456,26 @@ let key_derivation =
               if not (is_lower_hex c) then
                 failf "non-lowercase-hex character in key: %C" c)
             k);
-      prop' "key is a prefix of the full 64-character key" key_input
+      prop "key is a prefix of the full 64-character key" key_input_gen
         (fun (length, parts) ->
           equal string
             (String.take_first length (full_key ~domain:key_domain parts))
             (Mentat_digest.key ~length ~domain:key_domain parts));
-      prop' "full key equals the digest of the framed domain and parts"
-        key_input (fun (_length, parts) ->
+      prop "full key equals the digest of the framed domain and parts"
+        key_input_gen (fun (_length, parts) ->
           equal string
             (expected_key ~domain:key_domain parts)
             (full_key ~domain:key_domain parts));
       test "rejects a negative length" (fun () ->
-          raises_invalid_arg
-            "Mentat_digest.key: length must be between 0 and 64" (fun () ->
+          raises
+            (Invalid_argument "Mentat_digest.key: length must be between 0 and 64") (fun () ->
               Mentat_digest.key ~length:(-1) ~domain:key_domain [ "anchor" ]));
       test "rejects a length above 64" (fun () ->
-          raises_invalid_arg
-            "Mentat_digest.key: length must be between 0 and 64" (fun () ->
+          raises
+            (Invalid_argument "Mentat_digest.key: length must be between 0 and 64") (fun () ->
               Mentat_digest.key ~length:65 ~domain:key_domain [ "anchor" ]));
       test "rejects an empty domain" (fun () ->
-          raises_invalid_arg "Mentat_digest.key: empty domain" (fun () ->
+          raises (Invalid_argument "Mentat_digest.key: empty domain") (fun () ->
               Mentat_digest.key ~length:8 ~domain:"" [ "anchor" ]));
     ]
 
@@ -514,8 +508,10 @@ let framing_primitive =
       test "split points are separated" (fun () ->
           differ ~msg:{|["ab";"c"] vs ["a";"bc"]|} (frame_two "ab" "c")
             (frame_two "a" "bc"));
-      prop' "framing two byte strings is injective over the pair"
-        (pair (pair bytes_in bytes_in) (pair bytes_in bytes_in))
+      prop "framing two byte strings is injective over the pair"
+        (Gen.pair
+           (Gen.pair content_gen content_gen)
+           (Gen.pair content_gen content_gen))
         (fun ((a, b), (c, d)) ->
           equal bool ~msg:"framings agree iff the pairs agree"
             (String.equal a c && String.equal b d)
@@ -571,13 +567,13 @@ let derive_derivation =
           differ ~msg:"domain a vs b"
             (derive_hex ~domain:"mentat.digest.test.a" [ "same" ])
             (derive_hex ~domain:"mentat.digest.test.b" [ "same" ]));
-      prop' "key is the truncated hex projection of derive" key_input
+      prop "key is the truncated hex projection of derive" key_input_gen
         (fun (length, parts) ->
           equal string
             (String.take_first length (derive_hex ~domain:key_domain parts))
             (Mentat_digest.key ~length ~domain:key_domain parts));
       test "rejects an empty domain" (fun () ->
-          raises_invalid_arg "Mentat_digest.derive: empty domain" (fun () ->
+          raises (Invalid_argument "Mentat_digest.derive: empty domain") (fun () ->
               Mentat_digest.derive ~domain:"" [ "anchor" ]));
     ]
 
@@ -592,9 +588,9 @@ let content_ref_projections =
                (Mentat_digest.Content_ref.digest
                   (Mentat_digest.Content_ref.of_contents "abc"))
                (Mentat_digest.string "abc")));
-      prop "digest projection equals the string digest (property)" bytes_in
+      prop "digest projection equals the string digest (property)" content_gen
         (fun s ->
-          Mentat_digest.equal
+          equal digest
             (Mentat_digest.Content_ref.digest
                (Mentat_digest.Content_ref.of_contents s))
             (Mentat_digest.string s));
@@ -607,11 +603,12 @@ let content_ref_projections =
           equal int 3
             (Mentat_digest.Content_ref.length
                (Mentat_digest.Content_ref.of_contents "abc")));
-      prop "length projection equals the byte length (property)" bytes_in
+      prop "length projection equals the byte length (property)" content_gen
         (fun s ->
-          Mentat_digest.Content_ref.length
-            (Mentat_digest.Content_ref.of_contents s)
-          = String.length s);
+          equal int
+            (Mentat_digest.Content_ref.length
+               (Mentat_digest.Content_ref.of_contents s))
+            (String.length s));
       test "token is sha256:<hex>:<length>" (fun () ->
           equal string
             ("sha256:" ^ abc_hex ^ ":3")
@@ -627,10 +624,11 @@ let content_ref_projections =
             (Mentat_digest.Content_ref.matches
                (Mentat_digest.Content_ref.of_contents "abc")
                "abc"));
-      prop "matches accepts the referenced content" bytes_in (fun s ->
-          Mentat_digest.Content_ref.matches
-            (Mentat_digest.Content_ref.of_contents s)
-            s);
+      prop "matches accepts the referenced content" content_gen (fun s ->
+          is_true
+            (Mentat_digest.Content_ref.matches
+               (Mentat_digest.Content_ref.of_contents s)
+               s));
       test "matches rejects a same-length one-byte edit" (fun () ->
           let s = "content-under-test" in
           let b = Bytes.of_string s in
@@ -673,9 +671,9 @@ let content_ref_projections =
               is_true ~msg:"error carries the actual reference"
                 (Mentat_digest.Content_ref.equal actual
                    (Mentat_digest.Content_ref.of_contents edited)));
-      prop "verify is Ok exactly when matches is true" bytes_in (fun s ->
+      prop "verify is Ok exactly when matches is true" content_gen (fun s ->
           let r = Mentat_digest.Content_ref.of_contents "abc" in
-          Bool.equal
+          equal bool
             (Result.is_ok (Mentat_digest.Content_ref.verify r s))
             (Mentat_digest.Content_ref.matches r s));
     ]
@@ -709,8 +707,8 @@ let of_token_rejections =
 let of_token_codec =
   group "Content_ref codec: of_token"
     [
-      prop' "round-trips to_token over arbitrary content" content_ref (fun r ->
-          ok content_ref r
+      prop "round-trips to_token over arbitrary content" content_ref_gen (fun r ->
+          equal (result content_ref pass) (Ok r)
             (Mentat_digest.Content_ref.of_token
                (Mentat_digest.Content_ref.to_token r)));
       test "zero-length content round-trips" (fun () ->
@@ -718,7 +716,7 @@ let of_token_codec =
           equal string
             ("sha256:" ^ empty_hex ^ ":0")
             (Mentat_digest.Content_ref.to_token r);
-          ok content_ref r
+          equal (result content_ref pass) (Ok r)
             (Mentat_digest.Content_ref.of_token
                (Mentat_digest.Content_ref.to_token r)));
       test "accepts a max_int length" (fun () ->
@@ -730,7 +728,7 @@ let of_token_codec =
           | Error e ->
               failf "max_int length rejected: %s"
                 (Mentat_digest.Error.message e));
-      cases labelled of_token_rejections "rejects" (fun (_, input) ->
+      cases "rejects" ~name:fst of_token_rejections (fun (_, input) ->
           equal (result content_ref error)
             (Error Mentat_digest.Error.Malformed_content_ref)
             (Mentat_digest.Content_ref.of_token input));
@@ -747,8 +745,8 @@ let content_ref_json =
                (Json.string ("sha256:" ^ abc_hex ^ ":3"))
                (json_encode Mentat_digest.Content_ref.jsont
                   (Mentat_digest.Content_ref.of_contents "abc"))));
-      prop "round-trips a random reference" content_ref (fun r ->
-          Mentat_digest.Content_ref.equal r
+      prop "round-trips a random reference" content_ref_gen (fun r ->
+          equal content_ref r
             (json_decode Mentat_digest.Content_ref.jsont
                (json_encode Mentat_digest.Content_ref.jsont r)));
       test "decode rejects a malformed token with a useful diagnostic"
@@ -806,20 +804,23 @@ let content_ref_order =
             (Mentat_digest.Content_ref.compare r_abc_10 r_abc_11 <> 0);
           is_true ~msg:"digest disagreement orders"
             (Mentat_digest.Content_ref.compare r_abc_10 r_empty_10 <> 0));
-      prop "equal and compare are reflexive" content_ref (fun r ->
-          Mentat_digest.Content_ref.equal r r
-          && Mentat_digest.Content_ref.compare r r = 0);
-      prop "compare = 0 agrees with equal" (pair content_ref content_ref)
+      prop "equal and compare are reflexive" content_ref_gen (fun r ->
+          is_true
+            (Mentat_digest.Content_ref.equal r r
+            && Mentat_digest.Content_ref.compare r r = 0));
+      prop "compare = 0 agrees with equal" (Gen.pair content_ref_gen content_ref_gen)
         (fun (a, b) ->
-          Mentat_digest.Content_ref.compare a b
-          = 0
-          = Mentat_digest.Content_ref.equal a b);
-      prop "compare sign is antisymmetric" (pair content_ref content_ref)
+          is_true
+            (Mentat_digest.Content_ref.compare a b
+            = 0
+            = Mentat_digest.Content_ref.equal a b));
+      prop "compare sign is antisymmetric" (Gen.pair content_ref_gen content_ref_gen)
         (fun (a, b) ->
-          sign (Mentat_digest.Content_ref.compare a b)
-          = -sign (Mentat_digest.Content_ref.compare b a));
-      prop' "compare is a transitive total order"
-        (triple content_ref content_ref content_ref) (fun (a, b, c) ->
+          is_true
+            (sign (Mentat_digest.Content_ref.compare a b)
+            = -sign (Mentat_digest.Content_ref.compare b a)));
+      prop "compare is a transitive total order"
+        (Gen.triple content_ref_gen content_ref_gen content_ref_gen) (fun (a, b, c) ->
           match List.sort Mentat_digest.Content_ref.compare [ a; b; c ] with
           | [ x; y; z ] ->
               is_true

@@ -68,30 +68,32 @@ let%expect_test "file completion presents structured enumeration diagnostics" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-07 |
-08 |                            dev · openai/gpt-5.5 medium
-09 |
-10 |      ▎ welcome — and thanks for trying mentat this early.
-11 |      ▎ it's experimental: sessions and config may change without migration.
-12 |
-13 | ! workspace observation denied
-14 | ────────────────────────────────────────────────────────────────────────────────
-15 | ❯ @
-16 | ────────────────────────────────────────────────────────────────────────────────
-17 |
-18 |                          ! /login — no connected account
-19 |                               ∅ no recent sessions
-20 |
-21 |
-22 |
-23 |
-24 |   ! not logged in · /login · ~/menta… · openai/gpt-5.5 m… · ! full access ? f…|}]
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    07 |
+    08 |                            dev · openai/gpt-5.5 medium
+    09 |
+    10 |      ▎ welcome — and thanks for trying mentat this early.
+    11 |      ▎ it's experimental: sessions and config may change without migration.
+    12 |
+    13 | ! workspace observation denied
+    14 | ────────────────────────────────────────────────────────────────────────────────
+    15 | ❯ @
+    16 | ────────────────────────────────────────────────────────────────────────────────
+    17 |
+    18 |                          ! /login — no connected account
+    19 |                               ∅ no recent sessions
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ! not logged in · /login · ~/menta… · openai/gpt-5.5 m… · ! full access ? f…
+    |}]
 
 (* Every expectation is the complete terminal grid. There are no component
    snapshots here: an overlay that displaces the transcript, composer, footer,
@@ -106,30 +108,32 @@ let%expect_test "unicode input and cursor motion edit the complete composer" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-unicf0dfbe2c
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ 日本語 café 🎉 abXcd
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-unic654e12f8
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ 日本語 café 🎉 abXcd
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…
+    |}]
 
 let%expect_test "a multiline draft clears guardedly and recalls exactly" =
   run_transcript ~name:"composer-multiline" @@ fun t ->
@@ -139,114 +143,122 @@ let%expect_test "a multiline draft clears guardedly and recalls exactly" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-m35f54a07
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 | ────────────────────────────────────────────────────────────────────────────────
-21 | ❯ line one
-22 |   line two
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt-… · ! full access ? for…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-m8d250cd9
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 | ────────────────────────────────────────────────────────────────────────────────
+    21 | ❯ line one
+    22 |   line two
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt-… · ! full access ? for…
+    |}];
   Tui.keys t Key.escape;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-m35f54a07
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 | ────────────────────────────────────────────────────────────────────────────────
-21 | ❯ line one
-22 |   line two
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   press esc again to discard the draft|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-m8d250cd9
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 | ────────────────────────────────────────────────────────────────────────────────
+    21 | ❯ line one
+    22 |   line two
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   press esc again to discard the draft
+    |}];
   Tui.keys t Key.escape;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-m35f54a07
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt-… · ! full access ? for…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-m8d250cd9
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt-… · ! full access ? for…
+    |}];
   Tui.keys t Key.up;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-m35f54a07
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 | ────────────────────────────────────────────────────────────────────────────────
-21 | ❯ line one
-22 |   line two
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt-… · ! full access ? for…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-m8d250cd9
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 | ────────────────────────────────────────────────────────────────────────────────
+    21 | ❯ line one
+    22 |   line two
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt-… · ! full access ? for…
+    |}]
 
 let%expect_test "the textarea keeps the cursor row visible at its height cap" =
   run_transcript ~name:"composer-cursor-reveal" ~size:(52, 18) @@ fun t ->
@@ -267,24 +279,26 @@ let%expect_test "the textarea keeps the cursor row visible at its height cap" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-02 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-03 |  dev · openai/gpt-5.5 medium
-04 |  ~/mentat-tui-composer-cursofca2e409
-05 |
-06 | ❯ say hello
-07 |
-08 | ⏺ Hello from the scripted provider.
-09 |
-10 | ────────────────────────────────────────────────────
-11 | ❯ line three
-12 |   line four
-13 |   line five
-14 |   line six
-15 |   line seven
-16 |   line eight — cursor here
-17 | ────────────────────────────────────────────────────
-18 |   ! not logged in · /log… · open… · ! full access|}]
+    {|
+    01 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    02 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    03 |  dev · openai/gpt-5.5 medium
+    04 |  ~/mentat-tui-composer-curso581c850d
+    05 |
+    06 | ❯ say hello
+    07 |
+    08 | ⏺ Hello from the scripted provider.
+    09 |
+    10 | ────────────────────────────────────────────────────
+    11 | ❯ line three
+    12 |   line four
+    13 |   line five
+    14 |   line six
+    15 |   line seven
+    16 |   line eight — cursor here
+    17 | ────────────────────────────────────────────────────
+    18 |   ! not logged in · /log… · open… · ! full access
+    |}]
 
 let%expect_test "pastes stay inline or become one deletable visual atom" =
   run_transcript ~name:"composer-paste" @@ fun t ->
@@ -292,30 +306,32 @@ let%expect_test "pastes stay inline or become one deletable visual atom" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-compos81de806b
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ naïve — 日本語
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt… · ! full access ? for …|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composc232fc4a
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ naïve — 日本語
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt… · ! full access ? for …
+    |}];
   Tui.keys t Key.escape;
   Tui.settle t;
   Tui.keys t Key.escape;
@@ -324,58 +340,62 @@ let%expect_test "pastes stay inline or become one deletable visual atom" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-compos81de806b
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ [Pasted text #1 +3 lines]
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt… · ! full access ? for …|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composc232fc4a
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ [Pasted text #1 +3 lines]
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt… · ! full access ? for …
+    |}];
   Tui.keys t Key.backspace;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-compos81de806b
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt… · ! full access ? for …|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composc232fc4a
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt… · ! full access ? for …
+    |}]
 
 let%expect_test "question mark opens and escape closes the full shortcuts sheet"
     =
@@ -384,58 +404,62 @@ let%expect_test "question mark opens and escape closes the full shortcuts sheet"
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-compo9b600e59
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 | ────────────────────────────────────────────────────────────────────────────────
-11 | ❯ message mentat
-12 | ────────────────────────────────────────────────────────────────────────────────
-13 | composer       history
-14 | /  commands    shift+enter  newline
-15 | @  file paths  ↑ ↓          prompt history
-16 | !  shell mode  ctrl+r       search history
-17 | ?  this help   esc esc      interrupt turn
-18 | controls
-19 | tab              focus agents
-20 | ctrl+o           verbose reasoning
-21 | shift+tab        switch build/plan mode
-22 | pageup pagedown  scroll
-23 | ctrl+c ctrl+c    quit
-24 |   ! not logged in · /login · ~/mentat-… · openai/gpt-… · ! full access ? for …|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-compod36aedf6
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 | ────────────────────────────────────────────────────────────────────────────────
+    11 | ❯ message mentat
+    12 | ────────────────────────────────────────────────────────────────────────────────
+    13 | composer       history
+    14 | /  commands    shift+enter  newline
+    15 | @  file paths  ↑ ↓          prompt history
+    16 | !  shell mode  ctrl+r       search history
+    17 | ?  this help   esc esc      interrupt turn
+    18 | controls
+    19 | tab              focus agents
+    20 | ctrl+o           verbose reasoning
+    21 | shift+tab        switch build/plan mode
+    22 | pageup pagedown  scroll
+    23 | ctrl+c ctrl+c    quit
+    24 |   ! not logged in · /login · ~/mentat-… · openai/gpt-… · ! full access ? for …
+    |}];
   Tui.keys t Key.escape;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-compo9b600e59
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-… · openai/gpt-… · ! full access ? for …|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-compod36aedf6
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-… · openai/gpt-… · ! full access ? for …
+    |}]
 
 let%expect_test "slash completion shows the catalog and filtered result" =
   run_transcript ~name:"composer-commands" @@ fun t ->
@@ -443,58 +467,62 @@ let%expect_test "slash completion shows the catalog and filtered result" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-cc84a142
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 | ❯ /clear      Start a new session with empty context; previous ...
-17 |   /fork       Fork current session
-18 |   /rewind     Jump back to an earlier message and resubmit
-19 |   /undo       Undo the last turn: revert its files and reload i...
-20 |   /redo       Redo an undone turn, restoring its files and mess...
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ /
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt-… · ! full access ? for…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-5802f0a8
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 | ❯ /clear      Start a new session with empty context; previous ...
+    17 |   /fork       Fork current session
+    18 |   /rewind     Jump back to an earlier message and resubmit
+    19 |   /undo       Undo the last turn: revert its files and reload i...
+    20 |   /redo       Redo an undone turn, restoring its files and mess...
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ /
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt-… · ! full access ? for…
+    |}];
   Tui.keys t "q";
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-cc84a142
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 | ❯ /quit   Exit Mentat
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ /q
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt-… · ! full access ? for…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-5802f0a8
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 | ❯ /quit   Exit Mentat
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ /q
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt-… · ! full access ? for…
+    |}]
 
 let%expect_test "enter submits an unmatched slash draft as an ordinary prompt" =
   let prompt = "/tmp/build.log has the error, can you look" in
@@ -511,30 +539,32 @@ let%expect_test "enter submits an unmatched slash draft as an ordinary prompt" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-command-mise74aae87
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 | ❯ /tmp/build.log has the error, can you look
-10 |
-11 | ⏺ I can inspect that build log.
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tui… · openai/gpt… · ! full access ? fo…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-command-mise0dc5b5f
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 | ❯ /tmp/build.log has the error, can you look
+    10 |
+    11 | ⏺ I can inspect that build log.
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tui… · openai/gpt… · ! full access ? fo…
+    |}]
 
 let%expect_test "an unmatched slash filter closes without losing the draft" =
   run_transcript ~name:"composer-command-miss" @@ fun t ->
@@ -542,142 +572,152 @@ let%expect_test "an unmatched slash filter closes without losing the draft" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-commb3676e24
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |   no matching commands
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ /qzz
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-comm10b12af0
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |   no matching commands
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ /qzz
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…
+    |}];
   Tui.keys t Key.escape;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-commb3676e24
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ /qzz
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-comm10b12af0
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ /qzz
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…
+    |}];
   Tui.keys t Key.escape;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-commb3676e24
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ /qzz
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   press esc again to discard the draft|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-comm10b12af0
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ /qzz
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   press esc again to discard the draft
+    |}];
   Tui.keys t Key.escape;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-commb3676e24
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-comm10b12af0
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…
+    |}];
   Tui.keys t Key.up;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-commb3676e24
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |   no matching commands
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ /qzz
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-comm10b12af0
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |   no matching commands
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ /qzz
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…
+    |}]
 
 let%expect_test "control-c on an empty draft arms quit and visibly expires" =
   run_transcript ~name:"composer-quit-arming" @@ fun t ->
@@ -685,144 +725,154 @@ let%expect_test "control-c on an empty draft arms quit and visibly expires" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-quifbdbc7e1
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   press ctrl+c again to quit|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-quifd9dcc23
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   press ctrl+c again to quit
+    |}];
   Tui.advance t 2.;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-quifbdbc7e1
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-quifd9dcc23
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…
+    |}]
 
 let%expect_test
     "blank and Unicode-whitespace Enter leave the complete screen unchanged" =
   run_transcript ~name:"composer-blank-enter" @@ fun t ->
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-bla818c3602
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-bla20058acc
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…
+    |}];
   Tui.enter t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-bla818c3602
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-bla20058acc
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…
+    |}];
   Tui.keys t "\u{00A0}\u{2003}\u{202F}";
   Tui.enter t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-bla818c3602
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-bla20058acc
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…
+    |}]
 
 let%expect_test "control-c discards a draft once and up recalls it" =
   run_transcript ~name:"composer-control-c" @@ fun t ->
@@ -832,58 +882,62 @@ let%expect_test "control-c discards a draft once and up recalls it" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-caa86de10
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt-… · ! full access ? for…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-c790ecf49
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt-… · ! full access ? for…
+    |}];
   Tui.keys t Key.up;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-caa86de10
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ discard me
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt-… · ! full access ? for…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-c790ecf49
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ discard me
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt-… · ! full access ? for…
+    |}]
 
 let%expect_test "history walk reaches loaded prompts and restores the draft" =
   let history = history [ "alpha prompt" ] in
@@ -894,114 +948,122 @@ let%expect_test "history walk reaches loaded prompts and restores the draft" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-histor824b3cac
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ say hello
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-histor48184033
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ say hello
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…
+    |}];
   Tui.keys t Key.up;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-histor824b3cac
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ alpha prompt
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-histor48184033
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ alpha prompt
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…
+    |}];
   Tui.keys t Key.down;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-histor824b3cac
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ say hello
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-histor48184033
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ say hello
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…
+    |}];
   Tui.keys t Key.down;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-histor824b3cac
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ working draft
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-histor48184033
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ working draft
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…
+    |}]
 
 let%expect_test "reverse search renders and inserts its selected prompt" =
   let history = history [ "beta two"; "alpha one" ] in
@@ -1010,86 +1072,92 @@ let%expect_test "reverse search renders and inserts its selected prompt" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-historfae10ac7
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 | reverse-i-search:
-19 | ❯ alpha one
-20 |   beta two
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ⌕ search history
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ↵ insert · esc cancel · type to search                             ⌕ history|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-historc55ec91e
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 | reverse-i-search:
+    19 | ❯ alpha one
+    20 |   beta two
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ⌕ search history
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ↵ insert · esc cancel · type to search                             ⌕ history
+    |}];
   Tui.keys t "bt";
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-historfae10ac7
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 | reverse-i-search: bt
-20 | ❯ beta two
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ⌕ bt
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ↵ insert · esc cancel · type to search                             ⌕ history|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-historc55ec91e
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 | reverse-i-search: bt
+    20 | ❯ beta two
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ⌕ bt
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ↵ insert · esc cancel · type to search                             ⌕ history
+    |}];
   Tui.enter t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-historfae10ac7
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ beta two
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-historc55ec91e
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ beta two
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…
+    |}]
 
 let%expect_test "reverse search reaches a record older than 200 entries" =
   let oldest = "sentinel entry older than 200" in
@@ -1104,30 +1172,32 @@ let%expect_test "reverse search reaches a record older than 200 entries" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-historfae10ac7
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 | reverse-i-search: sentinel
-20 | ❯ sentinel entry older than 200
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ⌕ sentinel
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ↵ insert · esc cancel · type to search                             ⌕ history|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-historc55ec91e
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 | reverse-i-search: sentinel
+    20 | ❯ sentinel entry older than 200
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ⌕ sentinel
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ↵ insert · esc cancel · type to search                             ⌕ history
+    |}]
 
 let%expect_test "escape from reverse search restores the borrowed draft" =
   let history = history [ "beta two"; "alpha one" ] in
@@ -1138,58 +1208,62 @@ let%expect_test "escape from reverse search restores the borrowed draft" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-histor3aa14b11
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 | reverse-i-search:
-19 | ❯ alpha one
-20 |   beta two
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ⌕ search history
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ↵ insert · esc cancel · type to search                             ⌕ history|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-histor9283bcbd
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 | reverse-i-search:
+    19 | ❯ alpha one
+    20 |   beta two
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ⌕ search history
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ↵ insert · esc cancel · type to search                             ⌕ history
+    |}];
   Tui.keys t Key.escape;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-histor3aa14b11
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ keep me
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-histor9283bcbd
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ keep me
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…
+    |}]
 
 let%expect_test "reverse search renders its no-match state" =
   let history = history [ "alpha one" ] in
@@ -1200,58 +1274,62 @@ let%expect_test "reverse search renders its no-match state" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-histb70819ab
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 | reverse-i-search: zzq
-20 |   no matching prompts
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ⌕ zzq
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ↵ insert · esc cancel · type to search                             ⌕ history|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-hist9deb5159
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 | reverse-i-search: zzq
+    20 |   no matching prompts
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ⌕ zzq
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ↵ insert · esc cancel · type to search                             ⌕ history
+    |}];
   Tui.enter t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-histb70819ab
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ zzq
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-hist9deb5159
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ zzq
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…
+    |}]
 
 (* A bare [@] stays quiet: it lists only the root's children, directories
    first. A typed query matches recursively — a nested file surfaces without
@@ -1268,228 +1346,244 @@ let%expect_test
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mentio387168e8
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 | ❯ +  lib/
-19 |   +  dune-project
-20 |   +  readme.md
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ @
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mentiod5fefcb7
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 | ❯ +  lib/
+    19 |   +  dune-project
+    20 |   +  readme.md
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ @
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…
+    |}];
   Tui.keys t "bar";
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mentio387168e8
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 | ❯ +  lib/sub/bar.ml
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ @bar
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mentiod5fefcb7
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 | ❯ +  lib/sub/bar.ml
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ @bar
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…
+    |}];
   List.iter (fun _ -> Tui.keys t Key.backspace) [ (); (); () ];
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mentio387168e8
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 | ❯ +  lib/
-19 |   +  dune-project
-20 |   +  readme.md
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ @
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mentiod5fefcb7
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 | ❯ +  lib/
+    19 |   +  dune-project
+    20 |   +  readme.md
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ @
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…
+    |}];
   Tui.keys t Key.tab;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mentio387168e8
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 | ❯ +  lib/sub/
-20 |   +  lib/foo.ml
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ @lib/
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mentiod5fefcb7
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 | ❯ +  lib/sub/
+    20 |   +  lib/foo.ml
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ @lib/
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…
+    |}];
   Tui.keys t Key.tab;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mentio387168e8
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 | ❯ +  lib/sub/bar.ml
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ @lib/sub/
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mentiod5fefcb7
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 | ❯ +  lib/sub/bar.ml
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ @lib/sub/
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…
+    |}];
   Tui.keys t "zzz";
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mentio387168e8
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |   no matching files
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ @lib/sub/zzz
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mentiod5fefcb7
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |   no matching files
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ @lib/sub/zzz
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…
+    |}];
   Tui.keys t Key.escape;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mentio387168e8
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ @lib/sub/zzz
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mentiod5fefcb7
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ @lib/sub/zzz
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…
+    |}];
   List.iter
     (fun _ -> Tui.keys t Key.backspace)
     [ (); (); (); (); (); (); (); (); (); (); (); () ];
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mentio387168e8
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mentiod5fefcb7
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…
+    |}]
 
 let%expect_test "file completion inserts an atomic reference and closes" =
   run_transcript ~name:"composer-mention-insert" ~enumerate_files
@@ -1499,58 +1593,62 @@ let%expect_test "file completion inserts an atomic reference and closes" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mentiob7905d9b
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 | ❯ +  readme.md
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ @readme
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mentiodd10235a
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 | ❯ +  readme.md
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ @readme
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…
+    |}];
   Tui.enter t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mentiob7905d9b
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ @readme.md
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mentiodd10235a
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ @readme.md
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…
+    |}]
 
 let%expect_test "without enumeration capability an at-sign remains free text" =
   run_transcript ~name:"composer-mention-fallback" @@ fun t ->
@@ -1558,30 +1656,32 @@ let%expect_test "without enumeration capability an at-sign remains free text" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mention-71f3c581
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ @readme
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mention-c07c5022
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ @readme
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…
+    |}]
 
 let%expect_test "without shell capability an exclamation remains prompt text" =
   run_transcript ~name:"composer-shell-fallback" @@ fun t ->
@@ -1589,30 +1689,32 @@ let%expect_test "without shell capability an exclamation remains prompt text" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-shell-e0ea1634
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ !echo ordinary
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-shell-5f60f992
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ !echo ordinary
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…
+    |}]
 
 let%expect_test "shell mode keeps one editor through discard and recall" =
   run_transcript ~name:"composer-shell-recall" ~local_shell:true @@ fun t ->
@@ -1620,170 +1722,182 @@ let%expect_test "shell mode keeps one editor through discard and recall" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-shel0f7fc904
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ! shell command
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   esc exit shell · ↵ run                                               ! shell|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-shel986d2ba0
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ! shell command
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   esc exit shell · ↵ run                                               ! shell
+    |}];
   Tui.keys t Key.escape;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-shel0f7fc904
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-shel986d2ba0
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…
+    |}];
   Tui.keys t "!echo composer-marker";
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-shel0f7fc904
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ! echo composer-marker
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   esc exit shell · ↵ run                                               ! shell|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-shel986d2ba0
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ! echo composer-marker
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   esc exit shell · ↵ run                                               ! shell
+    |}];
   Tui.keys t Key.escape;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-shel0f7fc904
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ! echo composer-marker
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   press esc again to discard the draft|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-shel986d2ba0
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ! echo composer-marker
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   press esc again to discard the draft
+    |}];
   Tui.keys t Key.escape;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-shel0f7fc904
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-shel986d2ba0
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…
+    |}];
   Tui.keys t Key.up;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-shel0f7fc904
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ! echo composer-marker
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   esc exit shell · ↵ run                                               ! shell|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-shel986d2ba0
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ! echo composer-marker
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   esc exit shell · ↵ run                                               ! shell
+    |}]
 
 let%expect_test "shift-tab dresses plan mode and returns to build mode" =
   run_transcript ~name:"composer-mode" ~size:(52, 18) @@ fun t ->
@@ -1791,46 +1905,50 @@ let%expect_test "shift-tab dresses plan mode and returns to build mode" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-04 |  dev · openai/gpt-5.5 medium
-05 |  ~/mentat-tui-compo6cf8379c
-06 |
-07 | ❯ say hello
-08 |
-09 | ⏺ Hello from the scripted provider.
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |  ⏸ plan ────────────────────────────────────────────
-16 | ❯ message mentat
-17 | ────────────────────────────────────────────────────
-18 |   ! not logged in · /log… · open… · ! full access|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    04 |  dev · openai/gpt-5.5 medium
+    05 |  ~/mentat-tui-compoc5cb222d
+    06 |
+    07 | ❯ say hello
+    08 |
+    09 | ⏺ Hello from the scripted provider.
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |  ⏸ plan ────────────────────────────────────────────
+    16 | ❯ message mentat
+    17 | ────────────────────────────────────────────────────
+    18 |   ! not logged in · /log… · open… · ! full access
+    |}];
   Tui.keys t Key.shift_tab;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-04 |  dev · openai/gpt-5.5 medium
-05 |  ~/mentat-tui-compo6cf8379c
-06 |
-07 | ❯ say hello
-08 |
-09 | ⏺ Hello from the scripted provider.
-10 |
-11 |
-12 |
-13 |
-14 |
-15 | ────────────────────────────────────────────────────
-16 | ❯ message mentat
-17 | ────────────────────────────────────────────────────
-18 |   ! not logged in · /log… · open… · ! full access|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    04 |  dev · openai/gpt-5.5 medium
+    05 |  ~/mentat-tui-compoc5cb222d
+    06 |
+    07 | ❯ say hello
+    08 |
+    09 | ⏺ Hello from the scripted provider.
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 | ────────────────────────────────────────────────────
+    16 | ❯ message mentat
+    17 | ────────────────────────────────────────────────────
+    18 |   ! not logged in · /log… · open… · ! full access
+    |}]
 
 let%expect_test "a local shell interrupt requires two escape gestures" =
   run_transcript ~name:"composer-shell-correlation" ~local_shell:true
@@ -1842,30 +1960,32 @@ let%expect_test "a local shell interrupt requires two escape gestures" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-shell-cor78074d0a
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   press esc again to interrupt|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-shell-core95689e5
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   press esc again to interrupt
+    |}];
   Tui.keys t Key.escape;
   Tui.settle t;
   Tui.fail_local_shell t (Mentat_diagnostic.of_text "cancelled by fixture");
@@ -1886,30 +2006,32 @@ let%expect_test "a local shell completion is stale after local clear" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-shell-sta6a290519
-04 |
-05 |   conversation cleared · session session-visual-00001 remains saved
-06 |
-07 |
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt-… · ! full acce… ? for…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-shell-sta37f67801
+    04 |
+    05 |   conversation cleared · session session-visual-00001 remains saved
+    06 |
+    07 |
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt-… · ! full acce… ? for…
+    |}]
 
 let%expect_test "a local shell completion is stale after session replacement" =
   Tui.run ~name:"composer-shell-stale-session" ~local_shell:true
@@ -1930,29 +2052,30 @@ let%expect_test "a local shell completion is stale after session replacement" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-shell-stale945980e5
-04 |
-05 | ❯ say hello
-06 |
-07 | ⏺ Hello from the scripted provider.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tui… · openai/gpt… · ! full access ? fo…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-shell-staleae627b79
+    04 |
+    05 | ❯ say hello
+    06 |
+    07 | ⏺ Hello from the scripted provider.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tui… · openai/gpt… · ! full access ? fo…
+    |}]
 
-[%%run_tests "mentat.tui.composer"]

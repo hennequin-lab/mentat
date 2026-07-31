@@ -704,16 +704,16 @@ module Cr_tests = struct
       | Cr.Error.Stale_occurrence ->
           Format.pp_print_string ppf "Stale_occurrence"
     in
-    testable ~pp ~equal:( = ) ()
+    Testable.make ~pp ~equal:( = )
 
-  let handle_value = testable ~pp:Cr.Handle.pp ~equal:Cr.Handle.equal ()
-  let status_value = testable ~pp:Cr.Status.pp ~equal:Cr.Status.equal ()
+  let handle_value = Testable.make ~pp:Cr.Handle.pp ~equal:Cr.Handle.equal
+  let status_value = Testable.make ~pp:Cr.Status.pp ~equal:Cr.Status.equal
 
   (* CR digests are [Mentat_digest.Content_ref.t] values whose canonical token is
    [sha256:<64 hex>:<byte length>]. The token grammar is covered by
    [test_digest]; here we assert that CR values produce well-formed references
    and use them for equality. *)
-  let digest_value = testable ~pp:Content_ref.pp ~equal:Content_ref.equal ()
+  let digest_value = Testable.make ~pp:Content_ref.pp ~equal:Content_ref.equal
 
   let is_hex64 s =
     String.length s = 64
@@ -731,7 +731,7 @@ module Cr_tests = struct
       (Printf.sprintf "sha256:%s:%d" digest_hex (Content_ref.length identity))
       (Content_ref.to_token identity)
 
-  let syntax_value = testable ~pp:Cr.Syntax.pp ~equal:Cr.Syntax.equal ()
+  let syntax_value = Testable.make ~pp:Cr.Syntax.pp ~equal:Cr.Syntax.equal
 
   let rel path =
     match Path.Rel.of_string path with
@@ -1207,15 +1207,11 @@ module Cr_tests = struct
     equal string ~msg:"rendered comment parses canonically" (Cr.to_string cr)
       (Cr.to_string (parse (Cr.to_string cr)))
 
-  let handle_text =
-    testable ~pp:Format.pp_print_string ~equal:String.equal
-      ~gen:(Gen.string_size (Gen.int_range 1 8) (Gen.char_range 'a' 'z'))
-      ()
+  let handle_text_gen =
+    Gen.string_of ~size:(Gen.int_range 1 8) (Gen.char_range 'a' 'z')
 
-  let body_text =
-    testable ~pp:Format.pp_print_string ~equal:String.equal
-      ~gen:(Gen.string_size (Gen.int_range 1 30) (Gen.char_range 'a' 'z'))
-      ()
+  let body_text_gen =
+    Gen.string_of ~size:(Gen.int_range 1 30) (Gen.char_range 'a' 'z')
 
   let suite =
     [
@@ -1226,8 +1222,8 @@ module Cr_tests = struct
             comment_construction_and_resolution;
           test "parses and renders source syntax" parsing_and_rendering;
           test "digests comments" digest_validation;
-          prop' "rendered comments parse back"
-            (triple bool (option handle_text) body_text)
+          prop "rendered comments parse back"
+            (Gen.triple Gen.bool (Gen.option handle_text_gen) body_text_gen)
             rendered_comments_parse_back;
         ];
       group "source syntax"
@@ -1264,7 +1260,7 @@ end
 (* Commands *)
 
 let command_value =
-  testable ~pp:Review.Command.pp ~equal:Review.Command.equal ()
+  Testable.make ~pp:Review.Command.pp ~equal:Review.Command.equal
 
 let command_round_trip () =
   let review = simple_review () in
@@ -1344,7 +1340,7 @@ let command_apply_matches_transforms () =
 
 (* View *)
 
-let view_value = testable ~pp:Review.View.pp ~equal:Review.View.equal ()
+let view_value = Testable.make ~pp:Review.View.pp ~equal:Review.View.equal
 
 let view_projects_review () =
   let review = simple_review () in

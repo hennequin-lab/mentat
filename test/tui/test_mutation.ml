@@ -94,88 +94,94 @@ let%expect_test
   settle_turn t "update the release notes";
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-mutatic7dd2bcf.home/mentat-tui…
-04 |
-05 | ❯ update the release notes
-06 |
-07 | ⏺ Create
-08 |   ⎿  Wrote 2 lines
-09 |
-10 | ⏺ Edit
-11 |   ⎿  Updated 1 file (+1, -1)
-12 |
-13 | ⏺ The release notes and answer are updated.
-14 |
-15 | ⊙ workspace changed · 2 files · +3 −1 · revert available
-16 |
-17 |
-18 |
-19 |
-20 |   Δ 2 changes · +3 −1 · ctrl+d opens latest
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · /tmp/mentat-t… · openai/gpt… · ! full access ? f…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-mutati2d6750f0.home/mentat-tui…
+    04 |
+    05 | ❯ update the release notes
+    06 |
+    07 | ⏺ Create
+    08 |   ⎿  Wrote 2 lines
+    09 |
+    10 | ⏺ Edit
+    11 |   ⎿  Updated 1 file (+1, -1)
+    12 |
+    13 | ⏺ The release notes and answer are updated.
+    14 |
+    15 | ⊙ workspace changed · 2 files · +3 −1 · revert available
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |   Δ 2 changes · +3 −1 · ctrl+d opens latest
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · /tmp/mentat-t… · openai/gpt… · ! full access ? f…
+    |}];
   Tui.keys t "please keep this draft";
   Tui.settle t;
   Tui.keys t "\004";
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 | ────────────────────────────────────────────────────────────────────────────────
-02 | Review  HEAD..worktree                                    0/2 reviewed · pending
-03 |    [ ] CHANGELOG.md           A │lib/math.ml · unreviewed · +1 −1
-04 |  ▾ lib                          │ 1 - let answer = 41
-05 |    ❯ [ ] math.ml              M │ 1 + let answer = 42
-06 |                                 │ 2   let stable = true
-07 |                                 │
-08 |                                 │
-09 |                                 │
-10 |                                 │
-11 |                                 │
-12 |                                 │
-13 |                                 │
-14 |                                 │
-15 |                                 │
-16 |                                 │
-17 |                                 │
-18 |                                 │
-19 |                                 │
-20 |                                 │
-21 |                                 │
-22 |                                 │
-23 |
-24 | tab focus diff · space mark · enter open · c comment · a approve · esc close|}];
+    {|
+    01 | ────────────────────────────────────────────────────────────────────────────────
+    02 | Review  HEAD..worktree                                    0/2 reviewed · pending
+    03 |    [ ] CHANGELOG.md           A │lib/math.ml · unreviewed · +1 −1
+    04 |  ▾ lib                          │ 1 - let answer = 41
+    05 |    ❯ [ ] math.ml              M │ 1 + let answer = 42
+    06 |                                 │ 2   let stable = true
+    07 |                                 │
+    08 |                                 │
+    09 |                                 │
+    10 |                                 │
+    11 |                                 │
+    12 |                                 │
+    13 |                                 │
+    14 |                                 │
+    15 |                                 │
+    16 |                                 │
+    17 |                                 │
+    18 |                                 │
+    19 |                                 │
+    20 |                                 │
+    21 |                                 │
+    22 |                                 │
+    23 |
+    24 | tab focus diff · space mark · enter open · c comment · a approve · esc close
+    |}];
   Tui.keys t Key.escape;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-mutatic7dd2bcf.home/mentat-tui…
-04 |
-05 | ❯ update the release notes
-06 |
-07 | ⏺ Create
-08 |   ⎿  Wrote 2 lines
-09 |
-10 | ⏺ Edit
-11 |   ⎿  Updated 1 file (+1, -1)
-12 |
-13 | ⏺ The release notes and answer are updated.
-14 |
-15 | ⊙ workspace changed · 2 files · +3 −1 · revert available
-16 |
-17 |
-18 |
-19 |
-20 |   Δ 2 changes · +3 −1 · ctrl+d opens latest
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ please keep this draft
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · /tmp/mentat-t… · openai/gpt… · ! full access ? f…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-mutati2d6750f0.home/mentat-tui…
+    04 |
+    05 | ❯ update the release notes
+    06 |
+    07 | ⏺ Create
+    08 |   ⎿  Wrote 2 lines
+    09 |
+    10 | ⏺ Edit
+    11 |   ⎿  Updated 1 file (+1, -1)
+    12 |
+    13 | ⏺ The release notes and answer are updated.
+    14 |
+    15 | ⊙ workspace changed · 2 files · +3 −1 · revert available
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |   Δ 2 changes · +3 −1 · ctrl+d opens latest
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ please keep this draft
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · /tmp/mentat-t… · openai/gpt… · ! full access ? f…
+    |}]
 
 (* An ambiguous callback may have no exact transition while the mutation owner
    still reports paths observed inside its scope. The complete settled frame is
@@ -199,30 +205,32 @@ let%expect_test "ambiguous observed-only mutation evidence stays explicit" =
   settle_turn t "refresh the generated index";
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-mutation-744e4b13.home/mentat-…
-04 |
-05 | ❯ refresh the generated index
-06 |
-07 | ⏺ Opaque_workspace_writer
-08 |   ⎿  outcome unknown; the tool may have run
-09 |
-10 | ⏺ The index refresh could not be confirmed.
-11 |
-12 | ⊙ workspace may still be changing · 1 path observed · revert incomplete
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · /tmp/mentat-tu… · openai/gp… · ! full access ? f…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-mutation-6f7c2d2a.home/mentat-…
+    04 |
+    05 | ❯ refresh the generated index
+    06 |
+    07 | ⏺ Opaque_workspace_writer
+    08 |   ⎿  outcome unknown; the tool may have run
+    09 |
+    10 | ⏺ The index refresh could not be confirmed.
+    11 |
+    12 | ⊙ workspace may still be changing · 1 path observed · revert incomplete
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · /tmp/mentat-tu… · openai/gp… · ! full access ? f…
+    |}]
 
 let resumed_id = Session.Id.of_string "session-mutation-recovery"
 
@@ -245,29 +253,30 @@ let%expect_test "a resumed possibly-mutating session shows the recovery warning"
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-mutation-0dab18e2.home/mentat-…
-04 |
-05 |
-06 |
-07 |
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |   ! recovered session may still have a workspace mutation in flight
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · /tmp/ment… · openai/gpt-5.5 … · ! full access ? …|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-mutation-54ee6697.home/mentat-…
+    04 |
+    05 |
+    06 |
+    07 |
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |   ! recovered session may still have a workspace mutation in flight
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · /tmp/ment… · openai/gpt-5.5 … · ! full access ? …
+    |}]
 
-[%%run_tests "mentat.tui.mutation"]

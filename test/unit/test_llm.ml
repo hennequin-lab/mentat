@@ -11,7 +11,7 @@ module Stop = Response.Stop
 (* Assertion and codec helpers *)
 
 let opaque name =
-  testable ~pp:(fun ppf _ -> Format.pp_print_string ppf name) ~equal:( = ) ()
+  Testable.make ~pp:(fun ppf _ -> Format.pp_print_string ppf name) ~equal:( = )
 
 (* Only checks that [Invalid_argument] is raised, not its message, so tests do
    not couple to diagnostic wording. *)
@@ -76,36 +76,28 @@ let equal_json msg expected actual = is_true ~msg (Json.equal expected actual)
 
 (* Testables *)
 
-let provider_t = testable ~pp:Provider.pp ~equal:Provider.equal ()
-let api_t = testable ~pp:Model.Api.pp ~equal:Model.Api.equal ()
-let model_t = testable ~pp:Model.pp ~equal:Model.equal ()
-let usage_t = testable ~pp:Usage.pp ~equal:Usage.equal ()
-let error_t = testable ~pp:Error.pp ~equal:Error.equal ()
-let stop_t = testable ~pp:Stop.pp ~equal:( = ) ()
+let provider_t = Testable.make ~pp:Provider.pp ~equal:Provider.equal
+let api_t = Testable.make ~pp:Model.Api.pp ~equal:Model.Api.equal
+let model_t = Testable.make ~pp:Model.pp ~equal:Model.equal
+let usage_t = Testable.make ~pp:Usage.pp ~equal:Usage.equal
+let error_t = Testable.make ~pp:Error.pp ~equal:Error.equal
+let stop_t = Testable.make ~pp:Stop.pp ~equal:( = )
 
 let call_t =
-  testable
-    ~pp:(fun ppf _ -> Format.pp_print_string ppf "<call>")
-    ~equal:Tool.Call.equal ()
+  Testable.make ~pp:(fun ppf _ -> Format.pp_print_string ppf "<call>") ~equal:Tool.Call.equal
 
 let result_t =
-  testable
-    ~pp:(fun ppf _ -> Format.pp_print_string ppf "<result>")
-    ~equal:Tool.Result.equal ()
+  Testable.make ~pp:(fun ppf _ -> Format.pp_print_string ppf "<result>") ~equal:Tool.Result.equal
 
 let message_t =
-  testable
-    ~pp:(fun ppf _ -> Format.pp_print_string ppf "<message>")
-    ~equal:Message.equal ()
+  Testable.make ~pp:(fun ppf _ -> Format.pp_print_string ppf "<message>") ~equal:Message.equal
 
 let response_t =
-  testable
-    ~pp:(fun ppf _ -> Format.pp_print_string ppf "<response>")
-    ~equal:Response.equal ()
+  Testable.make ~pp:(fun ppf _ -> Format.pp_print_string ppf "<response>") ~equal:Response.equal
 
-let digest_t = testable ~pp:Mentat_digest.pp ~equal:Mentat_digest.equal ()
-let transcript_error_t = testable ~pp:Transcript.Error.pp ~equal:( = ) ()
-let request_error_t = testable ~pp:Request.Error.pp ~equal:( = ) ()
+let digest_t = Testable.make ~pp:Mentat_digest.pp ~equal:Mentat_digest.equal
+let transcript_error_t = Testable.make ~pp:Transcript.Error.pp ~equal:( = )
+let request_error_t = Testable.make ~pp:Request.Error.pp ~equal:( = )
 let phase_t = opaque "phase"
 
 (* Fixtures *)
@@ -181,26 +173,22 @@ let printable = Gen.char_range ' ' '~'
 (* Non-empty, valid-UTF-8 (ASCII) text: safe for both JSON-tree and text
    round-trips. Byte-sensitivity over NUL and high bytes is exercised by
    dedicated example tests, not by generators, so serialisation cannot break. *)
-let free_text = Gen.string_size (Gen.int_range 1 12) printable
-let word = Gen.string_size (Gen.int_range 1 8) printable
+let free_text = Gen.string_of ~size:(Gen.int_range 1 12) printable
+let word = Gen.string_of ~size:(Gen.int_range 1 8) printable
 
 (* NUL-weighted text, used only where the digest is computed directly (no JSON
    serialisation): windtrap's default char generator effectively never emits
    NUL, so it is given explicit weight here (repo convention for byte-sensitive
    properties). *)
 let nul_text =
-  Gen.string_size (Gen.int_range 1 12)
+  Gen.string_of ~size:(Gen.int_range 1 12)
     (Gen.frequency [ (1, Gen.pure '\000'); (9, printable) ])
 
-let nul_text_t =
-  testable
-    ~pp:(fun ppf s -> Format.fprintf ppf "%S" s)
-    ~equal:String.equal ~gen:nul_text ()
 
 let provider_gen =
   let+ first = lower
   and+ rest =
-    Gen.string_size (Gen.int_range 0 6)
+    Gen.string_of ~size:(Gen.int_range 0 6)
       (Gen.frequency [ (5, lower); (2, digit); (1, Gen.pure '-') ])
   in
   Provider.make (String.make 1 first ^ rest)
@@ -208,20 +196,20 @@ let provider_gen =
 let api_component =
   let+ first = lower
   and+ rest =
-    Gen.string_size (Gen.int_range 0 4)
+    Gen.string_of ~size:(Gen.int_range 0 4)
       (Gen.frequency [ (5, lower); (2, digit); (1, Gen.pure '-') ])
   in
   String.make 1 first ^ rest
 
 let api_gen =
-  let+ components = Gen.list_size (Gen.int_range 1 3) api_component in
+  let+ components = Gen.list ~size:(Gen.int_range 1 3) api_component in
   Model.Api.make (String.concat "." components)
 
 let model_gen =
   let+ provider = provider_gen and+ api = api_gen and+ id = word in
   Model.make ~provider ~api ~id
 
-let media_type = Gen.oneofl [ "image/png"; "image/jpeg"; "application/pdf" ]
+let media_type = Gen.of_list [ "image/png"; "image/jpeg"; "application/pdf" ]
 
 let content_gen =
   Gen.frequency
@@ -242,9 +230,7 @@ let content_gen =
     ]
 
 let content_t =
-  testable
-    ~pp:(fun ppf _ -> Format.pp_print_string ppf "<content>")
-    ~equal:( = ) ~gen:content_gen ()
+  Testable.make ~pp:(fun ppf _ -> Format.pp_print_string ppf "<content>") ~equal:( = )
 
 let tool_first = Gen.frequency [ (6, lower); (1, Gen.pure '_') ]
 
@@ -253,7 +239,7 @@ let tool_rest =
 
 let tool_name_gen =
   let+ first = tool_first
-  and+ rest = Gen.string_size (Gen.int_range 0 8) tool_rest in
+  and+ rest = Gen.string_of ~size:(Gen.int_range 0 8) tool_rest in
   String.make 1 first ^ rest
 
 let input_json_gen =
@@ -278,7 +264,7 @@ let call_gen =
 let result_gen =
   let+ c = call_gen
   and+ error = Gen.bool
-  and+ content = Gen.list_size (Gen.int_range 0 3) content_gen in
+  and+ content = Gen.list ~size:(Gen.int_range 0 3) content_gen in
   Tool.Result.make ~error c content
 
 let tool_gen =
@@ -316,7 +302,7 @@ let assistant_gen =
     [
       (1, Gen.pure Message.Assistant.empty);
       ( 5,
-        let+ parts = Gen.list_size (Gen.int_range 1 4) assistant_part_gen in
+        let+ parts = Gen.list ~size:(Gen.int_range 1 4) assistant_part_gen in
         Message.Assistant.make parts );
     ]
 
@@ -330,7 +316,7 @@ let message_gen =
         let+ s = free_text in
         Message.developer s );
       ( 2,
-        let+ content = Gen.list_size (Gen.int_range 1 3) content_gen in
+        let+ content = Gen.list ~size:(Gen.int_range 1 3) content_gen in
         Message.user content );
       ( 2,
         let+ a = assistant_gen in
@@ -349,20 +335,21 @@ let usage_gen =
   and+ cache_write = lane in
   Usage.make ~input ~output ~reasoning ~cache_read ~cache_write ()
 
-let usage_gen_t = testable ~pp:Usage.pp ~equal:Usage.equal ~gen:usage_gen ()
+let usage_gen_t = Testable.make ~pp:Usage.pp ~equal:Usage.equal
+let usage_gen = Gen.with_pp Usage.pp usage_gen
 
 (* An unknown-but-valid label distinct from every dedicated stop/error label. *)
 let unknown_label =
   let+ rest =
-    Gen.string_size (Gen.int_range 0 6)
+    Gen.string_of ~size:(Gen.int_range 0 6)
       (Gen.frequency [ (6, lower); (1, digit); (1, Gen.pure '_') ])
   in
   "x" ^ rest
 
 let stop_gen =
-  Gen.oneof
+  Gen.one_of
     [
-      Gen.oneofl
+      Gen.of_list
         [
           Stop.end_turn;
           Stop.tool_call;
@@ -374,12 +361,12 @@ let stop_gen =
        Stop.other l);
     ]
 
-let stop_gen_t = testable ~pp:Stop.pp ~equal:( = ) ~gen:stop_gen ()
+let stop_gen = Gen.with_pp Stop.pp stop_gen
 
 let kind_gen =
-  Gen.oneof
+  Gen.one_of
     [
-      Gen.oneofl
+      Gen.of_list
         [
           Error.Cancelled;
           Error.Auth;
@@ -401,7 +388,7 @@ let kind_gen =
 
 let error_gen =
   let+ kind = kind_gen
-  and+ phase = Gen.oneofl [ Error.Startup; Error.Stream ]
+  and+ phase = Gen.of_list [ Error.Startup; Error.Stream ]
   and+ message = word
   and+ provider = Gen.option provider_gen
   and+ status = Gen.option (Gen.int_range 100 599)
@@ -409,18 +396,13 @@ let error_gen =
   and+ redacted_body = Gen.option word in
   Error.make ~kind ~phase ?provider ?status ?request_id ?redacted_body message
 
-let error_gen_t = testable ~pp:Error.pp ~equal:Error.equal ~gen:error_gen ()
+let error_gen = Gen.with_pp Error.pp error_gen
 
-let provider_gen_t =
-  testable ~pp:Provider.pp ~equal:Provider.equal ~gen:provider_gen ()
+let provider_gen = Gen.with_pp Provider.pp provider_gen
 
-let api_gen_t = testable ~pp:Model.Api.pp ~equal:Model.Api.equal ~gen:api_gen ()
-let model_gen_t = testable ~pp:Model.pp ~equal:Model.equal ~gen:model_gen ()
+let api_gen = Gen.with_pp Model.Api.pp api_gen
+let model_gen = Gen.with_pp Model.pp model_gen
 
-let call_gen_t =
-  testable
-    ~pp:(fun ppf _ -> Format.pp_print_string ppf "<call>")
-    ~equal:Tool.Call.equal ~gen:call_gen ()
 
 (* A valid transcript generator built from grammar-respecting "turns": an
    ordinary message, or an assistant tool-call turn immediately followed by one
@@ -433,7 +415,7 @@ let assistant_no_calls_gen =
       (1, Gen.pure Message.Assistant.empty);
       ( 4,
         let+ parts =
-          Gen.list_size (Gen.int_range 1 3)
+          Gen.list ~size:(Gen.int_range 1 3)
             (Gen.frequency
                [
                  ( 3,
@@ -449,9 +431,9 @@ let assistant_no_calls_gen =
 
 let tool_turn_gen =
   let* n = Gen.int_range 1 3 in
-  let+ names = Gen.list_size (Gen.pure n) tool_name_gen
+  let+ names = Gen.list ~size:(Gen.pure n) tool_name_gen
   and+ lead = free_text
-  and+ result_texts = Gen.list_size (Gen.pure n) free_text in
+  and+ result_texts = Gen.list ~size:(Gen.pure n) free_text in
   let calls =
     List.mapi
       (fun i name ->
@@ -485,7 +467,7 @@ let turn_gen =
         let+ s = free_text in
         [ Message.developer s ] );
       ( 2,
-        let+ content = Gen.list_size (Gen.int_range 1 3) content_gen in
+        let+ content = Gen.list ~size:(Gen.int_range 1 3) content_gen in
         [ Message.user content ] );
       ( 2,
         let+ a = assistant_no_calls_gen in
@@ -494,36 +476,16 @@ let turn_gen =
     ]
 
 let transcript_gen =
-  let+ turns = Gen.list_size (Gen.int_range 0 5) turn_gen in
+  let+ turns = Gen.list ~size:(Gen.int_range 0 5) turn_gen in
   Transcript.of_list_exn (List.concat turns)
 
-let transcript_gen_t =
-  testable
-    ~pp:(fun ppf _ -> Format.pp_print_string ppf "<transcript>")
-    ~equal:( = ) ~gen:transcript_gen ()
 
-let message_gen_t =
-  testable
-    ~pp:(fun ppf _ -> Format.pp_print_string ppf "<message>")
-    ~equal:Message.equal ~gen:message_gen ()
 
-let reasoning_gen_t =
-  testable
-    ~pp:(fun ppf _ -> Format.pp_print_string ppf "<reasoning>")
-    ~equal:( = ) ~gen:reasoning_gen ()
 
-let tool_gen_t =
-  testable
-    ~pp:(fun ppf _ -> Format.pp_print_string ppf "<tool>")
-    ~equal:( = ) ~gen:tool_gen ()
 
-let result_gen_t =
-  testable
-    ~pp:(fun ppf _ -> Format.pp_print_string ppf "<result>")
-    ~equal:Tool.Result.equal ~gen:result_gen ()
 
 let nonempty_transcript_gen =
-  let+ head = turn_gen and+ tail = Gen.list_size (Gen.int_range 0 4) turn_gen in
+  let+ head = turn_gen and+ tail = Gen.list ~size:(Gen.int_range 0 4) turn_gen in
   Transcript.of_list_exn (List.concat (head :: tail))
 
 let prelude_msg_gen =
@@ -536,12 +498,12 @@ let prelude_msg_gen =
         let+ s = free_text in
         Message.developer s );
       ( 1,
-        let+ content = Gen.list_size (Gen.int_range 1 2) content_gen in
+        let+ content = Gen.list ~size:(Gen.int_range 1 2) content_gen in
         Message.user content );
     ]
 
 let prelude_gen =
-  let+ messages = Gen.list_size (Gen.int_range 0 3) prelude_msg_gen in
+  let+ messages = Gen.list ~size:(Gen.int_range 0 3) prelude_msg_gen in
   match Request.Prelude.make messages with
   | Ok prelude -> prelude
   | Error _ -> Request.Prelude.empty
@@ -560,19 +522,17 @@ let options_gen =
      the generated tool list; [temperature] draws from clean floats that survive
      a text round-trip under any number format. *)
   let+ tool_choice =
-    Gen.oneofl [ Request.Options.Auto; Request.Options.No_tools ]
+    Gen.of_list [ Request.Options.Auto; Request.Options.No_tools ]
   and+ max_output_tokens = Gen.option (Gen.int_range 1 100_000)
-  and+ temperature = Gen.option (Gen.oneofl [ 0.; 0.2; 0.5; 1.; 1.5; 2. ])
+  and+ temperature = Gen.option (Gen.of_list [ 0.; 0.2; 0.5; 1.; 1.5; 2. ])
   and+ reasoning_effort =
-    Gen.option (Gen.oneofl Request.Options.Reasoning_effort.all)
+    Gen.option (Gen.of_list Request.Options.Reasoning_effort.all)
   and+ response_format = response_format in
   Request.Options.make ~tool_choice ?max_output_tokens ?temperature
     ?reasoning_effort ~response_format ()
 
 let options_gen_t =
-  testable
-    ~pp:(fun ppf _ -> Format.pp_print_string ppf "<options>")
-    ~equal:( = ) ~gen:options_gen ()
+  Testable.make ~pp:(fun ppf _ -> Format.pp_print_string ppf "<options>") ~equal:( = )
 
 let tools_gen =
   let+ n = Gen.int_range 0 3 in
@@ -591,9 +551,7 @@ let request_gen =
   Request.make_exn ~model ~prelude ~tools ~options ?cache_key transcript
 
 let request_gen_t =
-  testable
-    ~pp:(fun ppf _ -> Format.pp_print_string ppf "<request>")
-    ~equal:( = ) ~gen:request_gen ()
+  Testable.make ~pp:(fun ppf _ -> Format.pp_print_string ppf "<request>") ~equal:( = )
 
 (* Independent reimplementation of the request digest's canonical encoder. It
    is kept here so the digest golden is
@@ -701,7 +659,7 @@ let provider_contracts =
               expect_invalid_arg (String.escaped id) (fun () ->
                   Provider.make id))
             [ ""; "OpenAI"; "-openai"; "open_ai"; "open.ai"; "1x" ]);
-      prop' "jsont round-trips (property)" provider_gen_t (fun p ->
+      prop "jsont round-trips (property)" provider_gen (fun p ->
           roundtrip "provider" provider_t Provider.jsont p);
     ]
 
@@ -731,9 +689,9 @@ let model_contracts =
             ]);
       test "rejects empty model id" (fun () ->
           expect_invalid_arg "empty id" (fun () -> model ""));
-      prop' "api jsont round-trips (property)" api_gen_t (fun a ->
+      prop "api jsont round-trips (property)" api_gen (fun a ->
           roundtrip "api" api_t Model.Api.jsont a);
-      prop' "model jsont round-trips (property)" model_gen_t (fun m ->
+      prop "model jsont round-trips (property)" model_gen (fun m ->
           roundtrip "model" model_t Model.jsont m);
     ]
 
@@ -772,19 +730,16 @@ let content_contracts =
               Content.media ~media_type:"image/png" (`Uri ""));
           expect_invalid_arg "empty base64" (fun () ->
               Content.media ~media_type:"image/png" (`Base64 "")));
-      prop' "jsont round-trips (property)" content_t (fun c ->
+      prop "jsont round-trips (property)" content_gen (fun c ->
           roundtrip "content" content_t Content.jsont c);
     ]
 
 let image_contracts =
-  let format = testable ~pp:Image.Format.pp ~equal:Image.Format.equal () in
+  let format = Testable.make ~pp:Image.Format.pp ~equal:Image.Format.equal in
   let dimension =
-    testable
-      ~pp:(fun ppf { Image.width; height } ->
-        Format.fprintf ppf "%dx%d" width height)
-      ~equal:(fun a b ->
+    Testable.make ~pp:(fun ppf { Image.width; height } ->
+        Format.fprintf ppf "%dx%d" width height) ~equal:(fun a b ->
         a.Image.width = b.Image.width && a.Image.height = b.Image.height)
-      ()
   in
   let dim width height = { Image.width; height } in
   (* Minimal but real headers built with explicit bytes: each carries width 100,
@@ -989,11 +944,11 @@ let tool_contracts =
           is_false ~msg:"schema participates"
             (Tool.equal declaration
                (make ~input_schema:Tool.no_input_schema ())));
-      prop' "call jsont round-trips (property)" call_gen_t (fun c ->
+      prop "call jsont round-trips (property)" call_gen (fun c ->
           roundtrip "call" call_t Tool.Call.jsont c);
-      prop' "declaration jsont round-trips (property)" tool_gen_t (fun t ->
+      prop "declaration jsont round-trips (property)" tool_gen (fun t ->
           roundtrip "tool" (opaque "tool") Tool.jsont t);
-      prop' "result jsont round-trips (property)" result_gen_t (fun r ->
+      prop "result jsont round-trips (property)" result_gen (fun r ->
           roundtrip "result" result_t Tool.Result.jsont r);
     ]
 
@@ -1034,26 +989,27 @@ let usage_contracts =
           let large = Usage.make ~input:max_int ~output:0 () in
           expect_invalid_arg "add overflow" (fun () ->
               Usage.add large (Usage.make ~input:1 ~output:0 ())));
-      prop "totals identity: sum_lanes = input_total + output_total" usage_gen_t
+      prop "totals identity: sum_lanes = input_total + output_total" usage_gen
         (fun u ->
-          Usage.sum_lanes u = Usage.input_total u + Usage.output_total u);
-      prop "input_total is the input lanes" usage_gen_t (fun u ->
-          Usage.input_total u
-          = u.Usage.input + u.Usage.cache_read + u.Usage.cache_write);
-      prop "output_total is the output lanes" usage_gen_t (fun u ->
-          Usage.output_total u = u.Usage.output + u.Usage.reasoning);
-      prop "add has identity zero" usage_gen_t (fun u ->
-          Usage.equal u (Usage.add u Usage.zero)
-          && Usage.equal u (Usage.add Usage.zero u));
-      prop "add is commutative" (pair usage_gen_t usage_gen_t) (fun (a, b) ->
-          Usage.equal (Usage.add a b) (Usage.add b a));
-      prop "add is associative" (triple usage_gen_t usage_gen_t usage_gen_t)
+          equal int (Usage.sum_lanes u)
+            (Usage.input_total u + Usage.output_total u));
+      prop "input_total is the input lanes" usage_gen (fun u ->
+          equal int (Usage.input_total u)
+            (u.Usage.input + u.Usage.cache_read + u.Usage.cache_write));
+      prop "output_total is the output lanes" usage_gen (fun u ->
+          equal int (Usage.output_total u) (u.Usage.output + u.Usage.reasoning));
+      prop "add has identity zero" usage_gen (fun u ->
+          equal usage_gen_t u (Usage.add u Usage.zero);
+          equal usage_gen_t u (Usage.add Usage.zero u));
+      prop "add is commutative" (Gen.pair usage_gen usage_gen) (fun (a, b) ->
+          equal usage_gen_t (Usage.add a b) (Usage.add b a));
+      prop "add is associative" (Gen.triple usage_gen usage_gen usage_gen)
         (fun (a, b, c) ->
-          Usage.equal
+          equal usage_gen_t
             (Usage.add a (Usage.add b c))
             (Usage.add (Usage.add a b) c));
-      prop "jsont round-trips (property)" usage_gen_t (fun u ->
-          Usage.equal u (decode Usage.jsont (encode Usage.jsont u)));
+      prop "jsont round-trips (property)" usage_gen (fun u ->
+          equal usage_gen_t u (decode Usage.jsont (encode Usage.jsont u)));
     ]
 
 (* Stop forward-compatibility *)
@@ -1101,8 +1057,8 @@ let stop_contracts =
           expect_invalid_arg "space label" (fun () -> Stop.other "bad label");
           expect_invalid_arg "uppercase label" (fun () -> Stop.other "Vendor");
           expect_invalid_arg "dedicated label" (fun () -> Stop.other "end_turn"));
-      prop "label after jsont decode is preserved" stop_gen_t (fun stop ->
-          String.equal (Stop.label stop)
+      prop "label after jsont decode is preserved" stop_gen (fun stop ->
+          equal string (Stop.label stop)
             (Stop.label (decode Stop.jsont (encode Stop.jsont stop))));
     ]
 
@@ -1134,7 +1090,7 @@ let error_contracts =
               Error.make ~kind:(Error.Other "Bad") "bad");
           expect_invalid_arg "invalid other label" (fun () ->
               Error.label (Error.Other "Bad")));
-      prop' "jsont round-trips (property)" error_gen_t (fun e ->
+      prop "jsont round-trips (property)" error_gen (fun e ->
           roundtrip "error" error_t Error.jsont e);
     ]
 
@@ -1217,20 +1173,22 @@ let message_contracts =
           expect_invalid_arg "empty developer" (fun () -> Message.developer "");
           expect_invalid_arg "empty user" (fun () -> Message.user []);
           expect_invalid_arg "empty user text" (fun () -> Message.user_text ""));
-      prop "reasoning jsont round-trips (property)" reasoning_gen_t (fun r ->
+      prop "reasoning jsont round-trips (property)" reasoning_gen (fun r ->
           let r' =
             decode Message.Assistant.Reasoning.jsont
               (encode Message.Assistant.Reasoning.jsont r)
           in
-          Message.Assistant.Reasoning.id r = Message.Assistant.Reasoning.id r'
-          && Message.Assistant.Reasoning.summary r
-             = Message.Assistant.Reasoning.summary r'
-          && Message.Assistant.Reasoning.text r
-             = Message.Assistant.Reasoning.text r'
-          && Message.Assistant.Reasoning.encrypted r
-             = Message.Assistant.Reasoning.encrypted r'
-          && Message.Assistant.Reasoning.signature r
-             = Message.Assistant.Reasoning.signature r');
+          is_true
+            (Message.Assistant.Reasoning.id r
+             = Message.Assistant.Reasoning.id r'
+            && Message.Assistant.Reasoning.summary r
+               = Message.Assistant.Reasoning.summary r'
+            && Message.Assistant.Reasoning.text r
+               = Message.Assistant.Reasoning.text r'
+            && Message.Assistant.Reasoning.encrypted r
+               = Message.Assistant.Reasoning.encrypted r'
+            && Message.Assistant.Reasoning.signature r
+               = Message.Assistant.Reasoning.signature r'));
       test "equality of a tool-call assistant survives a text round-trip"
         (fun () ->
           (* [Message.equal] must be semantic over the embedded tool-call JSON;
@@ -1249,7 +1207,7 @@ let message_contracts =
           is_true ~msg:"constructed equals text-decoded"
             (Message.equal m
                (decode_text_locs Message.jsont (encode_text Message.jsont m))));
-      prop' "message jsont round-trips (property)" message_gen_t (fun m ->
+      prop "message jsont round-trips (property)" message_gen (fun m ->
           roundtrip "message" message_t Message.jsont m);
     ]
 
@@ -1418,7 +1376,8 @@ let transcript_contracts =
           is_true ~msg:"reversed order rejected"
             (Result.is_error (Transcript.of_list (List.rev messages))));
       test "last_assistant returns the raw most recent assistant" (fun () ->
-          is_none ~msg:"none yet"
+          equal (option pass) ~msg:"none yet"
+            None
             (Transcript.last_assistant (ready_transcript ()));
           let two_turns =
             Transcript.of_list_exn
@@ -1492,11 +1451,13 @@ let transcript_contracts =
           in
           equal (option string) ~msg:"untrimmed join" (Some " a | b ")
             (Transcript.last_assistant_text ~sep:"|" joined);
-          is_none ~msg:"no visible text yields None"
+          equal (option pass) ~msg:"no visible text yields None"
+            None
             (Transcript.last_assistant_text (ready_transcript ())));
-      prop "of_list (messages t) = t for valid transcripts" transcript_gen_t
-        (fun t -> Transcript.of_list (Transcript.messages t) = Ok t);
-      prop' "jsont round-trips (property)" transcript_gen_t (fun t ->
+      prop "of_list (messages t) = t for valid transcripts" transcript_gen
+        (fun t ->
+          is_true (Transcript.of_list (Transcript.messages t) = Ok t));
+      prop "jsont round-trips (property)" transcript_gen (fun t ->
           roundtrip "transcript" (opaque "transcript") Transcript.jsont t);
     ]
 
@@ -1649,7 +1610,8 @@ let request_contracts =
                 (Request.Options.Reasoning_effort.of_string
                    (Request.Options.Reasoning_effort.to_string effort)))
             Request.Options.Reasoning_effort.all;
-          is_none ~msg:"unknown spelling"
+          equal (option pass) ~msg:"unknown spelling"
+            None
             (Request.Options.Reasoning_effort.of_string "enormous"));
       test "jsont round-trips a request without embedded schema" (fun () ->
           (* No tools, so no arbitrary JSON whose decode metadata would defeat
@@ -1662,9 +1624,9 @@ let request_contracts =
               ~cache_key:"k" (ready_transcript ())
           in
           roundtrip "request" request_gen_t Request.jsont request);
-      prop' "options jsont round-trips (property)" options_gen_t (fun o ->
+      prop "options jsont round-trips (property)" options_gen (fun o ->
           roundtrip "options" options_gen_t Request.Options.jsont o);
-      prop' "jsont round-trips the message list (property)" request_gen_t
+      prop "jsont round-trips the message list (property)" request_gen
         (fun r ->
           equal (list message_t) ~msg:"messages" (Request.messages r)
             (Request.messages (decode Request.jsont (encode Request.jsont r))));
@@ -1834,14 +1796,14 @@ let digest_contracts =
                   (Request.make_exn ~model:gpt
                      (Transcript.of_list_exn
                         [ Message.user [ Content.text "a"; Content.text "b" ] ])))));
-      prop "digest matches the canonical encoding (property)" request_gen_t
-        (fun r -> Mentat_digest.equal (oracle_digest r) (Request.digest r));
-      prop "digest is stable across a jsont tree round-trip" request_gen_t
+      prop "digest matches the canonical encoding (property)" request_gen
+        (fun r -> equal digest_t (oracle_digest r) (Request.digest r));
+      prop "digest is stable across a jsont tree round-trip" request_gen
         (fun r ->
-          Mentat_digest.equal (Request.digest r)
+          equal digest_t (Request.digest r)
             (Request.digest (decode Request.jsont (encode Request.jsont r))));
-      prop' "digest is byte-sensitive over NUL-bearing content"
-        (pair nul_text_t nul_text_t) (fun (a, b) ->
+      prop "digest is byte-sensitive over NUL-bearing content"
+        (Gen.pair nul_text nul_text) (fun (a, b) ->
           cover ~label:"a contains NUL" ~at_least:10.0
             (String.contains a '\000');
           let da = Request.digest (user_request a) in

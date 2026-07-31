@@ -6,20 +6,32 @@
 ; invariants a rendered frame cannot observe (terminal_process is its raw-byte
 ; PTY driver, private to that suite).
 ;
-; The cli_launch cases are partitioned across three exes — launch, trust, and
-; misc — so windtrap's per-exe serial execution runs them in parallel; their
-; shared fixtures live in cli_launch_fixture. The partition is a pure
-; parallelism mechanism: every case, and its screen golden, is byte-identical
-; to its single-exe form.
+; MIGRATION NOTE (windtrap 0.2): the six per-suite executables became one
+; (inline_tests) library — dune's backend partitions the runner per source
+; file and runs partitions in parallel, which subsumes the old three-way exe
+; split for parallelism. Every case and screen golden is byte-identical to
+; its per-exe form. The runner processes inherit MENTAT_BIN and
+; MENTAT_FAKE_PROVIDER_BIN from the env-vars stanza below (the old rules
+; passed them through setenv; env-vars values cannot carry pforms, so the
+; values are relative to the runner's working directory,
+; <build-root>/default/test/tui/pty, and the harness resolves them against
+; the cwd).
+; -w +a -warn-error +a. Drop the flag once windtrap qualifies every generated
+; record field.
+;
+; The live tool-through-permission test is opt-in: it skips unless
+; MENTAT_TUI_LIVE_TEST is set, so it stays on the runtest alias while keeping
+; CI hermetic. Enable with [MENTAT_TUI_LIVE_TEST=1 dune test test/tui/pty].
 
-(executables
- (names
-  test_cli_launch
-  test_cli_launch_trust
-  test_cli_launch_misc
-  test_ergonomics_pty
-  test_tool_permission_live
-  test_terminal_host)
+(env
+ (_
+  (env-vars
+   (MENTAT_BIN ../../../bin/main.exe)
+   (MENTAT_FAKE_PROVIDER_BIN
+    ../../blackbox/bin/mentat_fake_provider_server.exe))))
+
+(library
+ (name test_tui_pty)
  (modules
   pty_session
   cli_launch_fixture
@@ -30,6 +42,25 @@
   test_tool_permission_live
   terminal_process
   test_terminal_host)
+ ; The runner partitions execute sandboxed (dune requires it for inline
+ ; tests), so the cwd-relative env values must resolve inside the sandbox.
+ ; MENTAT_BIN points at the real executable bin/main.exe rather than the
+ ; install-tree symlink: the sandbox replicates install/default/bin/mentat
+ ; as its original relative symlink, whose target is not materialized, so
+ ; the install spelling dangles in-sandbox. The harness realpaths the env
+ ; value, and the old %{bin:mentat} spelling realpathed to the same
+ ; bin/main.exe.
+ ; Promotion caveat: dune drives every partition of this library inside
+ ; one action and runs the per-file (diff? source source.corrected)
+ ; steps only after every partition exits 0. windtrap 0.2 exits 1 for a
+ ; failure that is not an expect mismatch (e.g. an uncaught exception),
+ ; so one crashing test in any partition suppresses `dune promote` for
+ ; the whole library's expect corrections — they print in the output
+ ; but never register.
+ (inline_tests
+  (deps
+   ../../../bin/main.exe
+   ../../blackbox/bin/mentat_fake_provider_server.exe))
  (libraries
   jsont.bytesrw
   matrix.pty
@@ -46,107 +77,3 @@
   windtrap)
  (preprocess
   (pps ppx_windtrap)))
-
-(rule
- (alias runtest)
- (deps
-  %{bin:mentat}
-  ../../blackbox/bin/mentat_fake_provider_server.exe
-  test_cli_launch.exe)
- (action
-  (progn
-   (setenv
-    MENTAT_BIN
-    %{bin:mentat}
-    (setenv
-     MENTAT_FAKE_PROVIDER_BIN
-     %{dep:../../blackbox/bin/mentat_fake_provider_server.exe}
-     (run ./test_cli_launch.exe)))
-   (diff? test_cli_launch.ml test_cli_launch.ml.corrected))))
-
-(rule
- (alias runtest)
- (deps
-  %{bin:mentat}
-  ../../blackbox/bin/mentat_fake_provider_server.exe
-  test_cli_launch_trust.exe)
- (action
-  (progn
-   (setenv
-    MENTAT_BIN
-    %{bin:mentat}
-    (setenv
-     MENTAT_FAKE_PROVIDER_BIN
-     %{dep:../../blackbox/bin/mentat_fake_provider_server.exe}
-     (run ./test_cli_launch_trust.exe)))
-   (diff? test_cli_launch_trust.ml test_cli_launch_trust.ml.corrected))))
-
-(rule
- (alias runtest)
- (deps
-  %{bin:mentat}
-  ../../blackbox/bin/mentat_fake_provider_server.exe
-  test_cli_launch_misc.exe)
- (action
-  (progn
-   (setenv
-    MENTAT_BIN
-    %{bin:mentat}
-    (setenv
-     MENTAT_FAKE_PROVIDER_BIN
-     %{dep:../../blackbox/bin/mentat_fake_provider_server.exe}
-     (run ./test_cli_launch_misc.exe)))
-   (diff? test_cli_launch_misc.ml test_cli_launch_misc.ml.corrected))))
-
-(rule
- (alias runtest)
- (deps
-  %{bin:mentat}
-  ../../blackbox/bin/mentat_fake_provider_server.exe
-  test_ergonomics_pty.exe)
- (action
-  (progn
-   (setenv
-    MENTAT_BIN
-    %{bin:mentat}
-    (setenv
-     MENTAT_FAKE_PROVIDER_BIN
-     %{dep:../../blackbox/bin/mentat_fake_provider_server.exe}
-     (run ./test_ergonomics_pty.exe)))
-   (diff? test_ergonomics_pty.ml test_ergonomics_pty.ml.corrected))))
-
-(rule
- (alias runtest)
- (deps
-  %{bin:mentat}
-  ../../blackbox/bin/mentat_fake_provider_server.exe
-  test_terminal_host.exe)
- (action
-  (progn
-   (setenv
-    MENTAT_BIN
-    %{bin:mentat}
-    (setenv
-     MENTAT_FAKE_PROVIDER_BIN
-     %{dep:../../blackbox/bin/mentat_fake_provider_server.exe}
-     (run ./test_terminal_host.exe)))
-   (diff? test_terminal_host.ml test_terminal_host.ml.corrected))))
-
-; The live tool-through-permission test is opt-in: it skips (exit 0) unless
-; MENTAT_TUI_LIVE_TEST is set, so it stays on the runtest alias while keeping
-; CI hermetic. Enable with [MENTAT_TUI_LIVE_TEST=1 dune test test/tui/pty].
-
-(rule
- (alias runtest)
- (deps
-  %{bin:mentat}
-  ../../blackbox/bin/mentat_fake_provider_server.exe
-  test_tool_permission_live.exe)
- (action
-  (setenv
-   MENTAT_BIN
-   %{bin:mentat}
-   (setenv
-    MENTAT_FAKE_PROVIDER_BIN
-    %{dep:../../blackbox/bin/mentat_fake_provider_server.exe}
-    (run ./test_tool_permission_live.exe)))))

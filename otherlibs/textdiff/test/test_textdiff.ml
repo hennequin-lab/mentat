@@ -12,7 +12,7 @@ module Json = Jsont.Json
 
 let expect_invalid_arg ?expected msg f =
   match expected with
-  | Some expected -> raises_invalid_arg ~msg expected (fun () -> ignore (f ()))
+  | Some expected -> raises ~msg (Invalid_argument expected) (fun () -> ignore (f ()))
   | None -> (
       match f () with
       | _ -> failf "%s: expected Invalid_argument" msg
@@ -62,8 +62,8 @@ let stats_eq (a : Diff.stats) (b : Diff.stats) =
   && Int.equal a.Diff.additions b.Diff.additions
   && Int.equal a.Diff.deletions b.Diff.deletions
 
-let stats_testable = testable ~pp:pp_stats ~equal:stats_eq ()
-let hunk = testable ~pp:Diff.Hunk.pp ~equal:Diff.Hunk.equal ()
+let stats_testable = Testable.make ~pp:pp_stats ~equal:stats_eq
+let hunk = Testable.make ~pp:Diff.Hunk.pp ~equal:Diff.Hunk.equal
 
 let render_text ?limits ?context changes =
   Diff.to_string (Diff.render ?limits ?context changes)
@@ -90,18 +90,18 @@ let numbered_lines count =
 
 let label_gen =
   Gen.map Diff.Label.escaped
-    (Gen.string_size (Gen.int_range 0 12)
-       (Gen.oneofl [ 'a'; 'b'; 'c'; '/'; '+'; '-'; '\n'; '\r'; '\000' ]))
+    (Gen.string_of ~size:(Gen.int_range 0 12)
+       (Gen.of_list [ 'a'; 'b'; 'c'; '/'; '+'; '-'; '\n'; '\r'; '\000' ]))
 
 let text_gen =
-  Gen.string_size (Gen.int_range 0 12)
-    (Gen.oneofl [ 'a'; 'b'; 'c'; '+'; '-'; ' '; '\n' ])
+  Gen.string_of ~size:(Gen.int_range 0 12)
+    (Gen.of_list [ 'a'; 'b'; 'c'; '+'; '-'; ' '; '\n' ])
 
 let file_change_gen =
   Gen.bind label_gen (fun label ->
       Gen.bind text_gen (fun before ->
           Gen.bind text_gen (fun after ->
-              Gen.oneof
+              Gen.one_of
                 [
                   Gen.pure (Diff.File_change.create ~label ~contents:after);
                   Gen.pure (Diff.File_change.delete ~label ~contents:before);
@@ -111,7 +111,7 @@ let file_change_gen =
 let pp_file_change ppf change =
   Format.fprintf ppf "<change %a>" Diff.Label.pp (Diff.File_change.label change)
 
-let file_change = testable ~pp:pp_file_change ~gen:file_change_gen ()
+let file_change_gen = Gen.with_pp pp_file_change file_change_gen
 
 let text_pair_gen =
   Gen.bind text_gen (fun before ->
@@ -120,14 +120,13 @@ let text_pair_gen =
 let pp_text_pair ppf (before, after) =
   Format.fprintf ppf "(%S, %S)" before after
 
-let text_pair = testable ~pp:pp_text_pair ~gen:text_pair_gen ()
+let text_pair_gen = Gen.with_pp pp_text_pair text_pair_gen
 
 (* Random *byte* pairs, newline-delimited, so lines routinely hold invalid
    UTF-8. [Gen.char] is uniform over all 256 byte values. *)
 let byte_line_char = Gen.frequency [ (1, Gen.pure '\n'); (5, Gen.char) ]
-let byte_text_gen = Gen.string_size (Gen.int_range 0 24) byte_line_char
-let byte_pair_gen = Gen.pair byte_text_gen byte_text_gen
-let byte_pair = testable ~pp:pp_text_pair ~gen:byte_pair_gen ()
+let byte_text_gen = Gen.string_of ~size:(Gen.int_range 0 24) byte_line_char
+let byte_pair_gen = Gen.with_pp pp_text_pair (Gen.pair byte_text_gen byte_text_gen)
 
 (* Adversarial display content: raw control bytes, DEL, C1, and spliced bidi
    sequences. *)
@@ -145,18 +144,15 @@ let adversarial_chunk =
   Gen.frequency
     [
       (5, Gen.map (String.make 1) Gen.char);
-      (2, Gen.map (String.make 1) (Gen.oneofl [ '\n'; '\t'; '\r'; '\027' ]));
-      (1, Gen.oneofl bidi_sequences);
+      (2, Gen.map (String.make 1) (Gen.of_list [ '\n'; '\t'; '\r'; '\027' ]));
+      (1, Gen.of_list bidi_sequences);
     ]
 
 let adversarial_text_gen =
-  Gen.map (String.concat "")
-    (Gen.list_size (Gen.int_range 0 20) adversarial_chunk)
-
-let adversarial_text =
-  testable
-    ~pp:(fun ppf s -> Format.fprintf ppf "%S" s)
-    ~gen:adversarial_text_gen ()
+  Gen.with_pp
+    (fun ppf s -> Format.fprintf ppf "%S" s)
+    (Gen.map (String.concat "")
+       (Gen.list ~size:(Gen.int_range 0 20) adversarial_chunk))
 
 (* Codec helpers. *)
 
@@ -231,12 +227,9 @@ let labels =
             (Diff.Label.to_string
                (Diff.Label.of_string
                   (Diff.Label.to_string (Diff.Label.escaped "a\nb\000c")))));
-      prop' "escaped labels round-trip through of_string" string (fun text ->
+      prop "escaped labels round-trip through of_string" Gen.string (fun text ->
           let label = Diff.Label.escaped text in
-          let reparsed =
-            no_raise (fun () ->
-                Diff.Label.of_string (Diff.Label.to_string label))
-          in
+          let reparsed = Diff.Label.of_string (Diff.Label.to_string label) in
           equal string ~msg:"escaped label re-parses to the same text"
             (Diff.Label.to_string label)
             (Diff.Label.to_string reparsed));
@@ -249,7 +242,8 @@ let file_changes =
     [
       test "builds file changes from optional states" (fun () ->
           let l = lbl "state.txt" in
-          is_none ~msg:"absent-to-absent is None"
+          equal (option pass) ~msg:"absent-to-absent is None"
+            None
             (Diff.File_change.of_states ~label:l ~before:None ~after:None);
           let created =
             some_change "expected create"
@@ -365,8 +359,8 @@ let statistics =
               Diff.Stats.v ~files:0 ~additions:(-1) ~deletions:0);
           expect_invalid_arg "negative deletions are rejected" (fun () ->
               Diff.Stats.v ~files:0 ~additions:0 ~deletions:(-1)));
-      prop' "Stats.of_changes equals render stats without limits"
-        (list file_change) (fun changes ->
+      prop "Stats.of_changes equals render stats without limits"
+        (Gen.list file_change_gen) (fun changes ->
           let diff = Diff.render changes in
           equal stats_testable ~msg:"stats agree" (Diff.stats diff)
             (Diff.Stats.of_changes changes);
@@ -729,8 +723,8 @@ let display_safety =
                  Diff.File_change.create ~label:(lbl "caf\195\169.txt")
                    ~contents:"\230\151\165\230\156\172\232\170\158\n\195\129\n";
                ]));
-      prop' "render output is valid UTF-8 without an unescaped control scalar"
-        adversarial_text (fun content ->
+      prop "render output is valid UTF-8 without an unescaped control scalar"
+        adversarial_text_gen (fun content ->
           let out =
             render_text
               [
@@ -876,7 +870,8 @@ let hunks =
           equal string ~msg:"the carriage return is raw in Line.text" "a\r"
             (Diff.Hunk.Line.text (List.hd (Diff.Hunk.lines (List.hd added)))));
       test "bounds hunks by max_edit_distance" (fun () ->
-          is_none ~msg:"exceeded distance is None"
+          equal (option pass) ~msg:"exceeded distance is None"
+            None
             (Diff.hunks ~max_edit_distance:1 ~before:"a\nb\nc\n"
                ~after:"x\ny\nz\n" ());
           let hs =
@@ -906,7 +901,7 @@ let hunks =
           in
           is_false ~msg:"different content is not equal"
             (Diff.Hunk.equal h other));
-      prop' "hunk ranges agree with rendered @@ headers" text_pair
+      prop "hunk ranges agree with rendered @@ headers" text_pair_gen
         (fun (before, after) ->
           let hs = some_hunks "expected hunks" (Diff.hunks ~before ~after ()) in
           let rendered =
@@ -920,7 +915,7 @@ let hunks =
           in
           equal (list string) ~msg:"hunk headers match rendered headers"
             rendered_headers (List.map hunk_header hs));
-      prop' "hunk counts agree with their line kinds" text_pair
+      prop "hunk counts agree with their line kinds" text_pair_gen
         (fun (before, after) ->
           let hs = some_hunks "expected hunks" (Diff.hunks ~before ~after ()) in
           List.iter
@@ -951,11 +946,8 @@ let pp_spans ppf spans =
 let spans_eq a b = List.equal (fun (a, b) (c, d) -> a = c && b = d) a b
 
 let spans_pair =
-  testable
-    ~pp:(fun ppf (rem, add) ->
-      Format.fprintf ppf "(%a, %a)" pp_spans rem pp_spans add)
-    ~equal:(fun (r1, a1) (r2, a2) -> spans_eq r1 r2 && spans_eq a1 a2)
-    ()
+  Testable.make ~pp:(fun ppf (rem, add) ->
+      Format.fprintf ppf "(%a, %a)" pp_spans rem pp_spans add) ~equal:(fun (r1, a1) (r2, a2) -> spans_eq r1 r2 && spans_eq a1 a2)
 
 let word_spans =
   group "word spans"
@@ -1018,12 +1010,10 @@ let pp_region ppf = function
       Format.fprintf ppf "Conflict(base=%S ours=%S theirs=%S)" base ours theirs
 
 let merge_testable =
-  testable
-    ~pp:(fun ppf m ->
+  Testable.make ~pp:(fun ppf m ->
       Format.fprintf ppf "@[<v>%a@]"
         (Format.pp_print_list pp_region)
-        (Diff.Merge.regions m))
-    ~equal:Diff.Merge.equal ()
+        (Diff.Merge.regions m)) ~equal:Diff.Merge.equal
 
 let roundtrip m = decode Diff.Merge.jsont (encode Diff.Merge.jsont m)
 
@@ -1304,14 +1294,14 @@ let codec =
             (stats_object ~files:(Some (Json.string "many")) ());
           rejects "unknown member"
             (stats_object ~extra:[ ("omitted", Json.int 0) ] ()));
-      prop' "round-trips every hunk of a text pair byte-exactly" text_pair
+      prop "round-trips every hunk of a text pair byte-exactly" text_pair_gen
         (fun (before, after) ->
           let hs = some_hunks "expected hunks" (Diff.hunks ~before ~after ()) in
           List.iter
             (fun h -> equal hunk ~msg:"round-trip" h (roundtrip_hunk h))
             hs);
-      prop' "round-trips every hunk of a random byte pair byte-exactly"
-        byte_pair (fun (before, after) ->
+      prop "round-trips every hunk of a random byte pair byte-exactly"
+        byte_pair_gen (fun (before, after) ->
           let hs = some_hunks "expected hunks" (Diff.hunks ~before ~after ()) in
           List.iter
             (fun h -> equal hunk ~msg:"round-trip" h (roundtrip_hunk h))
@@ -1323,14 +1313,14 @@ let codec =
 let determinism =
   group "determinism"
     [
-      prop' "render is byte-identical across runs" (list file_change)
+      prop "render is byte-identical across runs" (Gen.list file_change_gen)
         (fun changes ->
           equal string ~msg:"render text is stable" (render_text changes)
             (render_text changes);
           equal stats_testable ~msg:"render stats are stable"
             (Diff.stats (Diff.render changes))
             (Diff.stats (Diff.render changes)));
-      prop' "hunks and their encoding are byte-identical across runs" byte_pair
+      prop "hunks and their encoding are byte-identical across runs" byte_pair_gen
         (fun (before, after) ->
           let once =
             some_hunks "expected hunks" (Diff.hunks ~before ~after ())

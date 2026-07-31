@@ -63,8 +63,8 @@ let rec ordered_equal a b =
         a b
   | _, _ -> false
 
-let json_value = testable ~pp:pp_json ~equal:Json.equal ()
-let canonical_json_value = testable ~pp:pp_json ~equal:ordered_equal ()
+let json_value = Testable.make ~pp:pp_json ~equal:Json.equal
+let canonical_json_value = Testable.make ~pp:pp_json ~equal:ordered_equal
 
 let member name = function
   | Jsont.Object (members, _) -> (
@@ -124,8 +124,7 @@ let request_for text =
     ]
 
 let request_value =
-  testable ~pp:Mentat_permission.Request.pp
-    ~equal:Mentat_permission.Request.equal ()
+  Testable.make ~pp:Mentat_permission.Request.pp ~equal:Mentat_permission.Request.equal
 
 let echo_schema =
   json_object
@@ -261,11 +260,9 @@ let reorder_members = function
   | _ -> fail "expected a JSON object"
 
 let prepared_value =
-  testable
-    ~pp:(fun ppf p ->
+  Testable.make ~pp:(fun ppf p ->
       Format.fprintf ppf "prepared %s: %s" (Tool.Prepared.tool p)
-        (Tool.Prepared.description p))
-    ~equal:Tool.Prepared.equal ()
+        (Tool.Prepared.description p)) ~equal:Tool.Prepared.equal
 
 let resume_error_label = function
   | Tool.Call.Resume_error.Not_staged -> "not_staged"
@@ -331,26 +328,18 @@ let pp_status ppf = function
       Format.fprintf ppf "interrupted %S cancelled:%b" reason cancelled
 
 let string_result =
-  testable
-    ~pp:(fun ppf r ->
+  Testable.make ~pp:(fun ppf r ->
       Format.fprintf ppf "%a output:%a" pp_status (Tool.Result.status r)
         (Format.pp_print_option Format.pp_print_string)
-        (Tool.Result.output r))
-    ~equal:(Tool.Result.equal String.equal)
-    ()
+        (Tool.Result.output r)) ~equal:(Tool.Result.equal String.equal)
 
 let output_value =
-  testable
-    ~pp:(fun ppf o ->
+  Testable.make ~pp:(fun ppf o ->
       Format.fprintf ppf "output %S truncated:%b" (Tool.Output.text o)
-        (Tool.Output.truncated o))
-    ~equal:Tool.Output.equal ()
+        (Tool.Output.truncated o)) ~equal:Tool.Output.equal
 
 let output_result =
-  testable
-    ~pp:(fun ppf r -> pp_status ppf (Tool.Result.status r))
-    ~equal:(Tool.Result.equal Tool.Output.equal)
-    ()
+  Testable.make ~pp:(fun ppf r -> pp_status ppf (Tool.Result.status r)) ~equal:(Tool.Result.equal Tool.Output.equal)
 
 (* Identity. *)
 
@@ -449,14 +438,14 @@ let input_group =
   group "input"
     [
       test "make rejects a non-object schema" (fun () ->
-          raises_invalid_arg
-            "Mentat_tool.Input.make: schema must be a JSON object" (fun () ->
+          raises
+            (Invalid_argument "Mentat_tool.Input.make: schema must be a JSON object") (fun () ->
               Tool.Input.make Jsont.string ~schema:(Json.string "bad")));
       test "schema is retained unchanged" (fun () ->
           equal json_value ~msg:"schema" echo_schema
             (Tool.Input.schema text_input));
       test "decode and re-encode use the runtime codec" (fun () ->
-          ok string ~msg:"decodes provider JSON" "hello"
+          equal (result string pass) ~msg:"decodes provider JSON" (Ok "hello")
             (Tool.Input.decode text_input (input_json "hello"));
           equal json_value ~msg:"re-encoding is semantically faithful"
             (input_json "hello")
@@ -476,7 +465,7 @@ let input_group =
           equal json_value ~msg:"empty schema is the upstream one"
             Mentat_llm.Tool.no_input_schema
             (Tool.Input.schema Tool.Input.empty);
-          ok unit ~msg:"accepts the empty object" ()
+          equal (result unit pass) ~msg:"accepts the empty object" (Ok ())
             (Tool.Input.decode Tool.Input.empty (Json.object' []));
           is_true ~msg:"rejects members"
             (Stdlib.Result.is_error
@@ -520,7 +509,7 @@ let output_group =
           is_true ~msg:"truncated is retained"
             (Tool.Output.truncated structured));
       test "requires non-empty text but accepts whitespace" (fun () ->
-          raises_invalid_arg "Mentat_tool.Output.make: text must not be empty"
+          raises (Invalid_argument "Mentat_tool.Output.make: text must not be empty")
             (fun () -> Tool.Output.make ~text:"" ());
           equal string ~msg:"whitespace-only text is accepted" " "
             (Tool.Output.text (Tool.Output.make ~text:" " ())));
@@ -618,11 +607,11 @@ let result_group =
               equal string ~msg:"interrupt reason" "stop requested" reason;
               is_true ~msg:"cancellation marker" cancelled
           | status -> failf "unexpected status: %a" pp_status status);
-          raises_invalid_arg
-            "Mentat_tool.Result.failed: message must not be empty" (fun () ->
+          raises
+            (Invalid_argument "Mentat_tool.Result.failed: message must not be empty") (fun () ->
               Tool.Result.failed `Failed "");
-          raises_invalid_arg
-            "Mentat_tool.Result.interrupted: reason must not be empty"
+          raises
+            (Invalid_argument "Mentat_tool.Result.interrupted: reason must not be empty")
             (fun () -> Tool.Result.interrupted ~reason:"" ~cancelled:false ()));
       test "map transforms output and preserves status" (fun () ->
           let mapped =
@@ -918,22 +907,22 @@ let definition_group =
           equal string ~msg:"description" "Echo input text."
             (decl_description echo);
           equal json_value ~msg:"input schema" echo_schema (decl_schema echo);
-          raises_invalid_arg "Mentat_llm.Tool.make: name must not be empty"
+          raises (Invalid_argument "Mentat_llm.Tool.make: name must not be empty")
             (fun () ->
               Tool.make ~name:"" ~description:"d" ~input:text_input
                 ~output:output_of_string
                 ~run:(fun ~cancelled:_ v -> Tool.Result.completed ~output:v ())
                 ());
-          raises_invalid_arg
-            "Mentat_llm.Tool.make: description must not be empty" (fun () ->
+          raises
+            (Invalid_argument "Mentat_llm.Tool.make: description must not be empty") (fun () ->
               Tool.make ~name:"n" ~description:"" ~input:text_input
                 ~output:output_of_string
                 ~run:(fun ~cancelled:_ v -> Tool.Result.completed ~output:v ())
                 ());
-          raises_invalid_arg "Mentat_llm.Tool.make: name must not be empty"
+          raises (Invalid_argument "Mentat_llm.Tool.make: name must not be empty")
             (fun () -> staged_tool ~name:"" ());
-          raises_invalid_arg
-            "Mentat_llm.Tool.make: description must not be empty" (fun () ->
+          raises
+            (Invalid_argument "Mentat_llm.Tool.make: description must not be empty") (fun () ->
               Tool.make_staged ~name:"n" ~description:"" ~input:text_input
                 ~prepared:plan_jsont ~describe:describe_plan
                 ~output:output_of_string
@@ -1689,17 +1678,17 @@ let stage_group =
    (duplicates are covered by an example test). *)
 let json_gen =
   let scalar =
-    Gen.oneof
+    Gen.one_of
       [
         Gen.pure (Json.null ());
         Gen.map (fun b -> Json.bool b) Gen.bool;
         Gen.map (fun n -> Json.int n) (Gen.int_range (-99) 99);
         Gen.map
           (fun s -> Json.string s)
-          (Gen.string_size (Gen.int_range 0 4) (Gen.oneofl [ 'a'; 'b'; 'z' ]));
+          (Gen.string_of ~size:(Gen.int_range 0 4) (Gen.of_list [ 'a'; 'b'; 'z' ]));
       ]
   in
-  let keys = Gen.oneofl [ "delta"; "alpha"; "echo"; "bravo"; "zulu" ] in
+  let keys = Gen.of_list [ "delta"; "alpha"; "echo"; "bravo"; "zulu" ] in
   let dedupe pairs =
     List.fold_left
       (fun acc ((key, _) as pair) ->
@@ -1710,21 +1699,21 @@ let json_gen =
   let obj_of value_gen =
     Gen.map
       (fun pairs -> json_object (dedupe pairs))
-      (Gen.list_size (Gen.int_range 0 4) (Gen.pair keys value_gen))
+      (Gen.list ~size:(Gen.int_range 0 4) (Gen.pair keys value_gen))
   in
   let value =
-    Gen.oneof
+    Gen.one_of
       [
         scalar;
         obj_of scalar;
         Gen.map
           (fun l -> json_array l)
-          (Gen.list_size (Gen.int_range 0 3) scalar);
+          (Gen.list ~size:(Gen.int_range 0 3) scalar);
       ]
   in
   obj_of value
 
-let generated_json = testable ~pp:pp_json ~equal:Json.equal ~gen:json_gen ()
+let generated_json_gen = Gen.with_pp pp_json json_gen
 
 (* Reverse every object's member list, leaving arrays alone: a semantic no-op
    that scrambles exactly what canonicalization must fix. *)
@@ -1750,15 +1739,14 @@ let rec assert_sorted json =
 
 let plan_gen =
   let open Gen in
-  let+ target = string_size (int_range 1 6) (oneofl [ 'a'; 'b'; 'c' ])
+  let+ target = string_of ~size:(int_range 1 6) (of_list [ 'a'; 'b'; 'c' ])
   and+ count = int_range 0 9 in
   { target; count }
 
-let plan_value =
-  testable
-    ~pp:(fun ppf p ->
-      Format.fprintf ppf "{target=%S; count=%d}" p.target p.count)
-    ~equal:plan_equal ~gen:plan_gen ()
+let plan_gen =
+  Gen.with_pp
+    (fun ppf p -> Format.fprintf ppf "{target=%S; count=%d}" p.target p.count)
+    plan_gen
 
 (* Stage a generated plan through the only path the facade allows. *)
 let stage_plan plan =
@@ -1778,17 +1766,17 @@ let stage_plan plan =
 
 let result_gen =
   let message_gen =
-    Gen.string_size (Gen.int_range 1 8) (Gen.oneofl [ 'a'; 'b'; 'c'; ' ' ])
+    Gen.string_of ~size:(Gen.int_range 1 8) (Gen.of_list [ 'a'; 'b'; 'c'; ' ' ])
   in
   let output_gen =
-    Gen.string_size (Gen.int_range 0 6) (Gen.oneofl [ 'x'; 'y'; 'z' ])
+    Gen.string_of ~size:(Gen.int_range 0 6) (Gen.of_list [ 'x'; 'y'; 'z' ])
   in
   let metadata_gen = Gen.option (Gen.pure (Json.bool true)) in
-  Gen.oneof
+  Gen.one_of
     [
       Gen.map (fun output -> Tool.Result.completed ~output ()) output_gen;
       Gen.bind
-        (Gen.oneofl (List.map fst failure_spellings))
+        (Gen.of_list (List.map fst failure_spellings))
         (fun kind ->
           Gen.bind message_gen (fun message ->
               Gen.bind metadata_gen (fun metadata ->
@@ -1804,12 +1792,12 @@ let result_gen =
                 (Gen.option output_gen)));
     ]
 
-let generated_result = Testable.with_gen result_gen string_result
+let generated_result_gen = Gen.with_pp (Testable.pp string_result) result_gen
 
 let property_group =
   group "properties"
     [
-      prop' "canonical input canonicalizes any generated object" generated_json
+      prop "canonical input canonicalizes any generated object" generated_json_gen
         (fun json ->
           let canonical = canonical_of json in
           is_true ~msg:"semantics preserved" (Json.equal json canonical);
@@ -1818,7 +1806,7 @@ let property_group =
             (canonical_of (shuffled json));
           equal canonical_json_value ~msg:"canonicalization is idempotent"
             canonical (canonical_of canonical));
-      prop' "prepared envelopes round-trip and resume for any plan" plan_value
+      prop "prepared envelopes round-trip and resume for any plan" plan_gen
         (fun plan ->
           let tool, prepared = stage_plan plan in
           is_true ~msg:"equal is reflexive"
@@ -1837,8 +1825,8 @@ let property_group =
           equal (option string) ~msg:"run consumes the round-tripped plan"
             (Some (describe_plan plan))
             (Option.map Tool.Output.text (Tool.Result.output result)));
-      prop' "prepared equality is symmetric and coincides with plan equality"
-        (pair plan_value plan_value) (fun (a, b) ->
+      prop "prepared equality is symmetric and coincides with plan equality"
+        (Gen.pair plan_gen plan_gen) (fun (a, b) ->
           let _, pa = stage_plan a in
           let _, pb = stage_plan b in
           equal bool ~msg:"symmetry"
@@ -1846,7 +1834,7 @@ let property_group =
             (Tool.Prepared.equal pb pa);
           equal bool ~msg:"equality is exactly plan equality" (plan_equal a b)
             (Tool.Prepared.equal pa pb));
-      prop' "durable results survive their codec round-trip" generated_result
+      prop "durable results survive their codec round-trip" generated_result_gen
         (fun result ->
           let codec = Tool.Result.jsont Jsont.string in
           equal string_result ~msg:"round-trip" result

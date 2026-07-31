@@ -130,58 +130,62 @@ let%expect_test "browser selection replaces the complete owner detail" =
   open_browser t;
   Tui.print t;
   [%expect
-    {|01 |  sessions ─────────────────────────────────────────────────────────── 2 sessions
-02 |
-03 |    session                               lifecycle phase  turns updated  recency
-04 | ❯  Parser streaming cleanup              active    idle  1 turn just now today
-05 |    Authentication dialog polish          active    idle  1 turn 1m ago   today
-06 |
-07 |
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |   Trace the parser's final streaming boundary.
-15 |
-16 |   cwd ~/parser
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   ↵ resume · f fork · r rename · a archive · d delete · / filter · esc back|}];
+    {|
+    01 |  sessions ─────────────────────────────────────────────────────────── 2 sessions
+    02 |
+    03 |    session                               lifecycle phase  turns updated  recency
+    04 | ❯  Parser streaming cleanup              active    idle  1 turn just now today
+    05 |    Authentication dialog polish          active    idle  1 turn 1m ago   today
+    06 |
+    07 |
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |   Trace the parser's final streaming boundary.
+    15 |
+    16 |   cwd ~/parser
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ↵ resume · f fork · r rename · a archive · d delete · / filter · esc back
+    |}];
   Tui.keys t Key.down;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  sessions ─────────────────────────────────────────────────────────── 2 sessions
-02 |
-03 |    session                               lifecycle phase  turns updated  recency
-04 |    Parser streaming cleanup              active    idle  1 turn just now today
-05 | ❯  Authentication dialog polish          active    idle  1 turn 1m ago   today
-06 |
-07 |
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |   Keep the device login recovery action visible.
-15 |
-16 |   cwd ~/auth
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   ↵ resume · f fork · r rename · a archive · d delete · / filter · esc back|}]
+    {|
+    01 |  sessions ─────────────────────────────────────────────────────────── 2 sessions
+    02 |
+    03 |    session                               lifecycle phase  turns updated  recency
+    04 |    Parser streaming cleanup              active    idle  1 turn just now today
+    05 | ❯  Authentication dialog polish          active    idle  1 turn 1m ago   today
+    06 |
+    07 |
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |   Keep the device login recovery action visible.
+    15 |
+    16 |   cwd ~/auth
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ↵ resume · f fork · r rename · a archive · d delete · / filter · esc back
+    |}]
 
 let%expect_test "rename keeps Unicode-whitespace validation visible" =
   Tui.run ~name:"sessions-rename-validation" ~home:home_is_project
@@ -197,30 +201,32 @@ let%expect_test "rename keeps Unicode-whitespace validation visible" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  sessions ──────────────────────────────────────────────────────────── 1 session
-02 |
-03 |    session                              lifecycle phase   turns updated  recency
-04 | ❯  rename:  ▏                           active    idle  0 turns just now today
-05 |
-06 |
-07 |
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |   rename:  ▏
-15 |
-16 |   Title must contain a non-whitespace character.
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   ↵ save · esc cancel|}]
+    {|
+    01 |  sessions ──────────────────────────────────────────────────────────── 1 session
+    02 |
+    03 |    session                              lifecycle phase   turns updated  recency
+    04 | ❯  rename:  ▏                           active    idle  0 turns just now today
+    05 |
+    06 |
+    07 |
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |   rename:  ▏
+    15 |
+    16 |   Title must contain a non-whitespace character.
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ↵ save · esc cancel
+    |}]
 
 let%expect_test "a replacement retires a stale initial start" =
   let replacement =
@@ -239,30 +245,32 @@ let%expect_test "a replacement retires a stale initial start" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-sessions-stale-initibd0acb02
-04 |
-05 |
-06 |
-07 |
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat… · openai/gpt-5.5 … · ! full access ? f…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-sessions-stale-initi49b8631a
+    04 |
+    05 |
+    06 |
+    07 |
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat… · openai/gpt-5.5 … · ! full access ? f…
+    |}];
   submit t "/sessions";
   Tui.settle t;
   Tui.enter t;
@@ -272,30 +280,32 @@ let%expect_test "a replacement retires a stale initial start" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-sessions-stale-initibd0acb02
-04 |
-05 | ❯ use admitted session
-06 |
-07 | ⏺ replacement accepted the prompt
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tui… · openai/gpt… · ! full access ? fo…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-sessions-stale-initi49b8631a
+    04 |
+    05 | ❯ use admitted session
+    06 |
+    07 | ⏺ replacement accepted the prompt
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tui… · openai/gpt… · ! full access ? fo…
+    |}]
 
 let%expect_test "failed resume preserves the admitted projection" =
   let first =
@@ -310,30 +320,32 @@ let%expect_test "failed resume preserves the admitted projection" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-sessions-faile35223799
-04 |
-05 | ❯ remember this
-06 |
-07 | ⏺ kept transcript evidence
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-sessions-failebd85c4be
+    04 |
+    05 | ❯ remember this
+    06 |
+    07 | ⏺ kept transcript evidence
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…
+    |}];
   Tui.fail_next_resume t (unavailable "candidate follow refused");
   submit t "/sessions";
   Tui.keys t Key.down;
@@ -341,30 +353,32 @@ let%expect_test "failed resume preserves the admitted projection" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-sessions-faile35223799
-04 |
-05 | ❯ remember this
-06 |
-07 | ⏺ kept transcript evidence
-08 |
-09 | ✗ candidate follow refused
-10 |   retry when ready
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   candidate follow refused|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-sessions-failebd85c4be
+    04 |
+    05 | ❯ remember this
+    06 |
+    07 | ⏺ kept transcript evidence
+    08 |
+    09 | ✗ candidate follow refused
+    10 |   retry when ready
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   candidate follow refused
+    |}]
 
 let%expect_test "terminal feed loss disables submit until explicit resume" =
   let before = Tui.Turn_script.complete ~prompt:"before loss" "before answer" in
@@ -380,59 +394,63 @@ let%expect_test "terminal feed loss disables submit until explicit resume" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-sessions-f9a3792b8
-04 |
-05 | ❯ before loss
-06 |
-07 | ⏺ before answer
-08 |
-09 | ✗ observation stopped
-10 |   check the connection, then retry
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   observation stopped|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-sessions-ffa51e691
+    04 |
+    05 | ❯ before loss
+    06 |
+    07 | ⏺ before answer
+    08 |
+    09 | ✗ observation stopped
+    10 |   check the connection, then retry
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   observation stopped
+    |}];
   Tui.paste t "must not submit";
   Tui.enter t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-sessions-f9a3792b8
-04 |
-05 | ❯ before loss
-06 |
-07 | ⏺ before answer
-08 |
-09 | ✗ observation stopped
-10 |   check the connection, then retry
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ must not submit
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   observation stopped|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-sessions-ffa51e691
+    04 |
+    05 | ❯ before loss
+    06 |
+    07 | ⏺ before answer
+    08 |
+    09 | ✗ observation stopped
+    10 |   check the connection, then retry
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ must not submit
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   observation stopped
+    |}];
   Tui.keys t Key.escape;
   Tui.settle t;
   Tui.keys t Key.escape;
@@ -445,30 +463,32 @@ let%expect_test "terminal feed loss disables submit until explicit resume" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-sessions-f9a3792b8
-04 |
-05 | ❯ before loss
-06 |
-07 | ⏺ before answer
-08 |
-09 | ❯ after resume
-10 |
-11 | ⏺ after answer
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt-… · ! full access ? for…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-sessions-ffa51e691
+    04 |
+    05 | ❯ before loss
+    06 |
+    07 | ⏺ before answer
+    08 |
+    09 | ❯ after resume
+    10 |
+    11 | ⏺ after answer
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt-… · ! full access ? for…
+    |}]
 
 let%expect_test "retired feed messages cannot detach the replacement" =
   let after =
@@ -487,59 +507,63 @@ let%expect_test "retired feed messages cannot detach the replacement" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-sessions-st6aa1ce14
-04 |
-05 |
-06 |
-07 |
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/menta… · openai/gpt-5.5 … · ! full access ? fo…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-sessions-st0237a4b5
+    04 |
+    05 |
+    06 |
+    07 |
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/menta… · openai/gpt-5.5 … · ! full access ? fo…
+    |}];
   submit t "use replacement";
   Tui.finish_turn t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-sessions-st6aa1ce14
-04 |
-05 | ❯ use replacement
-06 |
-07 | ⏺ replacement answered
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt-… · ! full access ? for…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-sessions-st0237a4b5
+    04 |
+    05 | ❯ use replacement
+    06 |
+    07 | ⏺ replacement answered
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt-… · ! full access ? for…
+    |}]
 
 let%expect_test "browser normalizes the shared hostile inline family" =
   let hostile =
@@ -555,30 +579,32 @@ let%expect_test "browser normalizes the shared hostile inline family" =
   open_browser t;
   Tui.print t;
   [%expect
-    {|01 |  sessions ──────────────────────────────────────────────────────────── 1 session
-02 |
-03 |    session                              lifecycle phase   turns updated  recency
-04 | ❯  A B  C D E�F�G�H e I                 active    idle  0 turns just now today
-05 |
-06 |
-07 |
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |   cwd ~/mentat-tui-sessions-hostila4152b58
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   ↵ resume · f fork · r rename · a archive · d delete · / filter · esc back|}]
+    {|
+    01 |  sessions ──────────────────────────────────────────────────────────── 1 session
+    02 |
+    03 |    session                              lifecycle phase   turns updated  recency
+    04 | ❯  A B  C D E�F�G�H e I                 active    idle  0 turns just now today
+    05 |
+    06 |
+    07 |
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |   cwd ~/mentat-tui-sessions-hostil6bf78577
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ↵ resume · f fork · r rename · a archive · d delete · / filter · esc back
+    |}]
 
 (* The browser response travels through Runtime's session query and carries a
    report-only diagnostic beside healthy owner summaries. Filtering must keep
@@ -594,88 +620,94 @@ let%expect_test "browser keeps partial listing diagnostics while filtering" =
   open_browser t;
   Tui.print t;
   [%expect
-    {|01 |  sessions ─────────────────────────────────────────────────────────── 4 sessions
-02 |
-03 |   ! one damaged session document was skipped · stale index ignored
-04 |    session                              lifecycle phase   turns updated  recency
-05 | ❯  Parser streaming cleanup             active    idle  0 turns just now today
-06 |    Archived protocol notes              archived  idle  0 turns just now today
-07 |    Authentication dialog polish         active    idle  0 turns 1m ago   today
-08 |    Deleted scratch experiment           deleted   idle  0 turns 1m ago   today
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |   cwd ~/mentat-tui-session55d2e06a
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   ↵ resume · f fork · r rename · a archive · d delete · / filter · esc back|}];
+    {|
+    01 |  sessions ─────────────────────────────────────────────────────────── 4 sessions
+    02 |
+    03 |   ! one damaged session document was skipped · stale index ignored
+    04 |    session                              lifecycle phase   turns updated  recency
+    05 | ❯  Parser streaming cleanup             active    idle  0 turns just now today
+    06 |    Archived protocol notes              archived  idle  0 turns just now today
+    07 |    Authentication dialog polish         active    idle  0 turns 1m ago   today
+    08 |    Deleted scratch experiment           deleted   idle  0 turns 1m ago   today
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |   cwd ~/mentat-tui-sessionacd22caf
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ↵ resume · f fork · r rename · a archive · d delete · / filter · esc back
+    |}];
   Tui.keys t "/archive";
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  sessions ─────────────────────────────────────────────────────────── 4 sessions
-02 |   /archive  1 match
-03 |
-04 |   ! one damaged session document was skipped · stale index ignored
-05 |    session                              lifecycle phase   turns updated  recency
-06 | ❯  Archived protocol notes              archived  idle  0 turns just now today
-07 |
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |   cwd ~/mentat-tui-session55d2e06a
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   ↑↓ select · esc clear filter|}]
+    {|
+    01 |  sessions ─────────────────────────────────────────────────────────── 4 sessions
+    02 |   /archive  1 match
+    03 |
+    04 |   ! one damaged session document was skipped · stale index ignored
+    05 |    session                              lifecycle phase   turns updated  recency
+    06 | ❯  Archived protocol notes              archived  idle  0 turns just now today
+    07 |
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |   cwd ~/mentat-tui-sessionacd22caf
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ↑↓ select · esc clear filter
+    |}]
 
 let%expect_test "browser renders its complete empty state" =
   Tui.run ~name:"sessions-empty" @@ fun t ->
   open_browser t;
   Tui.print t;
   [%expect
-    {|01 |  sessions ─────────────────────────────────────────────────────────── 0 sessions
-02 |
-03 |   No sessions in this workspace.
-04 |
-05 |
-06 |
-07 |
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   / filter · esc back|}]
+    {|
+    01 |  sessions ─────────────────────────────────────────────────────────── 0 sessions
+    02 |
+    03 |   No sessions in this workspace.
+    04 |
+    05 |
+    06 |
+    07 |
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   / filter · esc back
+    |}]
 
 (* The quick switcher gives Mosaic every healthy row. These complete frames
    make the table's measured viewport, page movement, selected-row reveal, and
@@ -685,86 +717,92 @@ let%expect_test "quick switcher pages and promotes the complete result" =
   submit t "/sessions";
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-07 |
-08 |                            dev · openai/gpt-5.5 medium
-09 |
-10 |      ▎ welcome — and thanks for trying mentat this early.
-11 |      ▎ it's experimental: sessions and config may change without migration.
-12 |
-13 |
-14 |
-15 |
-16 |
-17 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-18 |    sessions
-19 |
-20 |  ❯   Measured table row 01                                   idle     just now │
-21 |      Measured table row 02                                   idle     just now │
-22 |      Measured table row 03                                   idle     just now ↓
-23 |
-24 ||}];
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    07 |
+    08 |                            dev · openai/gpt-5.5 medium
+    09 |
+    10 |      ▎ welcome — and thanks for trying mentat this early.
+    11 |      ▎ it's experimental: sessions and config may change without migration.
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    18 |    sessions
+    19 |
+    20 |  ❯   Measured table row 01                                   idle     just now │
+    21 |      Measured table row 02                                   idle     just now │
+    22 |      Measured table row 03                                   idle     just now ↓
+    23 |
+    24 |
+    |}];
   Tui.keys t Key.page_down;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-07 |
-08 |                            dev · openai/gpt-5.5 medium
-09 |
-10 |      ▎ welcome — and thanks for trying mentat this early.
-11 |      ▎ it's experimental: sessions and config may change without migration.
-12 |
-13 |
-14 |
-15 |
-16 |
-17 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-18 |    sessions
-19 |
-20 |      Measured table row 03                                   idle     just now ↑
-21 |  ❯   Measured table row 04                                   idle     just now │
-22 |      Measured table row 05                                   idle     just now ↓
-23 |
-24 ||}];
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    07 |
+    08 |                            dev · openai/gpt-5.5 medium
+    09 |
+    10 |      ▎ welcome — and thanks for trying mentat this early.
+    11 |      ▎ it's experimental: sessions and config may change without migration.
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    18 |    sessions
+    19 |
+    20 |      Measured table row 03                                   idle     just now ↑
+    21 |  ❯   Measured table row 04                                   idle     just now │
+    22 |      Measured table row 05                                   idle     just now ↓
+    23 |
+    24 |
+    |}];
   Tui.keys t Key.tab;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  sessions ────────────────────────────────────────────────────────── 18 sessions
-02 |
-03 |    session                              lifecycle phase   turns updated  recency
-04 |    Measured table row 01                active    idle  0 turns just now today
-05 |    Measured table row 02                active    idle  0 turns just now today
-06 |    Measured table row 03                active    idle  0 turns just now today
-07 | ❯  Measured table row 04                active    idle  0 turns just now today
-08 |    Measured table row 05                active    idle  0 turns just now today
-09 |    Measured table row 06                active    idle  0 turns just now today
-10 |    Measured table row 07                active    idle  0 turns just now today
-11 |    Measured table row 08                active    idle  0 turns just now today
-12 |    Measured table row 09                active    idle  0 turns just now today
-13 |
-14 |   cwd ~/mentat-tui-sessions-qui0d696608
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   ↵ resume · f fork · r rename · a archive · d delete · / filter · esc back|}]
+    {|
+    01 |  sessions ────────────────────────────────────────────────────────── 18 sessions
+    02 |
+    03 |    session                              lifecycle phase   turns updated  recency
+    04 |    Measured table row 01                active    idle  0 turns just now today
+    05 |    Measured table row 02                active    idle  0 turns just now today
+    06 |    Measured table row 03                active    idle  0 turns just now today
+    07 | ❯  Measured table row 04                active    idle  0 turns just now today
+    08 |    Measured table row 05                active    idle  0 turns just now today
+    09 |    Measured table row 06                active    idle  0 turns just now today
+    10 |    Measured table row 07                active    idle  0 turns just now today
+    11 |    Measured table row 08                active    idle  0 turns just now today
+    12 |    Measured table row 09                active    idle  0 turns just now today
+    13 |
+    14 |   cwd ~/mentat-tui-sessions-quiec3b152f
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ↵ resume · f fork · r rename · a archive · d delete · / filter · esc back
+    |}]
 
 (* Number shortcuts address the complete filtered result rather than a
    Mentat-owned four-row window. The target transcript makes the selected
@@ -777,30 +815,32 @@ let%expect_test "quick switcher digit nine resumes the ninth result" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-sessions-qui1e6af63c
-04 |
-05 | ❯ The ninth quick-switch session is active.
-06 |
-07 |
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-sessions-qui48debcf3
+    04 |
+    05 | ❯ The ninth quick-switch session is active.
+    06 |
+    07 |
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…
+    |}]
 
 (* PageUp and PageDown are intentionally sent to the focused Mosaic Table.
    Eighteen rows exceed this terminal's measured table allocation, so the
@@ -813,58 +853,62 @@ let%expect_test "browser pages by the measured Mosaic table viewport" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  sessions ────────────────────────────────────────────────────────── 18 sessions
-02 |
-03 |    session                              lifecycle phase   turns updated  recency
-04 |    Measured table row 06                active    idle  0 turns just now today
-05 |    Measured table row 07                active    idle  0 turns just now today
-06 |    Measured table row 08                active    idle  0 turns just now today
-07 |    Measured table row 09                active    idle  0 turns just now today
-08 | ❯  Measured table row 10                active    idle  0 turns just now today
-09 |    Measured table row 11                active    idle  0 turns just now today
-10 |    Measured table row 12                active    idle  0 turns just now today
-11 |    Measured table row 13                active    idle  0 turns just now today
-12 |    Measured table row 14                active    idle  0 turns just now today
-13 |
-14 |   cwd ~/mentat-tui-sessio9f28c911
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   ↵ resume · f fork · r rename · a archive · d delete · / filter · esc back|}];
+    {|
+    01 |  sessions ────────────────────────────────────────────────────────── 18 sessions
+    02 |
+    03 |    session                              lifecycle phase   turns updated  recency
+    04 |    Measured table row 06                active    idle  0 turns just now today
+    05 |    Measured table row 07                active    idle  0 turns just now today
+    06 |    Measured table row 08                active    idle  0 turns just now today
+    07 |    Measured table row 09                active    idle  0 turns just now today
+    08 | ❯  Measured table row 10                active    idle  0 turns just now today
+    09 |    Measured table row 11                active    idle  0 turns just now today
+    10 |    Measured table row 12                active    idle  0 turns just now today
+    11 |    Measured table row 13                active    idle  0 turns just now today
+    12 |    Measured table row 14                active    idle  0 turns just now today
+    13 |
+    14 |   cwd ~/mentat-tui-sessiod259e2f5
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ↵ resume · f fork · r rename · a archive · d delete · / filter · esc back
+    |}];
   Tui.keys t Key.page_up;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  sessions ────────────────────────────────────────────────────────── 18 sessions
-02 |
-03 |    session                              lifecycle phase   turns updated  recency
-04 | ❯  Measured table row 01                active    idle  0 turns just now today
-05 |    Measured table row 02                active    idle  0 turns just now today
-06 |    Measured table row 03                active    idle  0 turns just now today
-07 |    Measured table row 04                active    idle  0 turns just now today
-08 |    Measured table row 05                active    idle  0 turns just now today
-09 |    Measured table row 06                active    idle  0 turns just now today
-10 |    Measured table row 07                active    idle  0 turns just now today
-11 |    Measured table row 08                active    idle  0 turns just now today
-12 |    Measured table row 09                active    idle  0 turns just now today
-13 |
-14 |   cwd ~/mentat-tui-sessio9f28c911
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   ↵ resume · f fork · r rename · a archive · d delete · / filter · esc back|}]
+    {|
+    01 |  sessions ────────────────────────────────────────────────────────── 18 sessions
+    02 |
+    03 |    session                              lifecycle phase   turns updated  recency
+    04 | ❯  Measured table row 01                active    idle  0 turns just now today
+    05 |    Measured table row 02                active    idle  0 turns just now today
+    06 |    Measured table row 03                active    idle  0 turns just now today
+    07 |    Measured table row 04                active    idle  0 turns just now today
+    08 |    Measured table row 05                active    idle  0 turns just now today
+    09 |    Measured table row 06                active    idle  0 turns just now today
+    10 |    Measured table row 07                active    idle  0 turns just now today
+    11 |    Measured table row 08                active    idle  0 turns just now today
+    12 |    Measured table row 09                active    idle  0 turns just now today
+    13 |
+    14 |   cwd ~/mentat-tui-sessiod259e2f5
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ↵ resume · f fork · r rename · a archive · d delete · / filter · esc back
+    |}]
 
 (* Each lifecycle command remains visibly pending at the exact client boundary.
    Conflicting keys cannot issue a second operation while that result is held;
@@ -891,318 +935,340 @@ let%expect_test "browser lifecycle actions and delete dialog return visually" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  sessions ─────────────────────────────────────────────────────────── 4 sessions
-02 |
-03 |    session                              lifecycle phase   turns updated  recency
-04 | ❯  rename: Parser streaming cleanup v2▏ active    idle  0 turns just now today
-05 |    Archived protocol notes              archived  idle  0 turns just now today
-06 |    Authentication dialog polish         active    idle  0 turns 1m ago   today
-07 |    Deleted scratch experiment           deleted   idle  0 turns 1m ago   today
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |   rename: Parser streaming cleanup v2▏
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   ↵ save · esc cancel|}];
+    {|
+    01 |  sessions ─────────────────────────────────────────────────────────── 4 sessions
+    02 |
+    03 |    session                              lifecycle phase   turns updated  recency
+    04 | ❯  rename: Parser streaming cleanup v2▏ active    idle  0 turns just now today
+    05 |    Archived protocol notes              archived  idle  0 turns just now today
+    06 |    Authentication dialog polish         active    idle  0 turns 1m ago   today
+    07 |    Deleted scratch experiment           deleted   idle  0 turns 1m ago   today
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |   rename: Parser streaming cleanup v2▏
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ↵ save · esc cancel
+    |}];
   Tui.enter t;
   Tui.settle t;
   Tui.keys t "a";
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  sessions ─────────────────────────────────────────────────────────── 4 sessions
-02 |
-03 |    session                              lifecycle phase   turns updated  recency
-04 | ❯  saving: Parser streaming cleanup v2  active    idle  0 turns just now today
-05 |    Archived protocol notes              archived  idle  0 turns just now today
-06 |    Authentication dialog polish         active    idle  0 turns 1m ago   today
-07 |    Deleted scratch experiment           deleted   idle  0 turns 1m ago   today
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |   ⠋ saving “Parser streaming cleanup v2”…
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   updating session…|}];
+    {|
+    01 |  sessions ─────────────────────────────────────────────────────────── 4 sessions
+    02 |
+    03 |    session                              lifecycle phase   turns updated  recency
+    04 | ❯  saving: Parser streaming cleanup v2  active    idle  0 turns just now today
+    05 |    Archived protocol notes              archived  idle  0 turns just now today
+    06 |    Authentication dialog polish         active    idle  0 turns 1m ago   today
+    07 |    Deleted scratch experiment           deleted   idle  0 turns 1m ago   today
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |   ⠋ saving “Parser streaming cleanup v2”…
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   updating session…
+    |}];
   Tui.finish_lifecycle_result t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  sessions ─────────────────────────────────────────────────────────── 4 sessions
-02 |
-03 |    session                              lifecycle phase   turns updated  recency
-04 | ❯  Parser streaming cleanup v2          active    idle  0 turns just now today
-05 |    Archived protocol notes              archived  idle  0 turns just now today
-06 |    Authentication dialog polish         active    idle  0 turns 1m ago   today
-07 |    Deleted scratch experiment           deleted   idle  0 turns 1m ago   today
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |   cwd ~
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   ↵ resume · f fork · r rename · a archive · d delete · / filter · esc back|}];
+    {|
+    01 |  sessions ─────────────────────────────────────────────────────────── 4 sessions
+    02 |
+    03 |    session                              lifecycle phase   turns updated  recency
+    04 | ❯  Parser streaming cleanup v2          active    idle  0 turns just now today
+    05 |    Archived protocol notes              archived  idle  0 turns just now today
+    06 |    Authentication dialog polish         active    idle  0 turns 1m ago   today
+    07 |    Deleted scratch experiment           deleted   idle  0 turns 1m ago   today
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |   cwd ~
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ↵ resume · f fork · r rename · a archive · d delete · / filter · esc back
+    |}];
   Tui.keys t "a";
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  sessions ─────────────────────────────────────────────────────────── 4 sessions
-02 |
-03 |    session                              lifecycle phase   turns updated  recency
-04 | ❯  archiving…                           active    idle  0 turns just now today
-05 |    Archived protocol notes              archived  idle  0 turns just now today
-06 |    Authentication dialog polish         active    idle  0 turns 1m ago   today
-07 |    Deleted scratch experiment           deleted   idle  0 turns 1m ago   today
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |   ⠋ archiving “Parser streaming cleanup v2”…
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   updating session…|}];
+    {|
+    01 |  sessions ─────────────────────────────────────────────────────────── 4 sessions
+    02 |
+    03 |    session                              lifecycle phase   turns updated  recency
+    04 | ❯  archiving…                           active    idle  0 turns just now today
+    05 |    Archived protocol notes              archived  idle  0 turns just now today
+    06 |    Authentication dialog polish         active    idle  0 turns 1m ago   today
+    07 |    Deleted scratch experiment           deleted   idle  0 turns 1m ago   today
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |   ⠋ archiving “Parser streaming cleanup v2”…
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   updating session…
+    |}];
   Tui.keys t "d";
   Tui.settle t;
   Tui.finish_lifecycle_result t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  sessions ─────────────────────────────────────────────────────────── 4 sessions
-02 |
-03 |    session                              lifecycle phase   turns updated  recency
-04 | ❯  Parser streaming cleanup v2          archived  idle  0 turns just now today
-05 |    Archived protocol notes              archived  idle  0 turns just now today
-06 |    Authentication dialog polish         active    idle  0 turns 1m ago   today
-07 |    Deleted scratch experiment           deleted   idle  0 turns 1m ago   today
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |   cwd ~
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   r rename · u restore · d delete · / filter · esc back|}];
+    {|
+    01 |  sessions ─────────────────────────────────────────────────────────── 4 sessions
+    02 |
+    03 |    session                              lifecycle phase   turns updated  recency
+    04 | ❯  Parser streaming cleanup v2          archived  idle  0 turns just now today
+    05 |    Archived protocol notes              archived  idle  0 turns just now today
+    06 |    Authentication dialog polish         active    idle  0 turns 1m ago   today
+    07 |    Deleted scratch experiment           deleted   idle  0 turns 1m ago   today
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |   cwd ~
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   r rename · u restore · d delete · / filter · esc back
+    |}];
   Tui.keys t "u";
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  sessions ─────────────────────────────────────────────────────────── 4 sessions
-02 |
-03 |    session                              lifecycle phase   turns updated  recency
-04 | ❯  restoring…                           archived  idle  0 turns just now today
-05 |    Archived protocol notes              archived  idle  0 turns just now today
-06 |    Authentication dialog polish         active    idle  0 turns 1m ago   today
-07 |    Deleted scratch experiment           deleted   idle  0 turns 1m ago   today
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |   ⠋ restoring “Parser streaming cleanup v2”…
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   updating session…|}];
+    {|
+    01 |  sessions ─────────────────────────────────────────────────────────── 4 sessions
+    02 |
+    03 |    session                              lifecycle phase   turns updated  recency
+    04 | ❯  restoring…                           archived  idle  0 turns just now today
+    05 |    Archived protocol notes              archived  idle  0 turns just now today
+    06 |    Authentication dialog polish         active    idle  0 turns 1m ago   today
+    07 |    Deleted scratch experiment           deleted   idle  0 turns 1m ago   today
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |   ⠋ restoring “Parser streaming cleanup v2”…
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   updating session…
+    |}];
   Tui.keys t "a";
   Tui.settle t;
   Tui.finish_lifecycle_result t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  sessions ─────────────────────────────────────────────────────────── 4 sessions
-02 |
-03 |    session                              lifecycle phase   turns updated  recency
-04 | ❯  Parser streaming cleanup v2          active    idle  0 turns just now today
-05 |    Archived protocol notes              archived  idle  0 turns just now today
-06 |    Authentication dialog polish         active    idle  0 turns 1m ago   today
-07 |    Deleted scratch experiment           deleted   idle  0 turns 1m ago   today
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |   cwd ~
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   ↵ resume · f fork · r rename · a archive · d delete · / filter · esc back|}];
+    {|
+    01 |  sessions ─────────────────────────────────────────────────────────── 4 sessions
+    02 |
+    03 |    session                              lifecycle phase   turns updated  recency
+    04 | ❯  Parser streaming cleanup v2          active    idle  0 turns just now today
+    05 |    Archived protocol notes              archived  idle  0 turns just now today
+    06 |    Authentication dialog polish         active    idle  0 turns 1m ago   today
+    07 |    Deleted scratch experiment           deleted   idle  0 turns 1m ago   today
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |   cwd ~
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ↵ resume · f fork · r rename · a archive · d delete · / filter · esc back
+    |}];
   Tui.keys t "d";
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  sessions ─────────────────────────────────────────────────────────── 4 sessions
-02 |
-03 |    session                              lifecycle phase   turns updated  recency
-04 | ❯  DELETE? press d again                active    idle  0 turns just now today
-05 |    Archived protocol notes              archived  idle  0 turns just now today
-06 |    Authentication dialog polish         active    idle  0 turns 1m ago   today
-07 |    Deleted scratch experiment           deleted   idle  0 turns 1m ago   today
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |   Permanently delete “Parser streaming cleanup v2”?
-15 |
-16 |   Press d again to DELETE. Any other key cancels.
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   d DELETE · any key cancel|}];
+    {|
+    01 |  sessions ─────────────────────────────────────────────────────────── 4 sessions
+    02 |
+    03 |    session                              lifecycle phase   turns updated  recency
+    04 | ❯  DELETE? press d again                active    idle  0 turns just now today
+    05 |    Archived protocol notes              archived  idle  0 turns just now today
+    06 |    Authentication dialog polish         active    idle  0 turns 1m ago   today
+    07 |    Deleted scratch experiment           deleted   idle  0 turns 1m ago   today
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |   Permanently delete “Parser streaming cleanup v2”?
+    15 |
+    16 |   Press d again to DELETE. Any other key cancels.
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   d DELETE · any key cancel
+    |}];
   Tui.keys t "x";
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  sessions ─────────────────────────────────────────────────────────── 4 sessions
-02 |
-03 |    session                              lifecycle phase   turns updated  recency
-04 | ❯  Parser streaming cleanup v2          active    idle  0 turns just now today
-05 |    Archived protocol notes              archived  idle  0 turns just now today
-06 |    Authentication dialog polish         active    idle  0 turns 1m ago   today
-07 |    Deleted scratch experiment           deleted   idle  0 turns 1m ago   today
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |   cwd ~
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   ↵ resume · f fork · r rename · a archive · d delete · / filter · esc back|}];
+    {|
+    01 |  sessions ─────────────────────────────────────────────────────────── 4 sessions
+    02 |
+    03 |    session                              lifecycle phase   turns updated  recency
+    04 | ❯  Parser streaming cleanup v2          active    idle  0 turns just now today
+    05 |    Archived protocol notes              archived  idle  0 turns just now today
+    06 |    Authentication dialog polish         active    idle  0 turns 1m ago   today
+    07 |    Deleted scratch experiment           deleted   idle  0 turns 1m ago   today
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |   cwd ~
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ↵ resume · f fork · r rename · a archive · d delete · / filter · esc back
+    |}];
   Tui.keys t "dd";
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  sessions ─────────────────────────────────────────────────────────── 4 sessions
-02 |
-03 |    session                              lifecycle phase   turns updated  recency
-04 | ❯  deleting…                            active    idle  0 turns just now today
-05 |    Archived protocol notes              archived  idle  0 turns just now today
-06 |    Authentication dialog polish         active    idle  0 turns 1m ago   today
-07 |    Deleted scratch experiment           deleted   idle  0 turns 1m ago   today
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |   ⠋ permanently deleting “Parser streaming cleanup v2”…
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   updating session…|}];
+    {|
+    01 |  sessions ─────────────────────────────────────────────────────────── 4 sessions
+    02 |
+    03 |    session                              lifecycle phase   turns updated  recency
+    04 | ❯  deleting…                            active    idle  0 turns just now today
+    05 |    Archived protocol notes              archived  idle  0 turns just now today
+    06 |    Authentication dialog polish         active    idle  0 turns 1m ago   today
+    07 |    Deleted scratch experiment           deleted   idle  0 turns 1m ago   today
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |   ⠋ permanently deleting “Parser streaming cleanup v2”…
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   updating session…
+    |}];
   Tui.keys t "d";
   Tui.settle t;
   Tui.finish_lifecycle_result t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  sessions ─────────────────────────────────────────────────────────── 4 sessions
-02 |
-03 |    session                              lifecycle phase   turns updated  recency
-04 | ❯  Parser streaming cleanup v2          deleted   idle  0 turns just now today
-05 |    Archived protocol notes              archived  idle  0 turns just now today
-06 |    Authentication dialog polish         active    idle  0 turns 1m ago   today
-07 |    Deleted scratch experiment           deleted   idle  0 turns 1m ago   today
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |   cwd ~
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   / filter · esc back|}]
+    {|
+    01 |  sessions ─────────────────────────────────────────────────────────── 4 sessions
+    02 |
+    03 |    session                              lifecycle phase   turns updated  recency
+    04 | ❯  Parser streaming cleanup v2          deleted   idle  0 turns just now today
+    05 |    Archived protocol notes              archived  idle  0 turns just now today
+    06 |    Authentication dialog polish         active    idle  0 turns 1m ago   today
+    07 |    Deleted scratch experiment           deleted   idle  0 turns 1m ago   today
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |   cwd ~
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   / filter · esc back
+    |}]
 
 (* A client-side lifecycle failure must replace the pending presentation with
    a visible diagnostic over the retained owner snapshot. The conflicting
@@ -1224,58 +1290,62 @@ let%expect_test "lifecycle failure stays visible over the unlocked browser" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  sessions ─────────────────────────────────────────────────────────── 4 sessions
-02 |
-03 |    session                              lifecycle phase   turns updated  recency
-04 | ❯  archiving…                           active    idle  0 turns just now today
-05 |    Archived protocol notes              archived  idle  0 turns just now today
-06 |    Authentication dialog polish         active    idle  0 turns 1m ago   today
-07 |    Deleted scratch experiment           deleted   idle  0 turns 1m ago   today
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |   ⠋ archiving “Parser streaming cleanup”…
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   updating session…|}];
+    {|
+    01 |  sessions ─────────────────────────────────────────────────────────── 4 sessions
+    02 |
+    03 |    session                              lifecycle phase   turns updated  recency
+    04 | ❯  archiving…                           active    idle  0 turns just now today
+    05 |    Archived protocol notes              archived  idle  0 turns just now today
+    06 |    Authentication dialog polish         active    idle  0 turns 1m ago   today
+    07 |    Deleted scratch experiment           deleted   idle  0 turns 1m ago   today
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |   ⠋ archiving “Parser streaming cleanup”…
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   updating session…
+    |}];
   Tui.finish_lifecycle_result t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  sessions ─────────────────────────────────────────────────────────── 4 sessions
-02 |
-03 |   ! archive denied by another driver
-04 |    session                              lifecycle phase   turns updated  recency
-05 | ❯  Parser streaming cleanup             active    idle  0 turns just now today
-06 |    Archived protocol notes              archived  idle  0 turns just now today
-07 |    Authentication dialog polish         active    idle  0 turns 1m ago   today
-08 |    Deleted scratch experiment           deleted   idle  0 turns 1m ago   today
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |   cwd ~
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   ↵ resume · f fork · r rename · a archive · d delete · / filter · esc back|}]
+    {|
+    01 |  sessions ─────────────────────────────────────────────────────────── 4 sessions
+    02 |
+    03 |   ! archive denied by another driver
+    04 |    session                              lifecycle phase   turns updated  recency
+    05 | ❯  Parser streaming cleanup             active    idle  0 turns just now today
+    06 |    Archived protocol notes              archived  idle  0 turns just now today
+    07 |    Authentication dialog polish         active    idle  0 turns 1m ago   today
+    08 |    Deleted scratch experiment           deleted   idle  0 turns 1m ago   today
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |   cwd ~
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ↵ resume · f fork · r rename · a archive · d delete · / filter · esc back
+    |}]
 
 (* The first browser query has no rows to retain. Its loading and failure
    screens therefore remain complete modal surfaces, and reopening starts a
@@ -1289,58 +1359,62 @@ let%expect_test "initial listing loading failure and recovery stay visual" =
   open_browser t;
   Tui.print t;
   [%expect
-    {|01 |  sessions ──────────────────────────────────────────────────────────────────────
-02 |
-03 |   ⠋ loading sessions…
-04 |
-05 |
-06 |
-07 |
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   esc back|}];
+    {|
+    01 |  sessions ──────────────────────────────────────────────────────────────────────
+    02 |
+    03 |   ⠋ loading sessions…
+    04 |
+    05 |
+    06 |
+    07 |
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   esc back
+    |}];
   Tui.finish_screen_session_result t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  sessions ──────────────────────────────────────────────────────────────────────
-02 |
-03 |   ! session index unavailable
-04 |
-05 |
-06 |
-07 |
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   esc back|}];
+    {|
+    01 |  sessions ──────────────────────────────────────────────────────────────────────
+    02 |
+    03 |   ! session index unavailable
+    04 |
+    05 |
+    06 |
+    07 |
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   esc back
+    |}];
   Tui.keys t Key.escape;
   Tui.settle t;
   open_browser t;
@@ -1348,30 +1422,32 @@ let%expect_test "initial listing loading failure and recovery stay visual" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  sessions ─────────────────────────────────────────────────────────── 4 sessions
-02 |
-03 |    session                              lifecycle phase   turns updated  recency
-04 | ❯  Parser streaming cleanup             active    idle  0 turns just now today
-05 |    Archived protocol notes              archived  idle  0 turns just now today
-06 |    Authentication dialog polish         active    idle  0 turns 1m ago   today
-07 |    Deleted scratch experiment           deleted   idle  0 turns 1m ago   today
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |   cwd ~
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   ↵ resume · f fork · r rename · a archive · d delete · / filter · esc back|}]
+    {|
+    01 |  sessions ─────────────────────────────────────────────────────────── 4 sessions
+    02 |
+    03 |    session                              lifecycle phase   turns updated  recency
+    04 | ❯  Parser streaming cleanup             active    idle  0 turns just now today
+    05 |    Archived protocol notes              archived  idle  0 turns just now today
+    06 |    Authentication dialog polish         active    idle  0 turns 1m ago   today
+    07 |    Deleted scratch experiment           deleted   idle  0 turns 1m ago   today
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |   cwd ~
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ↵ resume · f fork · r rename · a archive · d delete · / filter · esc back
+    |}]
 
 (* A post-mutation listing error cannot pretend that the retained rows were
    refreshed. It keeps the last successful snapshot visible and unlocks its
@@ -1389,30 +1465,32 @@ let%expect_test "failed lifecycle refresh retains the last complete listing" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  sessions ─────────────────────────────────────────────────────────── 4 sessions
-02 |
-03 |   ! refreshed session index unavailable
-04 |    session                              lifecycle phase   turns updated  recency
-05 | ❯  Parser streaming cleanup             active    idle  0 turns just now today
-06 |    Archived protocol notes              archived  idle  0 turns just now today
-07 |    Authentication dialog polish         active    idle  0 turns 1m ago   today
-08 |    Deleted scratch experiment           deleted   idle  0 turns 1m ago   today
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |   cwd ~
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   ↵ resume · f fork · r rename · a archive · d delete · / filter · esc back|}]
+    {|
+    01 |  sessions ─────────────────────────────────────────────────────────── 4 sessions
+    02 |
+    03 |   ! refreshed session index unavailable
+    04 |    session                              lifecycle phase   turns updated  recency
+    05 | ❯  Parser streaming cleanup             active    idle  0 turns just now today
+    06 |    Archived protocol notes              archived  idle  0 turns just now today
+    07 |    Authentication dialog polish         active    idle  0 turns 1m ago   today
+    08 |    Deleted scratch experiment           deleted   idle  0 turns 1m ago   today
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |   cwd ~
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ↵ resume · f fork · r rename · a archive · d delete · / filter · esc back
+    |}]
 
 (* Closing a loading browser does not cancel the already-issued result. The
    second query completes first; the older failure is then delivered and must
@@ -1431,57 +1509,60 @@ let%expect_test "stale listing failure cannot replace the reopened browser" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  sessions ─────────────────────────────────────────────────────────── 4 sessions
-02 |
-03 |    session                              lifecycle phase   turns updated  recency
-04 | ❯  Parser streaming cleanup             active    idle  0 turns just now today
-05 |    Archived protocol notes              archived  idle  0 turns just now today
-06 |    Authentication dialog polish         active    idle  0 turns 1m ago   today
-07 |    Deleted scratch experiment           deleted   idle  0 turns 1m ago   today
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |   cwd ~
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   ↵ resume · f fork · r rename · a archive · d delete · / filter · esc back|}];
+    {|
+    01 |  sessions ─────────────────────────────────────────────────────────── 4 sessions
+    02 |
+    03 |    session                              lifecycle phase   turns updated  recency
+    04 | ❯  Parser streaming cleanup             active    idle  0 turns just now today
+    05 |    Archived protocol notes              archived  idle  0 turns just now today
+    06 |    Authentication dialog polish         active    idle  0 turns 1m ago   today
+    07 |    Deleted scratch experiment           deleted   idle  0 turns 1m ago   today
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |   cwd ~
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ↵ resume · f fork · r rename · a archive · d delete · / filter · esc back
+    |}];
   Tui.finish_screen_session_result t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  sessions ─────────────────────────────────────────────────────────── 4 sessions
-02 |
-03 |    session                              lifecycle phase   turns updated  recency
-04 | ❯  Parser streaming cleanup             active    idle  0 turns just now today
-05 |    Archived protocol notes              archived  idle  0 turns just now today
-06 |    Authentication dialog polish         active    idle  0 turns 1m ago   today
-07 |    Deleted scratch experiment           deleted   idle  0 turns 1m ago   today
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |   cwd ~
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   ↵ resume · f fork · r rename · a archive · d delete · / filter · esc back|}]
+    {|
+    01 |  sessions ─────────────────────────────────────────────────────────── 4 sessions
+    02 |
+    03 |    session                              lifecycle phase   turns updated  recency
+    04 | ❯  Parser streaming cleanup             active    idle  0 turns just now today
+    05 |    Archived protocol notes              archived  idle  0 turns just now today
+    06 |    Authentication dialog polish         active    idle  0 turns 1m ago   today
+    07 |    Deleted scratch experiment           deleted   idle  0 turns 1m ago   today
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |   cwd ~
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ↵ resume · f fork · r rename · a archive · d delete · / filter · esc back
+    |}]
 
-[%%run_tests "mentat.tui.sessions"]

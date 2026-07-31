@@ -409,4 +409,3 @@ let%expect_test "lifecycle commands guard the home stage without a session" =
 23 |
 24 |   no session to rename|}]
 
-[%%run_tests "mentat.tui.lifecycle"]

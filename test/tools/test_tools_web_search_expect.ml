@@ -372,4 +372,3 @@ let%expect_test "cancellation before the transport yields an interruption" =
     reason: "tool call cancelled"
     |}]
 
-[%%run_tests "mentat.tools.web_search"]

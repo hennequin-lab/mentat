@@ -81,36 +81,38 @@ let%expect_test "known built-ins never expand undecodable text as a summary" =
       completed ~id:"shape" ~name:"read_file" wrong_shape;
     ];
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
-04 |
-05 | ❯ inspect invalid built-in summaries
-06 |
-07 | ⏺ Read
-08 |   ⎿  details unavailable
-09 |
-10 | ⏺ Read
-11 |   ⎿  details unavailable
-12 |
-13 | ⏺ Read
-14 |   ⎿  details unavailable
-15 |
-16 | ⏺ Read
-17 |   ⎿  details unavailable
-18 |
-19 | ⏺ The tool results are settled.
-20 |
-21 |
-22 |
-23 |
-24 |
-25 |
-26 |
-27 | ────────────────────────────────────────────────────────────────────────────────────────────
-28 | ❯ message mentat
-29 | ────────────────────────────────────────────────────────────────────────────────────────────
-30 |   ! not logged in · /login · /tmp/mentat-tui-3c9b9… · openai/gpt-… · ! full access ? for …|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+    04 |
+    05 | ❯ inspect invalid built-in summaries
+    06 |
+    07 | ⏺ Read
+    08 |   ⎿  details unavailable
+    09 |
+    10 | ⏺ Read
+    11 |   ⎿  details unavailable
+    12 |
+    13 | ⏺ Read
+    14 |   ⎿  details unavailable
+    15 |
+    16 | ⏺ Read
+    17 |   ⎿  details unavailable
+    18 |
+    19 | ⏺ The tool results are settled.
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |
+    25 |
+    26 |
+    27 | ────────────────────────────────────────────────────────────────────────────────────────────
+    28 | ❯ message mentat
+    29 | ────────────────────────────────────────────────────────────────────────────────────────────
+    30 |   ! not logged in · /login · /tmp/mentat-tui-82c3f… · openai/gpt-… · ! full access ? for …
+    |}]
 
 let%expect_test "read preview clamps rows while typed facts own counts" =
   let text =
@@ -135,34 +137,36 @@ let%expect_test "read preview clamps rows while typed facts own counts" =
   run ~name:"t" ~size:(92, 28) ~prompt:"read the note"
     [ completed ~id:"read" ~name:"read_file" output ];
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
-04 |
-05 | ❯ read the note
-06 |
-07 | ⏺ Read
-08 |   ⎿  Read 8 lines
-09 |       1  alpha
-10 |       2  bravo
-11 |       3  charlie
-12 |       4  delta
-13 |       5  echo
-14 |       … +4 lines
-15 |
-16 | ⏺ The tool results are settled.
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |
-25 | ────────────────────────────────────────────────────────────────────────────────────────────
-26 | ❯ message mentat
-27 | ────────────────────────────────────────────────────────────────────────────────────────────
-28 |   ! not logged in · /login · /tmp/mentat-tui-3c9b9… · openai/gpt-… · ! full access ? for …|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+    04 |
+    05 | ❯ read the note
+    06 |
+    07 | ⏺ Read
+    08 |   ⎿  Read 8 lines
+    09 |       1  alpha
+    10 |       2  bravo
+    11 |       3  charlie
+    12 |       4  delta
+    13 |       5  echo
+    14 |       … +4 lines
+    15 |
+    16 | ⏺ The tool results are settled.
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |
+    25 | ────────────────────────────────────────────────────────────────────────────────────────────
+    26 | ❯ message mentat
+    27 | ────────────────────────────────────────────────────────────────────────────────────────────
+    28 |   ! not logged in · /login · /tmp/mentat-tui-82c3f… · openai/gpt-… · ! full access ? for …
+    |}]
 
 let%expect_test "extension preview clamps rows and truncates wide lines" =
   let row_text =
@@ -180,38 +184,40 @@ let%expect_test "extension preview clamps rows and truncates wide lines" =
       completed ~id:"wide" ~name:"extension_wide" wide;
     ];
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
-04 |
-05 | ❯ inspect extension output
-06 |
-07 | ⏺ Extension_rows
-08 |   ⎿  done
-09 |       row 1
-10 |       row 2
-11 |       row 3
-12 |       row 4
-13 |       row 5
-14 |       … +5 lines
-15 |
-16 | ⏺ Extension_wide
-17 |   ⎿  done
-18 |       wide xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx…
-19 |       visible after the former byte cap
-20 |
-21 | ⏺ The tool results are settled.
-22 |
-23 |
-24 |
-25 |
-26 |
-27 |
-28 |
-29 | ────────────────────────────────────────────────────────────────────────────────────────────
-30 | ❯ message mentat
-31 | ────────────────────────────────────────────────────────────────────────────────────────────
-32 |   ! not logged in · /login · /tmp/mentat-tui-3c9b9… · openai/gpt-… · ! full access ? for …|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+    04 |
+    05 | ❯ inspect extension output
+    06 |
+    07 | ⏺ Extension_rows
+    08 |   ⎿  done
+    09 |       row 1
+    10 |       row 2
+    11 |       row 3
+    12 |       row 4
+    13 |       row 5
+    14 |       … +5 lines
+    15 |
+    16 | ⏺ Extension_wide
+    17 |   ⎿  done
+    18 |       wide xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx…
+    19 |       visible after the former byte cap
+    20 |
+    21 | ⏺ The tool results are settled.
+    22 |
+    23 |
+    24 |
+    25 |
+    26 |
+    27 |
+    28 |
+    29 | ────────────────────────────────────────────────────────────────────────────────────────────
+    30 | ❯ message mentat
+    31 | ────────────────────────────────────────────────────────────────────────────────────────────
+    32 |   ! not logged in · /login · /tmp/mentat-tui-82c3f… · openai/gpt-… · ! full access ? for …
+    |}]
 
 let%expect_test "compact built-in facts retain summaries and Process output" =
   let search =
@@ -248,40 +254,42 @@ let%expect_test "compact built-in facts retain summaries and Process output" =
       completed ~id:"type" ~name:"ocaml_type_at" type_at;
     ];
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
-04 |
-05 | ❯ summarize the tool facts
-06 |
-07 | ⏺ Search
-08 |   ⎿  Found 7 matches in 3 files
-09 |
-10 | ⏺ Create
-11 |   ⎿  Wrote 6 lines
-12 |
-13 | ⏺ Patch
-14 |   ⎿  Updated 2 files (+8, -3, 1 skipped)
-15 |
-16 | ⏺ Shell
-17 |   ⎿  Exited with code 3 in 15 ms
-18 |       … +2 lines
-19 |       shell output row 3
-20 |       shell output row 4
-21 |       shell output row 5
-22 |       shell output row 6
-23 |       shell output row 7
-24 |
-25 | ⏺ OCaml Type
-26 |   ⎿  int -> string (+2 more)
-27 |
-28 | ⏺ The tool results are settled.
-29 |
-30 |
-31 | ────────────────────────────────────────────────────────────────────────────────────────────
-32 | ❯ message mentat
-33 | ────────────────────────────────────────────────────────────────────────────────────────────
-34 |   ! not logged in · /login · /tmp/mentat-tui-3c9b9… · openai/gpt-… · ! full access ? for …|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+    04 |
+    05 | ❯ summarize the tool facts
+    06 |
+    07 | ⏺ Search
+    08 |   ⎿  Found 7 matches in 3 files
+    09 |
+    10 | ⏺ Create
+    11 |   ⎿  Wrote 6 lines
+    12 |
+    13 | ⏺ Patch
+    14 |   ⎿  Updated 2 files (+8, -3, 1 skipped)
+    15 |
+    16 | ⏺ Shell
+    17 |   ⎿  Exited with code 3 in 15 ms
+    18 |       … +2 lines
+    19 |       shell output row 3
+    20 |       shell output row 4
+    21 |       shell output row 5
+    22 |       shell output row 6
+    23 |       shell output row 7
+    24 |
+    25 | ⏺ OCaml Type
+    26 |   ⎿  int -> string (+2 more)
+    27 |
+    28 | ⏺ The tool results are settled.
+    29 |
+    30 |
+    31 | ────────────────────────────────────────────────────────────────────────────────────────────
+    32 | ❯ message mentat
+    33 | ────────────────────────────────────────────────────────────────────────────────────────────
+    34 |   ! not logged in · /login · /tmp/mentat-tui-82c3f… · openai/gpt-… · ! full access ? for …
+    |}]
 
 (* The shell and eval transcripts a real run stores in {!Mentat_tool.Output}:
    a metadata envelope, then the captured streams under fixed [stdout:] and
@@ -329,36 +337,38 @@ let%expect_test "shell preview shows captured output without envelope or labels"
       completed ~id:"silent" ~name:"shell" silent;
     ];
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
-04 |
-05 | ❯ run shell commands
-06 |
-07 | ⏺ Shell
-08 |   ⎿  Completed in 22 ms
-09 |       /home/user/project
-10 |
-11 | ⏺ Shell
-12 |   ⎿  Exited with code 1 in 22 ms
-13 |       compiling
-14 |       done
-15 |       warning: unused binding
-16 |       Error: build failed
-17 |
-18 | ⏺ Shell
-19 |   ⎿  Completed in 22 ms
-20 |
-21 | ⏺ The tool results are settled.
-22 |
-23 |
-24 |
-25 |
-26 |
-27 | ────────────────────────────────────────────────────────────────────────────────────────────
-28 | ❯ message mentat
-29 | ────────────────────────────────────────────────────────────────────────────────────────────
-30 |   ! not logged in · /login · /tmp/mentat-tui-3c9b9… · openai/gpt-… · ! full access ? for …|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+    04 |
+    05 | ❯ run shell commands
+    06 |
+    07 | ⏺ Shell
+    08 |   ⎿  Completed in 22 ms
+    09 |       /home/user/project
+    10 |
+    11 | ⏺ Shell
+    12 |   ⎿  Exited with code 1 in 22 ms
+    13 |       compiling
+    14 |       done
+    15 |       warning: unused binding
+    16 |       Error: build failed
+    17 |
+    18 | ⏺ Shell
+    19 |   ⎿  Completed in 22 ms
+    20 |
+    21 | ⏺ The tool results are settled.
+    22 |
+    23 |
+    24 |
+    25 |
+    26 |
+    27 | ────────────────────────────────────────────────────────────────────────────────────────────
+    28 | ❯ message mentat
+    29 | ────────────────────────────────────────────────────────────────────────────────────────────
+    30 |   ! not logged in · /login · /tmp/mentat-tui-82c3f… · openai/gpt-… · ! full access ? for …
+    |}]
 
 let%expect_test
     "preview shows a lone overflow line instead of a plus-one marker" =
@@ -375,28 +385,30 @@ let%expect_test
   run ~name:"t" ~size:(92, 22) ~prompt:"count to six"
     [ completed ~id:"seq" ~name:"shell" exactly_one_over ];
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
-04 |
-05 | ❯ count to six
-06 |
-07 | ⏺ Shell
-08 |   ⎿  Completed in 22 ms
-09 |       1
-10 |       2
-11 |       3
-12 |       4
-13 |       5
-14 |       6
-15 |
-16 | ⏺ The tool results are settled.
-17 |
-18 |
-19 | ────────────────────────────────────────────────────────────────────────────────────────────
-20 | ❯ message mentat
-21 | ────────────────────────────────────────────────────────────────────────────────────────────
-22 |   ! not logged in · /login · /tmp/mentat-tui-3c9b9… · openai/gpt-… · ! full access ? for …|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  $TESTCASE_ROOT
+    04 |
+    05 | ❯ count to six
+    06 |
+    07 | ⏺ Shell
+    08 |   ⎿  Completed in 22 ms
+    09 |       1
+    10 |       2
+    11 |       3
+    12 |       4
+    13 |       5
+    14 |       6
+    15 |
+    16 | ⏺ The tool results are settled.
+    17 |
+    18 |
+    19 | ────────────────────────────────────────────────────────────────────────────────────────────
+    20 | ❯ message mentat
+    21 | ────────────────────────────────────────────────────────────────────────────────────────────
+    22 |   ! not logged in · /login · /tmp/mentat-tui-82c3f… · openai/gpt-… · ! full access ? for …
+    |}]
 
 let%expect_test "failed and interrupted partial results settle and wrap" =
   let malformed =
@@ -433,33 +445,34 @@ let%expect_test "failed and interrupted partial results settle and wrap" =
     ~name:"t" ~size:(72, 28) ~turns:[ turn ]
     (fun t -> submit t prompt);
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-3c9b9a03.home/mentat-t…
-04 |
-05 | ❯ inspect partial tool outcomes
-06 |
-07 | ⏺ Read
-08 |   ⎿  The requested read path is deeply nested and unavailable; inspect
-09 |      the workspace root before retrying UNIQUEENDTOKEN.
-10 |
-11 |      details unavailable · not found · partial output truncated
-12 |
-13 | ⏺ Search
-14 |   ⎿  Stopped after the caller changed direction.
-15 |
-16 |      Found 3 matches in 2 files · cancelled
-17 |
-18 | ⏺ The partial outcomes are recorded.
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |
-25 | ────────────────────────────────────────────────────────────────────────
-26 | ❯ message mentat
-27 | ────────────────────────────────────────────────────────────────────────
-28 |   ! not logged in · /login · /tmp/m… · openai/gpt… · ! full access ? …|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-82c3f290.home/mentat-t…
+    04 |
+    05 | ❯ inspect partial tool outcomes
+    06 |
+    07 | ⏺ Read
+    08 |   ⎿  The requested read path is deeply nested and unavailable; inspect
+    09 |      the workspace root before retrying UNIQUEENDTOKEN.
+    10 |
+    11 |      details unavailable · not found · partial output truncated
+    12 |
+    13 | ⏺ Search
+    14 |   ⎿  Stopped after the caller changed direction.
+    15 |
+    16 |      Found 3 matches in 2 files · cancelled
+    17 |
+    18 | ⏺ The partial outcomes are recorded.
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |
+    25 | ────────────────────────────────────────────────────────────────────────
+    26 | ❯ message mentat
+    27 | ────────────────────────────────────────────────────────────────────────
+    28 |   ! not logged in · /login · /tmp/m… · openai/gpt… · ! full access ? …
+    |}]
 
-[%%run_tests "mentat.tui.tool_output"]

@@ -59,8 +59,8 @@ module Credential = Provider.Credential
 module Account = Provider.Account
 module Llm = Mentat_llm
 
-let provider_t = testable ~pp:Llm.Provider.pp ~equal:Llm.Provider.equal ()
-let problem_t = testable ~pp:Account.Problem.pp ~equal:Account.Problem.equal ()
+let provider_t = Testable.make ~pp:Llm.Provider.pp ~equal:Llm.Provider.equal
+let problem_t = Testable.make ~pp:Account.Problem.pp ~equal:Account.Problem.equal
 
 (* {2 Helpers} *)
 
@@ -778,10 +778,10 @@ let roundtrip_stable codec value =
 (* Fuzz round-trips over the arms with windtrap generators. *)
 
 let gen_int64 = Gen.map Int64.of_int (Gen.int_range 0 1_000_000_000)
-let gen_text = Gen.string_size (Gen.int_range 0 16) (Gen.char_range ' ' '~')
+let gen_text = Gen.string_of ~size:(Gen.int_range 0 16) (Gen.char_range ' ' '~')
 
 let gen_phase =
-  Gen.oneofl Artifact.Progress.[ Checking; Downloading; Verifying; Ready ]
+  Gen.of_list Artifact.Progress.[ Checking; Downloading; Verifying; Ready ]
 
 let gen_status =
   Gen.frequency
@@ -808,7 +808,7 @@ let gen_outcome =
           (fun p -> Artifact.Download_outcome.Already_installed p)
           gen_text );
       ( 1,
-        Gen.oneofl
+        Gen.of_list
           [
             Artifact.Download_outcome.Not_downloadable;
             Artifact.Download_outcome.Downloaded;
@@ -840,24 +840,23 @@ let pp_via codec ppf value =
   | Ok text -> Format.pp_print_string ppf text
   | Error message -> Format.fprintf ppf "<unencodable: %s>" message
 
-let status_t = testable ~pp:(pp_via Artifact.Status.jsont) ~gen:gen_status ()
+let status_gen = Gen.with_pp (pp_via Artifact.Status.jsont) gen_status
 
-let outcome_t =
-  testable ~pp:(pp_via Artifact.Download_outcome.jsont) ~gen:gen_outcome ()
+let outcome_gen =
+  Gen.with_pp (pp_via Artifact.Download_outcome.jsont) gen_outcome
 
-let progress_t =
-  testable ~pp:(pp_via Artifact.Progress.jsont) ~gen:gen_progress ()
+let progress_gen = Gen.with_pp (pp_via Artifact.Progress.jsont) gen_progress
 
 let artifact_status_fuzz =
-  prop' "artifact status round-trips (fuzz)" status_t
+  prop "artifact status round-trips (fuzz)" status_gen
     (roundtrip_stable Artifact.Status.jsont)
 
 let artifact_outcome_fuzz =
-  prop' "artifact outcome round-trips (fuzz)" outcome_t
+  prop "artifact outcome round-trips (fuzz)" outcome_gen
     (roundtrip_stable Artifact.Download_outcome.jsont)
 
 let artifact_progress_fuzz =
-  prop' "artifact progress round-trips (fuzz)" progress_t
+  prop "artifact progress round-trips (fuzz)" progress_gen
     (roundtrip_stable Artifact.Progress.jsont)
 
 let artifact_strict_decode () =
@@ -920,9 +919,7 @@ let local_download_remote_not_downloadable () =
 let phantom_provider = Llm.Provider.make "phantom-provider"
 
 let llm_kind =
-  testable
-    ~pp:(fun ppf k -> Format.pp_print_string ppf (Llm.Error.label k))
-    ~equal:( = ) ()
+  Testable.make ~pp:(fun ppf k -> Format.pp_print_string ppf (Llm.Error.label k)) ~equal:( = )
 
 let error_to_llm_total () =
   (* Every Error arm maps onto a provider-boundary error with the kind the .mli
@@ -1022,13 +1019,11 @@ let error_taxonomy_messages () =
 
 let secret_body = "LEAKMARKER-SECRET-DO-NOT-DISCLOSE"
 
-let leak_secret_t =
-  Testable.with_gen
-    (Gen.string_size (Gen.int_range 4 12) (Gen.char_range 'a' 'z'))
-    string
+let leak_secret_gen =
+  Gen.string_of ~size:(Gen.int_range 4 12) (Gen.char_range 'a' 'z')
 
 let secret_never_formatted =
-  prop' "account formatters never emit a secret" leak_secret_t (fun suffix ->
+  prop "account formatters never emit a secret" leak_secret_gen (fun suffix ->
       (* A secret whose material begins with a recognizable marker: the only
          thing a formatter may show is a <=4-char fingerprint (the suffix), which
          can never contain the marker. *)
@@ -1079,8 +1074,8 @@ let secret_confinement_io_path () =
     String.concat " "
       (List.map (fun a -> Format.asprintf "%a" Account.pp a) accounts)
   in
-  is_false (contains ~needle:"LEAKMARKER" outcome_text);
-  is_false (contains ~needle:"LEAKMARKER" account_text)
+  not_contains ~sub:"LEAKMARKER" outcome_text;
+  not_contains ~sub:"LEAKMARKER" account_text
 
 (* {2 Credential store faults} *)
 

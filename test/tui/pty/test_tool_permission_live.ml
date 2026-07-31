@@ -138,12 +138,10 @@ let test_shell_tool_through_permission () =
       Pty.wait terminal (Screen.has "SHELL TOOL FINISHED");
       Pty.quit terminal
 
-let () =
-  run "mentat.tui.pty.tool_permission"
-    [
-      group "Tool through permission (live, default sandbox)"
-        [
-          test "model shell tool runs and settles after permission accept"
-            ~timeout:45. test_shell_tool_through_permission;
-        ];
-    ]
+(* MIGRATION NOTE (windtrap 0.2): this suite joined the pty (inline_tests)
+   library, so the standalone [run] entry point became an inline test. The
+   old declaration carried [~timeout:45.]; inline tests have no per-test
+   timeout spelling, and the [Pty.wait] deadlines inside the body already
+   bound every blocking step. *)
+let%test "model shell tool runs and settles after permission accept" =
+  test_shell_tool_through_permission ()

@@ -65,194 +65,214 @@ let%expect_test "successful configuration shows values and origins" =
   submit t "/config";
   Tui.print t;
   [%expect
-    {|01 |  settings ──────────────────────────────────────────────────────────────────────────────── 57 values
-02 |
-03 | config  status  usage
-04 |
-05 | Session controls below apply to the next turn only.
-06 |
-07 |      setting                    value                                   source
-08 |  ›   model                      openai/gpt-5.5 medium                   next turn                  │
-09 |      permission review          choose a next-turn request              next turn                  │
-10 |      commands.compat            true                                    default built-in comm...   │
-11 |      commands.disabled          []                                      default built-in comm...   │
-12 |      commands.enabled           true                                    default built-in comm...   │
-13 |      commands.project           true                                    default built-in comm...   │
-14 |      compaction.auto            true                                    default built-in comp...   │
-15 |      image.max_bytes            5242880                                 default built-in imag...   │
-16 |      image.max_count            20                                      default built-in imag...   ↓
-17 |
-18 |   ↑↓ move · ←→ change · ↵ apply · tab page · / filter · esc back|}];
+    {|
+    01 |  settings ──────────────────────────────────────────────────────────────────────────────── 57 values
+    02 |
+    03 | config  status  usage
+    04 |
+    05 | Session controls below apply to the next turn only.
+    06 |
+    07 |      setting                    value                                   source
+    08 |  ›   model                      openai/gpt-5.5 medium                   next turn                  │
+    09 |      permission review          choose a next-turn request              next turn                  │
+    10 |      commands.compat            true                                    default built-in comm...   │
+    11 |      commands.disabled          []                                      default built-in comm...   │
+    12 |      commands.enabled           true                                    default built-in comm...   │
+    13 |      commands.project           true                                    default built-in comm...   │
+    14 |      compaction.auto            true                                    default built-in comp...   │
+    15 |      image.max_bytes            5242880                                 default built-in imag...   │
+    16 |      image.max_count            20                                      default built-in imag...   ↓
+    17 |
+    18 |   ↑↓ move · ←→ change · ↵ apply · tab page · / filter · esc back
+    |}];
   Tui.keys t "/max_steps";
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  settings ──────────────────────────────────────────────────────────────────────────────── 57 values
-02 |   /max_steps  1 match
-03 |
-04 | config  status  usage
-05 |
-06 | Session controls below apply to the next turn only.
-07 |
-08 |      setting                    value                                    source
-09 |  ›   run.max_steps              13                                       env MENTAT_MAX_STEPS;...
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |   ↑↓ select · ↵ action · esc clear filter|}];
+    {|
+    01 |  settings ──────────────────────────────────────────────────────────────────────────────── 57 values
+    02 |   /max_steps  1 match
+    03 |
+    04 | config  status  usage
+    05 |
+    06 | Session controls below apply to the next turn only.
+    07 |
+    08 |      setting                    value                                    source
+    09 |  ›   run.max_steps              13                                       env MENTAT_MAX_STEPS;...
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |   ↑↓ select · ↵ action · esc clear filter
+    |}];
   Tui.keys t Key.escape;
   Tui.settle t;
   Tui.keys t "/base_url";
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  settings ──────────────────────────────────────────────────────────────────────────────── 57 values
-02 |   /base_url  1 match
-03 |
-04 | config  status  usage
-05 |
-06 | Session controls below apply to the next turn only.
-07 |
-08 |      setting                    value                                    source
-09 |  ›   providers.openai.base...   https://[REDACTED]@api.example.test/v1   user /user.json
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |   ↑↓ select · ↵ action · esc clear filter|}];
+    {|
+    01 |  settings ──────────────────────────────────────────────────────────────────────────────── 57 values
+    02 |   /base_url  1 match
+    03 |
+    04 | config  status  usage
+    05 |
+    06 | Session controls below apply to the next turn only.
+    07 |
+    08 |      setting                    value                                    source
+    09 |  ›   providers.openai.base...   https://[REDACTED]@api.example.test/v1   user /user.json
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |   ↑↓ select · ↵ action · esc clear filter
+    |}];
   Tui.keys t Key.escape;
   Tui.settle t;
   Tui.keys t "/web.enabled";
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  settings ──────────────────────────────────────────────────────────────────────────────── 57 values
-02 |   /web.enabled  1 match
-03 |
-04 | config  status  usage
-05 |
-06 | Session controls below apply to the next turn only.
-07 |
-08 |      setting                    value                                    source
-09 |  ›   web.enabled                true                                     override
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |   ↑↓ select · ↵ action · esc clear filter|}]
+    {|
+    01 |  settings ──────────────────────────────────────────────────────────────────────────────── 57 values
+    02 |   /web.enabled  1 match
+    03 |
+    04 | config  status  usage
+    05 |
+    06 | Session controls below apply to the next turn only.
+    07 |
+    08 |      setting                    value                                    source
+    09 |  ›   web.enabled                true                                     override
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |   ↑↓ select · ↵ action · esc clear filter
+    |}]
 
 let%expect_test "config table pages within its measured body" =
   Tui.run ~name:"settings-config-page" ~size:(80, 12) @@ fun t ->
   submit t "/config";
   Tui.print t;
   [%expect
-    {|01 |  settings ────────────────────────────────────────────────────────── unavailable
-02 |
-03 | config  status  usage
-04 |
-05 | Session controls below apply to the next turn only.
-06 |
-07 | !  configuration unavailable in the visual harness
-08 |
-09 |      setting              value                           source
-10 |  ›   model                openai/gpt-5.5 medium           next turn            ↓
-11 |
-12 |   ↑↓ move · ←→ change · ↵ apply · tab page · / filter · esc back|}];
+    {|
+    01 |  settings ────────────────────────────────────────────────────────── unavailable
+    02 |
+    03 | config  status  usage
+    04 |
+    05 | Session controls below apply to the next turn only.
+    06 |
+    07 | !  configuration unavailable in the visual harness
+    08 |
+    09 |      setting              value                           source
+    10 |  ›   model                openai/gpt-5.5 medium           next turn            ↓
+    11 |
+    12 |   ↑↓ move · ←→ change · ↵ apply · tab page · / filter · esc back
+    |}];
   Tui.keys t page_down;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  settings ────────────────────────────────────────────────────────── unavailable
-02 |
-03 | config  status  usage
-04 |
-05 | Session controls below apply to the next turn only.
-06 |
-07 | !  configuration unavailable in the visual harness
-08 |
-09 |      setting              value                           source
-10 |  ›   permission review    choose a next-turn request      next turn            ↑
-11 |
-12 |   ↑↓ move · ←→ change · ↵ apply · tab page · / filter · esc back|}];
+    {|
+    01 |  settings ────────────────────────────────────────────────────────── unavailable
+    02 |
+    03 | config  status  usage
+    04 |
+    05 | Session controls below apply to the next turn only.
+    06 |
+    07 | !  configuration unavailable in the visual harness
+    08 |
+    09 |      setting              value                           source
+    10 |  ›   permission review    choose a next-turn request      next turn            ↑
+    11 |
+    12 |   ↑↓ move · ←→ change · ↵ apply · tab page · / filter · esc back
+    |}];
   Tui.keys t "/jk";
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  settings ────────────────────────────────────────────────────────── unavailable
-02 |   /jk  no matches
-03 |
-04 | config  status  usage
-05 |
-06 | Session controls below apply to the next turn only.
-07 |
-08 | !  configuration unavailable in the visual harness
-09 |
-10 | No matching settings.
-11 |
-12 |   type to filter · esc clear filter|}]
+    {|
+    01 |  settings ────────────────────────────────────────────────────────── unavailable
+    02 |   /jk  no matches
+    03 |
+    04 | config  status  usage
+    05 |
+    06 | Session controls below apply to the next turn only.
+    07 |
+    08 | !  configuration unavailable in the visual harness
+    09 |
+    10 | No matching settings.
+    11 |
+    12 |   type to filter · esc clear filter
+    |}]
 
 let%expect_test "status scroll box owns measured page keys" =
   Tui.run ~name:"settings-status-page" ~size:(80, 12) @@ fun t ->
   submit t "/status";
   Tui.print t;
   [%expect
-    {|01 |  settings ────────────────────────────────────────────────────────── 1 providers
-02 |
-03 | config  status  usage
-04 |
-05 | Runtime                                                                        █
-06 |   version         dev                                                          █
-07 |   current model   openai/gpt-5.5 medium                                        █
-08 |   workspace       ~/mentat-tui-settings-sta2ad2d049
-09 |   context window  128,000 tokens
-10 |   launch sandbox  danger-full-access
-11 |
-12 |   tab page · esc back|}];
+    {|
+    01 |  settings ────────────────────────────────────────────────────────── 1 providers
+    02 |
+    03 | config  status  usage
+    04 |
+    05 | Runtime                                                                        █
+    06 |   version         dev                                                          █
+    07 |   current model   openai/gpt-5.5 medium                                        █
+    08 |   workspace       ~/mentat-tui-settings-sta6da2473b
+    09 |   context window  128,000 tokens
+    10 |   launch sandbox  danger-full-access
+    11 |
+    12 |   tab page · esc back
+    |}];
   Tui.keys t page_down;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  settings ────────────────────────────────────────────────────────── 1 providers
-02 |
-03 | config  status  usage
-04 |
-05 |   workspace       ~/mentat-tui-settings-sta2ad2d049
-06 |   context window  128,000 tokens                                               ▄
-07 |   launch sandbox  danger-full-access                                           █
-08 |                                                                                █
-09 | Session                                                                        ▀
-10 |   No active session.
-11 |
-12 |   tab page · esc back|}];
+    {|
+    01 |  settings ────────────────────────────────────────────────────────── 1 providers
+    02 |
+    03 | config  status  usage
+    04 |
+    05 |   workspace       ~/mentat-tui-settings-sta6da2473b
+    06 |   context window  128,000 tokens                                               ▄
+    07 |   launch sandbox  danger-full-access                                           █
+    08 |                                                                                █
+    09 | Session                                                                        ▀
+    10 |   No active session.
+    11 |
+    12 |   tab page · esc back
+    |}];
   Tui.keys t page_up;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  settings ────────────────────────────────────────────────────────── 1 providers
-02 |
-03 | config  status  usage
-04 |
-05 | Runtime                                                                        █
-06 |   version         dev                                                          █
-07 |   current model   openai/gpt-5.5 medium                                        █
-08 |   workspace       ~/mentat-tui-settings-sta2ad2d049
-09 |   context window  128,000 tokens
-10 |   launch sandbox  danger-full-access
-11 |
-12 |   tab page · esc back|}]
+    {|
+    01 |  settings ────────────────────────────────────────────────────────── 1 providers
+    02 |
+    03 | config  status  usage
+    04 |
+    05 | Runtime                                                                        █
+    06 |   version         dev                                                          █
+    07 |   current model   openai/gpt-5.5 medium                                        █
+    08 |   workspace       ~/mentat-tui-settings-sta6da2473b
+    09 |   context window  128,000 tokens
+    10 |   launch sandbox  danger-full-access
+    11 |
+    12 |   tab page · esc back
+    |}]
 
 let%expect_test "usage scroll box pages active-session metrics" =
   let usage =
@@ -269,34 +289,38 @@ let%expect_test "usage scroll box pages active-session metrics" =
   submit t "/usage";
   Tui.print t;
   [%expect
-    {|01 |  settings ───────────────────────────────────────────────────────── this session
-02 |
-03 | config  status  usage
-04 |
-05 | Model                                                                          █
-06 |   openai/gpt-5.5                                                               █
-07 |
-08 | Tokens
-09 |   total        17,557
-10 |   input        12,345
-11 |
-12 |   tab page · esc back|}];
+    {|
+    01 |  settings ───────────────────────────────────────────────────────── this session
+    02 |
+    03 | config  status  usage
+    04 |
+    05 | Model                                                                          █
+    06 |   openai/gpt-5.5                                                               █
+    07 |
+    08 | Tokens
+    09 |   total        17,557
+    10 |   input        12,345
+    11 |
+    12 |   tab page · esc back
+    |}];
   Tui.keys t page_down;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  settings ───────────────────────────────────────────────────────── this session
-02 |
-03 | config  status  usage
-04 |
-05 | Tokens
-06 |   total        17,557                                                          █
-07 |   input        12,345                                                          █
-08 |   cache read   4,321
-09 |   cache write  123
-10 |   output       678
-11 |
-12 |   tab page · esc back|}]
+    {|
+    01 |  settings ───────────────────────────────────────────────────────── this session
+    02 |
+    03 | config  status  usage
+    04 |
+    05 | Tokens
+    06 |   total        17,557                                                          █
+    07 |   input        12,345                                                          █
+    08 |   cache read   4,321
+    09 |   cache write  123
+    10 |   output       678
+    11 |
+    12 |   tab page · esc back
+    |}]
 
 let%expect_test "settings queries survive a model panel overlay" =
   let turn =
@@ -318,60 +342,64 @@ let%expect_test "settings queries survive a model panel overlay" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  settings ────────────────────────────────────────────────────────── unavailable
-02 |
-03 | config  status  usage
-04 |
-05 | Session controls below apply to the next turn only.
-06 |
-07 | !  configuration unavailable in the visual harness
-08 |
-09 |      setting               value                           source
-10 |  ›   model                 openai/gpt-5.5                  next turn
-11 |      permission review     choose a next-turn request      next turn
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   ↑↓ move · ←→ change · ↵ apply · tab page · / filter · esc back|}];
+    {|
+    01 |  settings ────────────────────────────────────────────────────────── unavailable
+    02 |
+    03 | config  status  usage
+    04 |
+    05 | Session controls below apply to the next turn only.
+    06 |
+    07 | !  configuration unavailable in the visual harness
+    08 |
+    09 |      setting               value                           source
+    10 |  ›   model                 openai/gpt-5.5                  next turn
+    11 |      permission review     choose a next-turn request      next turn
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ↑↓ move · ←→ change · ↵ apply · tab page · / filter · esc back
+    |}];
   (* Tab switches pages; the arrow keys never do, so their meaning never
      depends on the selected row. *)
   Tui.keys t Key.tab;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  settings ────────────────────────────────────────────────────────── 1 providers
-02 |
-03 | config  status  usage
-04 |
-05 | Runtime
-06 |   version         dev
-07 |   current model   openai/gpt-5.5
-08 |   workspace       ~/mentat-tui-settings-model-33392054
-09 |   context window  128,000 tokens
-10 |   launch sandbox  danger-full-access
-11 |
-12 | Session
-13 |   id            session-visual-00001
-14 |   lifecycle     active
-15 |   phase         idle
-16 |   active model  openai/gpt-5.5
-17 |   waiting       none
-18 |   workflow      build
-19 |   last outcome  completed
-20 |
-21 | Providers
-22 |   openai  missing
-23 |
-24 |   tab page · esc back|}]
+    {|
+    01 |  settings ────────────────────────────────────────────────────────── 1 providers
+    02 |
+    03 | config  status  usage
+    04 |
+    05 | Runtime
+    06 |   version         dev
+    07 |   current model   openai/gpt-5.5
+    08 |   workspace       ~/mentat-tui-settings-model-127e7e54
+    09 |   context window  128,000 tokens
+    10 |   launch sandbox  danger-full-access
+    11 |
+    12 | Session
+    13 |   id            session-visual-00001
+    14 |   lifecycle     active
+    15 |   phase         idle
+    16 |   active model  openai/gpt-5.5
+    17 |   waiting       none
+    18 |   workflow      build
+    19 |   last outcome  completed
+    20 |
+    21 | Providers
+    22 |   openai  missing
+    23 |
+    24 |   tab page · esc back
+    |}]
 
 let%expect_test "a readiness refresh failure retains the footer fact" =
   let provider = Mentat_llm.Provider.make "openai" in
@@ -392,58 +420,62 @@ let%expect_test "a readiness refresh failure retains the footer fact" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  settings ────────────────────────────────────────────────────────── unavailable
-02 |
-03 | config  status  usage
-04 |
-05 | Runtime
-06 |   version         dev
-07 |   current model   openai/gpt-5.5 medium
-08 |   workspace       ~/mentat-tui-settings-readiness-431c1fe2
-09 |   context window  128,000 tokens
-10 |   launch sandbox  danger-full-access
-11 |
-12 | Session
-13 |   No active session.
-14 |
-15 | Providers
-16 | !  readiness refresh failed
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |   tab page · esc back|}];
+    {|
+    01 |  settings ────────────────────────────────────────────────────────── unavailable
+    02 |
+    03 | config  status  usage
+    04 |
+    05 | Runtime
+    06 |   version         dev
+    07 |   current model   openai/gpt-5.5 medium
+    08 |   workspace       ~/mentat-tui-settings-readiness-532d1d82
+    09 |   context window  128,000 tokens
+    10 |   launch sandbox  danger-full-access
+    11 |
+    12 | Session
+    13 |   No active session.
+    14 |
+    15 | Providers
+    16 | !  readiness refresh failed
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   tab page · esc back
+    |}];
   Tui.keys t Key.escape;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-07 |
-08 |                            dev · openai/gpt-5.5 medium
-09 |
-10 |      ▎ welcome — and thanks for trying mentat this early.
-11 |      ▎ it's experimental: sessions and config may change without migration.
-12 |
-13 |
-14 | ────────────────────────────────────────────────────────────────────────────────
-15 | ❯ message mentat
-16 | ────────────────────────────────────────────────────────────────────────────────
-17 |
-18 |                          ! /login — no connected account
-19 |                               ∅ no recent sessions
-20 |
-21 |
-22 |
-23 |
-24 |   ! not logged in · /login · ~/menta… · openai/gpt-5.5 m… · ! full access ? f…|}]
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |                           █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    06 |                           █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    07 |
+    08 |                            dev · openai/gpt-5.5 medium
+    09 |
+    10 |      ▎ welcome — and thanks for trying mentat this early.
+    11 |      ▎ it's experimental: sessions and config may change without migration.
+    12 |
+    13 |
+    14 | ────────────────────────────────────────────────────────────────────────────────
+    15 | ❯ message mentat
+    16 | ────────────────────────────────────────────────────────────────────────────────
+    17 |
+    18 |                          ! /login — no connected account
+    19 |                               ∅ no recent sessions
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |   ! not logged in · /login · ~/menta… · openai/gpt-5.5 m… · ! full access ? f…
+    |}]
 
 let%expect_test "Tab cycles pages and the arrow keys never leave a page" =
   Tui.run ~name:"settings-key-semantics" ~size:(80, 12) @@ fun t ->
@@ -455,66 +487,73 @@ let%expect_test "Tab cycles pages and the arrow keys never leave a page" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  settings ────────────────────────────────────────────────────────── unavailable
-02 |
-03 | config  status  usage
-04 |
-05 | Session controls below apply to the next turn only.
-06 |
-07 | !  configuration unavailable in the visual harness
-08 |
-09 |      setting              value                           source
-10 |  ›   model                openai/gpt-5.5 medium           next turn            ↓
-11 |
-12 |   ↑↓ move · ←→ change · ↵ apply · tab page · / filter · esc back|}];
+    {|
+    01 |  settings ────────────────────────────────────────────────────────── unavailable
+    02 |
+    03 | config  status  usage
+    04 |
+    05 | Session controls below apply to the next turn only.
+    06 |
+    07 | !  configuration unavailable in the visual harness
+    08 |
+    09 |      setting              value                           source
+    10 |  ›   model                openai/gpt-5.5 medium           next turn            ↓
+    11 |
+    12 |   ↑↓ move · ←→ change · ↵ apply · tab page · / filter · esc back
+    |}];
   (* Tab is the page switch: config -> status -> usage -> config. *)
   Tui.keys t Key.tab;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  settings ────────────────────────────────────────────────────────── 1 providers
-02 |
-03 | config  status  usage
-04 |
-05 | Runtime                                                                        █
-06 |   version         dev                                                          █
-07 |   current model   openai/gpt-5.5 medium                                        █
-08 |   workspace       ~/mentat-tui-settings-key-sda3ee1d3
-09 |   context window  128,000 tokens
-10 |   launch sandbox  danger-full-access
-11 |
-12 |   tab page · esc back|}];
+    {|
+    01 |  settings ────────────────────────────────────────────────────────── 1 providers
+    02 |
+    03 | config  status  usage
+    04 |
+    05 | Runtime                                                                        █
+    06 |   version         dev                                                          █
+    07 |   current model   openai/gpt-5.5 medium                                        █
+    08 |   workspace       ~/mentat-tui-settings-key-se3c54ffa
+    09 |   context window  128,000 tokens
+    10 |   launch sandbox  danger-full-access
+    11 |
+    12 |   tab page · esc back
+    |}];
   Tui.keys t Key.tab;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  settings ─────────────────────────────────────────────────────────── no session
-02 |
-03 | config  status  usage
-04 |
-05 | No active session usage.
-06 |
-07 |
-08 |
-09 |
-10 |
-11 |
-12 |   tab page · esc back|}];
+    {|
+    01 |  settings ─────────────────────────────────────────────────────────── no session
+    02 |
+    03 | config  status  usage
+    04 |
+    05 | No active session usage.
+    06 |
+    07 |
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |   tab page · esc back
+    |}];
   Tui.keys t Key.tab;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |  settings ────────────────────────────────────────────────────────── unavailable
-02 |
-03 | config  status  usage
-04 |
-05 | Session controls below apply to the next turn only.
-06 |
-07 | !  configuration unavailable in the visual harness
-08 |
-09 |      setting              value                           source
-10 |  ›   model                openai/gpt-5.5 medium           next turn            ↓
-11 |
-12 |   ↑↓ move · ←→ change · ↵ apply · tab page · / filter · esc back|}]
+    {|
+    01 |  settings ────────────────────────────────────────────────────────── unavailable
+    02 |
+    03 | config  status  usage
+    04 |
+    05 | Session controls below apply to the next turn only.
+    06 |
+    07 | !  configuration unavailable in the visual harness
+    08 |
+    09 |      setting              value                           source
+    10 |  ›   model                openai/gpt-5.5 medium           next turn            ↓
+    11 |
+    12 |   ↑↓ move · ←→ change · ↵ apply · tab page · / filter · esc back
+    |}]
 
-[%%run_tests "mentat.tui.settings"]

@@ -342,4 +342,3 @@ let%expect_test
   Pty.wait terminal (Screen.has "❯ message mentat");
   Pty.quit terminal
 
-[%%run_tests "mentat.tui.pty.cli_launch_misc"]

@@ -1265,4 +1265,3 @@ let%expect_test "constructor rejects an empty immutable program prefix" =
     diagnostic: Ocaml.Type_at.make: program prefix must not be empty
     raised: true invocations: 0 |}]
 
-[%%run_tests "mentat.tools.ocaml_type_at"]

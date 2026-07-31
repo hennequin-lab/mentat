@@ -16,7 +16,7 @@ let event_t =
     && String.equal name b.Sse.Event.name
     && String.equal data b.Sse.Event.data
   in
-  testable ~pp ~equal ()
+  Testable.make ~pp ~equal
 
 (* A line source over a string, yielding each '\n'-separated segment — the shape
    a byte reader hands to [Sse.Reader.next]. *)

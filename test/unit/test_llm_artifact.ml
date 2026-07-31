@@ -114,10 +114,12 @@ let start_server ?status ~requests body =
       match serve ?status socket ~requests body with
       | () ->
           Unix.close socket;
-          exit 0
+          (* [Unix._exit]: a forked child must not run the parent's [at_exit]
+             machinery (windtrap's runner intercepts [Stdlib.exit]). *)
+          Unix._exit 0
       | exception exn ->
           prerr_endline (Printexc.to_string exn);
-          exit 2)
+          Unix._exit 2)
   | pid ->
       Unix.close socket;
       (pid, Printf.sprintf "http://127.0.0.1:%d/artifact" port)
@@ -183,15 +185,17 @@ let spawn_install ~url ~path ~body ~cancel_path ~barrier_phase ~expected =
       in
       Unix.close ready_write;
       Unix.close release_read;
+      (* [Unix._exit]: a forked child must not run the parent's [at_exit]
+         machinery (windtrap's runner intercepts [Stdlib.exit]). *)
       begin match (expected, result) with
-      | Success, Ok () -> exit 0
+      | Success, Ok () -> Unix._exit 0
       | Cancelled, Error error when Llm.Error.kind error = Llm.Error.Cancelled
         ->
-          exit 0
+          Unix._exit 0
       | (Success | Cancelled), Error error ->
           Format.eprintf "%a@." Llm.Error.pp error;
-          exit 3
-      | Cancelled, Ok () -> exit 4
+          Unix._exit 3
+      | Cancelled, Ok () -> Unix._exit 4
       end
   | pid ->
       Unix.close ready_write;

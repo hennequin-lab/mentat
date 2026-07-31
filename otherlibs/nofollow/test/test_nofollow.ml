@@ -45,7 +45,7 @@ let kind_pp ppf = function
   | `Symlink -> Format.pp_print_string ppf "Symlink"
   | `Other -> Format.pp_print_string ppf "Other"
 
-let kind_t = testable ~pp:kind_pp ~equal:( = ) ()
+let kind_t = Testable.make ~pp:kind_pp ~equal:( = )
 
 let expect_unix_error expected msg f =
   match f () with

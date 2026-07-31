@@ -46,7 +46,7 @@ module Login_progress = Provider.Auth.Login.Progress
 
 (* Generic helpers. *)
 
-let error_t = testable ~pp:Error.pp ~equal:Error.equal ()
+let error_t = Testable.make ~pp:Error.pp ~equal:Error.equal
 
 let ok = function
   | Ok value -> value

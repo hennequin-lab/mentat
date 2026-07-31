@@ -1335,4 +1335,3 @@ retained value absent at top level: true
 non-presentation fields absent: true
 anchors absent: true|}]
 
-[%%run_tests "mentat.tools.read_file"]

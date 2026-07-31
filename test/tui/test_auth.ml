@@ -114,90 +114,94 @@ let%expect_test "external login names its provider once in the complete panel" =
   submit t "/login external-provider";
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |
-06 |
-07 |
-08 |
-09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-11 |
-12 |                                      dev · openai/gpt-5.5 medium
-13 |
-14 |                ▎ welcome — and thanks for trying mentat this early.
-15 |                ▎ it's experimental: sessions and config may change without migration.
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |
-25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-26 |    log in
-27 |
-28 |   Log in to external-provider · Corporate SSO
-29 |
-30 |   Open the company identity portal and approve Mentat for this
-31 |   workspace.
-32 |
-33 |   This declared method cannot be completed by the Mentat client.
-34 |
-35 |   Press c to copy the instructions. Escape goes back.
-36 |
-37 |
-38 |
-39 |
-40 ||}];
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |
+    06 |
+    07 |
+    08 |
+    09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    11 |
+    12 |                                      dev · openai/gpt-5.5 medium
+    13 |
+    14 |                ▎ welcome — and thanks for trying mentat this early.
+    15 |                ▎ it's experimental: sessions and config may change without migration.
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |
+    25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    26 |    log in
+    27 |
+    28 |   Log in to external-provider · Corporate SSO
+    29 |
+    30 |   Open the company identity portal and approve Mentat for this
+    31 |   workspace.
+    32 |
+    33 |   This declared method cannot be completed by the Mentat client.
+    34 |
+    35 |   Press c to copy the instructions. Escape goes back.
+    36 |
+    37 |
+    38 |
+    39 |
+    40 |
+    |}];
   Tui.keys t "c";
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |
-06 |
-07 |
-08 |
-09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-11 |
-12 |                                      dev · openai/gpt-5.5 medium
-13 |
-14 |                ▎ welcome — and thanks for trying mentat this early.
-15 |                ▎ it's experimental: sessions and config may change without migration.
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |
-25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-26 |    log in
-27 |
-28 |   Log in to external-provider · Corporate SSO
-29 |
-30 |   Open the company identity portal and approve Mentat for this
-31 |   workspace.
-32 |
-33 |   This declared method cannot be completed by the Mentat client.
-34 |
-35 |   Instructions copied. Escape goes back.
-36 |
-37 |
-38 |
-39 |
-40 ||}]
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |
+    06 |
+    07 |
+    08 |
+    09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    11 |
+    12 |                                      dev · openai/gpt-5.5 medium
+    13 |
+    14 |                ▎ welcome — and thanks for trying mentat this early.
+    15 |                ▎ it's experimental: sessions and config may change without migration.
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |
+    25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    26 |    log in
+    27 |
+    28 |   Log in to external-provider · Corporate SSO
+    29 |
+    30 |   Open the company identity portal and approve Mentat for this
+    31 |   workspace.
+    32 |
+    33 |   This declared method cannot be completed by the Mentat client.
+    34 |
+    35 |   Instructions copied. Escape goes back.
+    36 |
+    37 |
+    38 |
+    39 |
+    40 |
+    |}]
 
 let%expect_test
     "browser progress crosses the exact URL boundary and saved login refreshes \
@@ -234,134 +238,140 @@ let%expect_test
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |
-06 |
-07 |
-08 |
-09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-11 |
-12 |                                      dev · openai/gpt-5.5 medium
-13 |
-14 |                ▎ welcome — and thanks for trying mentat this early.
-15 |                ▎ it's experimental: sessions and config may change without migration.
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |
-25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-26 |    log in
-27 |
-28 |   Log in to browser-provider · browser
-29 |
-30 |   Sign-in URL
-31 |   https://auth.example/start?attempt=exact
-32 |
-33 |   Browser opened. Complete sign-in there.
-34 |
-35 |
-36 |
-37 |
-38 |
-39 |
-40 ||}];
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |
+    06 |
+    07 |
+    08 |
+    09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    11 |
+    12 |                                      dev · openai/gpt-5.5 medium
+    13 |
+    14 |                ▎ welcome — and thanks for trying mentat this early.
+    15 |                ▎ it's experimental: sessions and config may change without migration.
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |
+    25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    26 |    log in
+    27 |
+    28 |   Log in to browser-provider · browser
+    29 |
+    30 |   Sign-in URL
+    31 |   https://auth.example/start?attempt=exact
+    32 |
+    33 |   Browser opened. Complete sign-in there.
+    34 |
+    35 |
+    36 |
+    37 |
+    38 |
+    39 |
+    40 |
+    |}];
   Tui.next_login_step t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |
-06 |
-07 |
-08 |
-09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-11 |
-12 |                                      dev · openai/gpt-5.5 medium
-13 |
-14 |                ▎ welcome — and thanks for trying mentat this early.
-15 |                ▎ it's experimental: sessions and config may change without migration.
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |
-25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-26 |    log in
-27 |
-28 |   Log in to browser-provider · browser
-29 |
-30 |   Sign-in URL
-31 |   https://auth.example/start?attempt=exact
-32 |
-33 |   Listening for the authorization callback at
-34 |
-35 |   http://127.0.0.1:$PORT/callback
-36 |
-37 |
-38 |
-39 |
-40 ||}];
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |
+    06 |
+    07 |
+    08 |
+    09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    11 |
+    12 |                                      dev · openai/gpt-5.5 medium
+    13 |
+    14 |                ▎ welcome — and thanks for trying mentat this early.
+    15 |                ▎ it's experimental: sessions and config may change without migration.
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |
+    25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    26 |    log in
+    27 |
+    28 |   Log in to browser-provider · browser
+    29 |
+    30 |   Sign-in URL
+    31 |   https://auth.example/start?attempt=exact
+    32 |
+    33 |   Listening for the authorization callback at
+    34 |
+    35 |   http://127.0.0.1:$PORT/callback
+    36 |
+    37 |
+    38 |
+    39 |
+    40 |
+    |}];
   Tui.next_login_step t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |
-06 |
-07 |
-08 |
-09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-11 |
-12 |                                      dev · openai/gpt-5.5 medium
-13 |
-14 |                ▎ welcome — and thanks for trying mentat this early.
-15 |                ▎ it's experimental: sessions and config may change without migration.
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |
-25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-26 |    log in
-27 |
-28 |   browser-provider
-29 |
-30 |   Credential saved.
-31 |
-32 |   Account readiness: blocked
-33 |
-34 |   Enter or Escape closes.
-35 |
-36 |
-37 |
-38 |
-39 |
-40 ||}]
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |
+    06 |
+    07 |
+    08 |
+    09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    11 |
+    12 |                                      dev · openai/gpt-5.5 medium
+    13 |
+    14 |                ▎ welcome — and thanks for trying mentat this early.
+    15 |                ▎ it's experimental: sessions and config may change without migration.
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |
+    25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    26 |    log in
+    27 |
+    28 |   browser-provider
+    29 |
+    30 |   Credential saved.
+    31 |
+    32 |   Account readiness: blocked
+    33 |
+    34 |   Enter or Escape closes.
+    35 |
+    36 |
+    37 |
+    38 |
+    39 |
+    40 |
+    |}]
 
 let%expect_test
     "browser copy, reopen, and Escape cancellation remain visibly correlated" =
@@ -390,46 +400,48 @@ let%expect_test
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |
-06 |
-07 |
-08 |
-09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-11 |
-12 |                                      dev · openai/gpt-5.5 medium
-13 |
-14 |                ▎ welcome — and thanks for trying mentat this early.
-15 |                ▎ it's experimental: sessions and config may change without migration.
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |
-25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-26 |    log in
-27 |
-28 |   Log in to browser-controls · browser
-29 |
-30 |   Sign-in URL
-31 |   https://auth.example/control?attempt=browser · copied
-32 |
-33 |   Browser opened. Complete sign-in there.
-34 |
-35 |
-36 |
-37 |
-38 |
-39 |
-40 ||}];
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |
+    06 |
+    07 |
+    08 |
+    09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    11 |
+    12 |                                      dev · openai/gpt-5.5 medium
+    13 |
+    14 |                ▎ welcome — and thanks for trying mentat this early.
+    15 |                ▎ it's experimental: sessions and config may change without migration.
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |
+    25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    26 |    log in
+    27 |
+    28 |   Log in to browser-controls · browser
+    29 |
+    30 |   Sign-in URL
+    31 |   https://auth.example/control?attempt=browser · copied
+    32 |
+    33 |   Browser opened. Complete sign-in there.
+    34 |
+    35 |
+    36 |
+    37 |
+    38 |
+    39 |
+    40 |
+    |}];
   Tui.enter t;
   Tui.settle t;
   require_opened_urls t [ url; url ];
@@ -441,46 +453,48 @@ let%expect_test
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |
-06 |
-07 |
-08 |
-09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-11 |
-12 |                                      dev · openai/gpt-5.5 medium
-13 |
-14 |                ▎ welcome — and thanks for trying mentat this early.
-15 |                ▎ it's experimental: sessions and config may change without migration.
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |
-25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-26 |    log in
-27 |
-28 |   Choose a provider.
-29 |
-30 |    ▶ 1  browser-controls
-31 |      missing
-32 |
-33 |
-34 |
-35 |
-36 |
-37 |
-38 |
-39 |
-40 ||}]
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |
+    06 |
+    07 |
+    08 |
+    09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    11 |
+    12 |                                      dev · openai/gpt-5.5 medium
+    13 |
+    14 |                ▎ welcome — and thanks for trying mentat this early.
+    15 |                ▎ it's experimental: sessions and config may change without migration.
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |
+    25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    26 |    log in
+    27 |
+    28 |   Choose a provider.
+    29 |
+    30 |    ▶ 1  browser-controls
+    31 |      missing
+    32 |
+    33 |
+    34 |
+    35 |
+    36 |
+    37 |
+    38 |
+    39 |
+    40 |
+    |}]
 
 let%expect_test
     "cancelled and failed device logins settle without refreshing discovery" =
@@ -516,90 +530,94 @@ let%expect_test
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |
-06 |
-07 |
-08 |
-09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-11 |
-12 |                                      dev · openai/gpt-5.5 medium
-13 |
-14 |                ▎ welcome — and thanks for trying mentat this early.
-15 |                ▎ it's experimental: sessions and config may change without migration.
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |
-25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-26 |    log in
-27 |
-28 |   Log in to device-provider · device code                                                          █
-29 |                                                                                                    █
-30 |   Verification URL                                                                                 █
-31 |   https://auth.example/activate                                                                    █
-32 |                                                                                                    █
-33 |   Device code                                                                                      ▀
-34 |   ABCD-EFGH
-35 |
-36 |   Challenge expires in 600 seconds.
-37 |
-38 |   Open the verification page, then enter the device code.
-39 |
-40 ||}];
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |
+    06 |
+    07 |
+    08 |
+    09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    11 |
+    12 |                                      dev · openai/gpt-5.5 medium
+    13 |
+    14 |                ▎ welcome — and thanks for trying mentat this early.
+    15 |                ▎ it's experimental: sessions and config may change without migration.
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |
+    25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    26 |    log in
+    27 |
+    28 |   Log in to device-provider · device code                                                          █
+    29 |                                                                                                    █
+    30 |   Verification URL                                                                                 █
+    31 |   https://auth.example/activate                                                                    █
+    32 |                                                                                                    █
+    33 |   Device code                                                                                      ▀
+    34 |   ABCD-EFGH
+    35 |
+    36 |   Challenge expires in 600 seconds.
+    37 |
+    38 |   Open the verification page, then enter the device code.
+    39 |
+    40 |
+    |}];
   Tui.next_login_step t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |
-06 |
-07 |
-08 |
-09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-11 |
-12 |                                      dev · openai/gpt-5.5 medium
-13 |
-14 |                ▎ welcome — and thanks for trying mentat this early.
-15 |                ▎ it's experimental: sessions and config may change without migration.
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |
-25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-26 |    log in
-27 |
-28 |   device-provider
-29 |
-30 |   Login cancelled.
-31 |
-32 |   Enter or Escape closes.
-33 |
-34 |
-35 |
-36 |
-37 |
-38 |
-39 |
-40 ||}];
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |
+    06 |
+    07 |
+    08 |
+    09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    11 |
+    12 |                                      dev · openai/gpt-5.5 medium
+    13 |
+    14 |                ▎ welcome — and thanks for trying mentat this early.
+    15 |                ▎ it's experimental: sessions and config may change without migration.
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |
+    25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    26 |    log in
+    27 |
+    28 |   device-provider
+    29 |
+    30 |   Login cancelled.
+    31 |
+    32 |   Enter or Escape closes.
+    33 |
+    34 |
+    35 |
+    36 |
+    37 |
+    38 |
+    39 |
+    40 |
+    |}];
   Tui.keys t Key.escape;
   Tui.settle t;
   submit t "/login device-provider";
@@ -607,46 +625,48 @@ let%expect_test
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |
-06 |
-07 |
-08 |
-09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-11 |
-12 |                                      dev · openai/gpt-5.5 medium
-13 |
-14 |                ▎ welcome — and thanks for trying mentat this early.
-15 |                ▎ it's experimental: sessions and config may change without migration.
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |
-25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-26 |    log in
-27 |
-28 |   device-provider
-29 |
-30 |   device exchange failed
-31 |
-32 |   Enter or Escape closes.
-33 |
-34 |
-35 |
-36 |
-37 |
-38 |
-39 |
-40 ||}]
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |
+    06 |
+    07 |
+    08 |
+    09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    11 |
+    12 |                                      dev · openai/gpt-5.5 medium
+    13 |
+    14 |                ▎ welcome — and thanks for trying mentat this early.
+    15 |                ▎ it's experimental: sessions and config may change without migration.
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |
+    25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    26 |    log in
+    27 |
+    28 |   device-provider
+    29 |
+    30 |   device exchange failed
+    31 |
+    32 |   Enter or Escape closes.
+    33 |
+    34 |
+    35 |
+    36 |
+    37 |
+    38 |
+    39 |
+    40 |
+    |}]
 
 let%expect_test
     "device code and URL copy, open, and control-c cancellation stay visible" =
@@ -677,135 +697,141 @@ let%expect_test
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |
-06 |
-07 |
-08 |
-09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-11 |
-12 |                                      dev · openai/gpt-5.5 medium
-13 |
-14 |                ▎ welcome — and thanks for trying mentat this early.
-15 |                ▎ it's experimental: sessions and config may change without migration.
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |
-25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-26 |    log in
-27 |
-28 |   Log in to device-controls · device code                                                          █
-29 |                                                                                                    █
-30 |   Verification URL                                                                                 █
-31 |   https://auth.example/device-controls                                                             █
-32 |                                                                                                    █
-33 |   Device code                                                                                      ▀
-34 |   SAFE-CODE · copied
-35 |
-36 |   Challenge expires in 300 seconds.
-37 |
-38 |   Open the verification page, then enter the device code.
-39 |
-40 ||}];
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |
+    06 |
+    07 |
+    08 |
+    09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    11 |
+    12 |                                      dev · openai/gpt-5.5 medium
+    13 |
+    14 |                ▎ welcome — and thanks for trying mentat this early.
+    15 |                ▎ it's experimental: sessions and config may change without migration.
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |
+    25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    26 |    log in
+    27 |
+    28 |   Log in to device-controls · device code                                                          █
+    29 |                                                                                                    █
+    30 |   Verification URL                                                                                 █
+    31 |   https://auth.example/device-controls                                                             █
+    32 |                                                                                                    █
+    33 |   Device code                                                                                      ▀
+    34 |   SAFE-CODE · copied
+    35 |
+    36 |   Challenge expires in 300 seconds.
+    37 |
+    38 |   Open the verification page, then enter the device code.
+    39 |
+    40 |
+    |}];
   Tui.keys t "u";
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |
-06 |
-07 |
-08 |
-09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-11 |
-12 |                                      dev · openai/gpt-5.5 medium
-13 |
-14 |                ▎ welcome — and thanks for trying mentat this early.
-15 |                ▎ it's experimental: sessions and config may change without migration.
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |
-25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-26 |    log in
-27 |
-28 |   Log in to device-controls · device code                                                          █
-29 |                                                                                                    █
-30 |   Verification URL                                                                                 █
-31 |   https://auth.example/device-controls · copied                                                    █
-32 |                                                                                                    █
-33 |   Device code                                                                                      ▀
-34 |   SAFE-CODE
-35 |
-36 |   Challenge expires in 300 seconds.
-37 |
-38 |   Open the verification page, then enter the device code.
-39 |
-40 ||}];
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |
+    06 |
+    07 |
+    08 |
+    09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    11 |
+    12 |                                      dev · openai/gpt-5.5 medium
+    13 |
+    14 |                ▎ welcome — and thanks for trying mentat this early.
+    15 |                ▎ it's experimental: sessions and config may change without migration.
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |
+    25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    26 |    log in
+    27 |
+    28 |   Log in to device-controls · device code                                                          █
+    29 |                                                                                                    █
+    30 |   Verification URL                                                                                 █
+    31 |   https://auth.example/device-controls · copied                                                    █
+    32 |                                                                                                    █
+    33 |   Device code                                                                                      ▀
+    34 |   SAFE-CODE
+    35 |
+    36 |   Challenge expires in 300 seconds.
+    37 |
+    38 |   Open the verification page, then enter the device code.
+    39 |
+    40 |
+    |}];
   Tui.enter t;
   Tui.settle t;
   require_opened_urls t [ url ];
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |
-06 |
-07 |
-08 |
-09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-11 |
-12 |                                      dev · openai/gpt-5.5 medium
-13 |
-14 |                ▎ welcome — and thanks for trying mentat this early.
-15 |                ▎ it's experimental: sessions and config may change without migration.
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |
-25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-26 |    log in
-27 |
-28 |   Log in to device-controls · device code                                                          █
-29 |                                                                                                    █
-30 |   Verification URL                                                                                 █
-31 |   https://auth.example/device-controls · copied                                                    █
-32 |                                                                                                    █
-33 |   Device code                                                                                      ▀
-34 |   SAFE-CODE
-35 |
-36 |   Challenge expires in 300 seconds.
-37 |
-38 |   Verification page opened. Enter the device code there.
-39 |
-40 ||}];
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |
+    06 |
+    07 |
+    08 |
+    09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    11 |
+    12 |                                      dev · openai/gpt-5.5 medium
+    13 |
+    14 |                ▎ welcome — and thanks for trying mentat this early.
+    15 |                ▎ it's experimental: sessions and config may change without migration.
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |
+    25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    26 |    log in
+    27 |
+    28 |   Log in to device-controls · device code                                                          █
+    29 |                                                                                                    █
+    30 |   Verification URL                                                                                 █
+    31 |   https://auth.example/device-controls · copied                                                    █
+    32 |                                                                                                    █
+    33 |   Device code                                                                                      ▀
+    34 |   SAFE-CODE
+    35 |
+    36 |   Challenge expires in 300 seconds.
+    37 |
+    38 |   Verification page opened. Enter the device code there.
+    39 |
+    40 |
+    |}];
   Tui.keys t Key.ctrl_c;
   Tui.settle t;
   (* The UI has already cancelled and left the attempt. The terminal callback
@@ -814,46 +840,48 @@ let%expect_test
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |
-06 |
-07 |
-08 |
-09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-11 |
-12 |                                      dev · openai/gpt-5.5 medium
-13 |
-14 |                ▎ welcome — and thanks for trying mentat this early.
-15 |                ▎ it's experimental: sessions and config may change without migration.
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |
-25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-26 |    log in
-27 |
-28 |   Choose a provider.
-29 |
-30 |    ▶ 1  device-controls
-31 |      missing
-32 |
-33 |
-34 |
-35 |
-36 |
-37 |
-38 |
-39 |
-40 ||}]
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |
+    06 |
+    07 |
+    08 |
+    09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    11 |
+    12 |                                      dev · openai/gpt-5.5 medium
+    13 |
+    14 |                ▎ welcome — and thanks for trying mentat this early.
+    15 |                ▎ it's experimental: sessions and config may change without migration.
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |
+    25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    26 |    log in
+    27 |
+    28 |   Choose a provider.
+    29 |
+    30 |    ▶ 1  device-controls
+    31 |      missing
+    32 |
+    33 |
+    34 |
+    35 |
+    36 |
+    37 |
+    38 |
+    39 |
+    40 |
+    |}]
 
 let%expect_test
     "API-key save stays pending until one typed completion and refresh" =
@@ -882,178 +910,186 @@ let%expect_test
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |
-06 |
-07 |
-08 |
-09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-11 |
-12 |                                      dev · openai/gpt-5.5 medium
-13 |
-14 |                ▎ welcome — and thanks for trying mentat this early.
-15 |                ▎ it's experimental: sessions and config may change without migration.
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |
-25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-26 |    log in
-27 |
-28 |   Enter an API key for key-provider
-29 |
-30 |   ❯ •••••••••••••••
-31 |
-32 |   The key is masked and leaves this panel only when saved.
-33 |
-34 |   Enter saves. Escape discards and goes back.
-35 |
-36 |
-37 |
-38 |
-39 |
-40 ||}];
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |
+    06 |
+    07 |
+    08 |
+    09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    11 |
+    12 |                                      dev · openai/gpt-5.5 medium
+    13 |
+    14 |                ▎ welcome — and thanks for trying mentat this early.
+    15 |                ▎ it's experimental: sessions and config may change without migration.
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |
+    25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    26 |    log in
+    27 |
+    28 |   Enter an API key for key-provider
+    29 |
+    30 |   ❯ •••••••••••••••
+    31 |
+    32 |   The key is masked and leaves this panel only when saved.
+    33 |
+    34 |   Enter saves. Escape discards and goes back.
+    35 |
+    36 |
+    37 |
+    38 |
+    39 |
+    40 |
+    |}];
   Tui.enter t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |
-06 |
-07 |
-08 |
-09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-11 |
-12 |                                      dev · openai/gpt-5.5 medium
-13 |
-14 |                ▎ welcome — and thanks for trying mentat this early.
-15 |                ▎ it's experimental: sessions and config may change without migration.
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |
-25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-26 |    log in
-27 |
-28 |   Saving API key…
-29 |
-30 |
-31 |
-32 |
-33 |
-34 |
-35 |
-36 |
-37 |
-38 |
-39 |
-40 ||}];
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |
+    06 |
+    07 |
+    08 |
+    09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    11 |
+    12 |                                      dev · openai/gpt-5.5 medium
+    13 |
+    14 |                ▎ welcome — and thanks for trying mentat this early.
+    15 |                ▎ it's experimental: sessions and config may change without migration.
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |
+    25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    26 |    log in
+    27 |
+    28 |   Saving API key…
+    29 |
+    30 |
+    31 |
+    32 |
+    33 |
+    34 |
+    35 |
+    36 |
+    37 |
+    38 |
+    39 |
+    40 |
+    |}];
   Tui.finish_save_api_key t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |
-06 |
-07 |
-08 |
-09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-11 |
-12 |                                      dev · openai/gpt-5.5 medium
-13 |
-14 |                ▎ welcome — and thanks for trying mentat this early.
-15 |                ▎ it's experimental: sessions and config may change without migration.
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |
-25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-26 |    model
-27 |
-28 | Current  openai/gpt-5.5 medium
-29 |
-30 | 1 providers · 1 models
-31 |
-32 |  ❯   key-provider         primary
-33 |
-34 |
-35 | ○ Reasoning effort is not adjustable for this model
-36 |
-37 | Filter or set by name
-38 |
-39 |
-40 ||}];
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |
+    06 |
+    07 |
+    08 |
+    09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    11 |
+    12 |                                      dev · openai/gpt-5.5 medium
+    13 |
+    14 |                ▎ welcome — and thanks for trying mentat this early.
+    15 |                ▎ it's experimental: sessions and config may change without migration.
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |
+    25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    26 |    model
+    27 |
+    28 | Current  openai/gpt-5.5 medium
+    29 |
+    30 | 1 providers · 1 models
+    31 |
+    32 |  ❯   key-provider         primary
+    33 |
+    34 |
+    35 | ○ Reasoning effort is not adjustable for this model
+    36 |
+    37 | Filter or set by name
+    38 |
+    39 |
+    40 |
+    |}];
   Tui.keys t Key.escape;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |
-06 |
-07 |
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-15 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-16 |
-17 |                                      dev · openai/gpt-5.5 medium
-18 |
-19 |                ▎ welcome — and thanks for trying mentat this early.
-20 |                ▎ it's experimental: sessions and config may change without migration.
-21 |
-22 |
-23 | ────────────────────────────────────────────────────────────────────────────────────────────────────
-24 | ❯ message mentat
-25 | ────────────────────────────────────────────────────────────────────────────────────────────────────
-26 |
-27 |                                         ∅ no recent sessions
-28 |
-29 |
-30 |
-31 |
-32 |
-33 |
-34 |
-35 |
-36 |
-37 |
-38 |
-39 |
-40 |   ~/mentat-tui-autha75f3172 · openai/gpt-5.5 medium · ! full access                ? for shortcuts|}]
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |
+    06 |
+    07 |
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    15 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    16 |
+    17 |                                      dev · openai/gpt-5.5 medium
+    18 |
+    19 |                ▎ welcome — and thanks for trying mentat this early.
+    20 |                ▎ it's experimental: sessions and config may change without migration.
+    21 |
+    22 |
+    23 | ────────────────────────────────────────────────────────────────────────────────────────────────────
+    24 | ❯ message mentat
+    25 | ────────────────────────────────────────────────────────────────────────────────────────────────────
+    26 |
+    27 |                                         ∅ no recent sessions
+    28 |
+    29 |
+    30 |
+    31 |
+    32 |
+    33 |
+    34 |
+    35 |
+    36 |
+    37 |
+    38 |
+    39 |
+    40 |   ~/mentat-tui-auth4c7ab92a · openai/gpt-5.5 medium · ! full access                ? for shortcuts
+    |}]
 
 (* The post-login model handoff is uniform across entry paths: a first browser
    login that saves a usable credential hands off to the model picker, the same
@@ -1090,46 +1126,48 @@ let%expect_test "a first browser login hands off to the model picker" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |
-06 |
-07 |
-08 |
-09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-11 |
-12 |                                      dev · openai/gpt-5.5 medium
-13 |
-14 |                ▎ welcome — and thanks for trying mentat this early.
-15 |                ▎ it's experimental: sessions and config may change without migration.
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |
-25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-26 |    model
-27 |
-28 | Current  openai/gpt-5.5 medium
-29 |
-30 | 1 providers · 1 models
-31 |
-32 |  ❯   browser-provider     primary
-33 |
-34 |
-35 | ○ Reasoning effort is not adjustable for this model
-36 |
-37 | Filter or set by name
-38 |
-39 |
-40 ||}]
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |
+    06 |
+    07 |
+    08 |
+    09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    11 |
+    12 |                                      dev · openai/gpt-5.5 medium
+    13 |
+    14 |                ▎ welcome — and thanks for trying mentat this early.
+    15 |                ▎ it's experimental: sessions and config may change without migration.
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |
+    25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    26 |    model
+    27 |
+    28 | Current  openai/gpt-5.5 medium
+    29 |
+    30 | 1 providers · 1 models
+    31 |
+    32 |  ❯   browser-provider     primary
+    33 |
+    34 |
+    35 | ○ Reasoning effort is not adjustable for this model
+    36 |
+    37 | Filter or set by name
+    38 |
+    39 |
+    40 |
+    |}]
 
 (* A login on a workspace that already has a usable account does not hand off:
    the running model works, so opening the picker on every login would be noise.
@@ -1159,46 +1197,48 @@ let%expect_test "a login keeps a configured account on its surface" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |
-06 |
-07 |
-08 |
-09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-11 |
-12 |                                      dev · openai/gpt-5.5 medium
-13 |
-14 |                ▎ welcome — and thanks for trying mentat this early.
-15 |                ▎ it's experimental: sessions and config may change without migration.
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |
-25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-26 |    log in
-27 |
-28 |   extra-provider
-29 |
-30 |   API key saved.
-31 |
-32 |   Account readiness: ready
-33 |
-34 |   Enter or Escape closes.
-35 |
-36 |
-37 |
-38 |
-39 |
-40 ||}]
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |
+    06 |
+    07 |
+    08 |
+    09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    11 |
+    12 |                                      dev · openai/gpt-5.5 medium
+    13 |
+    14 |                ▎ welcome — and thanks for trying mentat this early.
+    15 |                ▎ it's experimental: sessions and config may change without migration.
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |
+    25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    26 |    log in
+    27 |
+    28 |   extra-provider
+    29 |
+    30 |   API key saved.
+    31 |
+    32 |   Account readiness: ready
+    33 |
+    34 |   Enter or Escape closes.
+    35 |
+    36 |
+    37 |
+    38 |
+    39 |
+    40 |
+    |}]
 
 let%expect_test "logout stays pending until one typed completion and refresh" =
   let route = provider "logout-provider" in
@@ -1234,90 +1274,94 @@ let%expect_test "logout stays pending until one typed completion and refresh" =
   submit t "/logout logout-provider";
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |
-06 |
-07 |
-08 |
-09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-11 |
-12 |                                      dev · openai/gpt-5.5 medium
-13 |
-14 |                ▎ welcome — and thanks for trying mentat this early.
-15 |                ▎ it's experimental: sessions and config may change without migration.
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |
-25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-26 |    log out
-27 |
-28 |   Removing credentials…
-29 |
-30 |
-31 |
-32 |
-33 |
-34 |
-35 |
-36 |
-37 |
-38 |
-39 |
-40 ||}];
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |
+    06 |
+    07 |
+    08 |
+    09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    11 |
+    12 |                                      dev · openai/gpt-5.5 medium
+    13 |
+    14 |                ▎ welcome — and thanks for trying mentat this early.
+    15 |                ▎ it's experimental: sessions and config may change without migration.
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |
+    25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    26 |    log out
+    27 |
+    28 |   Removing credentials…
+    29 |
+    30 |
+    31 |
+    32 |
+    33 |
+    34 |
+    35 |
+    36 |
+    37 |
+    38 |
+    39 |
+    40 |
+    |}];
   Tui.finish_logout t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |
-06 |
-07 |
-08 |
-09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-11 |
-12 |                                      dev · openai/gpt-5.5 medium
-13 |
-14 |                ▎ welcome — and thanks for trying mentat this early.
-15 |                ▎ it's experimental: sessions and config may change without migration.
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |
-25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-26 |    log out
-27 |
-28 |   logout-provider
-29 |
-30 |   Local credential removal settled.
-31 |
-32 |   Current account readiness: credential from env(LOGOUT_PROVIDER_KEY) has kind api_key with
-33 |   invalid text
-34 |
-35 |   Enter or Escape closes.
-36 |
-37 |
-38 |
-39 |
-40 ||}]
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |
+    06 |
+    07 |
+    08 |
+    09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    11 |
+    12 |                                      dev · openai/gpt-5.5 medium
+    13 |
+    14 |                ▎ welcome — and thanks for trying mentat this early.
+    15 |                ▎ it's experimental: sessions and config may change without migration.
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |
+    25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    26 |    log out
+    27 |
+    28 |   logout-provider
+    29 |
+    30 |   Local credential removal settled.
+    31 |
+    32 |   Current account readiness: credential from env(LOGOUT_PROVIDER_KEY) has kind api_key with
+    33 |   invalid text
+    34 |
+    35 |   Enter or Escape closes.
+    36 |
+    37 |
+    38 |
+    39 |
+    40 |
+    |}]
 
 let%expect_test
     "account-readiness failure retries through the typed query boundary" =
@@ -1333,90 +1377,94 @@ let%expect_test
   submit t "/login readiness-provider";
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |
-06 |
-07 |
-08 |
-09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-11 |
-12 |                                      dev · openai/gpt-5.5 medium
-13 |
-14 |                ▎ welcome — and thanks for trying mentat this early.
-15 |                ▎ it's experimental: sessions and config may change without migration.
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |
-25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-26 |    log in
-27 |
-28 |   account discovery is temporarily unavailable
-29 |
-30 |   Enter retries. Escape closes.
-31 |
-32 |
-33 |
-34 |
-35 |
-36 |
-37 |
-38 |
-39 |
-40 ||}];
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |
+    06 |
+    07 |
+    08 |
+    09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    11 |
+    12 |                                      dev · openai/gpt-5.5 medium
+    13 |
+    14 |                ▎ welcome — and thanks for trying mentat this early.
+    15 |                ▎ it's experimental: sessions and config may change without migration.
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |
+    25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    26 |    log in
+    27 |
+    28 |   account discovery is temporarily unavailable
+    29 |
+    30 |   Enter retries. Escape closes.
+    31 |
+    32 |
+    33 |
+    34 |
+    35 |
+    36 |
+    37 |
+    38 |
+    39 |
+    40 |
+    |}];
   Tui.enter t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |
-06 |
-07 |
-08 |
-09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-11 |
-12 |                                      dev · openai/gpt-5.5 medium
-13 |
-14 |                ▎ welcome — and thanks for trying mentat this early.
-15 |                ▎ it's experimental: sessions and config may change without migration.
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |
-25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-26 |    log in
-27 |
-28 |   Enter an API key for readiness-provider
-29 |
-30 |   ❯ Paste or type an API key
-31 |
-32 |   The key is masked and leaves this panel only when saved.
-33 |
-34 |   Enter saves. Escape discards and goes back.
-35 |
-36 |
-37 |
-38 |
-39 |
-40 ||}]
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |
+    06 |
+    07 |
+    08 |
+    09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    11 |
+    12 |                                      dev · openai/gpt-5.5 medium
+    13 |
+    14 |                ▎ welcome — and thanks for trying mentat this early.
+    15 |                ▎ it's experimental: sessions and config may change without migration.
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |
+    25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    26 |    log in
+    27 |
+    28 |   Enter an API key for readiness-provider
+    29 |
+    30 |   ❯ Paste or type an API key
+    31 |
+    32 |   The key is masked and leaves this panel only when saved.
+    33 |
+    34 |   Enter saves. Escape discards and goes back.
+    35 |
+    36 |
+    37 |
+    38 |
+    39 |
+    40 |
+    |}]
 
 let%expect_test
     "multiple login methods preserve API-key discard back-navigation" =
@@ -1431,46 +1479,48 @@ let%expect_test
   submit t "/login multi-provider";
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |
-06 |
-07 |
-08 |
-09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-11 |
-12 |                                      dev · openai/gpt-5.5 medium
-13 |
-14 |                ▎ welcome — and thanks for trying mentat this early.
-15 |                ▎ it's experimental: sessions and config may change without migration.
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |
-25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-26 |    log in
-27 |
-28 |   Choose how to log in to multi-provider.
-29 |
-30 |    ▶ 1  Browser
-31 |      Browser
-32 |      2  API key
-33 |      API key
-34 |
-35 |
-36 |
-37 |
-38 |
-39 |
-40 ||}];
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |
+    06 |
+    07 |
+    08 |
+    09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    11 |
+    12 |                                      dev · openai/gpt-5.5 medium
+    13 |
+    14 |                ▎ welcome — and thanks for trying mentat this early.
+    15 |                ▎ it's experimental: sessions and config may change without migration.
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |
+    25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    26 |    log in
+    27 |
+    28 |   Choose how to log in to multi-provider.
+    29 |
+    30 |    ▶ 1  Browser
+    31 |      Browser
+    32 |      2  API key
+    33 |      API key
+    34 |
+    35 |
+    36 |
+    37 |
+    38 |
+    39 |
+    40 |
+    |}];
   Tui.keys t Key.down;
   Tui.enter t;
   Tui.settle t;
@@ -1478,135 +1528,141 @@ let%expect_test
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |
-06 |
-07 |
-08 |
-09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-11 |
-12 |                                      dev · openai/gpt-5.5 medium
-13 |
-14 |                ▎ welcome — and thanks for trying mentat this early.
-15 |                ▎ it's experimental: sessions and config may change without migration.
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |
-25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-26 |    log in
-27 |
-28 |   Enter an API key for multi-provider
-29 |
-30 |   ❯ ••••••••••••••••••••••
-31 |
-32 |   The key is masked and leaves this panel only when saved.
-33 |
-34 |   Enter saves. Escape discards and goes back.
-35 |
-36 |
-37 |
-38 |
-39 |
-40 ||}];
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |
+    06 |
+    07 |
+    08 |
+    09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    11 |
+    12 |                                      dev · openai/gpt-5.5 medium
+    13 |
+    14 |                ▎ welcome — and thanks for trying mentat this early.
+    15 |                ▎ it's experimental: sessions and config may change without migration.
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |
+    25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    26 |    log in
+    27 |
+    28 |   Enter an API key for multi-provider
+    29 |
+    30 |   ❯ ••••••••••••••••••••••
+    31 |
+    32 |   The key is masked and leaves this panel only when saved.
+    33 |
+    34 |   Enter saves. Escape discards and goes back.
+    35 |
+    36 |
+    37 |
+    38 |
+    39 |
+    40 |
+    |}];
   Tui.keys t Key.escape;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |
-06 |
-07 |
-08 |
-09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-11 |
-12 |                                      dev · openai/gpt-5.5 medium
-13 |
-14 |                ▎ welcome — and thanks for trying mentat this early.
-15 |                ▎ it's experimental: sessions and config may change without migration.
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |
-25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-26 |    log in
-27 |
-28 |   Choose how to log in to multi-provider.
-29 |
-30 |    ▶ 1  Browser
-31 |      Browser
-32 |      2  API key
-33 |      API key
-34 |
-35 |
-36 |
-37 |
-38 |
-39 |
-40 ||}];
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |
+    06 |
+    07 |
+    08 |
+    09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    11 |
+    12 |                                      dev · openai/gpt-5.5 medium
+    13 |
+    14 |                ▎ welcome — and thanks for trying mentat this early.
+    15 |                ▎ it's experimental: sessions and config may change without migration.
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |
+    25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    26 |    log in
+    27 |
+    28 |   Choose how to log in to multi-provider.
+    29 |
+    30 |    ▶ 1  Browser
+    31 |      Browser
+    32 |      2  API key
+    33 |      API key
+    34 |
+    35 |
+    36 |
+    37 |
+    38 |
+    39 |
+    40 |
+    |}];
   Tui.keys t Key.down;
   Tui.enter t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |
-03 |
-04 |
-05 |
-06 |
-07 |
-08 |
-09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-11 |
-12 |                                      dev · openai/gpt-5.5 medium
-13 |
-14 |                ▎ welcome — and thanks for trying mentat this early.
-15 |                ▎ it's experimental: sessions and config may change without migration.
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |
-25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-26 |    log in
-27 |
-28 |   Enter an API key for multi-provider
-29 |
-30 |   ❯ Paste or type an API key
-31 |
-32 |   The key is masked and leaves this panel only when saved.
-33 |
-34 |   Enter saves. Escape discards and goes back.
-35 |
-36 |
-37 |
-38 |
-39 |
-40 ||}]
+    {|
+    01 |
+    02 |
+    03 |
+    04 |
+    05 |
+    06 |
+    07 |
+    08 |
+    09 |                                     █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    10 |                                     █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    11 |
+    12 |                                      dev · openai/gpt-5.5 medium
+    13 |
+    14 |                ▎ welcome — and thanks for trying mentat this early.
+    15 |                ▎ it's experimental: sessions and config may change without migration.
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |
+    25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    26 |    log in
+    27 |
+    28 |   Enter an API key for multi-provider
+    29 |
+    30 |   ❯ Paste or type an API key
+    31 |
+    32 |   The key is masked and leaves this panel only when saved.
+    33 |
+    34 |   Enter saves. Escape discards and goes back.
+    35 |
+    36 |
+    37 |
+    38 |
+    39 |
+    40 |
+    |}]
 
 let%expect_test "mixed account discovery retains healthy and failed rows" =
   let healthy = provider "healthy-provider" in
@@ -1631,46 +1687,48 @@ let%expect_test "mixed account discovery retains healthy and failed rows" =
   submit t "/status";
   Tui.print t;
   [%expect
-    {|01 |  settings ────────────────────────────────────────────────────────────────────────────── 2 providers
-02 |
-03 | config  status  usage
-04 |
-05 | Runtime
-06 |   version         dev
-07 |   current model   openai/gpt-5.5 medium
-08 |   workspace       ~/mentat-tui-auth-rb9404837
-09 |   context window  128,000 tokens
-10 |   launch sandbox  danger-full-access
-11 |
-12 | Session
-13 |   No active session.
-14 |
-15 | Providers
-16 |   failed-provider   credential from env(FAILED_PROVIDER_KEY) has kind api_key with invalid text
-17 |   healthy-provider  ready
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |
-25 |
-26 |
-27 |
-28 |
-29 |
-30 |
-31 |
-32 |
-33 |
-34 |
-35 |
-36 |
-37 |
-38 |
-39 |
-40 |   tab page · esc back|}]
+    {|
+    01 |  settings ────────────────────────────────────────────────────────────────────────────── 2 providers
+    02 |
+    03 | config  status  usage
+    04 |
+    05 | Runtime
+    06 |   version         dev
+    07 |   current model   openai/gpt-5.5 medium
+    08 |   workspace       ~/mentat-tui-auth-rbe72fedf
+    09 |   context window  128,000 tokens
+    10 |   launch sandbox  danger-full-access
+    11 |
+    12 | Session
+    13 |   No active session.
+    14 |
+    15 | Providers
+    16 |   failed-provider   credential from env(FAILED_PROVIDER_KEY) has kind api_key with invalid text
+    17 |   healthy-provider  ready
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |
+    25 |
+    26 |
+    27 |
+    28 |
+    29 |
+    30 |
+    31 |
+    32 |
+    33 |
+    34 |
+    35 |
+    36 |
+    37 |
+    38 |
+    39 |
+    40 |   tab page · esc back
+    |}]
 
 let%expect_test "API-key entry surfaces the terminal caret at the masked tail" =
   let route = provider "caret-provider" in
@@ -1689,10 +1747,9 @@ let%expect_test "API-key entry surfaces the terminal caret at the masked tail" =
     | Some (row, col) -> Printf.printf "row %d col %d" row col
   in
   caret t;
-  [%expect {|row 30 col 5|}];
+  [%expect {| row 30 col 5 |}];
   Tui.keys t "abc";
   Tui.settle t;
   caret t;
-  [%expect {|row 30 col 8|}]
+  [%expect {| row 30 col 8 |}]
 
-[%%run_tests "mentat.tui.auth"]

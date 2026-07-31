@@ -9,8 +9,8 @@ module Edit = Mentat_edit
 module W = Mentat_workspace
 module Path = Lpath
 
-let edit_error = testable ~pp:Edit.Error.pp ~equal:Edit.Error.equal ()
-let target_value = testable ~pp:Edit.Observed.pp ~equal:Edit.Observed.equal ()
+let edit_error = Testable.make ~pp:Edit.Error.pp ~equal:Edit.Error.equal
+let target_value = Testable.make ~pp:Edit.Observed.pp ~equal:Edit.Observed.equal
 
 let kind_value =
   let pp ppf = function
@@ -18,17 +18,16 @@ let kind_value =
     | `Modify -> Format.pp_print_string ppf "modify"
     | `Delete -> Format.pp_print_string ppf "delete"
   in
-  testable ~pp ~equal:(fun (a : Edit.kind) b -> a = b) ()
+  Testable.make ~pp ~equal:(fun (a : Edit.kind) b -> a = b)
 
 let identity_value =
-  testable ~pp:Mentat_digest.Content_ref.pp
-    ~equal:Mentat_digest.Content_ref.equal ()
+  Testable.make ~pp:Mentat_digest.Content_ref.pp ~equal:Mentat_digest.Content_ref.equal
 
 let result_entry =
-  testable ~pp:Edit.Result.Entry.pp ~equal:Edit.Result.Entry.equal ()
+  Testable.make ~pp:Edit.Result.Entry.pp ~equal:Edit.Result.Entry.equal
 
 let phase_value =
-  testable ~pp:Edit.Apply_error.Phase.pp ~equal:Edit.Apply_error.Phase.equal ()
+  Testable.make ~pp:Edit.Apply_error.Phase.pp ~equal:Edit.Apply_error.Phase.equal
 
 let expect_ok label = function
   | Ok value -> value
@@ -57,7 +56,7 @@ let root = W.Root.of_dir (abs "/workspace")
 let workspace = W.single root
 let path text = W.Path.make ~root_key:(W.Root.key root) (rel text)
 let display path = W.Path.display path
-let path_value = testable ~pp:W.Path.pp ~equal:W.Path.equal ()
+let path_value = Testable.make ~pp:W.Path.pp ~equal:W.Path.equal
 let missing = Edit.Observed.Missing
 let text contents = Edit.Observed.Text contents
 
@@ -92,7 +91,7 @@ let pp_event ppf = function
       Format.fprintf ppf "write:%a:%S" pp_path path contents
   | Remove path -> Format.fprintf ppf "remove:%a" pp_path path
 
-let event = testable ~pp:pp_event ~equal:equal_event ()
+let event = Testable.make ~pp:pp_event ~equal:equal_event
 
 type fake = {
   io : Edit.Apply.io;
@@ -274,22 +273,22 @@ let change_observers () =
 let invalid_text_is_rejected () =
   let file = path "bad.txt" in
   equal
-    (result (testable ~pp:Edit.pp ~equal:Edit.equal ()) edit_error)
+    (result (Testable.make ~pp:Edit.pp ~equal:Edit.equal) edit_error)
     ~msg:"create rejects invalid text"
     (Error (Edit.Error.invalid_text ~path:file "invalid UTF-8"))
     (Edit.create ~path:file ~contents:"\255");
   equal
-    (result (testable ~pp:Edit.pp ~equal:Edit.equal ()) edit_error)
+    (result (Testable.make ~pp:Edit.pp ~equal:Edit.equal) edit_error)
     ~msg:"rewrite rejects invalid before"
     (Error (Edit.Error.invalid_text ~path:file "invalid UTF-8"))
     (Edit.rewrite ~path:file ~before:"\255" ~after:"ok");
   equal
-    (result (testable ~pp:Edit.pp ~equal:Edit.equal ()) edit_error)
+    (result (Testable.make ~pp:Edit.pp ~equal:Edit.equal) edit_error)
     ~msg:"rewrite rejects invalid after"
     (Error (Edit.Error.invalid_text ~path:file "invalid UTF-8"))
     (Edit.rewrite ~path:file ~before:"ok" ~after:"\255");
   equal
-    (result (testable ~pp:Edit.pp ~equal:Edit.equal ()) edit_error)
+    (result (Testable.make ~pp:Edit.pp ~equal:Edit.equal) edit_error)
     ~msg:"delete rejects invalid before"
     (Error (Edit.Error.invalid_text ~path:file "invalid UTF-8"))
     (Edit.delete ~path:file ~before:"\255")
@@ -299,11 +298,11 @@ let concat_rejects_duplicate_planned_paths () =
   let a = create file "a" in
   let b = delete file "b" in
   equal
-    (testable ~pp:Edit.pp ~equal:Edit.equal ())
+    (Testable.make ~pp:Edit.pp ~equal:Edit.equal)
     ~msg:"empty plans are ignored" a
     (concat [ Edit.empty; a; Edit.empty ]);
   equal
-    (result (testable ~pp:Edit.pp ~equal:Edit.equal ()) edit_error)
+    (result (Testable.make ~pp:Edit.pp ~equal:Edit.equal) edit_error)
     ~msg:"duplicate planned path"
     (Error (Edit.Error.duplicate_path file))
     (Edit.concat [ Edit.empty; a; Edit.empty; b ])

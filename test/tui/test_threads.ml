@@ -217,86 +217,92 @@ let%expect_test
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-l8c17edc7
-04 |
-05 | ❯ Coordinate the delegated work.
-06 |
-07 | ⏺ Delegated work is in progress.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 | ────────────────────────────────────────────────────────────────────────────────
-19 | ❯ message mentat
-20 | ────────────────────────────────────────────────────────────────────────────────
-21 |   ◯ main
-22 |   ○ subagent inspect the session lifecycle                             delegated
-23 |
-24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt-… · ! full access ? for…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-l033df4cc
+    04 |
+    05 | ❯ Coordinate the delegated work.
+    06 |
+    07 | ⏺ Delegated work is in progress.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 | ────────────────────────────────────────────────────────────────────────────────
+    19 | ❯ message mentat
+    20 | ────────────────────────────────────────────────────────────────────────────────
+    21 |   ◯ main
+    22 |   ○ subagent inspect the session lifecycle                             delegated
+    23 |
+    24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt-… · ! full access ? for…
+    |}];
   Tui.next_child_fact t lifecycle_child.id;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-l8c17edc7
-04 |
-05 | ❯ Coordinate the delegated work.
-06 |
-07 | ⏺ Delegated work is in progress.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 | ────────────────────────────────────────────────────────────────────────────────
-19 | ❯ message mentat
-20 | ────────────────────────────────────────────────────────────────────────────────
-21 |   ◯ main
-22 |   ◉ subagent inspect the session lifecycle                               working
-23 |
-24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt-… · ! full access ? for…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-l033df4cc
+    04 |
+    05 | ❯ Coordinate the delegated work.
+    06 |
+    07 | ⏺ Delegated work is in progress.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 | ────────────────────────────────────────────────────────────────────────────────
+    19 | ❯ message mentat
+    20 | ────────────────────────────────────────────────────────────────────────────────
+    21 |   ◯ main
+    22 |   ◉ subagent inspect the session lifecycle                               working
+    23 |
+    24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt-… · ! full access ? for…
+    |}];
   Tui.drain_child t lifecycle_child.id;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-l8c17edc7
-04 |
-05 | ❯ Coordinate the delegated work.
-06 |
-07 | ⏺ Delegated work is in progress.
-08 |
-09 |   ● Agent "inspect the session lifecycle" finished
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 | ────────────────────────────────────────────────────────────────────────────────
-19 | ❯ message mentat
-20 | ────────────────────────────────────────────────────────────────────────────────
-21 |   ◯ main
-22 |   ✓ subagent inspect the session lifecycle                             completed
-23 |
-24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt-… · ! full access ? for…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-l033df4cc
+    04 |
+    05 | ❯ Coordinate the delegated work.
+    06 |
+    07 | ⏺ Delegated work is in progress.
+    08 |
+    09 |   ● Agent "inspect the session lifecycle" finished
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 | ────────────────────────────────────────────────────────────────────────────────
+    19 | ❯ message mentat
+    20 | ────────────────────────────────────────────────────────────────────────────────
+    21 |   ◯ main
+    22 |   ✓ subagent inspect the session lifecycle                             completed
+    23 |
+    24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt-… · ! full access ? for…
+    |}];
   (* A drill replays the same child settlement through a separate observation.
      Returning to the parent must retain one derived settlement event, not append
      a duplicate from read-only replay. *)
@@ -310,30 +316,32 @@ let%expect_test
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-l8c17edc7
-04 |
-05 | ❯ Coordinate the delegated work.
-06 |
-07 | ⏺ Delegated work is in progress.
-08 |
-09 |   ● Agent "inspect the session lifecycle" finished
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 | ────────────────────────────────────────────────────────────────────────────────
-19 | ❯ message mentat
-20 | ────────────────────────────────────────────────────────────────────────────────
-21 |   ◯ main
-22 |   ✓ subagent inspect the session lifecycle                             completed
-23 |
-24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt-… · ! full access ? for…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-l033df4cc
+    04 |
+    05 | ❯ Coordinate the delegated work.
+    06 |
+    07 | ⏺ Delegated work is in progress.
+    08 |
+    09 |   ● Agent "inspect the session lifecycle" finished
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 | ────────────────────────────────────────────────────────────────────────────────
+    19 | ❯ message mentat
+    20 | ────────────────────────────────────────────────────────────────────────────────
+    21 |   ◯ main
+    22 |   ✓ subagent inspect the session lifecycle                             completed
+    23 |
+    24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt-… · ! full access ? for…
+    |}]
 
 let blocked_child =
   waiting_child ~prompt:"Check whether the parent approves."
@@ -347,30 +355,32 @@ let%expect_test "a child decision is visibly blocked rather than working" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threadsa691bc0c
-04 |
-05 | ❯ Coordinate the delegated work.
-06 |
-07 | ⏺ Delegated work is in progress.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 | ────────────────────────────────────────────────────────────────────────────────
-19 | ❯ message mentat
-20 | ────────────────────────────────────────────────────────────────────────────────
-21 |   ◯ main
-22 |   ⋯ subagent ask the parent before continuing                            blocked
-23 |
-24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt… · ! full access ? for …|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads60aab187
+    04 |
+    05 | ❯ Coordinate the delegated work.
+    06 |
+    07 | ⏺ Delegated work is in progress.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 | ────────────────────────────────────────────────────────────────────────────────
+    19 | ❯ message mentat
+    20 | ────────────────────────────────────────────────────────────────────────────────
+    21 |   ◯ main
+    22 |   ⋯ subagent ask the parent before continuing                            blocked
+    23 |
+    24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt… · ! full access ? for …
+    |}]
 
 let map_child =
   child ~prompt:"Map the configuration flow." "session-thread-map"
@@ -388,90 +398,96 @@ let%expect_test
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threa97af2f0d
-04 |
-05 | ❯ Coordinate the delegated work.
-06 |
-07 | ⏺ Delegated work is in progress.
-08 |
-09 |   ● Agent "verify the complete visual contract" finished
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 | ────────────────────────────────────────────────────────────────────────────────
-18 | ❯ message mentat
-19 | ────────────────────────────────────────────────────────────────────────────────
-20 |   ◯ main
-21 |   ○ subagent map the configuration flow                                delegated
-22 |   ✓ subagent verify the complete visual contract                       completed
-23 |
-24 |   ! not logged in · /login · ~/mentat-… · openai/gpt-… · ! full access ? for …|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threa824bf51e
+    04 |
+    05 | ❯ Coordinate the delegated work.
+    06 |
+    07 | ⏺ Delegated work is in progress.
+    08 |
+    09 |   ● Agent "verify the complete visual contract" finished
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 | ────────────────────────────────────────────────────────────────────────────────
+    18 | ❯ message mentat
+    19 | ────────────────────────────────────────────────────────────────────────────────
+    20 |   ◯ main
+    21 |   ○ subagent map the configuration flow                                delegated
+    22 |   ✓ subagent verify the complete visual contract                       completed
+    23 |
+    24 |   ! not logged in · /login · ~/mentat-… · openai/gpt-… · ! full access ? for …
+    |}];
   Tui.keys t Key.tab;
   Tui.keys t Key.down;
   Tui.keys t Key.down;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threa97af2f0d
-04 |
-05 | ❯ Coordinate the delegated work.
-06 |
-07 | ⏺ Delegated work is in progress.
-08 |
-09 |   ● Agent "verify the complete visual contract" finished
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 | ────────────────────────────────────────────────────────────────────────────────
-18 | ❯ message mentat
-19 | ────────────────────────────────────────────────────────────────────────────────
-20 |   ◯ main
-21 |   ○ subagent map the configuration flow                                delegated
-22 | ❯ ✓ subagent verify the complete visual contract                       completed
-23 |
-24 |   ! not logged in · /login · ~/mentat-… · openai/gpt-… · ! full access ? for …|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threa824bf51e
+    04 |
+    05 | ❯ Coordinate the delegated work.
+    06 |
+    07 | ⏺ Delegated work is in progress.
+    08 |
+    09 |   ● Agent "verify the complete visual contract" finished
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 | ────────────────────────────────────────────────────────────────────────────────
+    18 | ❯ message mentat
+    19 | ────────────────────────────────────────────────────────────────────────────────
+    20 |   ◯ main
+    21 |   ○ subagent map the configuration flow                                delegated
+    22 | ❯ ✓ subagent verify the complete visual contract                       completed
+    23 |
+    24 |   ! not logged in · /login · ~/mentat-… · openai/gpt-… · ! full access ? for …
+    |}];
   Tui.enter t;
   Tui.settle t;
   Tui.drain_child ~observation:Tui.Child_observation.Drill t verify_child.id;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |   ▂▄▆▄▂ @subagent
-03 |   started by main
-04 | ❯ Verify the visual contract.
-05 |
-06 | ⏺ The visual contract is verified.
-07 |
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 | ───────────────────────────────────────────────────────────────────── @subagent
-18 | ❯ message @subagent
-19 | ────────────────────────────────────────────────────────────────────────────────
-20 |   ◯ main
-21 |   ○ subagent map the configuration flow                                delegated
-22 |   ✓ subagent verify the complete visual contract                       completed
-23 |
-24 |   ! not logged in · /login · ~/mentat-… · openai/gpt-… · ! full access esc ba…|}]
+    {|
+    01 |
+    02 |   ▂▄▆▄▂ @subagent
+    03 |   started by main
+    04 | ❯ Verify the visual contract.
+    05 |
+    06 | ⏺ The visual contract is verified.
+    07 |
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 | ───────────────────────────────────────────────────────────────────── @subagent
+    18 | ❯ message @subagent
+    19 | ────────────────────────────────────────────────────────────────────────────────
+    20 |   ◯ main
+    21 |   ○ subagent map the configuration flow                                delegated
+    22 |   ✓ subagent verify the complete visual contract                       completed
+    23 |
+    24 |   ! not logged in · /login · ~/mentat-… · openai/gpt-… · ! full access esc ba…
+    |}]
 
 let running_child =
   child ~prompt:"Inspect the live child." "session-thread-running"
@@ -492,58 +508,62 @@ let%expect_test "a running child can be drilled and escape restores the parent"
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |   ▂▄▆▄▂ @subagent
-03 |   started by main
-04 | ❯ Inspect the live child.
-05 |
-06 | ⠋ Working… (0s · esc to interrupt)
-07 |
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 | ───────────────────────────────────────────────────────────────────── @subagent
-19 | ❯ message @subagent
-20 | ────────────────────────────────────────────────────────────────────────────────
-21 |   ◯ main
-22 |   ◉ subagent inspect the live child while it runs                        working
-23 |
-24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt-… · ! full access esc b…|}];
+    {|
+    01 |
+    02 |   ▂▄▆▄▂ @subagent
+    03 |   started by main
+    04 | ❯ Inspect the live child.
+    05 |
+    06 | ⠋ Working… (0s · esc to interrupt)
+    07 |
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 | ───────────────────────────────────────────────────────────────────── @subagent
+    19 | ❯ message @subagent
+    20 | ────────────────────────────────────────────────────────────────────────────────
+    21 |   ◯ main
+    22 |   ◉ subagent inspect the live child while it runs                        working
+    23 |
+    24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt-… · ! full access esc b…
+    |}];
   Tui.keys t Key.escape;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-runni74f426d1
-04 |
-05 | ❯ Coordinate the delegated work.
-06 |
-07 | ⏺ Delegated work is in progress.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 | ────────────────────────────────────────────────────────────────────────────────
-19 | ❯ message mentat
-20 | ────────────────────────────────────────────────────────────────────────────────
-21 |   ◯ main
-22 |   ◉ subagent inspect the live child while it runs                        working
-23 |
-24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-runnic734a093
+    04 |
+    05 | ❯ Coordinate the delegated work.
+    06 |
+    07 | ⏺ Delegated work is in progress.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 | ────────────────────────────────────────────────────────────────────────────────
+    19 | ❯ message mentat
+    20 | ────────────────────────────────────────────────────────────────────────────────
+    21 |   ◯ main
+    22 |   ◉ subagent inspect the live child while it runs                        working
+    23 |
+    24 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…
+    |}];
   Tui.drain_child t running_child.id;
   Tui.settle t
 
@@ -572,30 +592,32 @@ let%expect_test "drilling a child identifies it without repeating the prompt" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |   ▂▄▆▄▂ @subagent
-03 |   started by main
-04 | ❯ Explore the OCaml library under lib/session in the mentat workspace. Read its
-05 |   dune file, public .mli files, and key implementation modules, then produce a
-06 |   concise brief covering the library's purpose and public API.
-07 |
-08 | ⏺ The session library brief is ready.
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 | ───────────────────────────────────────────────────────────────────── @subagent
-19 | ❯ message @subagent
-20 | ────────────────────────────────────────────────────────────────────────────────
-21 |   ◯ main
-22 |   ✓ subagent Explore the OCaml library under lib/session in the men... completed
-23 |
-24 |   ! not logged in · /login · ~/mentat-… · openai/gpt-… · ! full access esc ba…|}]
+    {|
+    01 |
+    02 |   ▂▄▆▄▂ @subagent
+    03 |   started by main
+    04 | ❯ Explore the OCaml library under lib/session in the mentat workspace. Read its
+    05 |   dune file, public .mli files, and key implementation modules, then produce a
+    06 |   concise brief covering the library's purpose and public API.
+    07 |
+    08 | ⏺ The session library brief is ready.
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 | ───────────────────────────────────────────────────────────────────── @subagent
+    19 | ❯ message @subagent
+    20 | ────────────────────────────────────────────────────────────────────────────────
+    21 |   ◯ main
+    22 |   ✓ subagent Explore the OCaml library under lib/session in the men... completed
+    23 |
+    24 |   ! not logged in · /login · ~/mentat-… · openai/gpt-… · ! full access esc ba…
+    |}]
 
 (* A short description labels the child at every glance: the heap banner suffixes
    it, the strip carries it in place of the wrapping task, and the composer names
@@ -620,58 +642,62 @@ let%expect_test "a described child names itself and accepts a composer draft" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |   ▂▄▆▄▂ @subagent — map the config loader
-03 |   started by main
-04 | ❯ Carry out the delegated task.
-05 |
-06 | ⏺ The configuration loader is mapped.
-07 |
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 | ───────────────────────────────────────────────────────────────────── @subagent
-19 | ❯ message @subagent
-20 | ────────────────────────────────────────────────────────────────────────────────
-21 |   ◯ main
-22 |   ✓ subagent map the config loader                                     completed
-23 |
-24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt… · ! full access esc ba…|}];
+    {|
+    01 |
+    02 |   ▂▄▆▄▂ @subagent — map the config loader
+    03 |   started by main
+    04 | ❯ Carry out the delegated task.
+    05 |
+    06 | ⏺ The configuration loader is mapped.
+    07 |
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 | ───────────────────────────────────────────────────────────────────── @subagent
+    19 | ❯ message @subagent
+    20 | ────────────────────────────────────────────────────────────────────────────────
+    21 |   ◯ main
+    22 |   ✓ subagent map the config loader                                     completed
+    23 |
+    24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt… · ! full access esc ba…
+    |}];
   Tui.keys t "look at lib/config first";
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |   ▂▄▆▄▂ @subagent — map the config loader
-03 |   started by main
-04 | ❯ Carry out the delegated task.
-05 |
-06 | ⏺ The configuration loader is mapped.
-07 |
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 | ───────────────────────────────────────────────────────────────────── @subagent
-19 | ❯ look at lib/config first
-20 | ────────────────────────────────────────────────────────────────────────────────
-21 |   ◯ main
-22 |   ✓ subagent map the config loader                                     completed
-23 |
-24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt… · ! full access esc ba…|}]
+    {|
+    01 |
+    02 |   ▂▄▆▄▂ @subagent — map the config loader
+    03 |   started by main
+    04 | ❯ Carry out the delegated task.
+    05 |
+    06 | ⏺ The configuration loader is mapped.
+    07 |
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 | ───────────────────────────────────────────────────────────────────── @subagent
+    19 | ❯ look at lib/config first
+    20 | ────────────────────────────────────────────────────────────────────────────────
+    21 |   ◯ main
+    22 |   ✓ subagent map the config loader                                     completed
+    23 |
+    24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt… · ! full access esc ba…
+    |}]
 
 let%expect_test "the drilled child keeps the switcher in its wide pane" =
   run_tree ~name:"threads-drill-pane" ~size:(120, 24)
@@ -689,30 +715,32 @@ let%expect_test "the drilled child keeps the switcher in its wide pane" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |                                                                                 │ agents
-02 |   ▂▄▆▄▂ @subagent                                                               │   ◯ main
-03 |   started by main                                                               │   ○ map the configuration... delegated
-04 | ❯ Verify the visual contract.                                                   │   ✓ verify the complete v... completed
-05 |                                                                                 │
-06 | ⏺ The visual contract is verified.                                              │
-07 |                                                                                 │
-08 |                                                                                 │
-09 |                                                                                 │
-10 |                                                                                 │
-11 |                                                                                 │
-12 |                                                                                 │
-13 |                                                                                 │
-14 |                                                                                 │
-15 |                                                                                 │
-16 |                                                                                 │
-17 |                                                                                 │
-18 |                                                                                 │
-19 |                                                                                 │
-20 |
-21 | ───────────────────────────────────────────────────────────────────────────────────────────────────────────── @subagent
-22 | ❯ message @subagent
-23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tui-threads-dr4624afe1 · openai/gpt-5.5 · ! full access         esc back to main|}]
+    {|
+    01 |                                                                                 │ agents
+    02 |   ▂▄▆▄▂ @subagent                                                               │   ◯ main
+    03 |   started by main                                                               │   ○ map the configuration... delegated
+    04 | ❯ Verify the visual contract.                                                   │   ✓ verify the complete v... completed
+    05 |                                                                                 │
+    06 | ⏺ The visual contract is verified.                                              │
+    07 |                                                                                 │
+    08 |                                                                                 │
+    09 |                                                                                 │
+    10 |                                                                                 │
+    11 |                                                                                 │
+    12 |                                                                                 │
+    13 |                                                                                 │
+    14 |                                                                                 │
+    15 |                                                                                 │
+    16 |                                                                                 │
+    17 |                                                                                 │
+    18 |                                                                                 │
+    19 |                                                                                 │
+    20 |
+    21 | ───────────────────────────────────────────────────────────────────────────────────────────────────────────── @subagent
+    22 | ❯ message @subagent
+    23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tui-threads-drb3169c5f · openai/gpt-5.5 · ! full access         esc back to main
+    |}]
 
 let long_task_child =
   child "session-thread-responsive-long"
@@ -743,60 +771,64 @@ let%expect_test
      transcript. Mosaic's table owns the long task's ellipsis. *)
   Tui.print t;
   [%expect
-    {|01 |                                                                                 │ agents · 1 running · 1 blocked
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium                     │   ◯ main
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-ref42851b3                 │   ○ trace the complete de... delegated
-04 |                                                                                 │   ◉ verify the wide activ... working
-05 | ❯ Coordinate the delegated work.                                                │   ⋯ request approval befo... blocked
-06 |                                                                                 │
-07 | ⏺ Delegated work is in progress.                                                │
-08 |                                                                                 │
-09 |                                                                                 │
-10 |                                                                                 │
-11 |                                                                                 │
-12 |                                                                                 │
-13 |                                                                                 │
-14 |                                                                                 │
-15 |                                                                                 │
-16 |                                                                                 │
-17 |                                                                                 │
-18 |                                                                                 │
-19 |                                                                                 │
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tui-threads-ref42851b3 · openai/gpt-5.5 · ! full access          ? for shortcuts|}];
+    {|
+    01 |                                                                                 │ agents · 1 running · 1 blocked
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium                     │   ◯ main
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-ree435f35c                 │   ○ trace the complete de... delegated
+    04 |                                                                                 │   ◉ verify the wide activ... working
+    05 | ❯ Coordinate the delegated work.                                                │   ⋯ request approval befo... blocked
+    06 |                                                                                 │
+    07 | ⏺ Delegated work is in progress.                                                │
+    08 |                                                                                 │
+    09 |                                                                                 │
+    10 |                                                                                 │
+    11 |                                                                                 │
+    12 |                                                                                 │
+    13 |                                                                                 │
+    14 |                                                                                 │
+    15 |                                                                                 │
+    16 |                                                                                 │
+    17 |                                                                                 │
+    18 |                                                                                 │
+    19 |                                                                                 │
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tui-threads-ree435f35c · openai/gpt-5.5 · ! full access          ? for shortcuts
+    |}];
   (* Crossing below the breakpoint returns the same semantic rows to the
      narrow flow. No child is sliced or reformatted by the application. *)
   Tui.resize t ~width:109 ~height:24;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-ref42851b3
-04 |
-05 | ❯ Coordinate the delegated work.
-06 |
-07 | ⏺ Delegated work is in progress.
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 | ─────────────────────────────────────────────────────────────────────────────────────────────────────────────
-17 | ❯ message mentat
-18 | ─────────────────────────────────────────────────────────────────────────────────────────────────────────────
-19 |   ◯ main
-20 |   ○ subagent trace the complete delegation lifecycle through replay settlement and responsive pr... delegated
-21 |   ◉ subagent verify the wide activity pane                                                          working
-22 |   ⋯ subagent request approval before changing the layout contract                                   blocked
-23 |
-24 |   ! not logged in · /login · ~/mentat-tui-threads-ref42851… · openai/gpt-5.5 · ! full access ? for shortcu…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-ree435f35c
+    04 |
+    05 | ❯ Coordinate the delegated work.
+    06 |
+    07 | ⏺ Delegated work is in progress.
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 | ─────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    17 | ❯ message mentat
+    18 | ─────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    19 |   ◯ main
+    20 |   ○ subagent trace the complete delegation lifecycle through replay settlement and responsive pr... delegated
+    21 |   ◉ subagent verify the wide activity pane                                                          working
+    22 |   ⋯ subagent request approval before changing the layout contract                                   blocked
+    23 |
+    24 |   ! not logged in · /login · ~/mentat-tui-threads-ree435f3… · openai/gpt-5.5 · ! full access ? for shortcu…
+    |}]
 
 let many_children =
   List.init 12 (fun index ->
@@ -819,18 +851,20 @@ let%expect_test
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 | ⏺ Delegated work is in progress.
-02 |
-03 | ────────────────────────────────────────────────────────────────────────────────
-04 | ❯ message mentat
-05 | ────────────────────────────────────────────────────────────────────────────────
-06 |   ◯ main
-07 |   ○ subagent audit delegated child 01                                  delegated
-08 |   ○ subagent audit delegated child 02                                  delegated
-09 |   ○ subagent audit delegated child 03                                  delegated
-10 |                                                                         ↓ 9 more
-11 |
-12 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…|}];
+    {|
+    01 | ⏺ Delegated work is in progress.
+    02 |
+    03 | ────────────────────────────────────────────────────────────────────────────────
+    04 | ❯ message mentat
+    05 | ────────────────────────────────────────────────────────────────────────────────
+    06 |   ◯ main
+    07 |   ○ subagent audit delegated child 01                                  delegated
+    08 |   ○ subagent audit delegated child 02                                  delegated
+    09 |   ○ subagent audit delegated child 03                                  delegated
+    10 |                                                                         ↓ 9 more
+    11 |
+    12 |   ! not logged in · /login · ~/mentat-tu… · openai/gpt… · ! full access ? for…
+    |}];
   (* Tab focuses the switcher at main; one move per delegation reaches the final
      child. Mosaic keeps that selected semantic row visible within scarce
      height. *)
@@ -839,18 +873,20 @@ let%expect_test
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 | ⏺ Delegated work is in progress.
-02 | ────────────────────────────────────────────────────────────────────────────────
-03 | ❯ message mentat
-04 | ────────────────────────────────────────────────────────────────────────────────
-05 |   ○ subagent audit delegated child 03                                 delegated↑
-06 |   ○ subagent audit delegated child 04                                 delegated│
-07 |   ○ subagent audit delegated child 05                                 delegated│
-08 |   ○ subagent audit delegated child 06                                 delegated│
-09 |   ○ subagent audit delegated child 07                                 delegated│
-10 |   ○ subagent audit delegated child 08                                 delegated│
-11 |   ○ subagent audit delegated child 09                                 delegated│
-12 |   ○ subagent audit delegated child 10                                 delegated│|}]
+    {|
+    01 | ⏺ Delegated work is in progress.
+    02 | ────────────────────────────────────────────────────────────────────────────────
+    03 | ❯ message mentat
+    04 | ────────────────────────────────────────────────────────────────────────────────
+    05 |   ○ subagent audit delegated child 03                                 delegated↑
+    06 |   ○ subagent audit delegated child 04                                 delegated│
+    07 |   ○ subagent audit delegated child 05                                 delegated│
+    08 |   ○ subagent audit delegated child 06                                 delegated│
+    09 |   ○ subagent audit delegated child 07                                 delegated│
+    10 |   ○ subagent audit delegated child 08                                 delegated│
+    11 |   ○ subagent audit delegated child 09                                 delegated│
+    12 |   ○ subagent audit delegated child 10                                 delegated│
+    |}]
 
 let unavailable message =
   Mentat_protocol.Error.Unavailable (Mentat_diagnostic.of_text message)
@@ -879,30 +915,32 @@ let%expect_test "a feed-unavailable child offers retry and re-follows in place"
   (* The pane's agents row is an honest error, not a working child. *)
   Tui.print t;
   [%expect
-    {|01 |                                                                                 │ agents
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium                     │   ◯ main
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-unab03fa575                │   ! inspect the un... feed unavailable
-04 |                                                                                 │
-05 | ❯ Coordinate the delegated work.                                                │
-06 |                                                                                 │
-07 | ⏺ Delegated work is in progress.                                                │
-08 |                                                                                 │
-09 | ✗ child transport dropped                                                       │
-10 |   retry when ready                                                              │
-11 |                                                                                 │
-12 |                                                                                 │
-13 |                                                                                 │
-14 |                                                                                 │
-15 |                                                                                 │
-16 |                                                                                 │
-17 |                                                                                 │
-18 |                                                                                 │
-19 |                                                                                 │
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-24 |   child transport dropped|}];
+    {|
+    01 |                                                                                 │ agents
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium                     │   ◯ main
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-una7d29ba39                │   ! inspect the un... feed unavailable
+    04 |                                                                                 │
+    05 | ❯ Coordinate the delegated work.                                                │
+    06 |                                                                                 │
+    07 | ⏺ Delegated work is in progress.                                                │
+    08 |                                                                                 │
+    09 | ✗ child transport dropped                                                       │
+    10 |   retry when ready                                                              │
+    11 |                                                                                 │
+    12 |                                                                                 │
+    13 |                                                                                 │
+    14 |                                                                                 │
+    15 |                                                                                 │
+    16 |                                                                                 │
+    17 |                                                                                 │
+    18 |                                                                                 │
+    19 |                                                                                 │
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    24 |   child transport dropped
+    |}];
   (* Focusing it advertises the retry that Enter performs — not "open". *)
   Tui.keys t Key.tab;
   Tui.settle t;
@@ -910,60 +948,64 @@ let%expect_test "a feed-unavailable child offers retry and re-follows in place"
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |                                                                                 │ agents
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium                     │   ◯ main
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-unab03fa575                │ ❯ ! inspect the unre... enter to retry
-04 |                                                                                 │
-05 | ❯ Coordinate the delegated work.                                                │
-06 |                                                                                 │
-07 | ⏺ Delegated work is in progress.                                                │
-08 |                                                                                 │
-09 | ✗ child transport dropped                                                       │
-10 |   retry when ready                                                              │
-11 |                                                                                 │
-12 |                                                                                 │
-13 |                                                                                 │
-14 |                                                                                 │
-15 |                                                                                 │
-16 |                                                                                 │
-17 |                                                                                 │
-18 |                                                                                 │
-19 |                                                                                 │
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-24 |   child transport dropped|}];
+    {|
+    01 |                                                                                 │ agents
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium                     │   ◯ main
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-una7d29ba39                │ ❯ ! inspect the unre... enter to retry
+    04 |                                                                                 │
+    05 | ❯ Coordinate the delegated work.                                                │
+    06 |                                                                                 │
+    07 | ⏺ Delegated work is in progress.                                                │
+    08 |                                                                                 │
+    09 | ✗ child transport dropped                                                       │
+    10 |   retry when ready                                                              │
+    11 |                                                                                 │
+    12 |                                                                                 │
+    13 |                                                                                 │
+    14 |                                                                                 │
+    15 |                                                                                 │
+    16 |                                                                                 │
+    17 |                                                                                 │
+    18 |                                                                                 │
+    19 |                                                                                 │
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    24 |   child transport dropped
+    |}];
   (* Enter re-follows in place; the persistent error keeps the row honest and
      never opens a drill. *)
   Tui.enter t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |                                                                                 │ agents
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium                     │   ◯ main
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-unab03fa575                │ ❯ ! inspect the unre... enter to retry
-04 |                                                                                 │
-05 | ❯ Coordinate the delegated work.                                                │
-06 |                                                                                 │
-07 | ⏺ Delegated work is in progress.                                                │
-08 |                                                                                 │
-09 | ✗ child transport dropped × 2                                                   │
-10 |   retry when ready                                                              │
-11 |                                                                                 │
-12 |                                                                                 │
-13 |                                                                                 │
-14 |                                                                                 │
-15 |                                                                                 │
-16 |                                                                                 │
-17 |                                                                                 │
-18 |                                                                                 │
-19 |                                                                                 │
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-24 |   child transport dropped|}]
+    {|
+    01 |                                                                                 │ agents
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium                     │   ◯ main
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-una7d29ba39                │ ❯ ! inspect the unre... enter to retry
+    04 |                                                                                 │
+    05 | ❯ Coordinate the delegated work.                                                │
+    06 |                                                                                 │
+    07 | ⏺ Delegated work is in progress.                                                │
+    08 |                                                                                 │
+    09 | ✗ child transport dropped × 2                                                   │
+    10 |   retry when ready                                                              │
+    11 |                                                                                 │
+    12 |                                                                                 │
+    13 |                                                                                 │
+    14 |                                                                                 │
+    15 |                                                                                 │
+    16 |                                                                                 │
+    17 |                                                                                 │
+    18 |                                                                                 │
+    19 |                                                                                 │
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    24 |   child transport dropped
+    |}]
 
 let boarded_child =
   child ~prompt:"Port the loader." "session-thread-boarded"
@@ -996,30 +1038,32 @@ let%expect_test "a drilled child shows its own task board in the wide pane" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |                                                                                 │ agents
-02 |   ▂▄▆▄▂ @subagent                                                               │   ◯ main
-03 |   started by main                                                               │   ✓ port the configuratio... completed
-04 | ❯ Port the loader.                                                              │
-05 |                                                                                 │ tasks · 1 done · 1 running
-06 | ⏺ Todo(3 tasks · 1 done · 1 running)                                            │   ◼ port the resolution order
-07 |                                                                                 │   ◻ add regression tests
-08 | ⏺ The configuration loader is ported.                                           │   … 1 done
-09 |                                                                                 │
-10 |                                                                                 │
-11 |                                                                                 │
-12 |                                                                                 │
-13 |                                                                                 │
-14 |                                                                                 │
-15 |                                                                                 │
-16 |                                                                                 │
-17 |                                                                                 │
-18 |                                                                                 │
-19 |                                                                                 │
-20 |
-21 | ───────────────────────────────────────────────────────────────────────────────────────────────────────────── @subagent
-22 | ❯ message @subagent
-23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tui-threads-drib05bcafb · openai/gpt-5.5 · ! full access        esc back to main|}]
+    {|
+    01 |                                                                                 │ agents
+    02 |   ▂▄▆▄▂ @subagent                                                               │   ◯ main
+    03 |   started by main                                                               │   ✓ port the configuratio... completed
+    04 | ❯ Port the loader.                                                              │
+    05 |                                                                                 │ tasks · 1 done · 1 running
+    06 | ⏺ Todo(3 tasks · 1 done · 1 running)                                            │   ◼ port the resolution order
+    07 |                                                                                 │   ◻ add regression tests
+    08 | ⏺ The configuration loader is ported.                                           │   … 1 done
+    09 |                                                                                 │
+    10 |                                                                                 │
+    11 |                                                                                 │
+    12 |                                                                                 │
+    13 |                                                                                 │
+    14 |                                                                                 │
+    15 |                                                                                 │
+    16 |                                                                                 │
+    17 |                                                                                 │
+    18 |                                                                                 │
+    19 |                                                                                 │
+    20 |
+    21 | ───────────────────────────────────────────────────────────────────────────────────────────────────────────── @subagent
+    22 | ❯ message @subagent
+    23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tui-threads-dri15f8c52d · openai/gpt-5.5 · ! full access        esc back to main
+    |}]
 
 (* Opening the switcher from a drill lands on the child currently in view, not
    the parent row, so [Enter] holds the current child instead of jumping home.
@@ -1047,30 +1091,32 @@ let%expect_test "the drill switcher opens on the current child, not main" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |   ▂▄▆▄▂ @subagent
-03 |   started by main
-04 | ❯ Verify the visual contract.
-05 |
-06 | ⏺ The visual contract is verified.
-07 |
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 | ───────────────────────────────────────────────────────────────────────────────────────── @subagent
-18 | ❯ message @subagent
-19 | ────────────────────────────────────────────────────────────────────────────────────────────────────
-20 |   ◯ main
-21 |   ○ subagent map the configuration flow                                                    delegated
-22 | ❯ ✓ subagent verify the complete visual contract                                           completed
-23 |
-24 |   ! not logged in · /login · ~/mentat-tui-threads-dr… · openai/gpt-5… · ! full access esc back to…|}];
+    {|
+    01 |
+    02 |   ▂▄▆▄▂ @subagent
+    03 |   started by main
+    04 | ❯ Verify the visual contract.
+    05 |
+    06 | ⏺ The visual contract is verified.
+    07 |
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 | ───────────────────────────────────────────────────────────────────────────────────────── @subagent
+    18 | ❯ message @subagent
+    19 | ────────────────────────────────────────────────────────────────────────────────────────────────────
+    20 |   ◯ main
+    21 |   ○ subagent map the configuration flow                                                    delegated
+    22 | ❯ ✓ subagent verify the complete visual contract                                           completed
+    23 |
+    24 |   ! not logged in · /login · ~/mentat-tui-threads-dr… · openai/gpt-5… · ! full access esc back to…
+    |}];
   (* Enter on the highlighted current child holds it and drops the switcher focus
      back to the composer, which then accepts typed text. *)
   Tui.enter t;
@@ -1079,30 +1125,32 @@ let%expect_test "the drill switcher opens on the current child, not main" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |   ▂▄▆▄▂ @subagent
-03 |   started by main
-04 | ❯ Verify the visual contract.
-05 |
-06 | ⏺ The visual contract is verified.
-07 |
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 | ───────────────────────────────────────────────────────────────────────────────────────── @subagent
-18 | ❯ still here
-19 | ────────────────────────────────────────────────────────────────────────────────────────────────────
-20 |   ◯ main
-21 |   ○ subagent map the configuration flow                                                    delegated
-22 |   ✓ subagent verify the complete visual contract                                           completed
-23 |
-24 |   ! not logged in · /login · ~/mentat-tui-threads-dr… · openai/gpt-5… · ! full access esc back to…|}]
+    {|
+    01 |
+    02 |   ▂▄▆▄▂ @subagent
+    03 |   started by main
+    04 | ❯ Verify the visual contract.
+    05 |
+    06 | ⏺ The visual contract is verified.
+    07 |
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 | ───────────────────────────────────────────────────────────────────────────────────────── @subagent
+    18 | ❯ still here
+    19 | ────────────────────────────────────────────────────────────────────────────────────────────────────
+    20 |   ◯ main
+    21 |   ○ subagent map the configuration flow                                                    delegated
+    22 |   ✓ subagent verify the complete visual contract                                           completed
+    23 |
+    24 |   ! not logged in · /login · ~/mentat-tui-threads-dr… · openai/gpt-5… · ! full access esc back to…
+    |}]
 
 (* Prompt history is shared across the main view and a drill: the drill composer
    is seeded with the same loaded entries, so Up recalls them exactly as the main
@@ -1126,30 +1174,32 @@ let%expect_test "the drill composer recalls shared prompt history" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |                                                                                 │ agents
-02 |   ▂▄▆▄▂ @subagent — map the config loader                                       │   ◯ main
-03 |   started by main                                                               │   ✓ map the config loader    completed
-04 | ❯ Carry out the delegated task.                                                 │
-05 |                                                                                 │
-06 | ⏺ The configuration loader is mapped.                                           │
-07 |                                                                                 │
-08 |                                                                                 │
-09 |                                                                                 │
-10 |                                                                                 │
-11 |                                                                                 │
-12 |                                                                                 │
-13 |                                                                                 │
-14 |                                                                                 │
-15 |                                                                                 │
-16 |                                                                                 │
-17 |                                                                                 │
-18 |                                                                                 │
-19 |                                                                                 │
-20 |
-21 | ───────────────────────────────────────────────────────────────────────────────────────────────────────────── @subagent
-22 | ❯ recall me in the drill
-23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tui-threads-drillec4eb6df · openai/gpt-5.5 · ! full access      esc back to main|}]
+    {|
+    01 |                                                                                 │ agents
+    02 |   ▂▄▆▄▂ @subagent — map the config loader                                       │   ◯ main
+    03 |   started by main                                                               │   ✓ map the config loader    completed
+    04 | ❯ Carry out the delegated task.                                                 │
+    05 |                                                                                 │
+    06 | ⏺ The configuration loader is mapped.                                           │
+    07 |                                                                                 │
+    08 |                                                                                 │
+    09 |                                                                                 │
+    10 |                                                                                 │
+    11 |                                                                                 │
+    12 |                                                                                 │
+    13 |                                                                                 │
+    14 |                                                                                 │
+    15 |                                                                                 │
+    16 |                                                                                 │
+    17 |                                                                                 │
+    18 |                                                                                 │
+    19 |                                                                                 │
+    20 |
+    21 | ───────────────────────────────────────────────────────────────────────────────────────────────────────────── @subagent
+    22 | ❯ recall me in the drill
+    23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tui-threads-drill85d35b01 · openai/gpt-5.5 · ! full access      esc back to main
+    |}]
 
 (* A leading slash opens the command palette over the drill composer, the same
    completion surface the main composer offers. *)
@@ -1170,30 +1220,32 @@ let%expect_test "the drill composer opens the slash-command palette" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |                                                                                 │ agents
-02 |   ▂▄▆▄▂ @subagent — map the config loader                                       │   ◯ main
-03 |   started by main                                                               │   ✓ map the config loader    completed
-04 | ❯ Carry out the delegated task.                                                 │
-05 |                                                                                 │
-06 | ⏺ The configuration loader is mapped.                                           │
-07 |                                                                                 │
-08 |                                                                                 │
-09 |                                                                                 │
-10 |                                                                                 │
-11 |                                                                                 │
-12 |                                                                                 │
-13 |                                                                                 │
-14 |                                                                                 │
-15 |                                                                                 │
-16 | ❯ /clear      Start a new session with empty context; previous session stays on disk
-17 |   /fork       Fork current session
-18 |   /rewind     Jump back to an earlier message and resubmit
-19 |   /undo       Undo the last turn: revert its files and reload its message
-20 |   /redo       Redo an undone turn, restoring its files and messages
-21 | ───────────────────────────────────────────────────────────────────────────────────────────────────────────── @subagent
-22 | ❯ /
-23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tui-threads-drill94c456bf · openai/gpt-5.5 · ! full access      esc back to main|}]
+    {|
+    01 |                                                                                 │ agents
+    02 |   ▂▄▆▄▂ @subagent — map the config loader                                       │   ◯ main
+    03 |   started by main                                                               │   ✓ map the config loader    completed
+    04 | ❯ Carry out the delegated task.                                                 │
+    05 |                                                                                 │
+    06 | ⏺ The configuration loader is mapped.                                           │
+    07 |                                                                                 │
+    08 |                                                                                 │
+    09 |                                                                                 │
+    10 |                                                                                 │
+    11 |                                                                                 │
+    12 |                                                                                 │
+    13 |                                                                                 │
+    14 |                                                                                 │
+    15 |                                                                                 │
+    16 | ❯ /clear      Start a new session with empty context; previous session stays on disk
+    17 |   /fork       Fork current session
+    18 |   /rewind     Jump back to an earlier message and resubmit
+    19 |   /undo       Undo the last turn: revert its files and reload its message
+    20 |   /redo       Redo an undone turn, restoring its files and messages
+    21 | ───────────────────────────────────────────────────────────────────────────────────────────────────────────── @subagent
+    22 | ❯ /
+    23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tui-threads-drilla72c9277 · openai/gpt-5.5 · ! full access      esc back to main
+    |}]
 
 (* A conversation-lifecycle command targets a specific session through main-owned
    request accounting, so in a drill it is gated with an honest note rather than
@@ -1217,30 +1269,32 @@ let%expect_test "a conversation command in a drill is gated, not silently run" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |                                                                                 │ agents
-02 |   ▂▄▆▄▂ @subagent — map the config loader                                       │   ◯ main
-03 |   started by main                                                               │   ✓ map the config loader    completed
-04 | ❯ Carry out the delegated task.                                                 │
-05 |                                                                                 │
-06 | ⏺ The configuration loader is mapped.                                           │
-07 |                                                                                 │
-08 |                                                                                 │
-09 |                                                                                 │
-10 |                                                                                 │
-11 |                                                                                 │
-12 |                                                                                 │
-13 |                                                                                 │
-14 |                                                                                 │
-15 |                                                                                 │
-16 |                                                                                 │
-17 |                                                                                 │
-18 |                                                                                 │
-19 |                                                                                 │
-20 |
-21 | ───────────────────────────────────────────────────────────────────────────────────────────────────────────── @subagent
-22 | ❯ message @subagent
-23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-24 |   /compact targets the main session — esc back first|}]
+    {|
+    01 |                                                                                 │ agents
+    02 |   ▂▄▆▄▂ @subagent — map the config loader                                       │   ◯ main
+    03 |   started by main                                                               │   ✓ map the config loader    completed
+    04 | ❯ Carry out the delegated task.                                                 │
+    05 |                                                                                 │
+    06 | ⏺ The configuration loader is mapped.                                           │
+    07 |                                                                                 │
+    08 |                                                                                 │
+    09 |                                                                                 │
+    10 |                                                                                 │
+    11 |                                                                                 │
+    12 |                                                                                 │
+    13 |                                                                                 │
+    14 |                                                                                 │
+    15 |                                                                                 │
+    16 |                                                                                 │
+    17 |                                                                                 │
+    18 |                                                                                 │
+    19 |                                                                                 │
+    20 |
+    21 | ───────────────────────────────────────────────────────────────────────────────────────────────────────────── @subagent
+    22 | ❯ message @subagent
+    23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    24 |   /compact targets the main session — esc back first
+    |}]
 
 (* A delegated child can itself delegate. The grandchild reaches the switcher
    through its parent's own live feed, so it must join the tree indented one
@@ -1345,30 +1399,32 @@ let%expect_test "a subagent's subagent nests under it in the agents tree" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |                                                                                 │ agents
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium                     │   ◯ main
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-thread62b87a8d                     │   ✓ map the config subsystem completed
-04 |                                                                                 │   ✓ └ audit the loader units completed
-05 | ❯ Coordinate nested work.                                                       │
-06 |                                                                                 │
-07 | ⏺ Delegated the nested work.                                                    │
-08 |                                                                                 │
-09 |   ● Agent "map the config subsystem" finished                                   │
-10 |                                                                                 │
-11 |   ● Agent "audit the loader units" finished                                     │
-12 |                                                                                 │
-13 |                                                                                 │
-14 |                                                                                 │
-15 |                                                                                 │
-16 |                                                                                 │
-17 |                                                                                 │
-18 |                                                                                 │
-19 |                                                                                 │
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tui-thread62b87a8d · openai/gpt-5.5 · ! full access              ? for shortcuts|}];
+    {|
+    01 |                                                                                 │ agents
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium                     │   ◯ main
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-thread53189af9                     │   ✓ map the config subsystem completed
+    04 |                                                                                 │   ✓ └ audit the loader units completed
+    05 | ❯ Coordinate nested work.                                                       │
+    06 |                                                                                 │
+    07 | ⏺ Delegated the nested work.                                                    │
+    08 |                                                                                 │
+    09 |   ● Agent "map the config subsystem" finished                                   │
+    10 |                                                                                 │
+    11 |   ● Agent "audit the loader units" finished                                     │
+    12 |                                                                                 │
+    13 |                                                                                 │
+    14 |                                                                                 │
+    15 |                                                                                 │
+    16 |                                                                                 │
+    17 |                                                                                 │
+    18 |                                                                                 │
+    19 |                                                                                 │
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tui-thread53189af9 · openai/gpt-5.5 · ! full access              ? for shortcuts
+    |}];
   (* The grandchild is a real observed session, so the switcher can drill into
      it exactly as it drills a direct child. *)
   Tui.keys t Key.tab;
@@ -1381,30 +1437,32 @@ let%expect_test "a subagent's subagent nests under it in the agents tree" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |                                                                                 │ agents
-02 |   ▂▄▆▄▂ @subagent                                                               │   ◯ main
-03 |   started by main                                                               │   ✓ map the config subsystem completed
-04 | ❯ Audit the loader units.                                                       │   ✓ └ audit the loader units completed
-05 |                                                                                 │
-06 | ⏺ Audited the loader units.                                                     │
-07 |                                                                                 │
-08 |                                                                                 │
-09 |                                                                                 │
-10 |                                                                                 │
-11 |                                                                                 │
-12 |                                                                                 │
-13 |                                                                                 │
-14 |                                                                                 │
-15 |                                                                                 │
-16 |                                                                                 │
-17 |                                                                                 │
-18 |                                                                                 │
-19 |                                                                                 │
-20 |
-21 | ───────────────────────────────────────────────────────────────────────────────────────────────────────────── @subagent
-22 | ❯ message @subagent
-23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tui-thread62b87a8d · openai/gpt-5.5 · ! full access             esc back to main|}]
+    {|
+    01 |                                                                                 │ agents
+    02 |   ▂▄▆▄▂ @subagent                                                               │   ◯ main
+    03 |   started by main                                                               │   ✓ map the config subsystem completed
+    04 | ❯ Audit the loader units.                                                       │   ✓ └ audit the loader units completed
+    05 |                                                                                 │
+    06 | ⏺ Audited the loader units.                                                     │
+    07 |                                                                                 │
+    08 |                                                                                 │
+    09 |                                                                                 │
+    10 |                                                                                 │
+    11 |                                                                                 │
+    12 |                                                                                 │
+    13 |                                                                                 │
+    14 |                                                                                 │
+    15 |                                                                                 │
+    16 |                                                                                 │
+    17 |                                                                                 │
+    18 |                                                                                 │
+    19 |                                                                                 │
+    20 |
+    21 | ───────────────────────────────────────────────────────────────────────────────────────────────────────────── @subagent
+    22 | ❯ message @subagent
+    23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tui-thread53189af9 · openai/gpt-5.5 · ! full access             esc back to main
+    |}]
 
 (* A short-labelled failing child proves the label is shown in full — not
    collapsed to a sliver — right beside its failure fact and, when focused, its
@@ -1425,59 +1483,63 @@ let%expect_test "a failure row keeps its full label in the agents pane" =
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |                                                                                 │ agents
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium                     │   ◯ main
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-she9e20a14                 │   ! port loader       feed unavailable
-04 |                                                                                 │
-05 | ❯ Coordinate the delegated work.                                                │
-06 |                                                                                 │
-07 | ⏺ Delegated work is in progress.                                                │
-08 |                                                                                 │
-09 | ✗ child feed dropped                                                            │
-10 |   retry when ready                                                              │
-11 |                                                                                 │
-12 |                                                                                 │
-13 |                                                                                 │
-14 |                                                                                 │
-15 |                                                                                 │
-16 |                                                                                 │
-17 |                                                                                 │
-18 |                                                                                 │
-19 |                                                                                 │
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-24 |   child feed dropped|}];
+    {|
+    01 |                                                                                 │ agents
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium                     │   ◯ main
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-sh0adb0265                 │   ! port loader       feed unavailable
+    04 |                                                                                 │
+    05 | ❯ Coordinate the delegated work.                                                │
+    06 |                                                                                 │
+    07 | ⏺ Delegated work is in progress.                                                │
+    08 |                                                                                 │
+    09 | ✗ child feed dropped                                                            │
+    10 |   retry when ready                                                              │
+    11 |                                                                                 │
+    12 |                                                                                 │
+    13 |                                                                                 │
+    14 |                                                                                 │
+    15 |                                                                                 │
+    16 |                                                                                 │
+    17 |                                                                                 │
+    18 |                                                                                 │
+    19 |                                                                                 │
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    24 |   child feed dropped
+    |}];
   Tui.keys t Key.tab;
   Tui.keys t Key.down;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |                                                                                 │ agents
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium                     │   ◯ main
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-she9e20a14                 │ ❯ ! port loader         enter to retry
-04 |                                                                                 │
-05 | ❯ Coordinate the delegated work.                                                │
-06 |                                                                                 │
-07 | ⏺ Delegated work is in progress.                                                │
-08 |                                                                                 │
-09 | ✗ child feed dropped                                                            │
-10 |   retry when ready                                                              │
-11 |                                                                                 │
-12 |                                                                                 │
-13 |                                                                                 │
-14 |                                                                                 │
-15 |                                                                                 │
-16 |                                                                                 │
-17 |                                                                                 │
-18 |                                                                                 │
-19 |                                                                                 │
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-24 |   child feed dropped|}]
+    {|
+    01 |                                                                                 │ agents
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium                     │   ◯ main
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-sh0adb0265                 │ ❯ ! port loader         enter to retry
+    04 |                                                                                 │
+    05 | ❯ Coordinate the delegated work.                                                │
+    06 |                                                                                 │
+    07 | ⏺ Delegated work is in progress.                                                │
+    08 |                                                                                 │
+    09 | ✗ child feed dropped                                                            │
+    10 |   retry when ready                                                              │
+    11 |                                                                                 │
+    12 |                                                                                 │
+    13 |                                                                                 │
+    14 |                                                                                 │
+    15 |                                                                                 │
+    16 |                                                                                 │
+    17 |                                                                                 │
+    18 |                                                                                 │
+    19 |                                                                                 │
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    24 |   child feed dropped
+    |}]
 
 (* A write-capable subagent parks on a permission review when it asks to run a
    high-impact action. A drilled child is session-like, so the review raises the
@@ -1581,30 +1643,32 @@ let%expect_test
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |                                                                                 │ agents · 1 blocked
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium                     │   ◯ main
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-revib7fb3525               │ ❯ ⋯ run the migration  enter to answer
-04 |                                                                                 │
-05 | ❯ Coordinate the delegated work.                                                │
-06 |                                                                                 │
-07 | ⏺ Delegated work is in progress.                                                │
-08 |                                                                                 │
-09 |                                                                                 │
-10 |                                                                                 │
-11 |                                                                                 │
-12 |                                                                                 │
-13 |                                                                                 │
-14 |                                                                                 │
-15 |                                                                                 │
-16 |                                                                                 │
-17 |                                                                                 │
-18 |                                                                                 │
-19 |                                                                                 │
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~/mentat-tui-threads-revib7fb3525 · openai/gpt-5.5 · ! full access        ? for shortcuts|}];
+    {|
+    01 |                                                                                 │ agents · 1 blocked
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium                     │   ◯ main
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-revif7699ac6               │ ❯ ⋯ run the migration  enter to answer
+    04 |                                                                                 │
+    05 | ❯ Coordinate the delegated work.                                                │
+    06 |                                                                                 │
+    07 | ⏺ Delegated work is in progress.                                                │
+    08 |                                                                                 │
+    09 |                                                                                 │
+    10 |                                                                                 │
+    11 |                                                                                 │
+    12 |                                                                                 │
+    13 |                                                                                 │
+    14 |                                                                                 │
+    15 |                                                                                 │
+    16 |                                                                                 │
+    17 |                                                                                 │
+    18 |                                                                                 │
+    19 |                                                                                 │
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~/mentat-tui-threads-revif7699ac6 · openai/gpt-5.5 · ! full access        ? for shortcuts
+    |}];
   (* Drilling in raises the real permission dialog wired to answer the child,
      not a read-only glance of the "blocked" state. *)
   Tui.enter t;
@@ -1613,29 +1677,30 @@ let%expect_test
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |                                                                                 │ agents · 1 blocked
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium                     │   ◯ main
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-revib7fb3525               │   ⋯ run the migration          blocked
-04 |                                                                                 │
-05 | ❯ Coordinate the delegated work.                                                │
-06 |                                                                                 │
-07 | ⏺ Delegated work is in progress.                                                │
-08 |                                                                                 │
-09 |                                                                                 │
-10 |                                                                                 │
-11 |                                                                                 │
-12 |                                                                                 │
-13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-14 |    permission
-15 |
-16 |   Allow session.child.high-impact?
-17 |   access · custom session.child.high-impact
-18 | ❯ 1. Yes, allow once
-19 |   2. Yes, allow the exact session.child.high-impact access for this conversation
-20 |   3. No, deny
-21 |   4. No, deny and tell the model what to do differently
-22 |
-23 |
-24 |   1-4 select · ↵ choose · ^O more|}]
+    {|
+    01 |                                                                                 │ agents · 1 blocked
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium                     │   ◯ main
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-revif7699ac6               │   ⋯ run the migration          blocked
+    04 |                                                                                 │
+    05 | ❯ Coordinate the delegated work.                                                │
+    06 |                                                                                 │
+    07 | ⏺ Delegated work is in progress.                                                │
+    08 |                                                                                 │
+    09 |                                                                                 │
+    10 |                                                                                 │
+    11 |                                                                                 │
+    12 |                                                                                 │
+    13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    14 |    permission
+    15 |
+    16 |   Allow session.child.high-impact?
+    17 |   access · custom session.child.high-impact
+    18 | ❯ 1. Yes, allow once
+    19 |   2. Yes, allow the exact session.child.high-impact access for this conversation
+    20 |   3. No, deny
+    21 |   4. No, deny and tell the model what to do differently
+    22 |
+    23 |
+    24 |   1-4 select · ↵ choose · ^O more
+    |}]
 
-[%%run_tests "mentat.tui.threads"]

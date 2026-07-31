@@ -6,8 +6,8 @@
 open Windtrap
 module Eval = Mentat_eval
 
-let check_value = testable ~pp:Eval.Check.pp ~equal:Eval.Check.equal ()
-let float_value = testable ~pp:Format.pp_print_float ~equal:Float.equal ()
+let check_value = Testable.make ~pp:Eval.Check.pp ~equal:Eval.Check.equal
+let float_value = Testable.make ~pp:Format.pp_print_float ~equal:Float.equal
 
 let expect_invalid_arg msg f =
   match f () with
@@ -25,8 +25,8 @@ let pp_verdict ppf = function
   | Eval.Report.Regressed -> Format.pp_print_string ppf "regressed"
   | Eval.Report.Unchanged -> Format.pp_print_string ppf "unchanged"
 
-let metric_value = testable ~pp:pp_metric ~equal:( = ) ()
-let verdict_value = testable ~pp:pp_verdict ~equal:( = ) ()
+let metric_value = Testable.make ~pp:pp_metric ~equal:( = )
+let verdict_value = Testable.make ~pp:pp_verdict ~equal:( = )
 
 let encode codec value =
   match Jsont.Json.encode codec value with
@@ -271,7 +271,7 @@ let result_codec_round_trips () =
       ]
   in
   equal
-    (testable ~pp:Eval.Result.pp ~equal:Eval.Result.equal ())
+    (Testable.make ~pp:Eval.Result.pp ~equal:Eval.Result.equal)
     ~msg:"result codec" result
     (decode Eval.Result.jsont (encode Eval.Result.jsont result))
 

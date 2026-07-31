@@ -368,7 +368,7 @@ let sty_matches sty v =
   | SInteger, Jsont.Number (f, _) -> Float.is_integer f
   | _ -> false
 
-let sty_gen = Gen.oneofl [ SString; SNumber; SInteger; SBoolean; SNull ]
+let sty_gen = Gen.of_list [ SString; SNumber; SInteger; SBoolean; SNull ]
 
 (* Scalar instance values spanning all sorts, so type checks both pass and
    fail across generated cases. *)
@@ -378,9 +378,9 @@ let scalar_gen =
       ( 2,
         Gen.map
           (fun s -> str s)
-          (Gen.string_size (Gen.int_range 0 3) (Gen.char_range 'a' 'c')) );
+          (Gen.string_of ~size:(Gen.int_range 0 3) (Gen.char_range 'a' 'c')) );
       (2, Gen.map intj (Gen.int_range 0 4));
-      (1, Gen.map num (Gen.oneofl [ 0.5; 2.5 ]));
+      (1, Gen.map num (Gen.of_list [ 0.5; 2.5 ]));
       (2, Gen.map (fun b -> boolj b) Gen.bool);
       (1, Gen.pure nullj);
     ]
@@ -434,19 +434,17 @@ let case_gen =
   in
   (schema_json, value_json, oracle)
 
-let case_t =
-  testable
-    ~pp:(fun ppf (s, v, e) ->
+let case_gen =
+  Gen.with_pp
+    (fun ppf (s, v, e) ->
       Format.fprintf ppf "schema=%a value=%a expect=%b" Jsont.Json.pp s
         Jsont.Json.pp v e)
-    ~equal:(fun (s1, v1, e1) (s2, v2, e2) ->
-      Jsont.Json.equal s1 s2 && Jsont.Json.equal v1 v2 && Bool.equal e1 e2)
-    ~gen:case_gen ()
+    case_gen
 
 let oracle_property =
   group "validate agrees with the oracle"
     [
-      prop' "flat-object conformance matches the oracle" case_t
+      prop "flat-object conformance matches the oracle" case_gen
         (fun (schema_json, value_json, expected) ->
           let t = schema_of schema_json in
           let got =

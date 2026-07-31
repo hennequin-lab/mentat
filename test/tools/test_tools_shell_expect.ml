@@ -983,4 +983,3 @@ let%expect_test "durable replay retains presentation but no mutation authority"
     durable equal: true text valid: true termination: exited
     authority fields: 0 claim applies: 0 observations: 0 |}]
 
-[%%run_tests "mentat.tools.shell"]

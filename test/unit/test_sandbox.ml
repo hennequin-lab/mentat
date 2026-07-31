@@ -33,10 +33,10 @@ module Json = Jsont.Json
 (* Helpers *)
 
 let abs path = Abs.of_string_exn path
-let abs_value = testable ~pp:Abs.pp ~equal:Abs.equal ()
-let policy_value = testable ~pp:Policy.pp ~equal:Policy.equal ()
-let evidence_value = testable ~pp:Evidence.pp ~equal:Evidence.equal ()
-let error_value = testable ~pp:Error.pp ~equal:Error.equal ()
+let abs_value = Testable.make ~pp:Abs.pp ~equal:Abs.equal
+let policy_value = Testable.make ~pp:Policy.pp ~equal:Policy.equal
+let evidence_value = Testable.make ~pp:Evidence.pp ~equal:Evidence.equal
+let error_value = Testable.make ~pp:Error.pp ~equal:Error.equal
 let json_string s = Json.string s
 
 (* The suites still speak in root lists; this projects them onto clauses so the
@@ -285,21 +285,20 @@ let policy_denials_participate_in_equality () =
    another (an antichain), and every input root is covered by some result
    root. *)
 
-let path_component = Gen.oneofl [ "a"; "b"; "c"; "d" ]
+let path_component = Gen.of_list [ "a"; "b"; "c"; "d" ]
 
 let abs_path_gen =
   Gen.map
     (fun components -> abs ("/" ^ String.concat "/" components))
-    (Gen.list_size (Gen.int_range 1 4) path_component)
+    (Gen.list ~size:(Gen.int_range 1 4) path_component)
 
-let abs_path = testable ~pp:Abs.pp ~equal:Abs.equal ~gen:abs_path_gen ()
-let root_list = list abs_path
+let root_list_gen = Gen.list (Gen.with_pp Abs.pp abs_path_gen)
 
 (* The property the ordered model upholds: clauses come out shallowest-first,
    so the deepest clause naming a path is the last one emitted and therefore the
    one both backends resolve to. *)
 let policy_entries_are_ordered_shallowest_first () =
-  prop' "entries are emitted shallowest-first" root_list (fun roots ->
+  prop "entries are emitted shallowest-first" root_list_gen (fun roots ->
       let entries =
         Policy.entries
           (Policy.make
@@ -319,6 +318,20 @@ let policy_entries_are_ordered_shallowest_first () =
         | _ -> ()
       in
       ordered entries)
+
+(* The root spelling makes a grant a different thing than it claims to be:
+   the escalation wearing the narrow move's name. Refused naming itself. *)
+let a_root_grant_is_refused () =
+  let policy =
+    Policy.make ~entries:[] ~reads_default:Policy.Denied
+      ~network:Policy.Network.Restricted
+  in
+  match Policy.grant policy [ (Abs.root, Policy.Access.Read) ] with
+  | Error (path, defeated) ->
+      equal (list string) ~msg:"the root grant is refused naming itself"
+        [ "/"; "/" ]
+        [ Abs.to_string path; Abs.to_string defeated ]
+  | Ok _ -> is_true ~msg:"the root grant is refused" false
 
 let backend_identity () =
   equal string ~msg:"seatbelt id" "macos-seatbelt" (Backend.id Backend.Seatbelt);
@@ -1106,8 +1119,8 @@ let lower_argv_enforces_cwd_containment () =
   let sandbox =
     sealed (confined ~reads:[ abs "/work" ] ~writable_roots:[ abs "/work" ] ())
   in
-  is_ok ~msg:"a cwd inside the read roots is accepted"
-    (Sandbox.lower_argv sandbox ~cwd:(abs "/work/sub") [ "true" ]);
+  ignore (require_ok ~msg:"a cwd inside the read roots is accepted"
+    (Sandbox.lower_argv sandbox ~cwd:(abs "/work/sub") [ "true" ]));
   match Sandbox.lower_argv sandbox ~cwd:(abs "/elsewhere") [ "true" ] with
   | Error error ->
       equal error_value
@@ -1590,6 +1603,7 @@ let () =
       test "policy collapses only duplicate paths"
         policy_collapses_only_duplicate_paths;
       policy_entries_are_ordered_shallowest_first ();
+      test "a root grant is refused" a_root_grant_is_refused;
       test "policy folds writable into reads" policy_folds_writable_into_reads;
       test "policy denials participate in equality"
         policy_denials_participate_in_equality;

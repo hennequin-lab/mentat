@@ -56,7 +56,7 @@ let make_client driver =
 
 let sid s = Session.Id.of_string s
 let tid s = Session.Turn.Id.of_string s
-let error_t = testable ~pp:Error.pp ~equal:Error.equal ()
+let error_t = Testable.make ~pp:Error.pp ~equal:Error.equal
 
 let contains_substring needle haystack =
   let ln = String.length needle and lh = String.length haystack in

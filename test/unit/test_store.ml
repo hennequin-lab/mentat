@@ -58,20 +58,19 @@ let abs = Abs.of_string_exn
 let rel = Rel.of_string_exn
 let sid = Session.Id.of_string
 let time ms = Session.Time.of_unix_ms (Int64.of_int ms)
-let session_id_value = testable ~pp:Session.Id.pp ~equal:Session.Id.equal ()
-let digest_value = testable ~pp:Mentat_digest.pp ~equal:Mentat_digest.equal ()
+let session_id_value = Testable.make ~pp:Session.Id.pp ~equal:Session.Id.equal
+let digest_value = Testable.make ~pp:Mentat_digest.pp ~equal:Mentat_digest.equal
 
 let content_ref_value =
-  testable ~pp:Mentat_digest.Content_ref.pp
-    ~equal:Mentat_digest.Content_ref.equal ()
+  Testable.make ~pp:Mentat_digest.Content_ref.pp ~equal:Mentat_digest.Content_ref.equal
 
-let event_value = testable ~pp:Mutation.Event.pp ~equal:Mutation.Event.equal ()
+let event_value = Testable.make ~pp:Mutation.Event.pp ~equal:Mutation.Event.equal
 
 let owner_value =
-  testable ~pp:Store.Run_lock.Owner.pp ~equal:Store.Run_lock.Owner.equal ()
+  Testable.make ~pp:Store.Run_lock.Owner.pp ~equal:Store.Run_lock.Owner.equal
 
 let claim_id_value =
-  testable ~pp:Session.Tool_claim.Id.pp ~equal:Session.Tool_claim.Id.equal ()
+  Testable.make ~pp:Session.Tool_claim.Id.pp ~equal:Session.Tool_claim.Id.equal
 
 let ok_store msg = function
   | Ok value -> value
@@ -406,7 +405,7 @@ let before_revert_event plan =
   let revert = (Mutation.Revert.Plan.started plan).Mutation.Revert.Started.id in
   checkpoint_event (Mutation.Checkpoint.Before_revert revert)
 
-let path_value = testable ~pp:W.Path.pp ~equal:W.Path.equal ()
+let path_value = Testable.make ~pp:W.Path.pp ~equal:W.Path.equal
 let owner label = Store.Run_lock.Owner.make ~label ()
 
 (* [read] returns the validated state; the tests compare the event projection. *)
@@ -701,7 +700,7 @@ let remove_is_revision_checked_and_reclaims () =
   | Error (Store.Session.Error.Conflict _) -> ()
   | Ok _ -> fail "a stale remove must conflict"
   | Error error -> failf "wrong error: %a" Store.Session.Error.pp error);
-  is_ok ~msg:"a current remove succeeds" (Store.Session.remove store doc1);
+  ignore (require_ok ~msg:"a current remove succeeds" (Store.Session.remove store doc1));
   is_false ~msg:"the whole session directory is reclaimed, blobs included"
     (Sys.file_exists (Filename.concat base ("sessions/" ^ id)));
   match Store.Session.load store (sid id) with
@@ -773,11 +772,11 @@ let released_guards_are_refused_by_appends () =
   let result = created_result ~path:"a.ml" ~contents:"a\n" in
   let event = edit_event ~claim:"claim-dead" result in
   Store.Run_lock.release guard;
-  raises_invalid_arg "Mentat_store.Handle.check_live: guard is released"
+  raises (Invalid_argument "Mentat_store.Handle.check_live: guard is released")
     (fun () ->
       Store.Mutation.append mutation ~fence:guard ~document
         [ observed_event ~claim:"claim-dead" [ "a.ml" ] ]);
-  raises_invalid_arg "Mentat_store.Handle.check_live: guard is released"
+  raises (Invalid_argument "Mentat_store.Handle.check_live: guard is released")
     (fun () ->
       Store.Mutation.append_edit mutation ~fence:guard ~document
         ~entries:(Edit.Result.entries result)
@@ -826,8 +825,8 @@ let guards_never_cross_root_registries () =
   ok_append "guard-B appends in root B"
     (Store.Mutation.append mutation_b ~fence:guard_b ~document:document_b
        [ event_for "claim-b" ]);
-  raises_invalid_arg
-    "Mentat_store.Handle.check_live: guard is for a different store root"
+  raises
+    (Invalid_argument "Mentat_store.Handle.check_live: guard is for a different store root")
     (fun () ->
       Store.Mutation.append mutation_b ~fence:guard_a ~document:document_b
         [ event_for "claim-x" ])
@@ -1301,7 +1300,7 @@ let settled_claim_is_history_not_live_authority () =
   | Ok None -> ()
   | Ok (Some _) -> fail "the rejected live append wrote its blob"
   | Error error -> failf "blob read failed: %a" Store.Mutation.Error.pp error);
-  is_none (blob_file_with base id "later\n");
+  equal (option pass) None (blob_file_with base id "later\n");
   equal (list event_value)
     ~msg:"the rejected live append did not alter historical rows"
     [ first_event ]
@@ -1393,15 +1392,15 @@ let append_edit_validates_before_persisting_blobs () =
   | Ok (Some _) -> fail "a semantically rejected append must not write a blob"
   | Ok None -> ()
   | Error error -> failf "blob read failed: %a" Store.Mutation.Error.pp error);
-  is_none (blob_file_with base id "second body\n");
+  equal (option pass) None (blob_file_with base id "second body\n");
   equal int ~msg:"the ledger still carries exactly the one appended event" 1
     (String.fold_left
        (fun count c -> if Char.equal c '\n' then count + 1 else count)
        0
        (read_file (ledger_path base id)));
   (* An event that does not derive from the entries is programmer error. *)
-  raises_invalid_arg
-    "Mentat_store.Mutation.append_edit: event does not derive from entries"
+  raises
+    (Invalid_argument "Mentat_store.Mutation.append_edit: event does not derive from entries")
     (fun () ->
       Store.Mutation.append_edit mutation ~fence:guard ~document
         ~entries:(Edit.Result.entries second)
@@ -1565,16 +1564,16 @@ let revert_lifecycle_round_trips () =
   let started_event = Mutation.Event.revert_started plan in
   let before_revert = before_revert_event plan in
   (* Closure symmetry: only the blob-free arms cross the plain append. *)
-  raises_invalid_arg
-    "Mentat_store.Mutation.append: edit events append through append_edit"
+  raises
+    (Invalid_argument "Mentat_store.Mutation.append: edit events append through append_edit")
     (fun () -> Store.Mutation.append mutation ~fence:guard ~document [ e_m ]);
-  raises_invalid_arg
-    "Mentat_store.Mutation.append: revert started events append through \
-     append_revert_started" (fun () ->
+  raises
+    (Invalid_argument "Mentat_store.Mutation.append: revert started events append through \
+     append_revert_started") (fun () ->
       Store.Mutation.append mutation ~fence:guard ~document [ started_event ]);
-  raises_invalid_arg
-    "Mentat_store.Mutation.append: revert settled events append through \
-     append_revert_settled" (fun () ->
+  raises
+    (Invalid_argument "Mentat_store.Mutation.append: revert settled events append through \
+     append_revert_settled") (fun () ->
       Store.Mutation.append mutation ~fence:guard ~document
         [
           Mutation.Event.revert_settled
@@ -1718,9 +1717,9 @@ let revert_settlement_derivation_is_enforced () =
   let ambiguous_event =
     Mutation.Event.revert_settled (Mutation.Revert.settle_ambiguous started)
   in
-  raises_invalid_arg
-    "Mentat_store.Mutation.append_revert_settled: event does not derive from \
-     outcome" (fun () ->
+  raises
+    (Invalid_argument "Mentat_store.Mutation.append_revert_settled: event does not derive from \
+     outcome") (fun () ->
       Store.Mutation.append_revert_settled mutation ~fence:guard ~document
         ~started ~outcome ambiguous_event);
   ok_mutation "the crash-recovery settlement carries no outcome"
@@ -2606,7 +2605,8 @@ let documents_round_trip_over_generated_sessions () =
       ~msg:(label ^ ": created and loaded revisions agree")
       (Store.Session.Document.revision created)
       (Store.Session.Document.revision loaded);
-    is_ok ~msg:(label ^ ": remove") (Store.Session.remove store loaded)
+    ignore
+      (require_ok ~msg:(label ^ ": remove") (Store.Session.remove store loaded))
   in
   (* Hostile ids pin the escaped path encoding: traversal and separator
      bytes must land inside [sessions/], not structure it. *)
@@ -2865,8 +2865,8 @@ let fork_child_blob_survives_parent_removal () =
   in
   (* [remove] takes the run fence itself, so release the parent's guard. *)
   Store.Run_lock.release guard;
-  is_ok ~msg:"the parent is physically removed"
-    (Store.Session.remove store document);
+  ignore (require_ok ~msg:"the parent is physically removed"
+    (Store.Session.remove store document));
   is_true ~msg:"the parent's blobs are reclaimed with it"
     (Option.is_none (blob_file_with base id "owned\n"));
   is_true ~msg:"the child's own blob copy survives"
@@ -2951,11 +2951,9 @@ let capture_load_of table rel =
   | None -> Capture.Skip
 
 let observed_testable =
-  testable
-    ~pp:(fun ppf -> function
+  Testable.structural ~pp:(fun ppf -> function
       | Capture.File bytes -> Format.fprintf ppf "File %S" bytes
       | Capture.Absent -> Format.fprintf ppf "Absent")
-    ()
 
 let read_observed label store reference rel =
   match Capture.read store ~reference rel with

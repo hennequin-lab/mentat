@@ -1192,4 +1192,3 @@ let%expect_test "constructor rejects invalid fixed programs and switch roots" =
     invocations: dune=0 merlin=0 ocamlfind=0
     |}]
 
-[%%run_tests "mentat.tools.ocaml_docs"]

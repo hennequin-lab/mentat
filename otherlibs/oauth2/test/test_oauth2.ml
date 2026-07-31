@@ -12,7 +12,7 @@ module O = Oauth2
 
 let expect_invalid_arg ?expected msg f =
   match expected with
-  | Some expected -> raises_invalid_arg ~msg expected (fun () -> ignore (f ()))
+  | Some expected -> raises ~msg (Invalid_argument expected) (fun () -> ignore (f ()))
   | None -> (
       match f () with
       | _ -> failf "%s: expected Invalid_argument" msg
@@ -29,7 +29,7 @@ let pp_params ppf params =
     ~pp_sep:(fun ppf () -> Format.pp_print_string ppf "; ")
     pp_binding ppf params
 
-let params_value = testable ~pp:pp_params ~equal:(fun a b -> a = b) ()
+let params_value = Testable.make ~pp:pp_params ~equal:(fun a b -> a = b)
 let check_params msg expected actual = equal params_value ~msg expected actual
 
 let expect_ok msg = function

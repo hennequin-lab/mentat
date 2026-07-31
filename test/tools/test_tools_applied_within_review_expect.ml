@@ -270,4 +270,3 @@ let%expect_test "write tools apply only paths their permissions declared" =
     applied: added.txt, movable.txt, moved.txt, poem.txt, stale.txt
     applied within review: true |}]
 
-[%%run_tests "mentat.tools.applied_within_review"]

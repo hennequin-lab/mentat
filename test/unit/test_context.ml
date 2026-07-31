@@ -806,12 +806,12 @@ module Commands_tests = struct
         subst "[$1]" "a\tb" "[a]";
         subst "$1" "a\nb c" "a\nb";
         subst "$1" "$2" "$2";
-        prop "a dollar-free body is returned unchanged" string (fun s ->
+        prop "a dollar-free body is returned unchanged" Gen.string (fun s ->
             let body = String.map (fun c -> if c = '$' then '#' else c) s in
-            String.equal body (Commands.substitute ~body ~arguments:"x y"));
-        prop "$ARGUMENTS expands to the whole argument string" string
+            equal string body (Commands.substitute ~body ~arguments:"x y"));
+        prop "$ARGUMENTS expands to the whole argument string" Gen.string
           (fun args ->
-            String.equal args
+            equal string args
               (Commands.substitute ~body:"$ARGUMENTS" ~arguments:args));
       ]
 

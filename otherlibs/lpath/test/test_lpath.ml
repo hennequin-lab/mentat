@@ -90,7 +90,7 @@ let component_byte_gen =
     [
       (6, Gen.char_range 'a' 'z');
       (1, Gen.char_range 'A' 'Z');
-      (2, Gen.oneofl [ '.'; '-'; '_'; ' '; ':'; '\n'; '\t'; '0'; '9' ]);
+      (2, Gen.of_list [ '.'; '-'; '_'; ' '; ':'; '\n'; '\t'; '0'; '9' ]);
       (2, Gen.map Char.chr (Gen.int_range 128 255));
     ]
 
@@ -104,9 +104,9 @@ let fix_component s =
   else s
 
 let component_gen =
-  Gen.map fix_component (Gen.string_size (Gen.int_range 1 6) component_byte_gen)
+  Gen.map fix_component (Gen.string_of ~size:(Gen.int_range 1 6) component_byte_gen)
 
-let rel_components_gen = Gen.list_size (Gen.int_range 0 6) component_gen
+let rel_components_gen = Gen.list ~size:(Gen.int_range 0 6) component_gen
 
 let rel_of_components = function
   | [] -> Lpath.Rel.root
@@ -119,7 +119,7 @@ let abs_gen = Gen.map abs_of_components rel_components_gen
 let nonempty_rel_gen =
   Gen.map
     (fun cs -> rel (String.concat "/" cs))
-    (Gen.list_size (Gen.int_range 1 4) component_gen)
+    (Gen.list ~size:(Gen.int_range 1 4) component_gen)
 
 (* Raw parser inputs: rich dot-segment and separator soup, reaching deep [..]
    chains (up to 8 segments plus a [../../] prefix) and drive/backslash/NUL
@@ -129,28 +129,28 @@ let raw_segment_gen =
   Gen.frequency
     [
       (5, component_gen);
-      (3, Gen.oneofl [ "."; ".." ]);
-      (1, Gen.oneofl [ ""; "a\\b"; "a\000b"; "C:a"; "1:a"; "a:b" ]);
+      (3, Gen.of_list [ "."; ".." ]);
+      (1, Gen.of_list [ ""; "a\\b"; "a\000b"; "C:a"; "1:a"; "a:b" ]);
     ]
 
 let raw_path_input_gen =
   Gen.bind
-    (Gen.list_size (Gen.int_range 0 8) raw_segment_gen)
+    (Gen.list ~size:(Gen.int_range 0 8) raw_segment_gen)
     (fun segs ->
       Gen.map
         (fun prefix -> prefix ^ String.concat "/" segs)
-        (Gen.oneofl [ ""; "./"; "../"; "../../"; "/"; "//"; "///"; "\\"; "C:" ]))
+        (Gen.of_list [ ""; "./"; "../"; "../../"; "/"; "//"; "///"; "\\"; "C:" ]))
 
 (* Arbitrary short byte strings for the component-grammar oracle, drawing the
    structurally significant bytes (dot, colon, slash, backslash, NUL) and high
    bytes with enough weight to hit the drive-prefix and empty-string edges. *)
 let grammar_string_gen =
-  Gen.string_size (Gen.int_range 0 4)
+  Gen.string_of ~size:(Gen.int_range 0 4)
     (Gen.frequency
        [
          (4, Gen.char_range 'a' 'z');
          (1, Gen.char_range 'A' 'Z');
-         (3, Gen.oneofl [ '.'; ':'; '/'; '\\'; '\000'; '-'; ' '; '1' ]);
+         (3, Gen.of_list [ '.'; ':'; '/'; '\\'; '\000'; '-'; ' '; '1' ]);
          (2, Gen.map Char.chr (Gen.int_range 128 255));
        ])
 
@@ -163,16 +163,16 @@ let drive_first_gen =
     [
       (3, Gen.char_range 'a' 'z');
       (2, Gen.char_range 'A' 'Z');
-      (2, Gen.oneofl [ '0'; '1'; '9'; '-'; '_'; '.' ]);
+      (2, Gen.of_list [ '0'; '1'; '9'; '-'; '_'; '.' ]);
       (1, Gen.map Char.chr (Gen.int_range 128 255));
     ]
 
 let drive_tail_gen =
-  Gen.string_size (Gen.int_range 0 3)
+  Gen.string_of ~size:(Gen.int_range 0 3)
     (Gen.frequency
        [
          (5, Gen.char_range 'a' 'z');
-         (2, Gen.oneofl [ '.'; '-'; '_'; ' '; '0'; ':' ]);
+         (2, Gen.of_list [ '.'; '-'; '_'; ' '; '0'; ':' ]);
          (2, Gen.map Char.chr (Gen.int_range 128 255));
        ])
 
@@ -185,7 +185,7 @@ let drive_case_gen =
    both boolean outcomes rather than the near-always-disjoint independent
    pairs. *)
 let rel_containment_pair_gen =
-  Gen.oneof
+  Gen.one_of
     [
       Gen.map (fun p -> (p, p)) rel_gen;
       Gen.bind rel_gen (fun root ->
@@ -196,7 +196,7 @@ let rel_containment_pair_gen =
     ]
 
 let abs_containment_pair_gen =
-  Gen.oneof
+  Gen.one_of
     [
       Gen.map (fun p -> (p, p)) abs_gen;
       Gen.bind abs_gen (fun root ->
@@ -208,41 +208,34 @@ let abs_containment_pair_gen =
 
 (* Testables *)
 
-let error = testable ~pp:Lpath.Error.pp ~equal:Lpath.Error.equal ()
-let rel_path = testable ~pp:Lpath.Rel.pp ~equal:Lpath.Rel.equal ~gen:rel_gen ()
-let abs_path = testable ~pp:Lpath.Abs.pp ~equal:Lpath.Abs.equal ~gen:abs_gen ()
+let error = Testable.make ~pp:Lpath.Error.pp ~equal:Lpath.Error.equal
+let rel_path = Testable.make ~pp:Lpath.Rel.pp ~equal:Lpath.Rel.equal
+let abs_path = Testable.make ~pp:Lpath.Abs.pp ~equal:Lpath.Abs.equal
 
-let raw_input =
-  testable
-    ~pp:(fun ppf s -> Format.fprintf ppf "%S" s)
-    ~equal:String.equal ~gen:raw_path_input_gen ()
+(* Attach counterexample printers to the property generators. *)
 
-let grammar_string =
-  testable
-    ~pp:(fun ppf s -> Format.fprintf ppf "%S" s)
-    ~equal:String.equal ~gen:grammar_string_gen ()
+let pp_raw ppf s = Format.fprintf ppf "%S" s
+let rel_gen = Gen.with_pp Lpath.Rel.pp rel_gen
+let abs_gen = Gen.with_pp Lpath.Abs.pp abs_gen
+let raw_path_input_gen = Gen.with_pp pp_raw raw_path_input_gen
+let grammar_string_gen = Gen.with_pp pp_raw grammar_string_gen
 
-let drive_case =
-  testable
-    ~pp:(fun ppf (f, tail) -> Format.fprintf ppf "%C:%S" f tail)
-    ~equal:( = ) ~gen:drive_case_gen ()
+let drive_case_gen =
+  Gen.with_pp
+    (fun ppf (f, tail) -> Format.fprintf ppf "%C:%S" f tail)
+    drive_case_gen
 
-let rel_pair gen =
-  testable
-    ~pp:(fun ppf (a, b) ->
+let rel_containment_pair =
+  Gen.with_pp
+    (fun ppf (a, b) ->
       Format.fprintf ppf "(%a, %a)" Lpath.Rel.pp a Lpath.Rel.pp b)
-    ~equal:(fun (a, b) (c, d) -> Lpath.Rel.equal a c && Lpath.Rel.equal b d)
-    ~gen ()
+    rel_containment_pair_gen
 
-let abs_pair gen =
-  testable
-    ~pp:(fun ppf (a, b) ->
+let abs_containment_pair =
+  Gen.with_pp
+    (fun ppf (a, b) ->
       Format.fprintf ppf "(%a, %a)" Lpath.Abs.pp a Lpath.Abs.pp b)
-    ~equal:(fun (a, b) (c, d) -> Lpath.Abs.equal a c && Lpath.Abs.equal b d)
-    ~gen ()
-
-let rel_containment_pair = rel_pair rel_containment_pair_gen
-let abs_containment_pair = abs_pair abs_containment_pair_gen
+    abs_containment_pair_gen
 
 (* Shared invariant checks for the raw-input fuzz properties. *)
 let rel_reparses p =
@@ -349,12 +342,12 @@ let component_grammar =
               ("c:d", false);
               ("C:", false);
             ]);
-      prop' "l4_is_component_matches_grammar" grammar_string (fun c ->
+      prop "l4_is_component_matches_grammar" grammar_string_gen (fun c ->
           cover ~label:"valid" ~at_least:15.0 (ref_is_component c);
           cover ~label:"invalid" ~at_least:15.0 (not (ref_is_component c));
           equal bool ~msg:(String.escaped c) (ref_is_component c)
             (Lpath.Rel.is_component c));
-      prop' "l5_rel_add_component" (pair rel_path grammar_string) (fun (p, c) ->
+      prop "l5_rel_add_component" (Gen.pair rel_gen grammar_string_gen) (fun (p, c) ->
           match Lpath.Rel.add_component p c with
           | Ok q ->
               is_true ~msg:(String.escaped c) (Lpath.Rel.is_component c);
@@ -365,7 +358,7 @@ let component_grammar =
               is_false ~msg:(String.escaped c) (Lpath.Rel.is_component c);
               equal error ~msg:(String.escaped c)
                 (Lpath.Error.Malformed_component c) e);
-      prop' "l5_abs_add_component" (pair abs_path grammar_string) (fun (p, c) ->
+      prop "l5_abs_add_component" (Gen.pair abs_gen grammar_string_gen) (fun (p, c) ->
           match Lpath.Abs.add_component p c with
           | Ok q ->
               is_true ~msg:(String.escaped c) (Lpath.Rel.is_component c);
@@ -410,7 +403,7 @@ let drive_prefix_boundary =
           equal (result string error) ~msg:"1:a" (Ok "1:a") (rel_string "1:a");
           equal (result string error) ~msg:"ab:cd" (Ok "ab:cd")
             (rel_string "ab:cd"));
-      prop' "drive_prefix_only_ascii_letter_colon" drive_case (fun (f, tail) ->
+      prop "drive_prefix_only_ascii_letter_colon" drive_case_gen (fun (f, tail) ->
           let c = Printf.sprintf "%c:%s" f tail in
           cover ~label:"letter (drive, invalid)" ~at_least:20.0
             (is_ascii_letter f);
@@ -488,8 +481,8 @@ let relative_paths =
           is_true ~msg:"is_root" (Lpath.Rel.is_root Lpath.Rel.root);
           equal (list string) ~msg:"components" []
             (Lpath.Rel.components Lpath.Rel.root);
-          is_none ~msg:"parent" (Lpath.Rel.parent Lpath.Rel.root);
-          is_none ~msg:"basename" (Lpath.Rel.basename Lpath.Rel.root));
+          equal (option pass) ~msg:"parent" None (Lpath.Rel.parent Lpath.Rel.root);
+          equal (option pass) ~msg:"basename" None (Lpath.Rel.basename Lpath.Rel.root));
       test "components and accessors" (fun () ->
           equal (list string) ~msg:"components" [ "a"; "b" ]
             (Lpath.Rel.components (rel "a/b"));
@@ -500,10 +493,10 @@ let relative_paths =
           equal (option string) ~msg:"parent of a single component is root"
             (Some ".")
             (Option.map Lpath.Rel.to_string (Lpath.Rel.parent (rel "a"))));
-      prop' "l1_rel_round_trip" rel_path (fun p ->
+      prop "l1_rel_round_trip" rel_gen (fun p ->
           equal (result rel_path error) ~msg:"of_string (to_string p)" (Ok p)
             (Lpath.Rel.of_string (Lpath.Rel.to_string p)));
-      prop' "l2_rel_components_round_trip" rel_path (fun p ->
+      prop "l2_rel_components_round_trip" rel_gen (fun p ->
           let text =
             match Lpath.Rel.components p with
             | [] -> "."
@@ -511,7 +504,7 @@ let relative_paths =
           in
           equal (result rel_path error) ~msg:"components reconstruct" (Ok p)
             (Lpath.Rel.of_string text));
-      prop' "l3_rel_normalization_closure" raw_input (fun s ->
+      prop "l3_rel_normalization_closure" raw_path_input_gen (fun s ->
           match Lpath.Rel.of_string s with
           | Error _ -> ()
           | Ok p ->
@@ -529,8 +522,8 @@ let relative_paths =
                   cs (segments text);
               equal (result rel_path error) ~msg:"reparse" (Ok p)
                 (Lpath.Rel.of_string text));
-      prop' "raw_relative_resolve_preserves_invariants"
-        (pair rel_path raw_input) (fun (start, input) ->
+      prop "raw_relative_resolve_preserves_invariants"
+        (Gen.pair rel_gen raw_path_input_gen) (fun (start, input) ->
           match Lpath.Rel.resolve start input with
           | Error _ -> ()
           | Ok p -> rel_reparses p);
@@ -555,8 +548,8 @@ let absolute_paths =
           is_true ~msg:"is_root" (Lpath.Abs.is_root Lpath.Abs.root);
           equal (list string) ~msg:"components" []
             (Lpath.Abs.components Lpath.Abs.root);
-          is_none ~msg:"parent" (Lpath.Abs.parent Lpath.Abs.root);
-          is_none ~msg:"basename" (Lpath.Abs.basename Lpath.Abs.root));
+          equal (option pass) ~msg:"parent" None (Lpath.Abs.parent Lpath.Abs.root);
+          equal (option pass) ~msg:"basename" None (Lpath.Abs.basename Lpath.Abs.root));
       test "components and accessors" (fun () ->
           equal (list string) ~msg:"components" [ "a"; "b" ]
             (Lpath.Abs.components (abs "/a/b"));
@@ -567,14 +560,14 @@ let absolute_paths =
           equal (option string) ~msg:"parent of a single component is root"
             (Some "/")
             (Option.map Lpath.Abs.to_string (Lpath.Abs.parent (abs "/a"))));
-      prop' "l1_abs_round_trip" abs_path (fun p ->
+      prop "l1_abs_round_trip" abs_gen (fun p ->
           equal (result abs_path error) ~msg:"of_string (to_string p)" (Ok p)
             (Lpath.Abs.of_string (Lpath.Abs.to_string p)));
-      prop' "l2_abs_components_round_trip" abs_path (fun p ->
+      prop "l2_abs_components_round_trip" abs_gen (fun p ->
           equal (result abs_path error) ~msg:"components reconstruct" (Ok p)
             (Lpath.Abs.of_string
                ("/" ^ String.concat "/" (Lpath.Abs.components p))));
-      prop' "l3_abs_normalization_closure" raw_input (fun s ->
+      prop "l3_abs_normalization_closure" raw_path_input_gen (fun s ->
           match Lpath.Abs.of_string s with
           | Error _ -> ()
           | Ok p ->
@@ -592,17 +585,17 @@ let absolute_paths =
                   ("" :: cs) (segments text);
               equal (result abs_path error) ~msg:"reparse" (Ok p)
                 (Lpath.Abs.of_string text));
-      prop' "raw_absolute_parse_preserves_invariants" raw_input (fun input ->
+      prop "raw_absolute_parse_preserves_invariants" raw_path_input_gen (fun input ->
           match Lpath.Abs.of_string input with
           | Error _ -> ()
           | Ok p -> abs_reparses p);
-      prop' "raw_absolute_resolve_preserves_invariants"
-        (pair abs_path raw_input) (fun (base, input) ->
+      prop "raw_absolute_resolve_preserves_invariants"
+        (Gen.pair abs_gen raw_path_input_gen) (fun (base, input) ->
           match Lpath.Abs.resolve base input with
           | Error _ -> ()
           | Ok p -> abs_reparses p);
-      prop' "raw_absolute_resolve_any_preserves_invariants"
-        (pair abs_path raw_input) (fun (base, input) ->
+      prop "raw_absolute_resolve_any_preserves_invariants"
+        (Gen.pair abs_gen raw_path_input_gen) (fun (base, input) ->
           match Lpath.Abs.resolve_any ~base input with
           | Error _ -> ()
           | Ok p -> abs_reparses p);
@@ -621,24 +614,24 @@ let append_algebra =
           equal string ~msg:"abs append_rel at root" "/src/a.ml"
             (Lpath.Abs.to_string
                (Lpath.Abs.append_rel Lpath.Abs.root (rel "src/a.ml"))));
-      prop' "l6_rel_append_root_identity" rel_path (fun p ->
+      prop "l6_rel_append_root_identity" rel_gen (fun p ->
           equal rel_path ~msg:"append root p" p
             (Lpath.Rel.append Lpath.Rel.root p);
           equal rel_path ~msg:"append p root" p
             (Lpath.Rel.append p Lpath.Rel.root));
-      prop' "l6_abs_append_rel_root_identity" abs_path (fun p ->
+      prop "l6_abs_append_rel_root_identity" abs_gen (fun p ->
           equal abs_path ~msg:"append_rel a root" p
             (Lpath.Abs.append_rel p Lpath.Rel.root));
-      prop' "l7_rel_append_associative" (triple rel_path rel_path rel_path)
+      prop "l7_rel_append_associative" (Gen.triple rel_gen rel_gen rel_gen)
         (fun (a, b, c) ->
           equal rel_path ~msg:"associativity"
             (Lpath.Rel.append (Lpath.Rel.append a b) c)
             (Lpath.Rel.append a (Lpath.Rel.append b c)));
-      prop' "l8_rel_append_components" (pair rel_path rel_path) (fun (a, b) ->
+      prop "l8_rel_append_components" (Gen.pair rel_gen rel_gen) (fun (a, b) ->
           equal (list string) ~msg:"components (append a b)"
             (Lpath.Rel.components a @ Lpath.Rel.components b)
             (Lpath.Rel.components (Lpath.Rel.append a b)));
-      prop' "l8_abs_append_rel_components" (pair abs_path rel_path)
+      prop "l8_abs_append_rel_components" (Gen.pair abs_gen rel_gen)
         (fun (a, r) ->
           equal (list string) ~msg:"components (append_rel a r)"
             (Lpath.Abs.components a @ Lpath.Rel.components r)
@@ -663,36 +656,36 @@ let containment =
           equal (option string) ~msg:"rel relativize ancestor is None" None
             (Option.map Lpath.Rel.to_string
                (Lpath.Rel.relativize ~root:(rel "src/lib") (rel "src"))));
-      prop' "l9_rel_append_relativize_inverse" (pair rel_path rel_path)
+      prop "l9_rel_append_relativize_inverse" (Gen.pair rel_gen rel_gen)
         (fun (root, suffix) ->
           equal (option rel_path) ~msg:"relativize (append root suffix)"
             (Some suffix)
             (Lpath.Rel.relativize ~root (Lpath.Rel.append root suffix)));
-      prop' "l9_abs_append_rel_relativize_inverse" (pair abs_path rel_path)
+      prop "l9_abs_append_rel_relativize_inverse" (Gen.pair abs_gen rel_gen)
         (fun (root, suffix) ->
           equal (option rel_path) ~msg:"relativize (append_rel root suffix)"
             (Some suffix)
             (Lpath.Abs.relativize ~root (Lpath.Abs.append_rel root suffix)));
-      prop' "l10_rel_is_within_iff_relativize" rel_containment_pair
+      prop "l10_rel_is_within_iff_relativize" rel_containment_pair
         (fun (root, p) ->
           let within = Option.is_some (Lpath.Rel.relativize ~root p) in
           cover ~label:"within" ~at_least:30.0 within;
           cover ~label:"disjoint" ~at_least:10.0 (not within);
           equal bool ~msg:"is_within = is_some relativize" within
             (Lpath.Rel.is_within ~root p));
-      prop' "l10_abs_is_within_iff_relativize" abs_containment_pair
+      prop "l10_abs_is_within_iff_relativize" abs_containment_pair
         (fun (root, p) ->
           let within = Option.is_some (Lpath.Abs.relativize ~root p) in
           equal bool ~msg:"is_within = is_some relativize" within
             (Lpath.Abs.is_within ~root p));
-      prop' "l11_rel_reflexive_inclusive_irreflexive_strict" rel_path (fun p ->
+      prop "l11_rel_reflexive_inclusive_irreflexive_strict" rel_gen (fun p ->
           equal (option rel_path) ~msg:"relativize p p = Some root"
             (Some Lpath.Rel.root)
             (Lpath.Rel.relativize ~root:p p);
           is_true ~msg:"is_within p p" (Lpath.Rel.is_within ~root:p p);
           is_false ~msg:"not strict p p"
             (Lpath.Rel.is_strictly_within ~root:p p));
-      prop' "l11_abs_reflexive_inclusive_irreflexive_strict" abs_path (fun p ->
+      prop "l11_abs_reflexive_inclusive_irreflexive_strict" abs_gen (fun p ->
           equal (option rel_path) ~msg:"relativize p p = Some root"
             (Some Lpath.Rel.root)
             (Lpath.Abs.relativize ~root:p p);
@@ -714,12 +707,12 @@ let containment =
           equal (option rel_path) ~msg:"abs root relativizes every path"
             (Some (rel "a/b"))
             (Lpath.Abs.relativize ~root:Lpath.Abs.root a));
-      prop' "l12_rel_strict_is_within_minus_equal" rel_containment_pair
+      prop "l12_rel_strict_is_within_minus_equal" rel_containment_pair
         (fun (root, p) ->
           equal bool ~msg:"strict = within && not equal"
             (Lpath.Rel.is_within ~root p && not (Lpath.Rel.equal root p))
             (Lpath.Rel.is_strictly_within ~root p));
-      prop' "l12_abs_strict_is_within_minus_equal" abs_containment_pair
+      prop "l12_abs_strict_is_within_minus_equal" abs_containment_pair
         (fun (root, p) ->
           equal bool ~msg:"strict = within && not equal"
             (Lpath.Abs.is_within ~root p && not (Lpath.Abs.equal root p))
@@ -738,10 +731,10 @@ let containment =
             (Lpath.Abs.is_strictly_within ~root:(abs "/a") (abs "/a"));
           is_true ~msg:"abs strict /a /a/b"
             (Lpath.Abs.is_strictly_within ~root:(abs "/a") (abs "/a/b")));
-      prop' "l13_rel_root_contains_all" rel_path (fun p ->
+      prop "l13_rel_root_contains_all" rel_gen (fun p ->
           is_true ~msg:"root within"
             (Lpath.Rel.is_within ~root:Lpath.Rel.root p));
-      prop' "l13_abs_root_contains_all" abs_path (fun p ->
+      prop "l13_abs_root_contains_all" abs_gen (fun p ->
           is_true ~msg:"root within"
             (Lpath.Abs.is_within ~root:Lpath.Abs.root p));
       test "l14_component_boundary_not_string_prefix" (fun () ->
@@ -756,7 +749,7 @@ let containment =
           equal (option string) ~msg:"relativize sibling prefix is None" None
             (Option.map Lpath.Rel.to_string
                (Lpath.Rel.relativize ~root:(rel "src") (rel "src-lib/a.ml"))));
-      prop' "l14_string_prefix_is_not_containment" rel_path (fun root ->
+      prop "l14_string_prefix_is_not_containment" rel_gen (fun root ->
           if Lpath.Rel.is_root root then ()
           else
             let sibling = rel (Lpath.Rel.to_string root ^ "x") in
@@ -820,15 +813,15 @@ let resolve_dispatch =
             (Error Lpath.Error.Absolute)
             (Result.map Lpath.Abs.to_string
                (Lpath.Abs.resolve_any ~base "C:/etc")));
-      prop' "l18_rel_resolve_root_equals_of_string" raw_input (fun s ->
+      prop "l18_rel_resolve_root_equals_of_string" raw_path_input_gen (fun s ->
           equal (result rel_path error) ~msg:(String.escaped s)
             (Lpath.Rel.of_string s)
             (Lpath.Rel.resolve Lpath.Rel.root s));
-      prop' "l19_resolve_any_absolute_ignores_base" (pair abs_path abs_path)
+      prop "l19_resolve_any_absolute_ignores_base" (Gen.pair abs_gen abs_gen)
         (fun (base, p) ->
           equal (result abs_path error) ~msg:"resolve_any (to_string p)" (Ok p)
             (Lpath.Abs.resolve_any ~base (Lpath.Abs.to_string p)));
-      prop' "l20_resolve_any_agrees_on_relative" (pair abs_path rel_path)
+      prop "l20_resolve_any_agrees_on_relative" (Gen.pair abs_gen rel_gen)
         (fun (base, r) ->
           let s = Lpath.Rel.to_string r in
           equal (result abs_path error)
@@ -839,7 +832,7 @@ let resolve_dispatch =
          non-slash-rooted input ([./a], [a/../b], deep [..] climbs) is the
          interesting relative surface, and resolve_any must still delegate to
          resolve there. *)
-      prop' "l20_resolve_any_agrees_on_raw_relative" (pair abs_path raw_input)
+      prop "l20_resolve_any_agrees_on_raw_relative" (Gen.pair abs_gen raw_path_input_gen)
         (fun (base, s) ->
           if String.starts_with ~prefix:"/" s then ()
           else
@@ -863,7 +856,7 @@ let dotdot_asymmetry =
             (Ok "/")
             (Result.map Lpath.Abs.to_string
                (Lpath.Abs.resolve Lpath.Abs.root "..")));
-      prop' "l21_abs_never_escapes_root" (pair abs_path raw_input)
+      prop "l21_abs_never_escapes_root" (Gen.pair abs_gen raw_path_input_gen)
         (fun (base, s) ->
           not_escapes "Abs.of_string" (Lpath.Abs.of_string s);
           not_escapes "Abs.resolve" (Lpath.Abs.resolve base s);
@@ -879,7 +872,7 @@ let dotdot_asymmetry =
             (Error Lpath.Error.Escapes_root)
             (Result.map Lpath.Rel.to_string
                (Lpath.Rel.resolve Lpath.Rel.root "..")));
-      prop' "l22_over_pop_beyond_depth_escapes_root" rel_path (fun p ->
+      prop "l22_over_pop_beyond_depth_escapes_root" rel_gen (fun p ->
           let n = List.length (Lpath.Rel.components p) in
           let pops = String.concat "/" (List.init (n + 1) (fun _ -> "..")) in
           let input = Lpath.Rel.to_string p ^ "/" ^ pops in
@@ -902,7 +895,7 @@ let error_classification =
               equal (result string error) ~msg:s (Error Lpath.Error.Absolute)
                 (rel_string s))
             [ "/a"; "\\a"; "C:a" ]);
-      prop' "l26_rel_absolute_looking_iff" raw_input (fun s ->
+      prop "l26_rel_absolute_looking_iff" raw_path_input_gen (fun s ->
           cover ~label:"absolute-looking" ~at_least:15.0 (starts_absolute s);
           equal bool ~msg:(String.escaped s) (starts_absolute s)
             (match Lpath.Rel.of_string s with
@@ -919,7 +912,7 @@ let error_classification =
               ("/a\\b", Lpath.Error.Malformed_component "a\\b");
               ("/a\000b", Lpath.Error.Malformed_component "a\000b");
             ]);
-      prop' "l27_abs_relative_iff" raw_input (fun s ->
+      prop "l27_abs_relative_iff" raw_path_input_gen (fun s ->
           let relative = s <> "" && not (String.starts_with ~prefix:"/" s) in
           cover ~label:"relative" ~at_least:15.0 relative;
           equal bool ~msg:(String.escaped s) relative
@@ -927,12 +920,12 @@ let error_classification =
             | Error Lpath.Error.Relative -> true
             | _ -> false));
       test "t6_rel_of_string_exn_message" (fun () ->
-          raises_invalid_arg
-            "Lpath.Rel.of_string_exn \"../a\": path escapes root" (fun () ->
+          raises
+            (Invalid_argument "Lpath.Rel.of_string_exn \"../a\": path escapes root") (fun () ->
               Lpath.Rel.of_string_exn "../a"));
       test "t6_abs_of_string_exn_message" (fun () ->
-          raises_invalid_arg
-            "Lpath.Abs.of_string_exn \"a\": path must be absolute" (fun () ->
+          raises
+            (Invalid_argument "Lpath.Abs.of_string_exn \"a\": path must be absolute") (fun () ->
               Lpath.Abs.of_string_exn "a"));
       test "malformed message names the rejected component" (fun () ->
           match Lpath.Rel.add_component (rel "dir") "C:temp" with
@@ -955,13 +948,13 @@ let ordering_and_equality =
             (Lpath.Rel.compare (rel "a-b") (rel "a/b") < 0);
           is_true ~msg:"abs /a-b < /a/b"
             (Lpath.Abs.compare (abs "/a-b") (abs "/a/b") < 0));
-      prop' "l23_rel_compare_is_byte_order" (pair rel_path rel_path)
+      prop "l23_rel_compare_is_byte_order" (Gen.pair rel_gen rel_gen)
         (fun (a, b) ->
           equal int ~msg:"sign matches String.compare on to_string"
             (sign
                (String.compare (Lpath.Rel.to_string a) (Lpath.Rel.to_string b)))
             (sign (Lpath.Rel.compare a b)));
-      prop' "l23_abs_compare_is_byte_order" (pair abs_path abs_path)
+      prop "l23_abs_compare_is_byte_order" (Gen.pair abs_gen abs_gen)
         (fun (a, b) ->
           equal int ~msg:"sign matches String.compare on to_string"
             (sign
@@ -995,18 +988,20 @@ let ordering_and_equality =
           equal (option string) ~msg:"map lookup" (Some "file")
             (Lpath.Abs.Map.find_opt normalized
                (Lpath.Abs.Map.singleton path "file")));
-      prop "rel compare = 0 agrees with equal" (pair rel_path rel_path)
-        (fun (a, b) -> Lpath.Rel.compare a b = 0 = Lpath.Rel.equal a b);
-      prop "abs compare = 0 agrees with equal" (pair abs_path abs_path)
-        (fun (a, b) -> Lpath.Abs.compare a b = 0 = Lpath.Abs.equal a b);
-      prop "rel compare sign is antisymmetric" (pair rel_path rel_path)
+      prop "rel compare = 0 agrees with equal" (Gen.pair rel_gen rel_gen)
         (fun (a, b) ->
-          sign (Lpath.Rel.compare a b) = -sign (Lpath.Rel.compare b a));
-      prop "abs compare sign is antisymmetric" (pair abs_path abs_path)
+          is_true (Lpath.Rel.compare a b = 0 = Lpath.Rel.equal a b));
+      prop "abs compare = 0 agrees with equal" (Gen.pair abs_gen abs_gen)
         (fun (a, b) ->
-          sign (Lpath.Abs.compare a b) = -sign (Lpath.Abs.compare b a));
-      prop' "rel compare is a transitive total order"
-        (triple rel_path rel_path rel_path) (fun (a, b, c) ->
+          is_true (Lpath.Abs.compare a b = 0 = Lpath.Abs.equal a b));
+      prop "rel compare sign is antisymmetric" (Gen.pair rel_gen rel_gen)
+        (fun (a, b) ->
+          is_true (sign (Lpath.Rel.compare a b) = -sign (Lpath.Rel.compare b a)));
+      prop "abs compare sign is antisymmetric" (Gen.pair abs_gen abs_gen)
+        (fun (a, b) ->
+          is_true (sign (Lpath.Abs.compare a b) = -sign (Lpath.Abs.compare b a)));
+      prop "rel compare is a transitive total order"
+        (Gen.triple rel_gen rel_gen rel_gen) (fun (a, b, c) ->
           match List.sort Lpath.Rel.compare [ a; b; c ] with
           | [ x; y; z ] ->
               is_true
@@ -1014,8 +1009,8 @@ let ordering_and_equality =
                 && Lpath.Rel.compare y z <= 0
                 && Lpath.Rel.compare x z <= 0)
           | _ -> ());
-      prop' "abs compare is a transitive total order"
-        (triple abs_path abs_path abs_path) (fun (a, b, c) ->
+      prop "abs compare is a transitive total order"
+        (Gen.triple abs_gen abs_gen abs_gen) (fun (a, b, c) ->
           match List.sort Lpath.Abs.compare [ a; b; c ] with
           | [ x; y; z ] ->
               is_true
@@ -1028,10 +1023,12 @@ let ordering_and_equality =
 let pretty_printers =
   group "pretty printers"
     [
-      prop "rel pp is to_string" rel_path (fun p ->
-          Format.asprintf "%a" Lpath.Rel.pp p = Lpath.Rel.to_string p);
-      prop "abs pp is to_string" abs_path (fun p ->
-          Format.asprintf "%a" Lpath.Abs.pp p = Lpath.Abs.to_string p);
+      prop "rel pp is to_string" rel_gen (fun p ->
+          equal string (Format.asprintf "%a" Lpath.Rel.pp p)
+            (Lpath.Rel.to_string p));
+      prop "abs pp is to_string" abs_gen (fun p ->
+          equal string (Format.asprintf "%a" Lpath.Abs.pp p)
+            (Lpath.Abs.to_string p));
     ]
 
 let () =

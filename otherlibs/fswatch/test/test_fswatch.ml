@@ -7,7 +7,7 @@ open Windtrap
 module Event = Fswatch.Event
 module Error = Fswatch.Error
 
-let fswatch_error = testable ~pp:Error.pp ~equal:( = ) ()
+let fswatch_error = Testable.make ~pp:Error.pp ~equal:( = )
 
 (* The watcher's [Fswatch.Path.t] is construction-only (no [of_string]), so a
    test describes an expected event by its rendered relative path plus kind and
@@ -17,7 +17,7 @@ type expected = { path : string; kind : Event.kind }
 let expected_pp ppf ({ path; kind } : expected) =
   Format.fprintf ppf "%a %s" Event.pp_kind kind path
 
-let expected_testable = testable ~pp:expected_pp ~equal:( = ) ()
+let expected_testable = Testable.make ~pp:expected_pp ~equal:( = )
 
 let project (e : Event.t) : expected =
   { path = Fswatch.Path.to_string e.Event.path; kind = e.Event.kind }

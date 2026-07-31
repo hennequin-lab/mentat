@@ -55,7 +55,7 @@ let field_pp ppf = function
   | `Not_string -> Format.pp_print_string ppf "Not_string"
   | `String s -> Format.fprintf ppf "String %S" s
 
-let field_value = testable ~pp:field_pp ~equal:( = ) ()
+let field_value = Testable.make ~pp:field_pp ~equal:( = )
 
 let field_accessor () =
   let t = parse_ok "---\nname: hello\ncount: 5\nitems:\n  - a\n  - b\n---\n" in

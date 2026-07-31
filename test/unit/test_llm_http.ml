@@ -7,7 +7,7 @@ open Windtrap
 module Http = Mentat_llm_http
 
 let retry_guidance () =
-  let float_value = testable ~pp:Format.pp_print_float ~equal:Float.equal () in
+  let float_value = Testable.make ~pp:Format.pp_print_float ~equal:Float.equal in
   let after headers = Http.Retry_after.delay ~now:784_111_777. headers in
   equal (option float_value) ~msg:"retry-after-ms wins" (Some 1.5)
     (after [ ("Retry-After-Ms", "1500"); ("retry-after", "9") ]);
@@ -64,7 +64,7 @@ let sse_framing () =
   let last = event "event at EOF" in
   equal string ~msg:"missing event name" "" last.Http.Sse.name;
   equal string ~msg:"EOF flushes data" "last" last.Http.Sse.data;
-  is_none ~msg:"EOF is stable" (Http.Sse.next reader)
+  equal (option pass) ~msg:"EOF is stable" None (Http.Sse.next reader)
 
 (* The direct Retry tests drive the shared loop against test-supplied thunks
    under a mock backend, so the backoff sleeps advance the auto-advancing clock

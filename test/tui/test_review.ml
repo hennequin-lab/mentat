@@ -523,4 +523,3 @@ let%expect_test "a long file name yields to its status letter" =
 23 |
 24 | tab focus diff · space mark · enter open · c comment · a approve · esc close|}]
 
-[%%run_tests "mentat.tui.review"]

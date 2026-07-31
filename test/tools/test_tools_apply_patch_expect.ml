@@ -1355,4 +1355,3 @@ let%expect_test
     disk: "line1\nLINE2\ncompanion\nline3\n"
     disk: <missing> |}]
 
-[%%run_tests "mentat.tools.apply_patch"]

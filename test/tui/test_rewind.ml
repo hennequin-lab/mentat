@@ -473,4 +473,3 @@ let%expect_test "undo arms the boundary seam and reloads the composer" =
 23 | ────────────────────────────────────────────────────────────────────────────────
 24 |   ! not logged in · /login · ~ · openai/gpt-5.5 · ! full access ? for shortcu…|}]
 
-[%%run_tests "mentat.tui.rewind"]

@@ -1240,4 +1240,3 @@ let%expect_test "Unicode truncation is scalar-safe and durable" =
     semantic json={"version":1,"disposition":"fetched","status":200,"bytes":57}
     result roundtrip=true durable_nonempty=true |}]
 
-[%%run_tests "mentat.tools.web_fetch"]

@@ -1001,4 +1001,3 @@ let%test
         stanzas)
     by_member
 
-[%%run_tests "mentat.tools.dependency_laws"]

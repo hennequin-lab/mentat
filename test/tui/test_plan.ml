@@ -111,88 +111,94 @@ let%expect_test "current-context approval preserves the restored draft visibly"
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plan-approve51d45841.home/ment…
-04 |
-05 | ❯ draft a plan for the parser
-06 |
-07 | ⋯ Waiting for your answer
-08 |
-09 |
-10 |
-11 |
-12 |
-13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-14 |    plan
-15 |
-16 |   Refactor the parser
-17 |
-18 |   Split the tokenizer out.                                                     ▀
-19 |
-20 | ❯ 1. approve and continue current context
-21 |   2. approve and start fresh
-22 |   3. revise — tell the model what to change
-23 |
-24 |   1-4 select · ↵ choose · ^O more · esc keep|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plan-approve5fd960a1.home/ment…
+    04 |
+    05 | ❯ draft a plan for the parser
+    06 |
+    07 | ⋯ Waiting for your answer
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    14 |    plan
+    15 |
+    16 |   Refactor the parser
+    17 |
+    18 |   Split the tokenizer out.                                                     ▀
+    19 |
+    20 | ❯ 1. approve and continue current context
+    21 |   2. approve and start fresh
+    22 |   3. revise — tell the model what to change
+    23 |
+    24 |   1-4 select · ↵ choose · ^O more · esc keep
+    |}];
   Tui.keys t Key.down;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plan-approve51d45841.home/ment…
-04 |
-05 | ❯ draft a plan for the parser
-06 |
-07 | ⋯ Waiting for your answer
-08 |
-09 |
-10 |
-11 |
-12 |
-13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-14 |    plan
-15 |
-16 |   Refactor the parser
-17 |
-18 |   Split the tokenizer out.                                                     ▀
-19 |
-20 |   1. approve and continue current context
-21 | ❯ 2. approve and start fresh
-22 |   3. revise — tell the model what to change
-23 |
-24 |   1-4 select · ↵ choose · ^O more · esc keep|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plan-approve5fd960a1.home/ment…
+    04 |
+    05 | ❯ draft a plan for the parser
+    06 |
+    07 | ⋯ Waiting for your answer
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    14 |    plan
+    15 |
+    16 |   Refactor the parser
+    17 |
+    18 |   Split the tokenizer out.                                                     ▀
+    19 |
+    20 |   1. approve and continue current context
+    21 | ❯ 2. approve and start fresh
+    22 |   3. revise — tell the model what to change
+    23 |
+    24 |   1-4 select · ↵ choose · ^O more · esc keep
+    |}];
   Tui.keys t "1";
   Tui.settle t;
   Tui.enter t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plan-approve51d45841.home/ment…
-04 |
-05 | ❯ draft a plan for the parser
-06 |
-07 | ⠋ Working… (0s · esc to interrupt)
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |  ⏸ plan ────────────────────────────────────────────────────────────────────────
-22 | ❯ PLAN-FOLLOW-UP
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · /tmp/mentat-tu… · openai/gpt… · ! full acce… ? f…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plan-approve5fd960a1.home/ment…
+    04 |
+    05 | ❯ draft a plan for the parser
+    06 |
+    07 | ⠋ Working… (0s · esc to interrupt)
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |  ⏸ plan ────────────────────────────────────────────────────────────────────────
+    22 | ❯ PLAN-FOLLOW-UP
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · /tmp/mentat-tu… · openai/gpt… · ! full acce… ? f…
+    |}]
 
 let%expect_test
     "revision is editable, validated, cancellable, and absent from history" =
@@ -213,256 +219,274 @@ let%expect_test
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plaf42f409b.home/mentat-tui-pl…
-04 |
-05 | ❯ plan history prompt
-06 |
-07 | ⋯ Waiting for your answer
-08 |
-09 |
-10 |
-11 |
-12 |
-13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-14 |    plan
-15 |
-16 |   Adjust safely
-17 |
-18 |   Start with the parser.
-19 |
-20 | ❯ 1. approve and continue current context
-21 |   2. approve and start fresh
-22 |   3. revise — tell the model what to change
-23 |
-24 |   1-4 select · ↵ choose · ^O more · esc keep|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-pladc188cb3.home/mentat-tui-pl…
+    04 |
+    05 | ❯ plan history prompt
+    06 |
+    07 | ⋯ Waiting for your answer
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    14 |    plan
+    15 |
+    16 |   Adjust safely
+    17 |
+    18 |   Start with the parser.
+    19 |
+    20 | ❯ 1. approve and continue current context
+    21 |   2. approve and start fresh
+    22 |   3. revise — tell the model what to change
+    23 |
+    24 |   1-4 select · ↵ choose · ^O more · esc keep
+    |}];
   Tui.keys t "3";
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plaf42f409b.home/mentat-tui-pl…
-04 |
-05 | ❯ plan history prompt
-06 |
-07 | ⋯ Waiting for your answer
-08 |
-09 |
-10 |
-11 |
-12 |
-13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-14 |    plan
-15 |
-16 |   Adjust safely
-17 |
-18 |   Start with the parser.
-19 |
-20 |   2. approve and start fresh
-21 | ❯ 3. revise — tell the model what to change
-22 |   4. keep planning
-23 |
-24 |   1-4 select · ↵ choose · ^O more · esc keep|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-pladc188cb3.home/mentat-tui-pl…
+    04 |
+    05 | ❯ plan history prompt
+    06 |
+    07 | ⋯ Waiting for your answer
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    14 |    plan
+    15 |
+    16 |   Adjust safely
+    17 |
+    18 |   Start with the parser.
+    19 |
+    20 |   2. approve and start fresh
+    21 | ❯ 3. revise — tell the model what to change
+    22 |   4. keep planning
+    23 |
+    24 |   1-4 select · ↵ choose · ^O more · esc keep
+    |}];
   Tui.enter t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plaf42f409b.home/mentat-tui-pl…
-04 |
-05 | ❯ plan history prompt
-06 |
-07 | ⋯ Waiting for your answer
-08 |
-09 |
-10 |
-11 |
-12 |
-13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-14 |    plan
-15 |
-16 |   Adjust safely
-17 |
-18 |   Start with the parser.
-19 |
-20 | ────────────────────────────────────────────────────────────────────────────────
-21 |   ❯
-22 | ────────────────────────────────────────────────────────────────────────────────
-23 |
-24 |   type feedback · ↵ revise · esc cancel|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-pladc188cb3.home/mentat-tui-pl…
+    04 |
+    05 | ❯ plan history prompt
+    06 |
+    07 | ⋯ Waiting for your answer
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    14 |    plan
+    15 |
+    16 |   Adjust safely
+    17 |
+    18 |   Start with the parser.
+    19 |
+    20 | ────────────────────────────────────────────────────────────────────────────────
+    21 |   ❯
+    22 | ────────────────────────────────────────────────────────────────────────────────
+    23 |
+    24 |   type feedback · ↵ revise · esc cancel
+    |}];
   Tui.enter t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plaf42f409b.home/mentat-tui-pl…
-04 |
-05 | ❯ plan history prompt
-06 |
-07 | ⋯ Waiting for your answer
-08 |
-09 |
-10 |
-11 |
-12 |
-13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-14 |    plan
-15 |
-16 |   Adjust safely
-17 |   Start with the parser.
-18 |   describe what should change
-19 | ────────────────────────────────────────────────────────────────────────────────
-20 |   ❯
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 |
-23 |
-24 |   type feedback · ↵ revise · esc cancel|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-pladc188cb3.home/mentat-tui-pl…
+    04 |
+    05 | ❯ plan history prompt
+    06 |
+    07 | ⋯ Waiting for your answer
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    14 |    plan
+    15 |
+    16 |   Adjust safely
+    17 |   Start with the parser.
+    18 |   describe what should change
+    19 | ────────────────────────────────────────────────────────────────────────────────
+    20 |   ❯
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 |
+    23 |
+    24 |   type feedback · ↵ revise · esc cancel
+    |}];
   Tui.paste t "discard callers";
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plaf42f409b.home/mentat-tui-pl…
-04 |
-05 | ❯ plan history prompt
-06 |
-07 | ⋯ Waiting for your answer
-08 |
-09 |
-10 |
-11 |
-12 |
-13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-14 |    plan
-15 |
-16 |   Adjust safely
-17 |
-18 |   Start with the parser.
-19 |
-20 | ────────────────────────────────────────────────────────────────────────────────
-21 |   ❯ discard callers
-22 | ────────────────────────────────────────────────────────────────────────────────
-23 |
-24 |   type feedback · ↵ revise · esc cancel|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-pladc188cb3.home/mentat-tui-pl…
+    04 |
+    05 | ❯ plan history prompt
+    06 |
+    07 | ⋯ Waiting for your answer
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    14 |    plan
+    15 |
+    16 |   Adjust safely
+    17 |
+    18 |   Start with the parser.
+    19 |
+    20 | ────────────────────────────────────────────────────────────────────────────────
+    21 |   ❯ discard callers
+    22 | ────────────────────────────────────────────────────────────────────────────────
+    23 |
+    24 |   type feedback · ↵ revise · esc cancel
+    |}];
   Tui.keys t Key.escape;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plaf42f409b.home/mentat-tui-pl…
-04 |
-05 | ❯ plan history prompt
-06 |
-07 | ⋯ Waiting for your answer
-08 |
-09 |
-10 |
-11 |
-12 |
-13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-14 |    plan
-15 |
-16 |   Adjust safely
-17 |
-18 |   Start with the parser.
-19 |
-20 |   2. approve and start fresh
-21 | ❯ 3. revise — tell the model what to change
-22 |   4. keep planning
-23 |
-24 |   1-4 select · ↵ choose · ^O more · esc keep|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-pladc188cb3.home/mentat-tui-pl…
+    04 |
+    05 | ❯ plan history prompt
+    06 |
+    07 | ⋯ Waiting for your answer
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    14 |    plan
+    15 |
+    16 |   Adjust safely
+    17 |
+    18 |   Start with the parser.
+    19 |
+    20 |   2. approve and start fresh
+    21 | ❯ 3. revise — tell the model what to change
+    22 |   4. keep planning
+    23 |
+    24 |   1-4 select · ↵ choose · ^O more · esc keep
+    |}];
   Tui.enter t;
   Tui.settle t;
   Tui.paste t feedback;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plaf42f409b.home/mentat-tui-pl…
-04 |
-05 | ❯ plan history prompt
-06 |
-07 | ⋯ Waiting for your answer
-08 |
-09 |
-10 |
-11 |
-12 |
-13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-14 |    plan
-15 |
-16 |   Adjust safely
-17 |
-18 |   Start with the parser.
-19 |
-20 | ────────────────────────────────────────────────────────────────────────────────
-21 |   ❯ preserve callers β
-22 | ────────────────────────────────────────────────────────────────────────────────
-23 |
-24 |   type feedback · ↵ revise · esc cancel|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-pladc188cb3.home/mentat-tui-pl…
+    04 |
+    05 | ❯ plan history prompt
+    06 |
+    07 | ⋯ Waiting for your answer
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    14 |    plan
+    15 |
+    16 |   Adjust safely
+    17 |
+    18 |   Start with the parser.
+    19 |
+    20 | ────────────────────────────────────────────────────────────────────────────────
+    21 |   ❯ preserve callers β
+    22 | ────────────────────────────────────────────────────────────────────────────────
+    23 |
+    24 |   type feedback · ↵ revise · esc cancel
+    |}];
   Tui.enter t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plaf42f409b.home/mentat-tui-pl…
-04 |
-05 | ❯ plan history prompt
-06 |
-07 | ⠋ Working… (0s · esc to interrupt)
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |  ⏸ plan ────────────────────────────────────────────────────────────────────────
-22 | ❯ PLAN-FOLLOW-UP
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · /tmp/mentat-t… · openai/gpt… · ! full access ? f…|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-pladc188cb3.home/mentat-tui-pl…
+    04 |
+    05 | ❯ plan history prompt
+    06 |
+    07 | ⠋ Working… (0s · esc to interrupt)
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |  ⏸ plan ────────────────────────────────────────────────────────────────────────
+    22 | ❯ PLAN-FOLLOW-UP
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · /tmp/mentat-t… · openai/gpt… · ! full access ? f…
+    |}];
   Tui.keys t Key.up;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plaf42f409b.home/mentat-tui-pl…
-04 |
-05 | ❯ plan history prompt
-06 |
-07 | ⠋ Working… (0s · esc to interrupt)
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |  ⏸ plan ────────────────────────────────────────────────────────────────────────
-22 | ❯ plan history prompt
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · /tmp/mentat-t… · openai/gpt… · ! full access ? f…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-pladc188cb3.home/mentat-tui-pl…
+    04 |
+    05 | ❯ plan history prompt
+    06 |
+    07 | ⠋ Working… (0s · esc to interrupt)
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |  ⏸ plan ────────────────────────────────────────────────────────────────────────
+    22 | ❯ plan history prompt
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · /tmp/mentat-t… · openai/gpt… · ! full access ? f…
+    |}]
 
 let%expect_test
     "long plan expands, collapses, and Escape visibly keeps planning" =
@@ -498,210 +522,218 @@ let%expect_test
   open_pending t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plan-di03d9077b.home/mentat-tu…
-04 |
-05 | ❯ show the complete migration plan
-06 |
-07 | ⋯ Waiting for your answer
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |
-25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-26 |    plan
-27 |
-28 |   Parser migration evidence
-29 |
-30 |   1. Inventory every parser entry point and its current callers.               █
-31 |   2. Separate token production from grammar decisions.                         █
-32 |   3. Preserve source spans through the new tokenizer boundary.                 █
-33 |   4. Return structured parse errors instead of exceptions.                     █
-34 |   5. Keep malformed UTF-8 diagnostics attached to byte offsets.
-35 |   6. Move parser fixtures onto the public entry point.
-36 |   7. Add complete terminal journeys for surfaced diagnostics.
-37 |   8. Compare allocation behavior before changing buffering.
-38 |
-39 | ❯ 1. approve and continue current context
-40 |   2. approve and start fresh
-41 |   3. revise — tell the model what to change
-42 |   4. keep planning
-43 |
-44 |
-45 |
-46 |
-47 |
-48 |   1-4 select · ↵ choose · ^O more · esc keep|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plan-di3b7b6944.home/mentat-tu…
+    04 |
+    05 | ❯ show the complete migration plan
+    06 |
+    07 | ⋯ Waiting for your answer
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |
+    25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    26 |    plan
+    27 |
+    28 |   Parser migration evidence
+    29 |
+    30 |   1. Inventory every parser entry point and its current callers.               █
+    31 |   2. Separate token production from grammar decisions.                         █
+    32 |   3. Preserve source spans through the new tokenizer boundary.                 █
+    33 |   4. Return structured parse errors instead of exceptions.                     █
+    34 |   5. Keep malformed UTF-8 diagnostics attached to byte offsets.
+    35 |   6. Move parser fixtures onto the public entry point.
+    36 |   7. Add complete terminal journeys for surfaced diagnostics.
+    37 |   8. Compare allocation behavior before changing buffering.
+    38 |
+    39 | ❯ 1. approve and continue current context
+    40 |   2. approve and start fresh
+    41 |   3. revise — tell the model what to change
+    42 |   4. keep planning
+    43 |
+    44 |
+    45 |
+    46 |
+    47 |
+    48 |   1-4 select · ↵ choose · ^O more · esc keep
+    |}];
   Tui.keys t Key.ctrl_o;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plan-di03d9077b.home/mentat-tu…
-04 |
-05 | ❯ show the complete migration plan
-06 |
-07 | ⋯ Waiting for your answer
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |
-25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-26 |    plan
-27 |
-28 |   Parser migration evidence
-29 |
-30 |   1. Inventory every parser entry point and its current callers.               █
-31 |   2. Separate token production from grammar decisions.                         █
-32 |   3. Preserve source spans through the new tokenizer boundary.                 █
-33 |   4. Return structured parse errors instead of exceptions.                     █
-34 |   5. Keep malformed UTF-8 diagnostics attached to byte offsets.                █
-35 |   6. Move parser fixtures onto the public entry point.                         █
-36 |   7. Add complete terminal journeys for surfaced diagnostics.
-37 |   8. Compare allocation behavior before changing buffering.
-38 |   9. Update the command path to consume the structured result.
-39 |   10. Remove the obsolete parser compatibility wrapper.
-40 |   11. Document ownership and replay invariants in the interface.
-41 |   12. Run the focused suite before the integrated verification.
-42 |
-43 | ❯ 1. approve and continue current context
-44 |   2. approve and start fresh
-45 |   3. revise — tell the model what to change
-46 |   4. keep planning
-47 |
-48 |   1-4 select · ↵ choose · ^O less · esc keep|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plan-di3b7b6944.home/mentat-tu…
+    04 |
+    05 | ❯ show the complete migration plan
+    06 |
+    07 | ⋯ Waiting for your answer
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |
+    25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    26 |    plan
+    27 |
+    28 |   Parser migration evidence
+    29 |
+    30 |   1. Inventory every parser entry point and its current callers.               █
+    31 |   2. Separate token production from grammar decisions.                         █
+    32 |   3. Preserve source spans through the new tokenizer boundary.                 █
+    33 |   4. Return structured parse errors instead of exceptions.                     █
+    34 |   5. Keep malformed UTF-8 diagnostics attached to byte offsets.                █
+    35 |   6. Move parser fixtures onto the public entry point.                         █
+    36 |   7. Add complete terminal journeys for surfaced diagnostics.
+    37 |   8. Compare allocation behavior before changing buffering.
+    38 |   9. Update the command path to consume the structured result.
+    39 |   10. Remove the obsolete parser compatibility wrapper.
+    40 |   11. Document ownership and replay invariants in the interface.
+    41 |   12. Run the focused suite before the integrated verification.
+    42 |
+    43 | ❯ 1. approve and continue current context
+    44 |   2. approve and start fresh
+    45 |   3. revise — tell the model what to change
+    46 |   4. keep planning
+    47 |
+    48 |   1-4 select · ↵ choose · ^O less · esc keep
+    |}];
   Tui.keys t Key.ctrl_o;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plan-di03d9077b.home/mentat-tu…
-04 |
-05 | ❯ show the complete migration plan
-06 |
-07 | ⋯ Waiting for your answer
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |
-25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-26 |    plan
-27 |
-28 |   Parser migration evidence
-29 |
-30 |   1. Inventory every parser entry point and its current callers.               █
-31 |   2. Separate token production from grammar decisions.                         █
-32 |   3. Preserve source spans through the new tokenizer boundary.                 █
-33 |   4. Return structured parse errors instead of exceptions.                     █
-34 |   5. Keep malformed UTF-8 diagnostics attached to byte offsets.
-35 |   6. Move parser fixtures onto the public entry point.
-36 |   7. Add complete terminal journeys for surfaced diagnostics.
-37 |   8. Compare allocation behavior before changing buffering.
-38 |
-39 | ❯ 1. approve and continue current context
-40 |   2. approve and start fresh
-41 |   3. revise — tell the model what to change
-42 |   4. keep planning
-43 |
-44 |
-45 |
-46 |
-47 |
-48 |   1-4 select · ↵ choose · ^O more · esc keep|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plan-di3b7b6944.home/mentat-tu…
+    04 |
+    05 | ❯ show the complete migration plan
+    06 |
+    07 | ⋯ Waiting for your answer
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |
+    25 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    26 |    plan
+    27 |
+    28 |   Parser migration evidence
+    29 |
+    30 |   1. Inventory every parser entry point and its current callers.               █
+    31 |   2. Separate token production from grammar decisions.                         █
+    32 |   3. Preserve source spans through the new tokenizer boundary.                 █
+    33 |   4. Return structured parse errors instead of exceptions.                     █
+    34 |   5. Keep malformed UTF-8 diagnostics attached to byte offsets.
+    35 |   6. Move parser fixtures onto the public entry point.
+    36 |   7. Add complete terminal journeys for surfaced diagnostics.
+    37 |   8. Compare allocation behavior before changing buffering.
+    38 |
+    39 | ❯ 1. approve and continue current context
+    40 |   2. approve and start fresh
+    41 |   3. revise — tell the model what to change
+    42 |   4. keep planning
+    43 |
+    44 |
+    45 |
+    46 |
+    47 |
+    48 |   1-4 select · ↵ choose · ^O more · esc keep
+    |}];
   Tui.keys t Key.escape;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plan-di03d9077b.home/mentat-tu…
-04 |
-05 | ❯ show the complete migration plan
-06 |
-07 | ⠋ Working… (0s · esc to interrupt)
-08 |
-09 |
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 |
-22 |
-23 |
-24 |
-25 |
-26 |
-27 |
-28 |
-29 |
-30 |
-31 |
-32 |
-33 |
-34 |
-35 |
-36 |
-37 |
-38 |
-39 |
-40 |
-41 |
-42 |
-43 |
-44 |
-45 |  ⏸ plan ────────────────────────────────────────────────────────────────────────
-46 | ❯ queue a message — sends after this turn
-47 | ────────────────────────────────────────────────────────────────────────────────
-48 |   ! not logged in · /login · /tmp/mentat-t… · openai/gpt… · ! full access ? f…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plan-di3b7b6944.home/mentat-tu…
+    04 |
+    05 | ❯ show the complete migration plan
+    06 |
+    07 | ⠋ Working… (0s · esc to interrupt)
+    08 |
+    09 |
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 |
+    22 |
+    23 |
+    24 |
+    25 |
+    26 |
+    27 |
+    28 |
+    29 |
+    30 |
+    31 |
+    32 |
+    33 |
+    34 |
+    35 |
+    36 |
+    37 |
+    38 |
+    39 |
+    40 |
+    41 |
+    42 |
+    43 |
+    44 |
+    45 |  ⏸ plan ────────────────────────────────────────────────────────────────────────
+    46 | ❯ queue a message — sends after this turn
+    47 | ────────────────────────────────────────────────────────────────────────────────
+    48 |   ! not logged in · /login · /tmp/mentat-t… · openai/gpt… · ! full access ? f…
+    |}]
 
 let%expect_test
     "narrow decisions and revision controls remain legible before approval" =
@@ -725,50 +757,54 @@ let%expect_test
   open_pending t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-04 |  dev · openai/gpt-5.5 medium
-05 |  /tmp/mentat-tui-plan-narr8c1923d2.home/ment…
-06 |
-07 | ❯ choose a fresh build context
-08 |
-09 | ⋯ Waiting for your answer
-10 |
-11 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-12 |    plan
-13 |
-14 |   Unicode 👩🏽‍💻 plan
-15 |
-16 |   Keep the exact owner plan while Mosaic     ▀
-17 |
-18 | ❯ 1. approve and continue current context
-19 |
-20 |   1-4 select · ↵ choose · ^O more · esc keep|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    04 |  dev · openai/gpt-5.5 medium
+    05 |  /tmp/mentat-tui-plan-narr93b7cd1a.home/ment…
+    06 |
+    07 | ❯ choose a fresh build context
+    08 |
+    09 | ⋯ Waiting for your answer
+    10 |
+    11 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    12 |    plan
+    13 |
+    14 |   Unicode 👩🏽‍💻 plan
+    15 |
+    16 |   Keep the exact owner plan while Mosaic     ▀
+    17 |
+    18 | ❯ 1. approve and continue current context
+    19 |
+    20 |   1-4 select · ↵ choose · ^O more · esc keep
+    |}];
   Tui.keys t Key.up;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-04 |  dev · openai/gpt-5.5 medium
-05 |  /tmp/mentat-tui-plan-narr8c1923d2.home/ment…
-06 |
-07 | ❯ choose a fresh build context
-08 |
-09 | ⋯ Waiting for your answer
-10 |
-11 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-12 |    plan
-13 |
-14 |   Unicode 👩🏽‍💻 plan
-15 |
-16 |   Keep the exact owner plan while Mosaic     ▀
-17 |
-18 | ❯ 4. keep planning
-19 |
-20 |   1-4 select · ↵ choose · ^O more · esc keep|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    04 |  dev · openai/gpt-5.5 medium
+    05 |  /tmp/mentat-tui-plan-narr93b7cd1a.home/ment…
+    06 |
+    07 | ❯ choose a fresh build context
+    08 |
+    09 | ⋯ Waiting for your answer
+    10 |
+    11 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    12 |    plan
+    13 |
+    14 |   Unicode 👩🏽‍💻 plan
+    15 |
+    16 |   Keep the exact owner plan while Mosaic     ▀
+    17 |
+    18 | ❯ 4. keep planning
+    19 |
+    20 |   1-4 select · ↵ choose · ^O more · esc keep
+    |}];
   Tui.resize t ~width:46 ~height:24;
   Tui.keys t "3";
   Tui.settle t;
@@ -776,30 +812,32 @@ let%expect_test
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-04 |  dev · openai/gpt-5.5 medium
-05 |  /tmp/mentat-tui-plan-narr8c1923d2.home/ment…
-06 |
-07 | ❯ choose a fresh build context
-08 |
-09 | ⋯ Waiting for your answer
-10 |
-11 |
-12 |
-13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-14 |    plan
-15 |
-16 |   Unicode 👩🏽‍💻 plan
-17 |
-18 |   Keep the exact owner plan while Mosaic     ▀
-19 |
-20 | ──────────────────────────────────────────────
-21 |   ❯
-22 | ──────────────────────────────────────────────
-23 |
-24 |   type feedback · ↵ revise · esc cancel|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    04 |  dev · openai/gpt-5.5 medium
+    05 |  /tmp/mentat-tui-plan-narr93b7cd1a.home/ment…
+    06 |
+    07 | ❯ choose a fresh build context
+    08 |
+    09 | ⋯ Waiting for your answer
+    10 |
+    11 |
+    12 |
+    13 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    14 |    plan
+    15 |
+    16 |   Unicode 👩🏽‍💻 plan
+    17 |
+    18 |   Keep the exact owner plan while Mosaic     ▀
+    19 |
+    20 | ──────────────────────────────────────────────
+    21 |   ❯
+    22 | ──────────────────────────────────────────────
+    23 |
+    24 |   type feedback · ↵ revise · esc cancel
+    |}];
   Tui.keys t Key.escape;
   Tui.settle t;
   Tui.resize t ~width:46 ~height:18;
@@ -807,45 +845,48 @@ let%expect_test
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-04 |  dev · openai/gpt-5.5 medium
-05 |  /tmp/mentat-tui-plan-narr8c1923d2.home/ment…
-06 |
-07 | ❯ choose a fresh build context
-08 |
-09 | ⋯ Waiting for your answer
-10 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
-11 |    plan
-12 |
-13 |   Unicode 👩🏽‍💻 plan
-14 |
-15 |   Keep the exact owner plan while Mosaic
-16 | ❯ 2. approve and start fresh
-17 |
-18 |   1-4 select · ↵ choose · ^O more · esc keep|}];
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    04 |  dev · openai/gpt-5.5 medium
+    05 |  /tmp/mentat-tui-plan-narr93b7cd1a.home/ment…
+    06 |
+    07 | ❯ choose a fresh build context
+    08 |
+    09 | ⋯ Waiting for your answer
+    10 | ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+    11 |    plan
+    12 |
+    13 |   Unicode 👩🏽‍💻 plan
+    14 |
+    15 |   Keep the exact owner plan while Mosaic
+    16 | ❯ 2. approve and start fresh
+    17 |
+    18 |   1-4 select · ↵ choose · ^O more · esc keep
+    |}];
   Tui.enter t;
   Tui.settle t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
-04 |  dev · openai/gpt-5.5 medium
-05 |  /tmp/mentat-tui-plan-narr8c1923d2.home/ment…
-06 |
-07 | ❯ choose a fresh build context
-08 |
-09 | ⠋ Working… (0s · esc to interrupt)
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |  ⏸ plan ──────────────────────────────────────
-16 | ❯ queue a message — sends after this turn
-17 | ──────────────────────────────────────────────
-18 |   ! not logged in · /log… ·… · ! full acce…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
+    04 |  dev · openai/gpt-5.5 medium
+    05 |  /tmp/mentat-tui-plan-narr93b7cd1a.home/ment…
+    06 |
+    07 | ❯ choose a fresh build context
+    08 |
+    09 | ⠋ Working… (0s · esc to interrupt)
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |  ⏸ plan ──────────────────────────────────────
+    16 | ❯ queue a message — sends after this turn
+    17 | ──────────────────────────────────────────────
+    18 |   ! not logged in · /log… ·… · ! full acce…
+    |}]
 
-[%%run_tests "mentat.tui.plan"]
