@@ -211,13 +211,6 @@ let rec first_detach offset = function
   | Event.Delegations_detached :: _ -> Some offset
   | _ :: rest -> first_detach (offset + 1) rest
 
-(* [append] and [append_all] maintain the cached [state] incrementally — one
-   [State.apply]/[apply_all] against the current cache per event or batch —
-   and must keep it equal to [State.of_events (events t)], the full fold over
-   the whole log that [make] and the decoder rebuild. That equivalence holds
-   because folding one more event onto the cache equals recomputing the
-   extended log; a change to how the cache updates here breaks it silently,
-   since no full fold runs on this path to catch the drift. *)
 let append event t =
   match require_active_status t with
   | Error _ as error -> error

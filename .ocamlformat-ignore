@@ -1,8 +1,2 @@
 lib/sandbox/kernel/confinement.ml
 lib/sandbox/kernel/confinement.mli
-lib/mutation/kernel/revertability.ml
-lib/mutation/kernel/revertability.mli
-lib/session/kernel/replay.ml
-lib/session/kernel/replay.mli
-lib/permission/kernel/decision.ml
-lib/permission/kernel/decision.mli

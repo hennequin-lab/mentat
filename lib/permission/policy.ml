@@ -1390,47 +1390,58 @@ module Decision = struct
   type t = Allowed | Review of Review.t | Denied of Denial.t * Denial.t list
 end
 
+type explanation =
+  | Allowed_by_rule of Rule.t
+  | Allowed_by_grant
+  | Needs_review
+  | Needs_review_by_rule of Rule.t
+  | Denied_by_rule of Rule.t
+
 let default = []
 let make rules = rules
+let matches = Rule.matcher_matches
 
-(* The decision — first-match rule evaluation, the rule-before-grant
-   precedence, and the [Denied] over [Review] over [Allowed] aggregation — lives
-   in theories/permission/Decision.v; the kernel library is the OCaml extracted
-   from it. Rules, accesses, and grants cross the boundary untouched: the kernel
-   is parametric in them and consumes only three host predicates — whether a
-   matcher accepts an access, a rule's matcher and action, and whether a grant
-   allows an access. The kernel names each denied access with its rule and each
-   review access with its captured reason; this wraps those with the request
-   into [Denial.t] and [Review.t]. *)
+let explanation_of_rule rule =
+  match rule.Rule.action with
+  | Rule.Allow -> Allowed_by_rule rule
+  | Rule.Review -> Needs_review_by_rule rule
+  | Rule.Deny -> Denied_by_rule rule
 
-let kernel_action = function
-  | Rule.Allow -> Mentat_permission_kernel.Decision.Allow
-  | Rule.Review -> Mentat_permission_kernel.Decision.Review
-  | Rule.Deny -> Mentat_permission_kernel.Decision.Deny
-
-let of_kernel_reason = function
-  | Mentat_permission_kernel.Decision.Unmatched -> Review.Unmatched
-  | Mentat_permission_kernel.Decision.By_rule rule -> Review.By_rule rule
+let explain ?(grants = Grants.empty) policy access =
+  let rec loop = function
+    | [] ->
+        if Grants.allows grants access then Allowed_by_grant else Needs_review
+    | rule :: rules ->
+        if matches rule.Rule.matcher access then explanation_of_rule rule
+        else loop rules
+  in
+  loop policy
 
 let decide ?(grants = Grants.empty) policy request =
-  let denial (access, rule) = { Denial.request; Denial.access; Denial.rule } in
-  match
-    Mentat_permission_kernel.Decision.classify Rule.matcher_matches
-      (fun rule -> rule.Rule.matcher)
-      (fun rule -> kernel_action rule.Rule.action)
-      (fun access -> Grants.allows grants access)
-      policy
-      (Request.normalized_accesses request)
-  with
-  | Mentat_permission_kernel.Decision.Allowed -> Decision.Allowed
-  | Mentat_permission_kernel.Decision.Denied (first, rest) ->
-      Decision.Denied (denial first, List.map denial rest)
-  | Mentat_permission_kernel.Decision.Reviewed reasons ->
-      Decision.Review
-        (Review.of_reasons request
-           (List.map
-              (fun (access, reason) -> (access, of_kernel_reason reason))
-              reasons))
+  let rec loop denials review_reasons = function
+    | [] -> (
+        match List.rev denials with
+        | first :: rest -> Decision.Denied (first, rest)
+        | [] -> (
+            match List.rev review_reasons with
+            | [] -> Decision.Allowed
+            | reasons -> Decision.Review (Review.of_reasons request reasons)))
+    | access :: accesses -> (
+        match explain ~grants policy access with
+        | Denied_by_rule rule ->
+            loop
+              ({ Denial.request; Denial.access; Denial.rule } :: denials)
+              review_reasons accesses
+        | Allowed_by_rule _ | Allowed_by_grant ->
+            loop denials review_reasons accesses
+        | Needs_review ->
+            loop denials ((access, Review.Unmatched) :: review_reasons) accesses
+        | Needs_review_by_rule rule ->
+            loop denials
+              ((access, Review.By_rule rule) :: review_reasons)
+              accesses)
+  in
+  loop [] [] (Request.normalized_accesses request)
 
 let equal a b = a = b
 

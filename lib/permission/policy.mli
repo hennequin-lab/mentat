@@ -481,11 +481,6 @@ val decide : ?grants:Grants.t -> t -> Request.t -> Decision.t
     that chooses to bypass review interprets that {!Decision.Review} outcome; it
     does not change pure policy evaluation.
 
-    A denial is therefore a function of the rules alone: a grant can neither
-    cause one nor lift one, since a denied access was matched by a deny rule and
-    grants are consulted only past the last rule. Widening [grants] can only
-    move an access toward allowed — never toward review or denied.
-
     Requests are evaluated in {!Request.normalized_accesses} order, preserving
     the first occurrence of exact duplicate access facts. If any access is
     denied, [Decision.Denied] is returned with all denied accesses in that

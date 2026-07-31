@@ -8,6 +8,5 @@
   lpath
   mentat_permission
   mentat_sandbox
-  mentat_session_kernel
   mentat_tool
   mentat_workspace))
