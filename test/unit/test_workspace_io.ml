@@ -54,7 +54,8 @@ let evidence_value =
   Testable.make ~pp:Sandbox.Evidence.pp ~equal:Sandbox.Evidence.equal
 
 let resolve_error_value =
-  Testable.make ~pp:Workspace.Resolve_error.pp ~equal:Workspace.Resolve_error.equal
+  Testable.make ~pp:Workspace.Resolve_error.pp
+    ~equal:Workspace.Resolve_error.equal
 
 let ws_path root text =
   Workspace.Path.make ~root_key:(Workspace.Root.key root) (rel text)
@@ -1503,7 +1504,8 @@ let negative_capture_bounds_raise () =
   let none = Eio.Time.Timeout.none in
   raises (Invalid_argument "capture limit must be non-negative") (fun () ->
       Command.run w.io ~capture:(Command.Limit (-1)) ~timeout:none (sh "exit 0"));
-  raises (Invalid_argument "capture head and tail must be non-negative") (fun () ->
+  raises (Invalid_argument "capture head and tail must be non-negative")
+    (fun () ->
       Command.run w.io
         ~capture:(Command.Head_tail { head = -1; tail = 0 })
         ~timeout:none (sh "exit 0"))
@@ -2287,8 +2289,9 @@ let unavailable_backend_fails_closed () =
   (match Wio.evidence w.io with
   | Sandbox.Evidence.Refused _ -> ()
   | _ -> fail "the seam must seal a refused confinement");
-  ignore (require_ok ~msg:"requirement off admits a refused seal"
-    (Wio.check w.io ~requirement:Sandbox.Requirement.Off));
+  ignore
+    (require_ok ~msg:"requirement off admits a refused seal"
+       (Wio.check w.io ~requirement:Sandbox.Requirement.Off));
   (match Wio.check w.io ~requirement:Sandbox.Requirement.Enforced with
   | Error
       (Sandbox.Requirement.Rejection.Unenforceable (Sandbox.Error.Unavailable _))
@@ -2306,8 +2309,10 @@ let startup_gate_admits_an_enforced_capability () =
   require_enforced w.io;
   List.iter
     (fun requirement ->
-      ignore (require_ok ~msg:"a fresh enforced capability passes every requirement level"
-        (Wio.check w.io ~requirement)))
+      ignore
+        (require_ok
+           ~msg:"a fresh enforced capability passes every requirement level"
+           (Wio.check w.io ~requirement)))
     Sandbox.Requirement.all
 
 (* Suite. *)
@@ -2410,7 +2415,8 @@ let () =
         stdin_epipe_is_tolerated;
       test "a stdin source read failure is a supervision failure"
         stdin_read_failure_is_a_supervision_failure;
-      test "executable resolution checks the exec bit, not existence"
+      test ~tags:[ "slow" ]
+        "executable resolution checks the exec bit, not existence"
         executable_resolution_checks_the_exec_bit;
       test "argv is validated at the launch boundary"
         argv_is_validated_at_the_boundary;
@@ -2435,7 +2441,7 @@ let () =
         session_self_exit_flips_to_exited;
       test "signal terminates the session and is idempotent"
         session_signal_terminates_and_is_idempotent;
-      test "signal reaches the workers the session forked"
+      test ~tags:[ "slow" ] "signal reaches the workers the session forked"
         session_signal_reaches_the_forked_workers;
       test "signal escalates past a SIGTERM-ignoring child"
         session_signal_escalates_past_sigterm;

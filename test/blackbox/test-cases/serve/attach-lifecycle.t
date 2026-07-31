@@ -73,7 +73,7 @@ in the discovery file is recorded first, so a successor's fresh pid can be told
 apart from the crashed one (the file itself is stale — kill -9 clears nothing).
 
   $ OLD_PID=$(grep -oE '"pid":[0-9]+' "$XDG_DATA_HOME/mentat/daemon/daemon.json" | grep -oE '[0-9]+')
-  $ kill -9 "$MENTAT_DAEMON_PID"
+  $ kill -9 "$MENTAT_DAEMON_PID"; wait "$MENTAT_DAEMON_PID" 2>/dev/null; true
   $ MENTAT_DAEMON_PID=
   $ kill -0 "$(cat child.pid)" 2>/dev/null && echo survives-parent
   survives-parent
@@ -102,7 +102,7 @@ claim on death). The orphan sleep is reaped the same way. Bounded polls confirm
 both are gone before the next proof — nothing leaks.
 
   $ mentat serve --stop >/dev/null 2>&1
-  $ kill -9 "$NEW_PID" 2>/dev/null; kill -9 "$(cat child.pid)" 2>/dev/null; true
+  $ kill -9 "$NEW_PID" 2>/dev/null; kill -9 "$(cat child.pid)" 2>/dev/null; wait "$NEW_PID" 2>/dev/null; true
   $ for i in 1 2 3 4 5 6 7 8 9 10; do ps -p "$NEW_PID" >/dev/null 2>&1 || break; sleep 0.2; done
   $ ps -p "$NEW_PID" >/dev/null 2>&1 && echo daemon-leaked || echo daemon-stopped
   daemon-stopped

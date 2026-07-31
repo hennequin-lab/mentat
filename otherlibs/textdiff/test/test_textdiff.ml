@@ -12,7 +12,8 @@ module Json = Jsont.Json
 
 let expect_invalid_arg ?expected msg f =
   match expected with
-  | Some expected -> raises ~msg (Invalid_argument expected) (fun () -> ignore (f ()))
+  | Some expected ->
+      raises ~msg (Invalid_argument expected) (fun () -> ignore (f ()))
   | None -> (
       match f () with
       | _ -> failf "%s: expected Invalid_argument" msg
@@ -126,7 +127,9 @@ let text_pair_gen = Gen.with_pp pp_text_pair text_pair_gen
    UTF-8. [Gen.char] is uniform over all 256 byte values. *)
 let byte_line_char = Gen.frequency [ (1, Gen.pure '\n'); (5, Gen.char) ]
 let byte_text_gen = Gen.string_of ~size:(Gen.int_range 0 24) byte_line_char
-let byte_pair_gen = Gen.with_pp pp_text_pair (Gen.pair byte_text_gen byte_text_gen)
+
+let byte_pair_gen =
+  Gen.with_pp pp_text_pair (Gen.pair byte_text_gen byte_text_gen)
 
 (* Adversarial display content: raw control bytes, DEL, C1, and spliced bidi
    sequences. *)
@@ -242,8 +245,7 @@ let file_changes =
     [
       test "builds file changes from optional states" (fun () ->
           let l = lbl "state.txt" in
-          equal (option pass) ~msg:"absent-to-absent is None"
-            None
+          equal (option pass) ~msg:"absent-to-absent is None" None
             (Diff.File_change.of_states ~label:l ~before:None ~after:None);
           let created =
             some_change "expected create"
@@ -359,7 +361,8 @@ let statistics =
               Diff.Stats.v ~files:0 ~additions:(-1) ~deletions:0);
           expect_invalid_arg "negative deletions are rejected" (fun () ->
               Diff.Stats.v ~files:0 ~additions:0 ~deletions:(-1)));
-      prop "Stats.of_changes equals render stats without limits"
+      prop ~tags:[ "slow" ]
+        "Stats.of_changes equals render stats without limits"
         (Gen.list file_change_gen) (fun changes ->
           let diff = Diff.render changes in
           equal stats_testable ~msg:"stats agree" (Diff.stats diff)
@@ -870,8 +873,7 @@ let hunks =
           equal string ~msg:"the carriage return is raw in Line.text" "a\r"
             (Diff.Hunk.Line.text (List.hd (Diff.Hunk.lines (List.hd added)))));
       test "bounds hunks by max_edit_distance" (fun () ->
-          equal (option pass) ~msg:"exceeded distance is None"
-            None
+          equal (option pass) ~msg:"exceeded distance is None" None
             (Diff.hunks ~max_edit_distance:1 ~before:"a\nb\nc\n"
                ~after:"x\ny\nz\n" ());
           let hs =
@@ -946,8 +948,10 @@ let pp_spans ppf spans =
 let spans_eq a b = List.equal (fun (a, b) (c, d) -> a = c && b = d) a b
 
 let spans_pair =
-  Testable.make ~pp:(fun ppf (rem, add) ->
-      Format.fprintf ppf "(%a, %a)" pp_spans rem pp_spans add) ~equal:(fun (r1, a1) (r2, a2) -> spans_eq r1 r2 && spans_eq a1 a2)
+  Testable.make
+    ~pp:(fun ppf (rem, add) ->
+      Format.fprintf ppf "(%a, %a)" pp_spans rem pp_spans add)
+    ~equal:(fun (r1, a1) (r2, a2) -> spans_eq r1 r2 && spans_eq a1 a2)
 
 let word_spans =
   group "word spans"
@@ -1010,10 +1014,12 @@ let pp_region ppf = function
       Format.fprintf ppf "Conflict(base=%S ours=%S theirs=%S)" base ours theirs
 
 let merge_testable =
-  Testable.make ~pp:(fun ppf m ->
+  Testable.make
+    ~pp:(fun ppf m ->
       Format.fprintf ppf "@[<v>%a@]"
         (Format.pp_print_list pp_region)
-        (Diff.Merge.regions m)) ~equal:Diff.Merge.equal
+        (Diff.Merge.regions m))
+    ~equal:Diff.Merge.equal
 
 let roundtrip m = decode Diff.Merge.jsont (encode Diff.Merge.jsont m)
 
@@ -1320,8 +1326,8 @@ let determinism =
           equal stats_testable ~msg:"render stats are stable"
             (Diff.stats (Diff.render changes))
             (Diff.stats (Diff.render changes)));
-      prop "hunks and their encoding are byte-identical across runs" byte_pair_gen
-        (fun (before, after) ->
+      prop "hunks and their encoding are byte-identical across runs"
+        byte_pair_gen (fun (before, after) ->
           let once =
             some_hunks "expected hunks" (Diff.hunks ~before ~after ())
           in

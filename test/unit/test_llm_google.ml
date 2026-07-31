@@ -1180,6 +1180,6 @@ let () =
         stream_fault_after_output_is_not_retried;
       test "stream retry is disabled by max_retries zero"
         stream_retry_is_disabled_by_max_retries_zero;
-      test ~timeout:5.0 "stream retry is bounded by budget"
+      test ~timeout:5.0 ~tags:[ "slow" ] "stream retry is bounded by budget"
         stream_retry_is_bounded_by_budget;
     ]

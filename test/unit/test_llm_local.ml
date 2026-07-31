@@ -1186,13 +1186,17 @@ let () =
           readiness_exception_cancellation_reaps_server;
         test ~timeout:3. "failed readiness reaps server"
           failed_readiness_reaps_server;
-        test ~timeout:3. "TERM-ignoring readiness is killed"
+        test ~timeout:3. ~tags:[ "slow" ] "TERM-ignoring readiness is killed"
           term_ignoring_readiness_is_killed;
-        test ~timeout:3. "spontaneous server exit respawns within its owner"
+        test ~timeout:3. ~tags:[ "slow" ]
+          "spontaneous server exit respawns within its owner"
           spontaneous_exit_respawns_in_owner;
-        test ~timeout:6. "health timeout releases the stalled connection"
+        test ~timeout:6. ~tags:[ "slow" ]
+          "health timeout releases the stalled connection"
           health_timeout_releases_the_connection;
-        test "co-resident servers within budget" co_resident_servers;
-        test "eviction under a tight budget" eviction_under_budget;
+        test ~tags:[ "slow" ] "co-resident servers within budget"
+          co_resident_servers;
+        test ~tags:[ "slow" ] "eviction under a tight budget"
+          eviction_under_budget;
         test "missing binary is reported" missing_binary_is_reported;
       ])

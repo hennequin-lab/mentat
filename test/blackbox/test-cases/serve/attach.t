@@ -83,14 +83,14 @@ rendering only, no behavior change).
   pid $PID on $HOST
   the mentat daemon drives this session; re-run with --attach
   [1]
-  $ kill -9 "$SLOW_PID" 2>/dev/null; kill -9 "$MENTAT_FAKE_PROVIDER_PID" 2>/dev/null; true
+  $ kill -9 "$SLOW_PID" 2>/dev/null; kill -9 "$MENTAT_FAKE_PROVIDER_PID" 2>/dev/null; wait "$SLOW_PID" 2>/dev/null; wait "$MENTAT_FAKE_PROVIDER_PID" 2>/dev/null; true
 
 The daemon is killed hard (SIGKILL) — no graceful settle. Its run fences are
 kernel-released and the store is left uncorrupted: the durable session survives
 the crash, still listable and readable offline, ready for a successor to
 re-drive.
 
-  $ kill -9 "$MENTAT_DAEMON_PID"
+  $ kill -9 "$MENTAT_DAEMON_PID"; wait "$MENTAT_DAEMON_PID" 2>/dev/null; true
   $ MENTAT_DAEMON_PID=
   $ mentat session show demo --cwd "$PWD" | grep -E '^(id|phase|lifecycle)='
   id=demo

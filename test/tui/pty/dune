@@ -16,8 +16,6 @@
 ; values are relative to the runner's working directory,
 ; <build-root>/default/test/tui/pty, and the harness resolves them against
 ; the cwd).
-; -w +a -warn-error +a. Drop the flag once windtrap qualifies every generated
-; record field.
 ;
 ; The live tool-through-permission test is opt-in: it skips unless
 ; MENTAT_TUI_LIVE_TEST is set, so it stays on the runtest alias while keeping
@@ -28,7 +26,10 @@
   (env-vars
    (MENTAT_BIN ../../../bin/main.exe)
    (MENTAT_FAKE_PROVIDER_BIN
-    ../../blackbox/bin/mentat_fake_provider_server.exe))))
+    ../../blackbox/bin/mentat_fake_provider_server.exe)
+   ; Real-PTY suites legitimately exceed windtrap's 1 s slow threshold;
+   ; 5 s keeps the warning meaningful for genuine regressions.
+   (WINDTRAP_SLOW_THRESHOLD 5))))
 
 (library
  (name test_tui_pty)
