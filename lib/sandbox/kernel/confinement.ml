@@ -358,3 +358,14 @@ let grant seg_eqb path_leb t_entries gs =
   match first_defeat (defeat_check seg_eqb t_entries) gs with
   | Some p0 -> let (p, r) = p0 in Refused (p, r)
   | None -> Granted (normalize seg_eqb path_leb (app t_entries gs))
+
+(** val deny_paths : 'a1 path list -> 'a1 entry list **)
+
+let rec deny_paths = function
+| [] -> []
+| q :: rest -> (q, Deny) :: (deny_paths rest)
+
+(** val floor : 'a1 entry list -> 'a1 entry list **)
+
+let floor l =
+  ([], Write) :: (deny_paths (denied_roots l))

@@ -138,6 +138,13 @@ val grant :
     grant over a whole tree cannot be used to reach a path the deny set removed.
 *)
 
+val floor : t -> t
+(** [floor t] widens [t] to its escalation floor: the root becomes writable and
+    the read default and network open, but every path [t] denies stays denied.
+    Opening the floor must not hand back a denied path — those are withheld from
+    a process that could turn write access there into standing authority — so
+    the deny set outranks the widened root and survives intact. *)
+
 val equal : t -> t -> bool
 (** [equal a b] is [true] iff [a] and [b] describe the same confinement. *)
 

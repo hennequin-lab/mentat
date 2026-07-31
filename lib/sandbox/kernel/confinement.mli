@@ -125,3 +125,7 @@ val defeat_check :
 val grant :
   ('a1 -> 'a1 -> bool) -> ('a1 path -> 'a1 path -> bool) -> 'a1 entry list ->
   'a1 entry list -> 'a1 grant_result
+
+val deny_paths : 'a1 path list -> 'a1 entry list
+
+val floor : 'a1 entry list -> 'a1 entry list

@@ -296,4 +296,21 @@ Section Confinement.
     | None => Granted (normalize (app t_entries gs))
     end.
 
+  (** {1 The escalation floor}
+
+      Widening a confined route to its approved escape opens the root to
+      writing, but must not hand back a denied path: those are denied
+      because a later unconfined process consumes what is under them as
+      authority, so a floor that raised one would let an approved escape
+      rewrite the approval. The floor keeps exactly the deny set. *)
+
+  Fixpoint deny_paths (qs : list path) : list entry :=
+    match qs with
+    | nil => nil
+    | q :: rest => (q, Deny) :: deny_paths rest
+    end.
+
+  Definition floor (l : list entry) : list entry :=
+    (nil, Write) :: deny_paths (denied_roots l).
+
 End Confinement.

@@ -1532,4 +1532,122 @@ Section Laws.
     - exact Hgb.
   Qed.
 
+  (** {1 The escalation floor} *)
+
+  Lemma withinb_nil : forall p, withinb seg seg_eqb nil p = true.
+  Proof. intros p. reflexivity. Qed.
+
+  Lemma depth_nil : depth seg nil = O.
+  Proof. reflexivity. Qed.
+
+  Lemma nat_ltb_zero_r : forall n, nat_ltb n O = false.
+  Proof. intros n. reflexivity. Qed.
+
+  Lemma InE_deny_paths_inv :
+    forall qs q a,
+      InE (q, a) (deny_paths seg qs) -> a = Deny /\ InP q qs.
+  Proof.
+    intros qs. induction qs as [| q0 rest IH]; intros q a Hin.
+    - destruct Hin.
+    - simpl in Hin. destruct Hin as [Heq | Hin].
+      + injection Heq as Hq Ha. subst q0. subst a.
+        split. reflexivity. left. reflexivity.
+      + destruct (IH q a Hin) as [Ha Hp]. split. exact Ha. right. exact Hp.
+  Qed.
+
+  Lemma InP_deny_paths :
+    forall qs q, InP q qs -> InE (q, Deny) (deny_paths seg qs).
+  Proof.
+    intros qs. induction qs as [| q0 rest IH]; intros q Hin.
+    - destruct Hin.
+    - simpl. destruct Hin as [Heq | Hin].
+      + left. rewrite Heq. reflexivity.
+      + right. exact (IH q Hin).
+  Qed.
+
+  (* Every covering clause of an all-denied list is a denial, and merges of
+     denials are denials, so the winner is a denial. *)
+  Lemma deepest_alldeny :
+    forall l p,
+      (forall q a, InE (q, a) l -> a = Deny) ->
+      forall d b, deepest seg seg_eqb l p = Some (d, b) -> b = Deny.
+  Proof.
+    intros l. induction l as [| [q0 a0] rest IH]; intros p H d b Hd.
+    - discriminate Hd.
+    - assert (Ha0 : a0 = Deny) by exact (H q0 a0 (or_introl eq_refl)).
+      assert (Hrest : forall q a, InE (q, a) rest -> a = Deny)
+        by (intros q a Hin; exact (H q a (or_intror Hin))).
+      rewrite deepest_cons in Hd.
+      destruct (withinb seg seg_eqb q0 p) eqn:W.
+      + rewrite (single_covering p q0 a0 W) in Hd.
+        destruct (deepest seg seg_eqb rest p) as [[dr br] |] eqn:Hr.
+        * assert (Hbr : br = Deny) by exact (IH p Hrest dr br Hr).
+          destruct (nat_ltb dr (depth seg q0)) eqn:E1.
+          -- rewrite (omerge_ss_lt (depth seg q0) a0 dr br E1) in Hd.
+             injection Hd as _ Hb. rewrite <- Hb. exact Ha0.
+          -- destruct (nat_ltb (depth seg q0) dr) eqn:E2.
+             ++ rewrite (omerge_ss_gt (depth seg q0) a0 dr br E1 E2) in Hd.
+                injection Hd as _ Hb. rewrite <- Hb. exact Hbr.
+             ++ rewrite (omerge_ss_eq (depth seg q0) a0 dr br E1 E2) in Hd.
+                injection Hd as _ Hb. rewrite <- Hb.
+                rewrite Ha0. rewrite Hbr. reflexivity.
+        * rewrite (omerge_none_r (Some (depth seg q0, a0))) in Hd.
+          injection Hd as _ Hb. rewrite <- Hb. exact Ha0.
+      + rewrite (single_uncovered p q0 a0 W) in Hd. simpl in Hd.
+        exact (IH p Hrest d b Hd).
+  Qed.
+
+  (** A denial survives the escalation floor: at and beneath any path [l]
+      denies, the floor still resolves to [Deny] — though its root is
+      writable and its default open, the deeper denial outranks the root. *)
+  Theorem floor_preserves_denials :
+    forall l d q p,
+      InE (q, Deny) l ->
+      withinb seg seg_eqb q p = true ->
+      resolve seg seg_eqb (floor seg l) d p = Deny.
+  Proof.
+    intros l d q p Hq Hw. unfold resolve, floor.
+    rewrite deepest_cons.
+    rewrite (single_covering p nil Write (withinb_nil p)).
+    assert (Hin : InE (q, Deny) (deny_paths seg (denied_roots seg l)))
+      by exact (InP_deny_paths (denied_roots seg l) q (denied_roots_in l q Hq)).
+    destruct (deepest_covering_ge (deny_paths seg (denied_roots seg l)) p q
+                Deny Hin Hw) as [dd [bb [Hd _]]].
+    assert (Hall : forall q' a',
+               InE (q', a') (deny_paths seg (denied_roots seg l)) ->
+               a' = Deny).
+    { intros q' a' Hin'.
+      exact (proj1 (InE_deny_paths_inv (denied_roots seg l) q' a' Hin')). }
+    assert (Hbb : bb = Deny)
+      by exact (deepest_alldeny (deny_paths seg (denied_roots seg l)) p Hall
+                  dd bb Hd).
+    subst bb. rewrite Hd. rewrite depth_nil.
+    destruct (nat_ltb O dd) eqn:E1.
+    - rewrite (omerge_ss_gt O Write dd Deny (nat_ltb_zero_r dd) E1).
+      reflexivity.
+    - rewrite (omerge_ss_eq O Write dd Deny (nat_ltb_zero_r dd) E1).
+      reflexivity.
+  Qed.
+
+  (** The floor grants the write everywhere the deny set does not reach:
+      outside every denied path, the escalated root resolves to [Write]. *)
+  Theorem floor_grants_outside :
+    forall l d p,
+      (forall q, InP q (denied_roots seg l) ->
+                 withinb seg seg_eqb q p = false) ->
+      resolve seg seg_eqb (floor seg l) d p = Write.
+  Proof.
+    intros l d p H. unfold resolve, floor.
+    rewrite deepest_cons.
+    rewrite (single_covering p nil Write (withinb_nil p)).
+    assert (Hn : deepest seg seg_eqb (deny_paths seg (denied_roots seg l)) p
+                 = None).
+    { apply deepest_none_of_no_cover. intros g Hin. destruct g as [gq ga].
+      destruct (InE_deny_paths_inv (denied_roots seg l) gq ga Hin)
+        as [_ Hgp].
+      simpl. exact (H gq Hgp). }
+    rewrite Hn. rewrite (omerge_none_r (Some (depth seg nil, Write))).
+    reflexivity.
+  Qed.
+
 End Laws.

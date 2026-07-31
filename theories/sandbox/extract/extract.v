@@ -5,4 +5,4 @@ From MentatSandbox Require Import Confinement.
 
 Extraction Language OCaml.
 Extraction "confinement.ml"
-  normalize resolve emitted grant withinb denied_roots.
+  normalize resolve emitted grant floor withinb denied_roots.

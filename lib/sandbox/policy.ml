@@ -97,6 +97,14 @@ let grant t entries =
         ( Lpath.Abs.of_string_exn (render path),
           Lpath.Abs.of_string_exn (render defeated_by) )
 
+let floor t =
+  make
+    ~entries:
+      (List.map of_kernel
+         (Mentat_sandbox_kernel.Confinement.floor
+            (List.map to_kernel t.entries)))
+    ~reads_default:All ~network:Network.Enabled
+
 let reads_default_equal a b =
   match (a, b) with
   | All, All | Denied, Denied -> true

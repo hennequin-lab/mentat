@@ -169,16 +169,8 @@ let lower_argv t ~cwd argv =
           else Error (Error.Cwd_outside_scope cwd))
 
 (* An escalation is a widening like any other, so it mints a seal rather than
-   discarding one. The floor it keeps is the deny set: those paths are denied
-   because a later unconfined process consumes what is in them as authority —
-   the session store carries the confinement identity a resume revalidates
-   against, so a command able to write it can approve itself, and one approved
-   escalation would otherwise become a standing one.
-
-   Only the denials. The read carveouts are a weaker protection with a different
-   purpose, and an escalation that could not write [.git] would surprise the
-   person who approved it. What must not survive an approval is the ability to
-   rewrite the approval.
+   discarding one — {!Policy.floor} opens the route's floor, keeping the deny
+   set the widened root would otherwise raise.
 
    A route with no backend keeps exactly what it had. There is nothing to lower
    a floor through, so the honest answer is the unconfined seal — which is what
@@ -186,15 +178,6 @@ let lower_argv t ~cwd argv =
    instead of by returning the argv untouched. The floor is enforced wherever a
    backend exists and is best-effort where none does; that is a property worth
    stating rather than one to discover. *)
-let floor policy =
-  Policy.make
-    ~entries:
-      ((Lpath.Abs.root, Policy.Access.Write)
-      :: List.map
-           (fun path -> (path, Policy.Access.Deny))
-           (Policy.denied_paths policy))
-    ~reads_default:Policy.All ~network:Policy.Network.Enabled
-
 let escalated t =
   match t.escalation with
   | Denied error -> Error error
@@ -204,7 +187,7 @@ let escalated t =
       | Unconfined | Declared_external -> Ok t
       | Refuse _ -> Ok direct
       | Confine { backend; policy; _ } ->
-          let policy = floor policy in
+          let policy = Policy.floor policy in
           let profile = Profile.prepare backend policy in
           Ok
             {
