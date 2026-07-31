@@ -67,6 +67,21 @@ dune build
 and again whenever dependencies change. The first build compiles the toolchain
 and can take a while; later builds are incremental.
 
+Dune 3.24 or later is required: the build uses the Rocq prover. Parts of the
+codebase are formally verified — the confinement kernel's semantics live in
+`theories/` as Rocq definitions with machine-checked laws, and the OCaml under
+`lib/*/kernel/` is extracted from them and promoted into the tree by the
+build. Three things to know:
+
+- The first build also compiles Rocq from source (15–20 minutes, once per
+  toolchain change; the same applies in CI containers).
+- On a fresh checkout the first build may fail with
+  `Theory "Corelib" has not been found` while the prover is still being
+  built; run `dune build` again. The cause is documented in `dune-workspace`.
+- Never edit files under `lib/*/kernel/` — they are generated. Change the
+  theory in `theories/` and rebuild; the build re-extracts, re-checks the
+  proofs, and refreshes the promoted sources.
+
 Run it from the checkout:
 
 ```sh
