@@ -62,9 +62,11 @@ let session_id_value = Testable.make ~pp:Session.Id.pp ~equal:Session.Id.equal
 let digest_value = Testable.make ~pp:Mentat_digest.pp ~equal:Mentat_digest.equal
 
 let content_ref_value =
-  Testable.make ~pp:Mentat_digest.Content_ref.pp ~equal:Mentat_digest.Content_ref.equal
+  Testable.make ~pp:Mentat_digest.Content_ref.pp
+    ~equal:Mentat_digest.Content_ref.equal
 
-let event_value = Testable.make ~pp:Mutation.Event.pp ~equal:Mutation.Event.equal
+let event_value =
+  Testable.make ~pp:Mutation.Event.pp ~equal:Mutation.Event.equal
 
 let owner_value =
   Testable.make ~pp:Store.Run_lock.Owner.pp ~equal:Store.Run_lock.Owner.equal
@@ -700,7 +702,9 @@ let remove_is_revision_checked_and_reclaims () =
   | Error (Store.Session.Error.Conflict _) -> ()
   | Ok _ -> fail "a stale remove must conflict"
   | Error error -> failf "wrong error: %a" Store.Session.Error.pp error);
-  ignore (require_ok ~msg:"a current remove succeeds" (Store.Session.remove store doc1));
+  ignore
+    (require_ok ~msg:"a current remove succeeds"
+       (Store.Session.remove store doc1));
   is_false ~msg:"the whole session directory is reclaimed, blobs included"
     (Sys.file_exists (Filename.concat base ("sessions/" ^ id)));
   match Store.Session.load store (sid id) with
@@ -826,7 +830,8 @@ let guards_never_cross_root_registries () =
     (Store.Mutation.append mutation_b ~fence:guard_b ~document:document_b
        [ event_for "claim-b" ]);
   raises
-    (Invalid_argument "Mentat_store.Handle.check_live: guard is for a different store root")
+    (Invalid_argument
+       "Mentat_store.Handle.check_live: guard is for a different store root")
     (fun () ->
       Store.Mutation.append mutation_b ~fence:guard_a ~document:document_b
         [ event_for "claim-x" ])
@@ -1400,7 +1405,8 @@ let append_edit_validates_before_persisting_blobs () =
        (read_file (ledger_path base id)));
   (* An event that does not derive from the entries is programmer error. *)
   raises
-    (Invalid_argument "Mentat_store.Mutation.append_edit: event does not derive from entries")
+    (Invalid_argument
+       "Mentat_store.Mutation.append_edit: event does not derive from entries")
     (fun () ->
       Store.Mutation.append_edit mutation ~fence:guard ~document
         ~entries:(Edit.Result.entries second)
@@ -1565,15 +1571,18 @@ let revert_lifecycle_round_trips () =
   let before_revert = before_revert_event plan in
   (* Closure symmetry: only the blob-free arms cross the plain append. *)
   raises
-    (Invalid_argument "Mentat_store.Mutation.append: edit events append through append_edit")
+    (Invalid_argument
+       "Mentat_store.Mutation.append: edit events append through append_edit")
     (fun () -> Store.Mutation.append mutation ~fence:guard ~document [ e_m ]);
   raises
-    (Invalid_argument "Mentat_store.Mutation.append: revert started events append through \
-     append_revert_started") (fun () ->
+    (Invalid_argument
+       "Mentat_store.Mutation.append: revert started events append through \
+        append_revert_started") (fun () ->
       Store.Mutation.append mutation ~fence:guard ~document [ started_event ]);
   raises
-    (Invalid_argument "Mentat_store.Mutation.append: revert settled events append through \
-     append_revert_settled") (fun () ->
+    (Invalid_argument
+       "Mentat_store.Mutation.append: revert settled events append through \
+        append_revert_settled") (fun () ->
       Store.Mutation.append mutation ~fence:guard ~document
         [
           Mutation.Event.revert_settled
@@ -1718,8 +1727,9 @@ let revert_settlement_derivation_is_enforced () =
     Mutation.Event.revert_settled (Mutation.Revert.settle_ambiguous started)
   in
   raises
-    (Invalid_argument "Mentat_store.Mutation.append_revert_settled: event does not derive from \
-     outcome") (fun () ->
+    (Invalid_argument
+       "Mentat_store.Mutation.append_revert_settled: event does not derive \
+        from outcome") (fun () ->
       Store.Mutation.append_revert_settled mutation ~fence:guard ~document
         ~started ~outcome ambiguous_event);
   ok_mutation "the crash-recovery settlement carries no outcome"
@@ -2865,8 +2875,9 @@ let fork_child_blob_survives_parent_removal () =
   in
   (* [remove] takes the run fence itself, so release the parent's guard. *)
   Store.Run_lock.release guard;
-  ignore (require_ok ~msg:"the parent is physically removed"
-    (Store.Session.remove store document));
+  ignore
+    (require_ok ~msg:"the parent is physically removed"
+       (Store.Session.remove store document));
   is_true ~msg:"the parent's blobs are reclaimed with it"
     (Option.is_none (blob_file_with base id "owned\n"));
   is_true ~msg:"the child's own blob copy survives"
@@ -2952,8 +2963,8 @@ let capture_load_of table rel =
 
 let observed_testable =
   Testable.structural ~pp:(fun ppf -> function
-      | Capture.File bytes -> Format.fprintf ppf "File %S" bytes
-      | Capture.Absent -> Format.fprintf ppf "Absent")
+    | Capture.File bytes -> Format.fprintf ppf "File %S" bytes
+    | Capture.Absent -> Format.fprintf ppf "Absent")
 
 let read_observed label store reference rel =
   match Capture.read store ~reference rel with

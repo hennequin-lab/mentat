@@ -381,4 +381,3 @@ let%expect_test
     SIGKILL sent after ignored SIGTERM: true
     child reaped: true
     PTY resources closed: true |}]
-

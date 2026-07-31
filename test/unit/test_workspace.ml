@@ -55,7 +55,8 @@ let syntax_error = Testable.make ~pp:Syntax.Error.pp ~equal:Syntax.Error.equal
 let ws_error = Testable.make ~pp:Workspace.Error.pp ~equal:Workspace.Error.equal
 
 let resolve_error =
-  Testable.make ~pp:Workspace.Resolve_error.pp ~equal:Workspace.Resolve_error.equal
+  Testable.make ~pp:Workspace.Resolve_error.pp
+    ~equal:Workspace.Resolve_error.equal
 
 let root_value = Testable.make ~pp:Workspace.Root.pp ~equal:Workspace.Root.equal
 let path_value = Testable.make ~pp:Workspace.Path.pp ~equal:Workspace.Path.equal
@@ -78,7 +79,9 @@ let component_char =
     ]
 
 let component_gen = Gen.string_of ~size:(Gen.int_range 1 5) component_char
-let components_gen min max = Gen.list ~size:(Gen.int_range min max) component_gen
+
+let components_gen min max =
+  Gen.list ~size:(Gen.int_range min max) component_gen
 
 let rel_of_components = function
   | [] -> Syntax.Rel.root
@@ -97,7 +100,6 @@ let path_gen =
         (components_gen 0 5))
 
 let path_value_gen = Gen.with_pp Workspace.Path.pp path_gen
-
 let small_rel_gen = Gen.map rel_of_components (components_gen 0 3)
 
 (* Path pairs biased to hit equal, same-root descendant, and disjoint, so the
@@ -522,8 +524,7 @@ let workspace =
           equal (option root_value) ~msg:"root_by_key rebinds an admitted key"
             (Some vendor)
             (Workspace.root_by_key workspace (Workspace.Root.key vendor));
-          equal (option pass) ~msg:"root_by_key on an unknown key is None"
-            None
+          equal (option pass) ~msg:"root_by_key on an unknown key is None" None
             (Workspace.root_by_key workspace
                (Workspace.Root.Key.of_string_exn "absent")));
       test "root_path is the primary, independent of cwd" (fun () ->
@@ -588,8 +589,7 @@ let workspace =
             (Workspace.equal w w_reprimaried);
           is_false ~msg:"cwd participates" (Workspace.equal w w_recwd));
       prop "duplicate roots are canonicalized to the admitted set"
-        nested_case_gen
-        (fun case ->
+        nested_case_gen (fun case ->
           let workspace =
             ok_ws
               (Workspace.make ~primary:case.base
@@ -786,7 +786,8 @@ let bindings =
           let workspace = Workspace.single (make_root "/workspace") in
           let foreign_key = Workspace.Root.Key.of_string_exn "not-admitted" in
           let path = Workspace.Path.make ~root_key:foreign_key (rel "a.ml") in
-          equal (result pass resolve_error)
+          equal
+            (result pass resolve_error)
             ~msg:"carries the exact foreign key"
             (Error (Workspace.Resolve_error.Unknown_root foreign_key))
             (Workspace.to_abs workspace path));
@@ -881,8 +882,7 @@ let path_wire =
             (Json.equal
                (path_object "the-key" "src/a.ml")
                (json_encode Workspace.Path.jsont path));
-          equal (result path_value pass) ~msg:"decode inverts encode"
-            (Ok path)
+          equal (result path_value pass) ~msg:"decode inverts encode" (Ok path)
             (Json.decode Workspace.Path.jsont
                (path_object "the-key" "src/a.ml")));
       prop "round-trips through jsont" keyed_path_gen (fun path ->
@@ -1030,17 +1030,17 @@ let notices =
               ~severity:Workspace.Notice.Severity.Info ~title ?body ~key ()
           in
           raises ~msg:"empty source"
-            (Invalid_argument "Mentat_workspace.Notice.make: source is empty") (fun () ->
-              make ~source:"" ());
+            (Invalid_argument "Mentat_workspace.Notice.make: source is empty")
+            (fun () -> make ~source:"" ());
           raises ~msg:"empty title"
-            (Invalid_argument "Mentat_workspace.Notice.make: title is empty") (fun () ->
-              make ~title:"" ());
+            (Invalid_argument "Mentat_workspace.Notice.make: title is empty")
+            (fun () -> make ~title:"" ());
           raises ~msg:"empty key"
-            (Invalid_argument "Mentat_workspace.Notice.make: key is empty") (fun () ->
-              make ~key:"" ());
+            (Invalid_argument "Mentat_workspace.Notice.make: key is empty")
+            (fun () -> make ~key:"" ());
           raises ~msg:"empty present body"
-            (Invalid_argument "Mentat_workspace.Notice.make: body is empty") (fun () ->
-              make ~body:"" ());
+            (Invalid_argument "Mentat_workspace.Notice.make: body is empty")
+            (fun () -> make ~body:"" ());
           equal (option string) ~msg:"an absent body stays valid" None
             (Workspace.Notice.body (make ())));
       test "equality covers every field; pp renders diagnostics" (fun () ->

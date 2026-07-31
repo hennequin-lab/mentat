@@ -1325,10 +1325,8 @@ let%expect_test "later joined ignore rules have the final say" =
   check earlier "vendor";
   check (Glob.Ignore.join earlier later) "vendor";
   check Glob.Ignore.empty "vendor";
-  [%expect
-    {|
+  [%expect {|
     vendor -> true
     vendor -> false
     vendor -> false
     |}]
-

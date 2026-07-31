@@ -139,4 +139,3 @@ let%expect_test "an unknown slash command is a literal prompt" =
     23 | ────────────────────────────────────────────────────────────────────────────────
     24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…
     |}]
-

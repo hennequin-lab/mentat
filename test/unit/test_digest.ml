@@ -96,9 +96,7 @@ let byte_gen =
     ]
 
 let content_gen = Gen.string_of ~size:(Gen.int_range 0 130) byte_gen
-
-let digest =
-  Testable.make ~pp:Mentat_digest.pp ~equal:Mentat_digest.equal
+let digest = Testable.make ~pp:Mentat_digest.pp ~equal:Mentat_digest.equal
 
 let digest_gen =
   Gen.with_pp Mentat_digest.pp (Gen.map Mentat_digest.string content_gen)
@@ -112,8 +110,10 @@ let content_ref_gen =
     (Gen.map Mentat_digest.Content_ref.of_contents content_gen)
 
 let error =
-  Testable.make ~pp:(fun ppf e ->
-      Format.pp_print_string ppf (Mentat_digest.Error.message e)) ~equal:( = )
+  Testable.make
+    ~pp:(fun ppf e ->
+      Format.pp_print_string ppf (Mentat_digest.Error.message e))
+    ~equal:( = )
 
 let key_input_gen =
   Gen.bind (Gen.int_range 0 64) (fun length ->
@@ -362,14 +362,17 @@ let incremental_hashing =
           let ctx = Mentat_digest.Fold.create () in
           Mentat_digest.Fold.add ctx "abc";
           let (_ : Mentat_digest.t) = Mentat_digest.Fold.digest ctx in
-          raises (Invalid_argument "Mentat_digest.Fold.add: context already finalized")
-            (fun () -> Mentat_digest.Fold.add ctx "more"));
+          raises
+            (Invalid_argument
+               "Mentat_digest.Fold.add: context already finalized") (fun () ->
+              Mentat_digest.Fold.add ctx "more"));
       test "digest after digest raises" (fun () ->
           let ctx = Mentat_digest.Fold.create () in
           let (_ : Mentat_digest.t) = Mentat_digest.Fold.digest ctx in
           raises
-            (Invalid_argument "Mentat_digest.Fold.digest: context already finalized") (fun () ->
-              ignore (Mentat_digest.Fold.digest ctx)));
+            (Invalid_argument
+               "Mentat_digest.Fold.digest: context already finalized")
+            (fun () -> ignore (Mentat_digest.Fold.digest ctx)));
     ]
 
 (* Digest equality and order *)
@@ -379,14 +382,16 @@ let digest_order =
     [
       prop "equal and compare are reflexive" digest_gen (fun d ->
           is_true (Mentat_digest.equal d d && Mentat_digest.compare d d = 0));
-      prop "compare = 0 agrees with equal" (Gen.pair digest_gen digest_gen) (fun (a, b) ->
+      prop "compare = 0 agrees with equal" (Gen.pair digest_gen digest_gen)
+        (fun (a, b) ->
           is_true (Mentat_digest.compare a b = 0 = Mentat_digest.equal a b));
-      prop "compare sign is antisymmetric" (Gen.pair digest_gen digest_gen) (fun (a, b) ->
+      prop "compare sign is antisymmetric" (Gen.pair digest_gen digest_gen)
+        (fun (a, b) ->
           is_true
             (sign (Mentat_digest.compare a b)
             = -sign (Mentat_digest.compare b a)));
-      prop "compare is a transitive total order" (Gen.triple digest_gen digest_gen digest_gen)
-        (fun (a, b, c) ->
+      prop "compare is a transitive total order"
+        (Gen.triple digest_gen digest_gen digest_gen) (fun (a, b, c) ->
           match List.sort Mentat_digest.compare [ a; b; c ] with
           | [ x; y; z ] ->
               is_true
@@ -468,11 +473,13 @@ let key_derivation =
             (full_key ~domain:key_domain parts));
       test "rejects a negative length" (fun () ->
           raises
-            (Invalid_argument "Mentat_digest.key: length must be between 0 and 64") (fun () ->
+            (Invalid_argument
+               "Mentat_digest.key: length must be between 0 and 64") (fun () ->
               Mentat_digest.key ~length:(-1) ~domain:key_domain [ "anchor" ]));
       test "rejects a length above 64" (fun () ->
           raises
-            (Invalid_argument "Mentat_digest.key: length must be between 0 and 64") (fun () ->
+            (Invalid_argument
+               "Mentat_digest.key: length must be between 0 and 64") (fun () ->
               Mentat_digest.key ~length:65 ~domain:key_domain [ "anchor" ]));
       test "rejects an empty domain" (fun () ->
           raises (Invalid_argument "Mentat_digest.key: empty domain") (fun () ->
@@ -573,8 +580,8 @@ let derive_derivation =
             (String.take_first length (derive_hex ~domain:key_domain parts))
             (Mentat_digest.key ~length ~domain:key_domain parts));
       test "rejects an empty domain" (fun () ->
-          raises (Invalid_argument "Mentat_digest.derive: empty domain") (fun () ->
-              Mentat_digest.derive ~domain:"" [ "anchor" ]));
+          raises (Invalid_argument "Mentat_digest.derive: empty domain")
+            (fun () -> Mentat_digest.derive ~domain:"" [ "anchor" ]));
     ]
 
 (* Content_ref: projections and matches *)
@@ -707,7 +714,8 @@ let of_token_rejections =
 let of_token_codec =
   group "Content_ref codec: of_token"
     [
-      prop "round-trips to_token over arbitrary content" content_ref_gen (fun r ->
+      prop "round-trips to_token over arbitrary content" content_ref_gen
+        (fun r ->
           equal (result content_ref pass) (Ok r)
             (Mentat_digest.Content_ref.of_token
                (Mentat_digest.Content_ref.to_token r)));
@@ -808,19 +816,20 @@ let content_ref_order =
           is_true
             (Mentat_digest.Content_ref.equal r r
             && Mentat_digest.Content_ref.compare r r = 0));
-      prop "compare = 0 agrees with equal" (Gen.pair content_ref_gen content_ref_gen)
-        (fun (a, b) ->
+      prop "compare = 0 agrees with equal"
+        (Gen.pair content_ref_gen content_ref_gen) (fun (a, b) ->
           is_true
             (Mentat_digest.Content_ref.compare a b
             = 0
             = Mentat_digest.Content_ref.equal a b));
-      prop "compare sign is antisymmetric" (Gen.pair content_ref_gen content_ref_gen)
-        (fun (a, b) ->
+      prop "compare sign is antisymmetric"
+        (Gen.pair content_ref_gen content_ref_gen) (fun (a, b) ->
           is_true
             (sign (Mentat_digest.Content_ref.compare a b)
             = -sign (Mentat_digest.Content_ref.compare b a)));
       prop "compare is a transitive total order"
-        (Gen.triple content_ref_gen content_ref_gen content_ref_gen) (fun (a, b, c) ->
+        (Gen.triple content_ref_gen content_ref_gen content_ref_gen)
+        (fun (a, b, c) ->
           match List.sort Mentat_digest.Content_ref.compare [ a; b; c ] with
           | [ x; y; z ] ->
               is_true

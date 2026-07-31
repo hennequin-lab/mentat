@@ -1148,8 +1148,8 @@ let config_rejects_non_positive_knobs () =
   raises (Invalid_argument "max_exchanges must be positive") (fun () ->
       Agent.Config.make ~model ~continuation_turn_limit:None ~max_exchanges:(-1)
         ());
-  raises (Invalid_argument "continuation_turn_limit must be positive") (fun () ->
-      Agent.Config.make ~model ~continuation_turn_limit:(Some 0) ())
+  raises (Invalid_argument "continuation_turn_limit must be positive")
+    (fun () -> Agent.Config.make ~model ~continuation_turn_limit:(Some 0) ())
 
 let admission_depends_on_the_continuation_limit_scalar () =
   let identity = Sandbox.identity Sandbox.direct in

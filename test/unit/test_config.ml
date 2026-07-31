@@ -54,7 +54,8 @@ let source = Testable.make ~pp:C.Source.pp ~equal:source_equal
 let mode_t = Testable.make ~pp:C.Mode.pp ~equal:C.Mode.equal
 
 let unattended_t =
-  Testable.make ~pp:Mentat_permission.Unattended.pp ~equal:Mentat_permission.Unattended.equal
+  Testable.make ~pp:Mentat_permission.Unattended.pp
+    ~equal:Mentat_permission.Unattended.equal
 
 (* Distinct constant rules for precedence and duplicate-id examples. *)
 let rule_a = Rule.deny_all
@@ -155,7 +156,6 @@ let selector_gen =
   Gen.bind alpha (fun p -> Gen.map (fun m -> p ^ "/" ^ m) alpha)
 
 let opt g = Gen.one_of [ Gen.pure None; Gen.map Option.some g ]
-
 
 (* The precedence property draws (user, override) scenarios with an EXPLICIT
    distribution: 40% unconfigured (both layers absent), 60% configured split
@@ -728,7 +728,8 @@ let typed_surface =
               | Ok config -> config
               | Error error -> failf "decode: %s" (C.Error.message error)
             in
-            ignore (require_some ~msg:"typed JSON round-trip" (C.find field decoded));
+            ignore
+              (require_some ~msg:"typed JSON round-trip" (C.find field decoded));
             equal (option string) ~msg:"JSON spelling round-trip" (Some raw)
               (C.text field decoded)
           in
@@ -810,13 +811,13 @@ let precedence =
                 (C.Resolved.text C.Field.compaction_auto r)
           | None -> failf "expected a default origin");
           (* unconfigured without a default: no origin, no value *)
-          equal (option pass) ~msg:"no origin for an unconfigured no-default field"
-            None
+          equal (option pass)
+            ~msg:"no origin for an unconfigured no-default field" None
             (C.Resolved.origin C.Field.sandbox_mode r);
-          equal (option pass) ~msg:"configured is None"
-            None
+          equal (option pass) ~msg:"configured is None" None
             (C.Resolved.configured C.Field.sandbox_mode r);
-          equal (option pass) ~msg:"text is None" None (C.Resolved.text C.Field.sandbox_mode r));
+          equal (option pass) ~msg:"text is None" None
+            (C.Resolved.text C.Field.sandbox_mode r));
       test "permission.rules groups follow first-match precedence" (fun () ->
           let user_doc = C.set_permission_rules [ rule_a ] C.empty in
           let extra_doc = C.set_permission_rules [ rule_b ] C.empty in
@@ -862,12 +863,12 @@ let precedence =
             (Option.is_some (C.Resolved.configured C.Field.model r));
           match expected with
           | None ->
-              equal (option pass) ~msg:"no origin when unconfigured"
-                None
+              equal (option pass) ~msg:"no origin when unconfigured" None
                 (C.Resolved.origin C.Field.model r)
           | Some _ ->
-              ignore (require_some ~msg:"origin when configured"
-                (C.Resolved.origin C.Field.model r)));
+              ignore
+                (require_some ~msg:"origin when configured"
+                   (C.Resolved.origin C.Field.model r)));
     ]
 
 (* 5. Workspace sanitization / trust gating. *)
@@ -903,8 +904,8 @@ let workspace =
           equal (option int) ~msg:"widening budget is clamped to the user value"
             (Some 50)
             (C.Resolved.configured C.Field.run_max_steps r);
-          equal (option pass) ~msg:"non-allowlist key does not configure the value"
-            None
+          equal (option pass)
+            ~msg:"non-allowlist key does not configure the value" None
             (C.Resolved.configured C.Field.tui_thinking r);
           equal (option string) ~msg:"stripped key falls back to its default"
             (Some "true")
@@ -1324,8 +1325,8 @@ let edit_planning =
                | Ok C.Plan.Unchanged -> ()
                | Ok (C.Plan.Write b) -> failf "expected Unchanged, got %s" b
                | Error e -> failf "plan: %s" (C.Error.message e));
-           prop "any Write re-parses to f's output" (Gen.pair sample_gen selector_gen)
-             (fun (sample, fresh) ->
+           prop "any Write re-parses to f's output"
+             (Gen.pair sample_gen selector_gen) (fun (sample, fresh) ->
                let original = original_of sample in
                let f d = C.set_text C.Field.model fresh d in
                match C.plan ~source:"config" ~original ~f with
@@ -1696,7 +1697,8 @@ let rule_row_json ~id ~rule ~source =
   jo [ ("id", js id); ("rule", rule_json rule); ("source", source_json source) ]
 
 let permission_rule_row =
-  Testable.make ~pp:C.Resolved.View.Permission_rule.pp ~equal:C.Resolved.View.Permission_rule.equal
+  Testable.make ~pp:C.Resolved.View.Permission_rule.pp
+    ~equal:C.Resolved.View.Permission_rule.equal
 
 let rule_row_decode_rejected json =
   Result.is_error (Jsont.Json.decode C.Resolved.View.Permission_rule.jsont json)

@@ -1077,4 +1077,3 @@ let%expect_test "declaring an objective is refused while a goal is live" =
     23 | ────────────────────────────────────────────────────────────────────────────────
     24 |   a goal is already active; edit it from /goal
     |}]
-

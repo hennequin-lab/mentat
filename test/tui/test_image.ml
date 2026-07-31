@@ -292,4 +292,3 @@ let%expect_test "a clipboard image paste attaches" =
     23 | ────────────────────────────────────────────────────────────────────────────────
     24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt… · ! full access ? for …
     |}]
-

@@ -120,4 +120,3 @@ let%expect_test "the remapped chord opens history search" =
     23 | ────────────────────────────────────────────────────────────────────────────────
     24 |   ↵ insert · esc cancel · type to search                             ⌕ history
     |}]
-

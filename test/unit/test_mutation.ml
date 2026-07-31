@@ -216,12 +216,16 @@ let checkpoint_id_value =
   Testable.make ~pp:M.Checkpoint.Id.pp ~equal:M.Checkpoint.Id.equal
 
 let started_value =
-  Testable.make ~pp:(fun ppf (s : M.Revert.Started.t) ->
-      Format.fprintf ppf "started(%a)" M.Revert.Id.pp s.M.Revert.Started.id) ~equal:M.Revert.Started.equal
+  Testable.make
+    ~pp:(fun ppf (s : M.Revert.Started.t) ->
+      Format.fprintf ppf "started(%a)" M.Revert.Id.pp s.M.Revert.Started.id)
+    ~equal:M.Revert.Started.equal
 
 let settled_value =
-  Testable.make ~pp:(fun ppf (s : M.Revert.Settled.t) ->
-      Format.fprintf ppf "settled(%a)" M.Revert.Id.pp s.M.Revert.Settled.revert) ~equal:M.Revert.Settled.equal
+  Testable.make
+    ~pp:(fun ppf (s : M.Revert.Settled.t) ->
+      Format.fprintf ppf "settled(%a)" M.Revert.Id.pp s.M.Revert.Settled.revert)
+    ~equal:M.Revert.Settled.equal
 
 let net_entry_equal (a : M.Change.Net.entry) (b : M.Change.Net.entry) =
   W.Path.equal a.M.Change.Net.path b.M.Change.Net.path
@@ -231,10 +235,12 @@ let net_entry_equal (a : M.Change.Net.entry) (b : M.Change.Net.entry) =
   && List.equal M.Change.Id.equal a.M.Change.Net.sources b.M.Change.Net.sources
 
 let net_entry_value =
-  Testable.make ~pp:(fun ppf (e : M.Change.Net.entry) ->
+  Testable.make
+    ~pp:(fun ppf (e : M.Change.Net.entry) ->
       Format.fprintf ppf "net(%a, %a -> %a, contiguous=%b)" W.Path.pp
         e.M.Change.Net.path M.Image.pp e.M.Change.Net.before M.Image.pp
-        e.M.Change.Net.after e.M.Change.Net.contiguous) ~equal:net_entry_equal
+        e.M.Change.Net.after e.M.Change.Net.contiguous)
+    ~equal:net_entry_equal
 
 let state_error_value = Testable.make ~pp:M.State.Error.pp ~equal:( = )
 
@@ -839,12 +845,12 @@ let fold_group =
           let e1 = base_history ~checkpoint:(M.Checkpoint.id cp) () in
           let st = state_exn [ M.Event.checkpoint cp; e1 ] in
           equal
-            (option (Testable.make ~pp:M.Checkpoint.pp ~equal:M.Checkpoint.equal))
+            (option
+               (Testable.make ~pp:M.Checkpoint.pp ~equal:M.Checkpoint.equal))
             (Some cp)
             (M.State.checkpoint_at st (M.Checkpoint.boundary cp));
           (* An uncaptured boundary has no recorded capture. *)
-          equal (option pass)
-            None
+          equal (option pass) None
             (M.State.checkpoint_at st (M.Checkpoint.After_recovery (turn "t1"))));
       test "a settlement with no prior start is unmatched" (fun () ->
           let st = state_exn [ base_history () ] in
@@ -999,7 +1005,8 @@ let fold_group =
           | Some found ->
               equal change_id_value (M.Change.id row) (M.Change.id found)
           | None -> fail "a recorded change must resolve by id");
-          equal (option pass) None (M.State.change st (M.Change.Id.of_string "no-such-change")));
+          equal (option pass) None
+            (M.State.change st (M.Change.Id.of_string "no-such-change")));
       test "observed paths merge and sort across windows of one claim"
         (fun () ->
           let st =
@@ -2271,7 +2278,8 @@ let preparation_group =
              p1 is untouched by the plan, and p2 is contiguous, so no consent
              is frozen at all — and the started invariant (override paths are
              target paths) holds. *)
-          equal (option pass) None (M.Revert.Plan.started plan).M.Revert.Started.override);
+          equal (option pass) None
+            (M.Revert.Plan.started plan).M.Revert.Started.override);
       test "evidence refuses duplicate reads and mismatched blob bytes"
         (fun () ->
           expect_invalid_arg
@@ -3207,10 +3215,12 @@ let codec_group =
 (* Netted display diff (Diff.compute). *)
 
 let operation_value =
-  Testable.make ~pp:(fun ppf -> function
+  Testable.make
+    ~pp:(fun ppf -> function
       | `Added -> Format.pp_print_string ppf "Added"
       | `Deleted -> Format.pp_print_string ppf "Deleted"
-      | `Modified -> Format.pp_print_string ppf "Modified") ~equal:( = )
+      | `Modified -> Format.pp_print_string ppf "Modified")
+    ~equal:( = )
 
 (* A blob reader over known texts: content-addressed, so a reference resolves to
    the text whose bytes it names. Bytes not in [texts] resolve to [None] — the

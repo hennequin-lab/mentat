@@ -36,6 +36,7 @@ let () =
           (List.map
              (fun (label, transcript) ->
                bench label (fun () ->
-                   ignore (T.view ~palette:Fixture.palette transcript : _ Mosaic.t)))
+                   ignore
+                     (T.view ~palette:Fixture.palette transcript : _ Mosaic.t)))
              transcripts);
       ]

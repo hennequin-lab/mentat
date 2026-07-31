@@ -1165,4 +1165,3 @@ let%expect_test "constructor rejects an empty immutable program prefix" =
     {|
     diagnostic: Ocaml.Find_definitions.make: program prefix must not be empty
     raised: true invocations: 0 |}]
-

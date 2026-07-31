@@ -1980,4 +1980,3 @@ let%expect_test "a staged pre-session selection seals the first turn" =
     23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     24 |   ! not logged in · /login · ~/mentat-tui-model-staged-… · anthropic/claude-sonnet-4-5 h… · ! full access ? for short…
     |}]
-

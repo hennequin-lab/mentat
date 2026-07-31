@@ -180,4 +180,3 @@ let%expect_test "a discarded draft never seeds the next launch" =
     Pty.wait_exit terminal );
   standing_draft ();
   [%expect {| no standing draft |}]
-

@@ -408,4 +408,3 @@ let%expect_test "lifecycle commands guard the home stage without a session" =
 22 |
 23 |
 24 |   no session to rename|}]
-

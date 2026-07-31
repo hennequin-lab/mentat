@@ -229,5 +229,3 @@
  (alias runtest)
  (action
   (run %{exe:bench_poll_scaling.exe})))
-
-

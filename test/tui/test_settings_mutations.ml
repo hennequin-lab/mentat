@@ -394,4 +394,3 @@ let%expect_test
     23 | ────────────────────────────────────────────────────────────────────────────────────────────────────
     24 |   ! not logged in · /login · ~/mentat-tui-settings-rev… · openai/gpt-… · ! full access ? for shor…
     |}]
-

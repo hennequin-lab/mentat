@@ -2078,4 +2078,3 @@ let%expect_test "a local shell completion is stale after session replacement" =
     23 | ────────────────────────────────────────────────────────────────────────────────
     24 |   ! not logged in · /login · ~/mentat-tui… · openai/gpt… · ! full access ? fo…
     |}]
-

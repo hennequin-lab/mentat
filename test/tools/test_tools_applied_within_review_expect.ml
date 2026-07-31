@@ -269,4 +269,3 @@ let%expect_test "write tools apply only paths their permissions declared" =
     reviewed: added.txt, movable.txt, moved.txt, poem.txt, stale.txt
     applied: added.txt, movable.txt, moved.txt, poem.txt, stale.txt
     applied within review: true |}]
-

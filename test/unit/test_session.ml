@@ -183,12 +183,15 @@ let metrics_value =
   Testable.make ~pp:Session.Metrics.pp ~equal:Session.Metrics.equal
 
 let prepared_value =
-  Testable.make ~pp:(fun ppf p ->
+  Testable.make
+    ~pp:(fun ppf p ->
       Format.fprintf ppf "prepared(%s, %s)" (Tool.Prepared.tool p)
-        (Tool.Prepared.description p)) ~equal:Tool.Prepared.equal
+        (Tool.Prepared.description p))
+    ~equal:Tool.Prepared.equal
 
 let rule_value =
-  Testable.make ~pp:Permission.Policy.Rule.pp ~equal:Permission.Policy.Rule.equal
+  Testable.make ~pp:Permission.Policy.Rule.pp
+    ~equal:Permission.Policy.Rule.equal
 
 let resolve_error_value =
   Testable.make ~pp:Session.Decision.Resolve_error.pp ~equal:( = )
@@ -1062,8 +1065,7 @@ let ids_group =
           assert_decode_error "turn id decode" Session.Turn.Id.jsont
             (Json.string ""));
       prop "claim id derivation is deterministic over its inputs"
-        (Gen.triple ident_gen ident_gen ident_gen)
-        (fun (turn, call_id, seed) ->
+        (Gen.triple ident_gen ident_gen ident_gen) (fun (turn, call_id, seed) ->
           let t = turn_id turn in
           let a = claim ~seed t and b = claim ~seed t in
           is_true ~msg:"provider ids agree"
@@ -1332,7 +1334,8 @@ let event_codec_group =
                 (decode Event.jsont (encode Event.jsont event)))
             events);
       prop "generated algebraic events round-trip through jsont"
-        (Gen.with_pp (Testable.pp event_value) event_gen) (fun event ->
+        (Gen.with_pp (Testable.pp event_value) event_gen)
+        (fun event ->
           equal event_value ~msg:"round-trip" event
             (decode Event.jsont (encode Event.jsont event)));
       test "unknown event tags fail loudly, including old wire shapes"
@@ -2559,7 +2562,8 @@ let staged_group =
           let prepared = prepared_payload "alpha" in
           equal
             (list
-               (Testable.make ~pp:Permission.Request.pp ~equal:Permission.Request.equal))
+               (Testable.make ~pp:Permission.Request.pp
+                  ~equal:Permission.Request.equal))
             ~msg:"final requests come from the plan"
             [ request_for "alpha" ]
             (Tool.Prepared.requests prepared));
@@ -2696,11 +2700,12 @@ let decision_group =
                { index = 0; count = 0 })
             free_question ~call ~by:Session.Principal.local_user
             (Session.Decision.Answer.Question (Session.Question.Answer.choice 0));
-          ignore (require_ok ~msg:"a valid choice resolves"
-            (Session.Decision.resolve with_choices ~call
-               ~by:Session.Principal.local_user
-               (Session.Decision.Answer.Question
-                  (Session.Question.Answer.choice 1)))));
+          ignore
+            (require_ok ~msg:"a valid choice resolves"
+               (Session.Decision.resolve with_choices ~call
+                  ~by:Session.Principal.local_user
+                  (Session.Decision.Answer.Question
+                     (Session.Question.Answer.choice 1)))));
       test "an unattended policy principal may only deny a permission"
         (fun () ->
           let call = tool_call () in
@@ -3077,18 +3082,25 @@ let decision_group =
           assert_decode_error "free-string principal" Session.Principal.jsont
             (Json.string "remote_reviewer"));
       test "question and plan constructors validate their shapes" (fun () ->
-          ignore (require_error ~msg:"empty prompt" (Session.Question.make ~prompt:"" ()));
-          ignore (require_error ~msg:"empty choice list"
-            (Session.Question.make ~prompt:"Pick" ~choices:[] ()));
-          ignore (require_error ~msg:"empty choice"
-            (Session.Question.make ~prompt:"Pick" ~choices:[ "a"; "" ] ()));
+          ignore
+            (require_error ~msg:"empty prompt"
+               (Session.Question.make ~prompt:"" ()));
+          ignore
+            (require_error ~msg:"empty choice list"
+               (Session.Question.make ~prompt:"Pick" ~choices:[] ()));
+          ignore
+            (require_error ~msg:"empty choice"
+               (Session.Question.make ~prompt:"Pick" ~choices:[ "a"; "" ] ()));
           expect_invalid_arg "negative choice index" (fun () ->
               Session.Question.Answer.choice (-1));
           expect_invalid_arg "empty free answer" (fun () ->
               Session.Question.Answer.free "");
-          ignore (require_error ~msg:"empty plan body" (Session.Plan.make ~body:"" ()));
-          ignore (require_error ~msg:"empty plan title"
-            (Session.Plan.make ~title:"" ~body:"1. Go" ()));
+          ignore
+            (require_error ~msg:"empty plan body"
+               (Session.Plan.make ~body:"" ()));
+          ignore
+            (require_error ~msg:"empty plan title"
+               (Session.Plan.make ~title:"" ~body:"1. Go" ()));
           expect_invalid_arg "empty revise feedback" (fun () ->
               Session.Plan.Answer.revise ""));
     ]
@@ -4753,7 +4765,8 @@ let document_group =
           let archived = ok_or "archive" (Session.archive session) in
           is_true ~msg:"archived"
             (Session.Metadata.is_archived (Session.metadata archived));
-          ignore (require_ok ~msg:"archive is idempotent" (Session.archive archived));
+          ignore
+            (require_ok ~msg:"archive is idempotent" (Session.archive archived));
           let restored = ok_or "restore" (Session.restore archived) in
           is_true ~msg:"restored"
             (Session.Metadata.is_active (Session.metadata restored));
@@ -4762,7 +4775,8 @@ let document_group =
             (Session.restore deleted);
           expect_session_error ~msg:"archive after delete" Session.Error.Deleted
             (Session.archive deleted);
-          ignore (require_ok ~msg:"delete is idempotent" (Session.delete deleted));
+          ignore
+            (require_ok ~msg:"delete is idempotent" (Session.delete deleted));
           let active =
             saved ~id:"session-active" [ Event.turn_started (turn ()) ]
           in
@@ -4910,26 +4924,30 @@ let branch_group =
                   (Session.Queue.Update.enqueued (queue_entry "queued"));
               ]
           in
-          ignore (require_ok ~msg:"queue reset"
-            (reconstruct_branch queue_prefix
-               [ Event.queue_updated Session.Queue.Update.cleared ]));
-          ignore (require_ok ~msg:"goal reset"
-            (reconstruct_branch goal_prefix
-               [
-                 Event.goal_updated
-                   (Session.Goal.Update.pause ~id:(goal_id "goal-1"));
-               ]));
-          ignore (require_ok ~msg:"delegation reset"
-            (reconstruct_branch delegation_prefix
-               [ Event.delegations_detached ]));
-          ignore (require_ok ~msg:"combined reset"
-            (reconstruct_branch all_prefix
-               [
-                 Event.queue_updated Session.Queue.Update.cleared;
-                 Event.goal_updated
-                   (Session.Goal.Update.pause ~id:(goal_id "goal-1"));
-                 Event.delegations_detached;
-               ])));
+          ignore
+            (require_ok ~msg:"queue reset"
+               (reconstruct_branch queue_prefix
+                  [ Event.queue_updated Session.Queue.Update.cleared ]));
+          ignore
+            (require_ok ~msg:"goal reset"
+               (reconstruct_branch goal_prefix
+                  [
+                    Event.goal_updated
+                      (Session.Goal.Update.pause ~id:(goal_id "goal-1"));
+                  ]));
+          ignore
+            (require_ok ~msg:"delegation reset"
+               (reconstruct_branch delegation_prefix
+                  [ Event.delegations_detached ]));
+          ignore
+            (require_ok ~msg:"combined reset"
+               (reconstruct_branch all_prefix
+                  [
+                    Event.queue_updated Session.Queue.Update.cleared;
+                    Event.goal_updated
+                      (Session.Goal.Update.pause ~id:(goal_id "goal-1"));
+                    Event.delegations_detached;
+                  ])));
       test "reconstruction reports the first missing or different reset event"
         (fun () ->
           let queue_prefix =
@@ -5529,7 +5547,8 @@ let document_version_of session =
   | None -> fail "encoded session has no version member"
 
 let content_ref =
-  Testable.make ~pp:Mentat_digest.Content_ref.pp ~equal:Mentat_digest.Content_ref.equal
+  Testable.make ~pp:Mentat_digest.Content_ref.pp
+    ~equal:Mentat_digest.Content_ref.equal
 
 let media_refs_group =
   group "media refs"
@@ -5743,7 +5762,8 @@ let undo_group =
           List.iter
             (fun update ->
               equal
-                (Testable.make ~pp:Session.Undo.Update.pp ~equal:Session.Undo.Update.equal)
+                (Testable.make ~pp:Session.Undo.Update.pp
+                   ~equal:Session.Undo.Update.equal)
                 ~msg:"undo update round-trips" update
                 (decode Session.Undo.Update.jsont
                    (encode Session.Undo.Update.jsont update)))

@@ -21,13 +21,15 @@ let kind_value =
   Testable.make ~pp ~equal:(fun (a : Edit.kind) b -> a = b)
 
 let identity_value =
-  Testable.make ~pp:Mentat_digest.Content_ref.pp ~equal:Mentat_digest.Content_ref.equal
+  Testable.make ~pp:Mentat_digest.Content_ref.pp
+    ~equal:Mentat_digest.Content_ref.equal
 
 let result_entry =
   Testable.make ~pp:Edit.Result.Entry.pp ~equal:Edit.Result.Entry.equal
 
 let phase_value =
-  Testable.make ~pp:Edit.Apply_error.Phase.pp ~equal:Edit.Apply_error.Phase.equal
+  Testable.make ~pp:Edit.Apply_error.Phase.pp
+    ~equal:Edit.Apply_error.Phase.equal
 
 let expect_ok label = function
   | Ok value -> value

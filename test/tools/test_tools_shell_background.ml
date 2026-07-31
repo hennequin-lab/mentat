@@ -443,4 +443,3 @@ let%test "a background command cannot be escalated in v1" =
         (String.includes ~affix:"foreground" message
         && String.includes ~affix:"escalate" message)
   | _ -> fail "a background escalation request must fail with a steer"
-

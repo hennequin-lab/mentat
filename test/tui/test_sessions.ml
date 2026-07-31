@@ -1565,4 +1565,3 @@ let%expect_test "stale listing failure cannot replace the reopened browser" =
     23 |
     24 |   ↵ resume · f fork · r rename · a archive · d delete · / filter · esc back
     |}]
-

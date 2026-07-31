@@ -60,7 +60,9 @@ module Account = Provider.Account
 module Llm = Mentat_llm
 
 let provider_t = Testable.make ~pp:Llm.Provider.pp ~equal:Llm.Provider.equal
-let problem_t = Testable.make ~pp:Account.Problem.pp ~equal:Account.Problem.equal
+
+let problem_t =
+  Testable.make ~pp:Account.Problem.pp ~equal:Account.Problem.equal
 
 (* {2 Helpers} *)
 
@@ -919,7 +921,9 @@ let local_download_remote_not_downloadable () =
 let phantom_provider = Llm.Provider.make "phantom-provider"
 
 let llm_kind =
-  Testable.make ~pp:(fun ppf k -> Format.pp_print_string ppf (Llm.Error.label k)) ~equal:( = )
+  Testable.make
+    ~pp:(fun ppf k -> Format.pp_print_string ppf (Llm.Error.label k))
+    ~equal:( = )
 
 let error_to_llm_total () =
   (* Every Error arm maps onto a provider-boundary error with the kind the .mli

@@ -1334,4 +1334,3 @@ semantic shape: true
 retained value absent at top level: true
 non-presentation fields absent: true
 anchors absent: true|}]
-

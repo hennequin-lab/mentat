@@ -446,18 +446,13 @@ let answer_gen =
 (* Testables. *)
 
 let access_value = Testable.make ~pp:Access.pp ~equal:Access.equal
+let request_value = Testable.make ~pp:Request.pp ~equal:Request.equal
+let item_value = Testable.make ~pp:Request.Item.pp ~equal:Request.Item.equal
 
-let request_value =
-  Testable.make ~pp:Request.pp ~equal:Request.equal
+let change_value =
+  Testable.make ~pp:Request.Change.pp ~equal:Request.Change.equal
 
-let item_value =
-  Testable.make ~pp:Request.Item.pp ~equal:Request.Item.equal
-
-let change_value = Testable.make ~pp:Request.Change.pp ~equal:Request.Change.equal
-
-let rule_value =
-  Testable.make ~pp:Policy.Rule.pp ~equal:Policy.Rule.equal
-
+let rule_value = Testable.make ~pp:Policy.Rule.pp ~equal:Policy.Rule.equal
 let policy_value = Testable.make ~pp:Policy.pp ~equal:Policy.equal
 let answer_value = Testable.make ~pp:Answer.pp ~equal:Answer.equal
 
@@ -504,10 +499,12 @@ let access_constructor_validation () =
 
 let validation_errors_name_the_function_and_constraint () =
   raises ~msg:"shell command error is actionable"
-    (Invalid_argument "Mentat_permission.Access.Command.shell: text must not be empty") (fun () ->
-      ignore (shell ""));
+    (Invalid_argument
+       "Mentat_permission.Access.Command.shell: text must not be empty")
+    (fun () -> ignore (shell ""));
   raises ~msg:"request access error is actionable"
-    (Invalid_argument "Mentat_permission.Request.of_accesses: accesses must not be empty")
+    (Invalid_argument
+       "Mentat_permission.Request.of_accesses: accesses must not be empty")
     (fun () -> ignore (Request.of_accesses []))
 
 let shell_and_exec_have_distinct_keys () =
@@ -613,15 +610,17 @@ let request_constructor_validation () =
 
 let change_validation_and_lookup () =
   raises ~msg:"change diff cannot be empty"
-    (Invalid_argument "Mentat_permission.Request.Change.make: diff must not be empty") (fun () ->
-      Request.Change.make ~diff:"" ());
+    (Invalid_argument
+       "Mentat_permission.Request.Change.make: diff must not be empty")
+    (fun () -> Request.Change.make ~diff:"" ());
   raises_invalid "change additions must be non-negative" (fun () ->
       ignore (Request.Change.make ~additions:(-1) ()));
   raises_invalid "change removals must be non-negative" (fun () ->
       ignore (Request.Change.make ~removals:(-1) ()));
   raises ~msg:"change needs at least one field"
-    (Invalid_argument "Mentat_permission.Request.Change.make: change must contain at least one \
-     field") (fun () -> Request.Change.make ());
+    (Invalid_argument
+       "Mentat_permission.Request.Change.make: change must contain at least \
+        one field") (fun () -> Request.Change.make ());
   let change = Request.Change.make ~diff:"+x" ~additions:1 ~removals:0 () in
   let later_change =
     Request.Change.make ~diff:"-y\n+z" ~additions:1 ~removals:1 ()
@@ -1559,15 +1558,17 @@ let grants_and_review =
 
 let answer_family_construction_validates () =
   raises ~msg:"empty family rules rejected"
-    (Invalid_argument "Mentat_permission.Answer.family: rules must not be empty") (fun () ->
-      ignore (Answer.family ~lifetime:Answer.User ~rules:[]));
+    (Invalid_argument "Mentat_permission.Answer.family: rules must not be empty")
+    (fun () -> ignore (Answer.family ~lifetime:Answer.User ~rules:[]));
   raises ~msg:"non-allow family rule rejected"
-    (Invalid_argument "Mentat_permission.Answer.family: rules must all allow") (fun () ->
+    (Invalid_argument "Mentat_permission.Answer.family: rules must all allow")
+    (fun () ->
       ignore
         (Answer.family ~lifetime:Answer.User
            ~rules:[ Policy.Rule.deny (Policy.Match.kind `Read) ]));
   raises ~msg:"duplicate family rules rejected"
-    (Invalid_argument "Mentat_permission.Answer.family: rules must not contain duplicates")
+    (Invalid_argument
+       "Mentat_permission.Answer.family: rules must not contain duplicates")
     (fun () ->
       let r = Policy.Rule.allow (Policy.Match.kind `Read) in
       ignore (Answer.family ~lifetime:Answer.Conversation ~rules:[ r; r ]));
@@ -1937,7 +1938,9 @@ let json_rejections () =
   ]
 
 let review_value =
-  Testable.make ~pp:(fun ppf _ -> Format.pp_print_string ppf "<review>") ~equal:Policy.Review.equal
+  Testable.make
+    ~pp:(fun ppf _ -> Format.pp_print_string ppf "<review>")
+    ~equal:Policy.Review.equal
 
 let review_json_roundtrips () =
   let read = workspace_read "README.md" in
@@ -2044,8 +2047,7 @@ let codecs =
       prop "policy jsont round-trips generated policies" policy_gen (fun p ->
           equal policy_value p
             (json_decode Policy.jsont (json_encode Policy.jsont p)));
-      prop "request jsont round-trips generated requests" request_gen
-        (fun r ->
+      prop "request jsont round-trips generated requests" request_gen (fun r ->
           equal request_value r
             (json_decode Request.jsont (json_encode Request.jsont r)));
       (* Obligation C: security semantics survive a codec round-trip. A request
@@ -2414,8 +2416,8 @@ let stable_text =
         rule_stable_text_distinguishes_rules;
       test "rule ids are stable digests" rule_ids_are_stable_digests;
       test "rule ids have a validated typed wire codec" rule_id_codec_contract;
-      prop "derived rule ids round-trip through their typed wire codec"
-        rule_gen rule_id_roundtrips_for_generated_rules;
+      prop "derived rule ids round-trip through their typed wire codec" rule_gen
+        rule_id_roundtrips_for_generated_rules;
       test "stable text bytes are pinned" stable_text_bytes_are_pinned;
       test "stable_text is collision resistant"
         stable_text_is_collision_resistant;
@@ -2429,8 +2431,8 @@ let stable_text =
         stable_text_injective_over_generated_rules;
       (* stable_text is a pure function of the value, hence invariant under
          a jsont round-trip (digest input must not drift on re-decode). *)
-      prop "access stable_text is invariant under a jsont round-trip"
-        access_gen (fun a ->
+      prop "access stable_text is invariant under a jsont round-trip" access_gen
+        (fun a ->
           equal string ~msg:"access stable_text stable across round-trip"
             (Access.stable_text a)
             (Access.stable_text

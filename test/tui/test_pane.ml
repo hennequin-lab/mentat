@@ -816,4 +816,3 @@ let%expect_test "a long transcript line never moves the fixed activity column" =
     23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     24 |   ! not logged in · /login · ~/mentat-tui-pad6b29a40 · openai/gpt-5.5 · ! full access                                                                                                                      ? for shortcuts
     |}]
-

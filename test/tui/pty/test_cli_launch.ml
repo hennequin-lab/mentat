@@ -755,4 +755,3 @@ let%expect_test "the live trust gate relayouts after a real terminal resize" =
     |}];
   Pty.send terminal "3";
   Pty.wait_exit terminal
-

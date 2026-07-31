@@ -1231,4 +1231,3 @@ let%expect_test "constructor rejects invalid immutable program prefixes" =
     NUL-raised: true
     invocations: 0
     |}]
-

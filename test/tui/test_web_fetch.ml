@@ -270,4 +270,3 @@ let%expect_test
     29 | ────────────────────────────────────────────────────────────────────────────────────────────
     30 |   ! not logged in · /login · /tmp/mentat-tui-36e36… · openai/gpt-… · ! full access ? for …
     |}]
-

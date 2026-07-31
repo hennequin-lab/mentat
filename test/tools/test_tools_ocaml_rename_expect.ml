@@ -1459,4 +1459,3 @@ let%expect_test "run-stage cancellation never applies" =
     claim applies: 0
     claim observations: 0
     polls=8 main="let target = 42\nlet use = target\n" second="let result = target + target\n" invocations=2 |}]
-

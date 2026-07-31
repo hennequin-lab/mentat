@@ -556,4 +556,3 @@ let%expect_test "Tab cycles pages and the arrow keys never leave a page" =
     11 |
     12 |   ↑↓ move · ←→ change · ↵ apply · tab page · / filter · esc back
     |}]
-

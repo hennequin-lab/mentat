@@ -1239,4 +1239,3 @@ let%expect_test "Unicode truncation is scalar-safe and durable" =
     projection="\206\177\206\178\206\179\n\n[Output omitted 27 Unicode characters.]"
     semantic json={"version":1,"disposition":"fetched","status":200,"bytes":57}
     result roundtrip=true durable_nonempty=true |}]
-

@@ -939,4 +939,3 @@ let%expect_test "a wrapping draft grows the home composer without overlap" =
     23 |
     24 |   ! not logged in · /login · ~/mentat-tui-home-grown-01bb285a · openai/gpt-5.5 medium · ! full access                      ? for shortcuts
     |}]
-

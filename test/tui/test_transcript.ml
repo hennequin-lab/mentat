@@ -322,4 +322,3 @@ let%expect_test "a wide final answer after a tool keeps its marker and gutter" =
     19 | ────────────────────────────────────────────────────
     20 |   ! not logged in · /log… · open… · ! full access
     |}]
-

@@ -1119,8 +1119,9 @@ let lower_argv_enforces_cwd_containment () =
   let sandbox =
     sealed (confined ~reads:[ abs "/work" ] ~writable_roots:[ abs "/work" ] ())
   in
-  ignore (require_ok ~msg:"a cwd inside the read roots is accepted"
-    (Sandbox.lower_argv sandbox ~cwd:(abs "/work/sub") [ "true" ]));
+  ignore
+    (require_ok ~msg:"a cwd inside the read roots is accepted"
+       (Sandbox.lower_argv sandbox ~cwd:(abs "/work/sub") [ "true" ]));
   match Sandbox.lower_argv sandbox ~cwd:(abs "/elsewhere") [ "true" ] with
   | Error error ->
       equal error_value

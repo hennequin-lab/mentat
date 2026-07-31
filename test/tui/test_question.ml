@@ -812,4 +812,3 @@ let%expect_test "custom answers stay out of visible prompt history" =
     23 | ────────────────────────────────────────────────────────────────────────────────
     24 |   ! not logged in · /login · /tmp/mentat-t… · openai/gpt… · ! full access ? f…
     |}]
-

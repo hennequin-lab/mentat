@@ -1354,4 +1354,3 @@ let%expect_test
     claim observations: 0
     disk: "line1\nLINE2\ncompanion\nline3\n"
     disk: <missing> |}]
-

@@ -1331,4 +1331,3 @@ let%expect_test
     text: "OCaml references for logical/main.ml:1:4\nscope: project\nreferences: 0 returned of 4, 1 stale skipped, 1 duplicate skipped, offset 99, status complete\nindex_status: unknown\nbackend: ocamlmerlin\nstale note: rebuild the project index, for Dune usually `dune build @ocaml-index`."
     semantic: version=1 references=2 files=2 truncated=false
     invocations: 3 |}]
-

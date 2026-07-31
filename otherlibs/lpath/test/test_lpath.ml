@@ -104,7 +104,8 @@ let fix_component s =
   else s
 
 let component_gen =
-  Gen.map fix_component (Gen.string_of ~size:(Gen.int_range 1 6) component_byte_gen)
+  Gen.map fix_component
+    (Gen.string_of ~size:(Gen.int_range 1 6) component_byte_gen)
 
 let rel_components_gen = Gen.list ~size:(Gen.int_range 0 6) component_gen
 
@@ -139,7 +140,8 @@ let raw_path_input_gen =
     (fun segs ->
       Gen.map
         (fun prefix -> prefix ^ String.concat "/" segs)
-        (Gen.of_list [ ""; "./"; "../"; "../../"; "/"; "//"; "///"; "\\"; "C:" ]))
+        (Gen.of_list
+           [ ""; "./"; "../"; "../../"; "/"; "//"; "///"; "\\"; "C:" ]))
 
 (* Arbitrary short byte strings for the component-grammar oracle, drawing the
    structurally significant bytes (dot, colon, slash, backslash, NUL) and high
@@ -347,7 +349,8 @@ let component_grammar =
           cover ~label:"invalid" ~at_least:15.0 (not (ref_is_component c));
           equal bool ~msg:(String.escaped c) (ref_is_component c)
             (Lpath.Rel.is_component c));
-      prop "l5_rel_add_component" (Gen.pair rel_gen grammar_string_gen) (fun (p, c) ->
+      prop "l5_rel_add_component" (Gen.pair rel_gen grammar_string_gen)
+        (fun (p, c) ->
           match Lpath.Rel.add_component p c with
           | Ok q ->
               is_true ~msg:(String.escaped c) (Lpath.Rel.is_component c);
@@ -358,7 +361,8 @@ let component_grammar =
               is_false ~msg:(String.escaped c) (Lpath.Rel.is_component c);
               equal error ~msg:(String.escaped c)
                 (Lpath.Error.Malformed_component c) e);
-      prop "l5_abs_add_component" (Gen.pair abs_gen grammar_string_gen) (fun (p, c) ->
+      prop "l5_abs_add_component" (Gen.pair abs_gen grammar_string_gen)
+        (fun (p, c) ->
           match Lpath.Abs.add_component p c with
           | Ok q ->
               is_true ~msg:(String.escaped c) (Lpath.Rel.is_component c);
@@ -403,7 +407,8 @@ let drive_prefix_boundary =
           equal (result string error) ~msg:"1:a" (Ok "1:a") (rel_string "1:a");
           equal (result string error) ~msg:"ab:cd" (Ok "ab:cd")
             (rel_string "ab:cd"));
-      prop "drive_prefix_only_ascii_letter_colon" drive_case_gen (fun (f, tail) ->
+      prop "drive_prefix_only_ascii_letter_colon" drive_case_gen
+        (fun (f, tail) ->
           let c = Printf.sprintf "%c:%s" f tail in
           cover ~label:"letter (drive, invalid)" ~at_least:20.0
             (is_ascii_letter f);
@@ -481,8 +486,10 @@ let relative_paths =
           is_true ~msg:"is_root" (Lpath.Rel.is_root Lpath.Rel.root);
           equal (list string) ~msg:"components" []
             (Lpath.Rel.components Lpath.Rel.root);
-          equal (option pass) ~msg:"parent" None (Lpath.Rel.parent Lpath.Rel.root);
-          equal (option pass) ~msg:"basename" None (Lpath.Rel.basename Lpath.Rel.root));
+          equal (option pass) ~msg:"parent" None
+            (Lpath.Rel.parent Lpath.Rel.root);
+          equal (option pass) ~msg:"basename" None
+            (Lpath.Rel.basename Lpath.Rel.root));
       test "components and accessors" (fun () ->
           equal (list string) ~msg:"components" [ "a"; "b" ]
             (Lpath.Rel.components (rel "a/b"));
@@ -548,8 +555,10 @@ let absolute_paths =
           is_true ~msg:"is_root" (Lpath.Abs.is_root Lpath.Abs.root);
           equal (list string) ~msg:"components" []
             (Lpath.Abs.components Lpath.Abs.root);
-          equal (option pass) ~msg:"parent" None (Lpath.Abs.parent Lpath.Abs.root);
-          equal (option pass) ~msg:"basename" None (Lpath.Abs.basename Lpath.Abs.root));
+          equal (option pass) ~msg:"parent" None
+            (Lpath.Abs.parent Lpath.Abs.root);
+          equal (option pass) ~msg:"basename" None
+            (Lpath.Abs.basename Lpath.Abs.root));
       test "components and accessors" (fun () ->
           equal (list string) ~msg:"components" [ "a"; "b" ]
             (Lpath.Abs.components (abs "/a/b"));
@@ -585,7 +594,8 @@ let absolute_paths =
                   ("" :: cs) (segments text);
               equal (result abs_path error) ~msg:"reparse" (Ok p)
                 (Lpath.Abs.of_string text));
-      prop "raw_absolute_parse_preserves_invariants" raw_path_input_gen (fun input ->
+      prop "raw_absolute_parse_preserves_invariants" raw_path_input_gen
+        (fun input ->
           match Lpath.Abs.of_string input with
           | Error _ -> ()
           | Ok p -> abs_reparses p);
@@ -832,8 +842,8 @@ let resolve_dispatch =
          non-slash-rooted input ([./a], [a/../b], deep [..] climbs) is the
          interesting relative surface, and resolve_any must still delegate to
          resolve there. *)
-      prop "l20_resolve_any_agrees_on_raw_relative" (Gen.pair abs_gen raw_path_input_gen)
-        (fun (base, s) ->
+      prop "l20_resolve_any_agrees_on_raw_relative"
+        (Gen.pair abs_gen raw_path_input_gen) (fun (base, s) ->
           if String.starts_with ~prefix:"/" s then ()
           else
             equal (result abs_path error)
@@ -921,12 +931,14 @@ let error_classification =
             | _ -> false));
       test "t6_rel_of_string_exn_message" (fun () ->
           raises
-            (Invalid_argument "Lpath.Rel.of_string_exn \"../a\": path escapes root") (fun () ->
+            (Invalid_argument
+               "Lpath.Rel.of_string_exn \"../a\": path escapes root") (fun () ->
               Lpath.Rel.of_string_exn "../a"));
       test "t6_abs_of_string_exn_message" (fun () ->
           raises
-            (Invalid_argument "Lpath.Abs.of_string_exn \"a\": path must be absolute") (fun () ->
-              Lpath.Abs.of_string_exn "a"));
+            (Invalid_argument
+               "Lpath.Abs.of_string_exn \"a\": path must be absolute")
+            (fun () -> Lpath.Abs.of_string_exn "a"));
       test "malformed message names the rejected component" (fun () ->
           match Lpath.Rel.add_component (rel "dir") "C:temp" with
           | Ok p ->
@@ -1024,10 +1036,12 @@ let pretty_printers =
   group "pretty printers"
     [
       prop "rel pp is to_string" rel_gen (fun p ->
-          equal string (Format.asprintf "%a" Lpath.Rel.pp p)
+          equal string
+            (Format.asprintf "%a" Lpath.Rel.pp p)
             (Lpath.Rel.to_string p));
       prop "abs pp is to_string" abs_gen (fun p ->
-          equal string (Format.asprintf "%a" Lpath.Abs.pp p)
+          equal string
+            (Format.asprintf "%a" Lpath.Abs.pp p)
             (Lpath.Abs.to_string p));
     ]
 

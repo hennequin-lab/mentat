@@ -327,4 +327,3 @@ let%expect_test "a completed board stays visible with its tasks checked" =
     23 | ────────────────────────────────────────────────────────────────────────────────
     24 |   ! not logged in · /login · ~/mentat-t… · openai/gpt… · ! full access ? for …
     |}]
-

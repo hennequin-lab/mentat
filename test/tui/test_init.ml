@@ -145,4 +145,3 @@ let%expect_test "/init submits its built-in prompt as an ordinary turn" =
     23 | ────────────────────────────────────────────────────────────────────────────────
     24 |   ! not logged in · /login · ~/mentat-… · openai/gpt-… · ! full access ? for …
     |}]
-

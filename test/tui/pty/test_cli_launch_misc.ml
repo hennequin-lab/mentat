@@ -341,4 +341,3 @@ let%expect_test
   Pty.send terminal Key.escape;
   Pty.wait terminal (Screen.has "❯ message mentat");
   Pty.quit terminal
-

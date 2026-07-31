@@ -850,4 +850,3 @@ let%expect_test "durable output is summary-only and mutation truth stays scoped"
     claim applies: 1
     claim observations: 0
     disk: "dog dog dog\n" |}]
-

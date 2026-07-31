@@ -420,7 +420,8 @@ let paths_value =
   list (Testable.make ~pp:Workspace.Path.pp ~equal:Workspace.Path.equal)
 
 let revertability_value =
-  Testable.make ~pp:Mutation.Revertability.pp ~equal:Mutation.Revertability.equal
+  Testable.make ~pp:Mutation.Revertability.pp
+    ~equal:Mutation.Revertability.equal
 
 let change_value =
   Testable.make ~pp:Mutation.Change.pp ~equal:Mutation.Change.equal
@@ -2223,10 +2224,12 @@ let position_group =
    byte-identically, and [before]'s membership check is [Projection.after]'s. *)
 
 let page_value =
-  Testable.make ~pp:Protocol.Transcript.Page.pp ~equal:Protocol.Transcript.Page.equal
+  Testable.make ~pp:Protocol.Transcript.Page.pp
+    ~equal:Protocol.Transcript.Page.equal
 
 let tail_value =
-  Testable.make ~pp:Protocol.Transcript.Tail.pp ~equal:Protocol.Transcript.Tail.equal
+  Testable.make ~pp:Protocol.Transcript.Tail.pp
+    ~equal:Protocol.Transcript.Tail.equal
 
 let transcript_array j = Array.of_list (project_all j)
 
@@ -2752,9 +2755,11 @@ let wire_corpus_group =
 (* User command codec. *)
 
 let user_command_value =
-  Testable.make ~pp:(fun ppf t ->
+  Testable.make
+    ~pp:(fun ppf t ->
       Format.pp_print_string ppf
-        (Protocol.User_command.Name.to_string t.Protocol.User_command.name)) ~equal:(fun a b ->
+        (Protocol.User_command.Name.to_string t.Protocol.User_command.name))
+    ~equal:(fun a b ->
       Json.equal
         (encode Protocol.User_command.jsont a)
         (encode Protocol.User_command.jsont b))

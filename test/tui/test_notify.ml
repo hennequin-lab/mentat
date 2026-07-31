@@ -176,7 +176,8 @@ let%expect_test "a parked decision notifies the command hook" =
   (match List.rev !captured with
   | [] -> print_endline "(no notification)"
   | lines -> List.iter print_endline lines);
-  [%expect {| mentat — mentat-tui-notify-4a1bb783 | Waiting for your response |}]
+  [%expect
+    {| mentat — mentat-tui-notify-4a1bb783 | Waiting for your response |}]
 
 let%expect_test "a bell/OSC-only channel emits nothing to the command hook" =
   (* Auto resolves to bell + OSC 9, both seamed on Gap A; with no command channel
@@ -186,4 +187,3 @@ let%expect_test "a bell/OSC-only channel emits nothing to the command hook" =
     ~notify_policy:(policy ~channel:Config.Notify.Channel.Auto ())
     ();
   [%expect {| (no notification) |}]
-

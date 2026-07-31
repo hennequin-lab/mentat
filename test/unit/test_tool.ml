@@ -124,7 +124,8 @@ let request_for text =
     ]
 
 let request_value =
-  Testable.make ~pp:Mentat_permission.Request.pp ~equal:Mentat_permission.Request.equal
+  Testable.make ~pp:Mentat_permission.Request.pp
+    ~equal:Mentat_permission.Request.equal
 
 let echo_schema =
   json_object
@@ -260,9 +261,11 @@ let reorder_members = function
   | _ -> fail "expected a JSON object"
 
 let prepared_value =
-  Testable.make ~pp:(fun ppf p ->
+  Testable.make
+    ~pp:(fun ppf p ->
       Format.fprintf ppf "prepared %s: %s" (Tool.Prepared.tool p)
-        (Tool.Prepared.description p)) ~equal:Tool.Prepared.equal
+        (Tool.Prepared.description p))
+    ~equal:Tool.Prepared.equal
 
 let resume_error_label = function
   | Tool.Call.Resume_error.Not_staged -> "not_staged"
@@ -328,18 +331,24 @@ let pp_status ppf = function
       Format.fprintf ppf "interrupted %S cancelled:%b" reason cancelled
 
 let string_result =
-  Testable.make ~pp:(fun ppf r ->
+  Testable.make
+    ~pp:(fun ppf r ->
       Format.fprintf ppf "%a output:%a" pp_status (Tool.Result.status r)
         (Format.pp_print_option Format.pp_print_string)
-        (Tool.Result.output r)) ~equal:(Tool.Result.equal String.equal)
+        (Tool.Result.output r))
+    ~equal:(Tool.Result.equal String.equal)
 
 let output_value =
-  Testable.make ~pp:(fun ppf o ->
+  Testable.make
+    ~pp:(fun ppf o ->
       Format.fprintf ppf "output %S truncated:%b" (Tool.Output.text o)
-        (Tool.Output.truncated o)) ~equal:Tool.Output.equal
+        (Tool.Output.truncated o))
+    ~equal:Tool.Output.equal
 
 let output_result =
-  Testable.make ~pp:(fun ppf r -> pp_status ppf (Tool.Result.status r)) ~equal:(Tool.Result.equal Tool.Output.equal)
+  Testable.make
+    ~pp:(fun ppf r -> pp_status ppf (Tool.Result.status r))
+    ~equal:(Tool.Result.equal Tool.Output.equal)
 
 (* Identity. *)
 
@@ -439,8 +448,9 @@ let input_group =
     [
       test "make rejects a non-object schema" (fun () ->
           raises
-            (Invalid_argument "Mentat_tool.Input.make: schema must be a JSON object") (fun () ->
-              Tool.Input.make Jsont.string ~schema:(Json.string "bad")));
+            (Invalid_argument
+               "Mentat_tool.Input.make: schema must be a JSON object")
+            (fun () -> Tool.Input.make Jsont.string ~schema:(Json.string "bad")));
       test "schema is retained unchanged" (fun () ->
           equal json_value ~msg:"schema" echo_schema
             (Tool.Input.schema text_input));
@@ -509,7 +519,8 @@ let output_group =
           is_true ~msg:"truncated is retained"
             (Tool.Output.truncated structured));
       test "requires non-empty text but accepts whitespace" (fun () ->
-          raises (Invalid_argument "Mentat_tool.Output.make: text must not be empty")
+          raises
+            (Invalid_argument "Mentat_tool.Output.make: text must not be empty")
             (fun () -> Tool.Output.make ~text:"" ());
           equal string ~msg:"whitespace-only text is accepted" " "
             (Tool.Output.text (Tool.Output.make ~text:" " ())));
@@ -608,10 +619,12 @@ let result_group =
               is_true ~msg:"cancellation marker" cancelled
           | status -> failf "unexpected status: %a" pp_status status);
           raises
-            (Invalid_argument "Mentat_tool.Result.failed: message must not be empty") (fun () ->
-              Tool.Result.failed `Failed "");
+            (Invalid_argument
+               "Mentat_tool.Result.failed: message must not be empty")
+            (fun () -> Tool.Result.failed `Failed "");
           raises
-            (Invalid_argument "Mentat_tool.Result.interrupted: reason must not be empty")
+            (Invalid_argument
+               "Mentat_tool.Result.interrupted: reason must not be empty")
             (fun () -> Tool.Result.interrupted ~reason:"" ~cancelled:false ()));
       test "map transforms output and preserves status" (fun () ->
           let mapped =
@@ -907,22 +920,26 @@ let definition_group =
           equal string ~msg:"description" "Echo input text."
             (decl_description echo);
           equal json_value ~msg:"input schema" echo_schema (decl_schema echo);
-          raises (Invalid_argument "Mentat_llm.Tool.make: name must not be empty")
+          raises
+            (Invalid_argument "Mentat_llm.Tool.make: name must not be empty")
             (fun () ->
               Tool.make ~name:"" ~description:"d" ~input:text_input
                 ~output:output_of_string
                 ~run:(fun ~cancelled:_ v -> Tool.Result.completed ~output:v ())
                 ());
           raises
-            (Invalid_argument "Mentat_llm.Tool.make: description must not be empty") (fun () ->
+            (Invalid_argument
+               "Mentat_llm.Tool.make: description must not be empty") (fun () ->
               Tool.make ~name:"n" ~description:"" ~input:text_input
                 ~output:output_of_string
                 ~run:(fun ~cancelled:_ v -> Tool.Result.completed ~output:v ())
                 ());
-          raises (Invalid_argument "Mentat_llm.Tool.make: name must not be empty")
+          raises
+            (Invalid_argument "Mentat_llm.Tool.make: name must not be empty")
             (fun () -> staged_tool ~name:"" ());
           raises
-            (Invalid_argument "Mentat_llm.Tool.make: description must not be empty") (fun () ->
+            (Invalid_argument
+               "Mentat_llm.Tool.make: description must not be empty") (fun () ->
               Tool.make_staged ~name:"n" ~description:"" ~input:text_input
                 ~prepared:plan_jsont ~describe:describe_plan
                 ~output:output_of_string
@@ -1685,7 +1702,8 @@ let json_gen =
         Gen.map (fun n -> Json.int n) (Gen.int_range (-99) 99);
         Gen.map
           (fun s -> Json.string s)
-          (Gen.string_of ~size:(Gen.int_range 0 4) (Gen.of_list [ 'a'; 'b'; 'z' ]));
+          (Gen.string_of ~size:(Gen.int_range 0 4)
+             (Gen.of_list [ 'a'; 'b'; 'z' ]));
       ]
   in
   let keys = Gen.of_list [ "delta"; "alpha"; "echo"; "bravo"; "zulu" ] in
@@ -1797,8 +1815,8 @@ let generated_result_gen = Gen.with_pp (Testable.pp string_result) result_gen
 let property_group =
   group "properties"
     [
-      prop "canonical input canonicalizes any generated object" generated_json_gen
-        (fun json ->
+      prop "canonical input canonicalizes any generated object"
+        generated_json_gen (fun json ->
           let canonical = canonical_of json in
           is_true ~msg:"semantics preserved" (Json.equal json canonical);
           assert_sorted canonical;

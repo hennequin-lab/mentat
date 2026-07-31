@@ -522,4 +522,3 @@ let%expect_test "a long file name yields to its status letter" =
 22 |                                 │
 23 |
 24 | tab focus diff · space mark · enter open · c comment · a approve · esc close|}]
-

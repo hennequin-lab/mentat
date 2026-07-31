@@ -75,7 +75,9 @@ let reasoning_value =
       String.equal (Reasoning.to_string a) (Reasoning.to_string b))
 
 let selector_value =
-  Testable.make ~pp:(fun ppf s -> Format.pp_print_string ppf (Selector.to_string s)) ~equal:Selector.equal
+  Testable.make
+    ~pp:(fun ppf s -> Format.pp_print_string ppf (Selector.to_string s))
+    ~equal:Selector.equal
 
 (* A selector error carries no equality; compare structurally, ignoring the
    provider diagnostic message which comes from [Mentat_llm.Provider.make]. *)
@@ -152,7 +154,8 @@ let equal_secret_view a b =
       && Option.equal String.equal a.account_id b.account_id
   | (Api_key_secret _ | Bearer_secret _ | OAuth_secret _), _ -> false
 
-let secret_view_value = Testable.make ~pp:pp_secret_view ~equal:equal_secret_view
+let secret_view_value =
+  Testable.make ~pp:pp_secret_view ~equal:equal_secret_view
 
 let secret_view secret =
   Secret.expose secret
@@ -283,7 +286,8 @@ let selector_group =
           assert_decode_error ~contains:"provider/model"
             "jsont rejects no slash" Selector.jsont (Json.string "openai"));
       prop "of_string parses back any valid provider/model"
-        (Gen.with_pp (fun ppf (p, m) -> Format.fprintf ppf "%S/%S" p m)
+        (Gen.with_pp
+           (fun ppf (p, m) -> Format.fprintf ppf "%S/%S" p m)
            (Gen.pair
               (let open Gen in
                let tail =
@@ -863,7 +867,8 @@ let model_cost_group =
                (Model.cost model
                   (usage ~input:max_int ~cache_read:1 ~output:0 ()))));
       prop "cost is monotonic in a lane under a flat positive rate"
-        (Gen.with_pp (fun ppf (a, b) -> Format.fprintf ppf "(%d,%d)" a b)
+        (Gen.with_pp
+           (fun ppf (a, b) -> Format.fprintf ppf "(%d,%d)" a b)
            (Gen.pair (Gen.int_range 0 5_000_000) (Gen.int_range 0 5_000_000)))
         (fun (a, b) ->
           let low, high = if a <= b then (a, b) else (b, a) in

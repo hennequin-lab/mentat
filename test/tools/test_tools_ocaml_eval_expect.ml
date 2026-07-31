@@ -1146,4 +1146,3 @@ let%expect_test "constructor rejects invalid immutable program prefixes" =
     NUL-token-raised: true
     invocations: 0
     |}]
-

@@ -7,7 +7,9 @@ open Windtrap
 module Http = Mentat_llm_http
 
 let retry_guidance () =
-  let float_value = Testable.make ~pp:Format.pp_print_float ~equal:Float.equal in
+  let float_value =
+    Testable.make ~pp:Format.pp_print_float ~equal:Float.equal
+  in
   let after headers = Http.Retry_after.delay ~now:784_111_777. headers in
   equal (option float_value) ~msg:"retry-after-ms wins" (Some 1.5)
     (after [ ("Retry-After-Ms", "1500"); ("retry-after", "9") ]);

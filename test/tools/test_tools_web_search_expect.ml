@@ -371,4 +371,3 @@ let%expect_test "cancellation before the transport yields an interruption" =
     status: interrupted cancelled=true
     reason: "tool call cancelled"
     |}]
-

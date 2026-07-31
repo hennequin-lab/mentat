@@ -541,4 +541,3 @@ let%expect_test "failed activation rolls back visibly and permits retry" =
     24 |   ! not logged in · /login · ~/men… · openai/gpt-5.6-sol … · ! full access ? …
     |}];
   Pty.quit terminal
-

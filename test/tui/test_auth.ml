@@ -1752,4 +1752,3 @@ let%expect_test "API-key entry surfaces the terminal caret at the masked tail" =
   Tui.settle t;
   caret t;
   [%expect {| row 30 col 8 |}]
-

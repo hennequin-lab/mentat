@@ -279,4 +279,3 @@ let%expect_test "a resumed possibly-mutating session shows the recovery warning"
     23 | ────────────────────────────────────────────────────────────────────────────────
     24 |   ! not logged in · /login · /tmp/ment… · openai/gpt-5.5 … · ! full access ? …
     |}]
-

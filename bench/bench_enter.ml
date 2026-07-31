@@ -23,9 +23,9 @@
     [Environment.none], the [Mentat_config.resolve] arguments, and that a plain
     user/assistant transcript ending in a user message is request-ready. The
     fs-trend cases each run under their own [Eio_main.run], inside the forked
-    measurement worker — a forked child cannot inherit a live Eio scheduler,
-    so nothing here runs under Eio at top level. Their measured unit includes
-    the scheduler start, a constant cost well under the load walks. *)
+    measurement worker — a forked child cannot inherit a live Eio scheduler, so
+    nothing here runs under Eio at top level. Their measured unit includes the
+    scheduler start, a constant cost well under the load walks. *)
 
 module Session = Mentat_session
 module Llm = Mentat_llm
@@ -89,7 +89,8 @@ let () =
            across contexts — same class as session_list's scan, same small
            tolerance. A real regression would be proportional and far
            larger. *)
-        group "fs-trend" ~budgets:[ Thumper.Budget.no_more_alloc_than 0.05 ]
+        group "fs-trend"
+          ~budgets:[ Thumper.Budget.no_more_alloc_than 0.05 ]
           [
             bench "context/load"
               (with_stdenv (fun stdenv ->

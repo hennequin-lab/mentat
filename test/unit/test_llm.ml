@@ -84,16 +84,24 @@ let error_t = Testable.make ~pp:Error.pp ~equal:Error.equal
 let stop_t = Testable.make ~pp:Stop.pp ~equal:( = )
 
 let call_t =
-  Testable.make ~pp:(fun ppf _ -> Format.pp_print_string ppf "<call>") ~equal:Tool.Call.equal
+  Testable.make
+    ~pp:(fun ppf _ -> Format.pp_print_string ppf "<call>")
+    ~equal:Tool.Call.equal
 
 let result_t =
-  Testable.make ~pp:(fun ppf _ -> Format.pp_print_string ppf "<result>") ~equal:Tool.Result.equal
+  Testable.make
+    ~pp:(fun ppf _ -> Format.pp_print_string ppf "<result>")
+    ~equal:Tool.Result.equal
 
 let message_t =
-  Testable.make ~pp:(fun ppf _ -> Format.pp_print_string ppf "<message>") ~equal:Message.equal
+  Testable.make
+    ~pp:(fun ppf _ -> Format.pp_print_string ppf "<message>")
+    ~equal:Message.equal
 
 let response_t =
-  Testable.make ~pp:(fun ppf _ -> Format.pp_print_string ppf "<response>") ~equal:Response.equal
+  Testable.make
+    ~pp:(fun ppf _ -> Format.pp_print_string ppf "<response>")
+    ~equal:Response.equal
 
 let digest_t = Testable.make ~pp:Mentat_digest.pp ~equal:Mentat_digest.equal
 let transcript_error_t = Testable.make ~pp:Transcript.Error.pp ~equal:( = )
@@ -184,7 +192,6 @@ let nul_text =
   Gen.string_of ~size:(Gen.int_range 1 12)
     (Gen.frequency [ (1, Gen.pure '\000'); (9, printable) ])
 
-
 let provider_gen =
   let+ first = lower
   and+ rest =
@@ -230,7 +237,9 @@ let content_gen =
     ]
 
 let content_t =
-  Testable.make ~pp:(fun ppf _ -> Format.pp_print_string ppf "<content>") ~equal:( = )
+  Testable.make
+    ~pp:(fun ppf _ -> Format.pp_print_string ppf "<content>")
+    ~equal:( = )
 
 let tool_first = Gen.frequency [ (6, lower); (1, Gen.pure '_') ]
 
@@ -397,12 +406,9 @@ let error_gen =
   Error.make ~kind ~phase ?provider ?status ?request_id ?redacted_body message
 
 let error_gen = Gen.with_pp Error.pp error_gen
-
 let provider_gen = Gen.with_pp Provider.pp provider_gen
-
 let api_gen = Gen.with_pp Model.Api.pp api_gen
 let model_gen = Gen.with_pp Model.pp model_gen
-
 
 (* A valid transcript generator built from grammar-respecting "turns": an
    ordinary message, or an assistant tool-call turn immediately followed by one
@@ -479,13 +485,9 @@ let transcript_gen =
   let+ turns = Gen.list ~size:(Gen.int_range 0 5) turn_gen in
   Transcript.of_list_exn (List.concat turns)
 
-
-
-
-
-
 let nonempty_transcript_gen =
-  let+ head = turn_gen and+ tail = Gen.list ~size:(Gen.int_range 0 4) turn_gen in
+  let+ head = turn_gen
+  and+ tail = Gen.list ~size:(Gen.int_range 0 4) turn_gen in
   Transcript.of_list_exn (List.concat (head :: tail))
 
 let prelude_msg_gen =
@@ -532,7 +534,9 @@ let options_gen =
     ?reasoning_effort ~response_format ()
 
 let options_gen_t =
-  Testable.make ~pp:(fun ppf _ -> Format.pp_print_string ppf "<options>") ~equal:( = )
+  Testable.make
+    ~pp:(fun ppf _ -> Format.pp_print_string ppf "<options>")
+    ~equal:( = )
 
 let tools_gen =
   let+ n = Gen.int_range 0 3 in
@@ -551,7 +555,9 @@ let request_gen =
   Request.make_exn ~model ~prelude ~tools ~options ?cache_key transcript
 
 let request_gen_t =
-  Testable.make ~pp:(fun ppf _ -> Format.pp_print_string ppf "<request>") ~equal:( = )
+  Testable.make
+    ~pp:(fun ppf _ -> Format.pp_print_string ppf "<request>")
+    ~equal:( = )
 
 (* Independent reimplementation of the request digest's canonical encoder. It
    is kept here so the digest golden is
@@ -737,8 +743,10 @@ let content_contracts =
 let image_contracts =
   let format = Testable.make ~pp:Image.Format.pp ~equal:Image.Format.equal in
   let dimension =
-    Testable.make ~pp:(fun ppf { Image.width; height } ->
-        Format.fprintf ppf "%dx%d" width height) ~equal:(fun a b ->
+    Testable.make
+      ~pp:(fun ppf { Image.width; height } ->
+        Format.fprintf ppf "%dx%d" width height)
+      ~equal:(fun a b ->
         a.Image.width = b.Image.width && a.Image.height = b.Image.height)
   in
   let dim width height = { Image.width; height } in
@@ -1376,8 +1384,7 @@ let transcript_contracts =
           is_true ~msg:"reversed order rejected"
             (Result.is_error (Transcript.of_list (List.rev messages))));
       test "last_assistant returns the raw most recent assistant" (fun () ->
-          equal (option pass) ~msg:"none yet"
-            None
+          equal (option pass) ~msg:"none yet" None
             (Transcript.last_assistant (ready_transcript ()));
           let two_turns =
             Transcript.of_list_exn
@@ -1451,12 +1458,10 @@ let transcript_contracts =
           in
           equal (option string) ~msg:"untrimmed join" (Some " a | b ")
             (Transcript.last_assistant_text ~sep:"|" joined);
-          equal (option pass) ~msg:"no visible text yields None"
-            None
+          equal (option pass) ~msg:"no visible text yields None" None
             (Transcript.last_assistant_text (ready_transcript ())));
       prop "of_list (messages t) = t for valid transcripts" transcript_gen
-        (fun t ->
-          is_true (Transcript.of_list (Transcript.messages t) = Ok t));
+        (fun t -> is_true (Transcript.of_list (Transcript.messages t) = Ok t));
       prop "jsont round-trips (property)" transcript_gen (fun t ->
           roundtrip "transcript" (opaque "transcript") Transcript.jsont t);
     ]
@@ -1610,8 +1615,7 @@ let request_contracts =
                 (Request.Options.Reasoning_effort.of_string
                    (Request.Options.Reasoning_effort.to_string effort)))
             Request.Options.Reasoning_effort.all;
-          equal (option pass) ~msg:"unknown spelling"
-            None
+          equal (option pass) ~msg:"unknown spelling" None
             (Request.Options.Reasoning_effort.of_string "enormous"));
       test "jsont round-trips a request without embedded schema" (fun () ->
           (* No tools, so no arbitrary JSON whose decode metadata would defeat
@@ -1626,8 +1630,7 @@ let request_contracts =
           roundtrip "request" request_gen_t Request.jsont request);
       prop "options jsont round-trips (property)" options_gen (fun o ->
           roundtrip "options" options_gen_t Request.Options.jsont o);
-      prop "jsont round-trips the message list (property)" request_gen
-        (fun r ->
+      prop "jsont round-trips the message list (property)" request_gen (fun r ->
           equal (list message_t) ~msg:"messages" (Request.messages r)
             (Request.messages (decode Request.jsont (encode Request.jsont r))));
     ]

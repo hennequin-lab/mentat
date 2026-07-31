@@ -1163,4 +1163,3 @@ let%expect_test "a failed turn leaves the session usable for the next prompt" =
     23 | ────────────────────────────────────────────────────────────────────────────────
     24 |   ! not logged in · /login · ~/mentat… · openai/gpt-… · ! full access ? for s…
     |}]
-

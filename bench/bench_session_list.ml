@@ -14,12 +14,12 @@
     filesystem-dependent and recorded as trend only.
 
     Measurement forks a worker per case, and a forked child cannot inherit a
-    live Eio scheduler — so nothing here runs under [Eio_main.run] at top
-    level. Each case's setup (inside the worker) populates a store under its
-    own Eio loop; the measured closure then opens the store and scans it
-    under a fresh loop. The measured unit is one whole picker-populate —
-    scheduler start, store open, scan — a constant scheduler cost plus the
-    K-dependent scan; the K-axis growth story is unchanged. *)
+    live Eio scheduler — so nothing here runs under [Eio_main.run] at top level.
+    Each case's setup (inside the worker) populates a store under its own Eio
+    loop; the measured closure then opens the store and scans it under a fresh
+    loop. The measured unit is one whole picker-populate — scheduler start,
+    store open, scan — a constant scheduler cost plus the K-dependent scan; the
+    K-axis growth story is unchanged. *)
 
 module Store = Mentat_store
 module Fixture = Bench_support.Session_fixture
