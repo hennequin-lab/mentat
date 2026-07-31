@@ -1,0 +1,9 @@
+; The verified model of the revert-safety classification kernel. Its .vo
+; targets are on the default alias, so a full `dune build` (and CI) checks
+; the proofs; the laws are not in the OCaml library's dependency closure, so
+; building lib/mutation alone does not.
+
+(rocq.theory
+ (name MentatMutation)
+ (no_corelib)
+ (theories Corelib))

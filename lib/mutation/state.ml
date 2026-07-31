@@ -713,7 +713,25 @@ let revertability t selection =
       let reasons =
         superseded @ non_contiguous @ observed @ uncertain @ unresolved
       in
-      match (reasons, superseded) with
-      | [], _ -> Revertability.Available
-      | _ :: _, _ :: _ -> Revertability.Unavailable reasons
-      | _ :: _, [] -> Revertability.Incomplete reasons)
+      (* The worst-case classification runs on the extracted kernel
+         (theories/mutation/Revertability.v): an empty reason set is available,
+         a set holding a supersession is unavailable — the sole proof — and any
+         other non-empty set is incomplete. The kernel reads the reason set only
+         through [is_superseded], so [superseded] no longer needs to cross into
+         the decision; it built [reasons] and its emptiness is what the kernel
+         re-derives. *)
+      let is_superseded = function
+        | Revertability.Superseded _ -> true
+        | Revertability.Non_contiguous _ | Revertability.Observed _
+        | Revertability.Uncertain _ | Revertability.Unresolved_revert _ ->
+            false
+      in
+      match
+        Mentat_mutation_kernel.Revertability.classify is_superseded reasons
+      with
+      | Mentat_mutation_kernel.Revertability.Available ->
+          Revertability.Available
+      | Mentat_mutation_kernel.Revertability.Unavailable reasons ->
+          Revertability.Unavailable reasons
+      | Mentat_mutation_kernel.Revertability.Incomplete reasons ->
+          Revertability.Incomplete reasons)

@@ -1,0 +1,8 @@
+; Extraction of the verified kernel. The generated sources are promoted into
+; lib/mutation/kernel, where they compile; see the dune file there.
+
+(rocq.extraction
+ (prelude extract)
+ (extracted_files revertability.ml revertability.mli)
+ (no_corelib)
+ (theories Corelib MentatMutation))

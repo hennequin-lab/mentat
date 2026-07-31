@@ -8,4 +8,5 @@
   mentat_edit
   lpath
   mentat_session
-  mentat_workspace))
+  mentat_workspace
+  mentat_mutation_kernel))

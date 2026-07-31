@@ -1743,11 +1743,15 @@ let revertability_group =
                (M.Revert.Selection.changes
                   (List.map M.Change.id
                      (M.State.changes st ~claim:(claim "c1"))))));
-      test "unavailable outranks incomplete and reasons accumulate" (fun () ->
-          (* p1 has a gap (incomplete grade) and its net-after is not the
-             head (superseded proof): the answer is Unavailable carrying
-             both reasons. Selecting only the first change makes the gap
-             entry superseded by the second recorded change. *)
+      test
+        "a superseded selection is unavailable where the full one is incomplete"
+        (fun () ->
+          (* The same gap history yields a different verdict by selection.
+             Selecting only the first change makes p1's gap entry superseded
+             by the second recorded change, so that selection is Unavailable
+             (a single Superseded reason). The full selection instead surfaces
+             the gap as Non_contiguous, which is only Incomplete — so
+             supersession (Unavailable) is the stronger verdict. *)
           let events = gap_history () in
           let st = state_exn events in
           let first_id =
