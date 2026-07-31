@@ -1,0 +1,7 @@
+; The verified model of lpath's canonicalization and containment. Building it
+; checks the proofs, so they gate every build that reaches this library.
+
+(rocq.theory
+ (name MentatLpath)
+ (no_corelib)
+ (theories Corelib))

@@ -1,0 +1,9 @@
+; Extraction of the verified model. The generated sources are promoted into
+; otherlibs/lpath/test/model, where the differential test builds them against
+; the real lpath; see the dune file there.
+
+(rocq.extraction
+ (prelude extract)
+ (extracted_files lpath_model.ml lpath_model.mli)
+ (no_corelib)
+ (theories Corelib MentatLpath))

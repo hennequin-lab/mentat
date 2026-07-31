@@ -1045,6 +1045,104 @@ let pretty_printers =
             (Lpath.Abs.to_string p));
     ]
 
+(* The verified Rocq model of Abs canonicalization and containment, extracted
+   to OCaml (theories/lpath/), differentially tested against the real lpath. If
+   the model and the implementation ever diverge on a generated path, the
+   machine-checked laws stop describing the shipped code, so these properties
+   are what make the proofs load-bearing. The model's byte is instantiated to
+   [char] with lpath's own structural constants; nothing here reuses lpath's
+   internals, so the two implementations are genuinely independent. *)
+module Model = Lpath_model
+
+let explode s = List.init (String.length s) (String.get s)
+
+let implode cs =
+  let buf = Buffer.create (List.length cs) in
+  List.iter (Buffer.add_char buf) cs;
+  Buffer.contents buf
+
+let model_of_string s =
+  Model.abs_of_string ( = ) '/' '.' '\\' '\000' ':' is_ascii_letter (explode s)
+
+let model_components t = List.map implode (Model.abs_components ( = ) '/' t)
+let model_within root p = Model.abs_within ( = ) '/' root p
+let model_strictly_within root p = Model.abs_strictly_within ( = ) '/' root p
+
+let show_model = function
+  | Model.POk t -> Printf.sprintf "Ok %S" (implode t)
+  | Model.PErr Model.Empty -> "Error Empty"
+  | Model.PErr Model.Relative -> "Error Relative"
+  | Model.PErr (Model.Malformed c) ->
+      Printf.sprintf "Error (Malformed %S)" (implode c)
+
+let show_real = function
+  | Ok p -> Printf.sprintf "Ok %S" (Lpath.Abs.to_string p)
+  | Error e -> Printf.sprintf "Error %S" (Lpath.Error.message e)
+
+(* An independent segment-prefix, written here rather than borrowed, so the
+   bridge-lemma check is a real cross-check of lpath's own is_within. *)
+let rec is_component_prefix a b =
+  match (a, b) with
+  | [], _ -> true
+  | _ :: _, [] -> false
+  | x :: a', y :: b' -> String.equal x y && is_component_prefix a' b'
+
+let model_faithfulness =
+  group "model faithfulness (differential vs verified Rocq model)"
+    [
+      (* Parse + normalize agree on every raw input, including the error
+         classification and the rejected component of a malformed path. *)
+      prop "model_abs_of_string_matches_real" raw_path_input_gen (fun s ->
+          match (model_of_string s, Lpath.Abs.of_string s) with
+          | Model.POk t, Ok real ->
+              equal string
+                ~msg:("canonical form of " ^ String.escaped s)
+                (Lpath.Abs.to_string real) (implode t)
+          | Model.PErr Model.Empty, Error Lpath.Error.Empty -> ()
+          | Model.PErr Model.Relative, Error Lpath.Error.Relative -> ()
+          | ( Model.PErr (Model.Malformed c),
+              Error (Lpath.Error.Malformed_component c') ) ->
+              equal string
+                ~msg:("malformed component of " ^ String.escaped s)
+                c' (implode c)
+          | m, r ->
+              failf "model/real disagree on %S: model=%s real=%s"
+                (String.escaped s) (show_model m) (show_real r));
+      (* [components] agrees on every path that parses. *)
+      prop "model_abs_components_matches_real" raw_path_input_gen (fun s ->
+          match Lpath.Abs.of_string s with
+          | Error _ -> ()
+          | Ok real ->
+              let t = explode (Lpath.Abs.to_string real) in
+              equal (list string)
+                ~msg:("components of " ^ String.escaped s)
+                (Lpath.Abs.components real)
+                (model_components t));
+      (* Containment agrees on canonical pairs — the bridge lemma's subject. *)
+      prop "model_is_within_matches_real" abs_containment_pair (fun (root, p) ->
+          let rc = explode (Lpath.Abs.to_string root) in
+          let pc = explode (Lpath.Abs.to_string p) in
+          equal bool ~msg:"is_within"
+            (Lpath.Abs.is_within ~root p)
+            (model_within rc pc));
+      prop "model_is_strictly_within_matches_real" abs_containment_pair
+        (fun (root, p) ->
+          let rc = explode (Lpath.Abs.to_string root) in
+          let pc = explode (Lpath.Abs.to_string p) in
+          equal bool ~msg:"is_strictly_within"
+            (Lpath.Abs.is_strictly_within ~root p)
+            (model_strictly_within rc pc));
+      (* The bridge lemma, checked against reality: lpath's own is_within is a
+         segment prefix over components — the fact the sandbox proofs assume. *)
+      prop "real_is_within_is_component_prefix" abs_containment_pair
+        (fun (root, p) ->
+          equal bool ~msg:"is_within = component prefix"
+            (Lpath.Abs.is_within ~root p)
+            (is_component_prefix
+               (Lpath.Abs.components root)
+               (Lpath.Abs.components p)));
+    ]
+
 let () =
   run "lpath"
     [
@@ -1061,4 +1159,5 @@ let () =
       error_classification;
       ordering_and_equality;
       pretty_printers;
+      model_faithfulness;
     ]
