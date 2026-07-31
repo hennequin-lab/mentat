@@ -38,16 +38,30 @@ let filesystem_args policy =
       (fun (path, _) -> Lpath.Abs.is_root path)
       (Policy.entries policy)
   in
+  (* The root mount follows the root clause's own access, exactly as the
+     resolution law resolves the root: a [Write] clause binds the host root
+     read-write, a [Read] clause binds it read-only, a [Deny] clause makes it a
+     sealed empty tmpfs. None of these consult the reads default — that decides
+     only the root no clause names, [All] reading the host root and [Denied]
+     hiding it. A [Read] or [Deny] clause that once fell through to the default
+     is the two configurations that made bubblewrap disagree with both the
+     resolution law and seatbelt; deciding on the clause alone closes them. *)
   let root =
-    match (root_clause, Policy.reads_default policy) with
-    | (_, Policy.Access.Write) :: _, _ -> [ "--bind"; "/"; "/" ]
-    | ((_, (Policy.Access.Read | Policy.Access.Deny)) :: _ | []), Policy.All ->
-        [ "--ro-bind"; "/"; "/" ]
-    | ((_, (Policy.Access.Read | Policy.Access.Deny)) :: _ | []), Policy.Denied
-      ->
-        [ "--tmpfs"; "/" ]
+    match root_clause with
+    | (_, Policy.Access.Write) :: _ -> [ "--bind"; "/"; "/" ]
+    | (_, Policy.Access.Read) :: _ -> [ "--ro-bind"; "/"; "/" ]
+    | (_, Policy.Access.Deny) :: _ -> [ "--tmpfs"; "/" ]
+    | [] -> (
+        match Policy.reads_default policy with
+        | Policy.All -> [ "--ro-bind"; "/"; "/" ]
+        | Policy.Denied -> [ "--tmpfs"; "/" ])
   in
-  root @ [ "--dev"; "/dev" ] @ List.concat_map clause rest
+  (* [--proc] is hoisted here with [--dev], ahead of the clause mounts, so a
+     clause naming [/proc] wins over the procfs mount the way the resolution
+     law says it must: the last mount on a path wins, and a hoisted [--proc]
+     lands before it rather than after. Both still precede the seals, which
+     bwrap cannot run under a sealed root. *)
+  root @ [ "--dev"; "/dev"; "--proc"; "/proc" ] @ List.concat_map clause rest
 
 (* An [Only] read scope builds its root as a [--tmpfs], which is writable. A
    write to a path no bind covers therefore lands in that ephemeral mount and
@@ -85,5 +99,5 @@ let arguments policy =
     | Policy.Network.Restricted -> [ "--unshare-net" ]
     | Policy.Network.Enabled -> []
   in
-  namespace @ filesystem_args policy @ network @ [ "--proc"; "/proc" ]
-  @ seal_denials policy @ seal_root policy
+  namespace @ filesystem_args policy @ network @ seal_denials policy
+  @ seal_root policy

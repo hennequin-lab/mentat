@@ -576,9 +576,9 @@ let bubblewrap_read_only_golden () =
         "/";
         "--dev";
         "/dev";
-        "--unshare-net";
         "--proc";
         "/proc";
+        "--unshare-net";
         "--chdir";
         "/tmp";
         "--";
@@ -602,6 +602,8 @@ let bubblewrap_scoped_reads_golden () =
         "/";
         "--dev";
         "/dev";
+        "--proc";
+        "/proc";
         "--bind";
         "/usr";
         "/usr";
@@ -609,8 +611,6 @@ let bubblewrap_scoped_reads_golden () =
         "/usr/bin";
         "/usr/bin";
         "--unshare-net";
-        "--proc";
-        "/proc";
         "--remount-ro";
         "/";
         "--chdir";
@@ -1440,8 +1440,9 @@ let identity_domain_and_framing () =
    writable [/work], protected [/work/.git], network restricted). The Seatbelt
    pin was re-minted when the profile gained the Unix-socket [network-bind]/
    [network-outbound] allow scoped to the writable roots (so build tools can
-   bind their RPC socket); the Bubblewrap pin is unchanged, its namespace
-   network isolation never blocking in-workspace Unix sockets. *)
+   bind their RPC socket); the Bubblewrap pin was re-minted when [--proc] was
+   hoisted ahead of the clause mounts, so a clause naming [/proc] wins over the
+   procfs mount the way the resolution law says it must. *)
 let identity_digest_pins () =
   equal string ~msg:"not_requested identity digest is byte-stable"
     "5eb60082fd887b2d9988623b099f340426ef07e65f11c7b6ecf81cf3d01dea47"
@@ -1464,7 +1465,7 @@ let identity_digest_pins () =
     "e3566e4638f2f7855d25e85278c6badf57a07fe24f67d934f4e804d32aab8b0e"
     (Digest.to_hex (Identity.digest (identity_of pinned_policy)));
   equal string ~msg:"bubblewrap enforced identity digest golden"
-    "67ad848d9e0a7d15ca292f307d6a306d72f90d0a5a8b2fcd6aa6ef60af4a3012"
+    "3c45f1b71d50ebc65eb0b88551cc2aec352f542c709ce094dd9f4d255204858a"
     (Digest.to_hex
        (Identity.digest (identity_of ~backend:Backend.Bubblewrap pinned_policy)))
 

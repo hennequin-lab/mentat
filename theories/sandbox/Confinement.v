@@ -313,4 +313,167 @@ Section Confinement.
   Definition floor (l : list entry) : list entry :=
     (nil, Write) :: deny_paths (denied_roots l).
 
+  (** {1 Backend emission}
+
+      Both backends turn a normalized policy — the [entry] list of
+      [Policy.entries], already deduplicated and depth-sorted — into an ordered
+      list of rules a later-wins resolver reads back. Seatbelt emits SBPL rules
+      resolved per operation by rule order ([seatbelt.ml], [clause_rules]);
+      bubblewrap emits mounts resolved by mount order ([bubblewrap.ml],
+      [clause]/[filesystem_args]). These pure functions mirror those emitters
+      clause for clause, so the correspondence proofs retire the premise that
+      the emitters implement last-clause-wins.
+
+      Kept exactly: the per-clause emission order and each clause's per-path
+      match, which is [withinb] — the union of seatbelt's [(literal p)(subpath
+      p)] and bubblewrap's recursive bind at [p] — and the root mount, which
+      [bwrap_root] mirrors arm for arm.
+
+      Abstracted, and why it is faithful: the exact SBPL and argv string syntax;
+      bubblewrap's namespace and network flags, its [--dev] and [--proc], which
+      govern disjoint non-policy resources — [--dev] and [--proc] are hoisted
+      ahead of the clause mounts ([filesystem_args]), so a clause naming [/dev]
+      or [/proc] is emitted later and wins, exactly as the model says; and the
+      metadata-only rules ([path-ancestors], seatbelt's [file-read-metadata]),
+      which do not bear on the read-data or write-data access the model tracks.
+
+      The seatbelt theorems characterize the {e policy-derived} rules. They hold
+      at every path {e outside} a fixed base-allowance set the profile grants
+      before any clause, which they do not model. That set, from [base_policy]:
+      read-data (so also directory listing) is allowed on the device handles
+      [/dev/null], [/dev/zero], [/dev/random], [/dev/urandom],
+      [/dev/autofs_nowait], [/dev/fd] (subpath), [/dev/fd/{0,1,2}], [/dev/ptmx],
+      [/dev/ttys*], and on [(literal "/")] — the root path itself; write-data is
+      allowed on [/dev/null], [/dev/zero], [/dev/fd], [/dev/ptmx], [/dev/ttys*].
+      Every other base rule is metadata- or existence-only ([/etc], [/tmp],
+      [/var], [/private/etc/localtime], the [/System/Volumes/Data/private]
+      ancestors, [/dev] and the standard stdio nodes) and so lies outside the
+      read-data/write-data access the theorems concern.
+
+      The one base rule with a policy-visible effect is [(allow file-read*
+      file-test-existence (literal "/"))]: under a [Denied] read default a
+      confined child can still list the host root [/] (its top-level entry
+      names, not their contents — [(literal "/")] matches [/] exactly, not its
+      subtree). It sits with the symlink/firmlink-ancestor allowances that
+      [realpath] needs, so it reads as intended base behavior rather than a
+      policy leak; it is a fixed rule, independent of any policy, and therefore
+      outside what these theorems characterize. *)
+
+  (** {2 Seatbelt: last-match SBPL rules, resolved per operation} *)
+
+  (* An SBPL rule as it bears on one path's read-data or write-data decision:
+     whether it allows (or denies), and the clause path it matches by inclusive
+     prefix. SBPL resolves per operation, letting the last matching rule win. *)
+  Definition op_rule : Type := (bool * path)%type.
+
+  Fixpoint last_match (rules : list op_rule) (p : path) : option bool :=
+    match rules with
+    | nil => None
+    | (b, q) :: rest =>
+        match last_match rest p with
+        | Some r => Some r
+        | None => if withinb q p then Some b else None
+        end
+    end.
+
+  (* [clause_rules] emits, per clause and in policy order, a [file-read*] allow
+     for [Read] and [Write] and a [file-read*] deny for [Deny]. *)
+  Definition sb_read_of (a : access) : bool :=
+    match a with Read => true | Write => true | Deny => false end.
+
+  (* and a [file-write*] allow only for [Write]; a [Read] clause emits an
+     explicit [file-write*] deny (the carveout beneath a shallower write), and
+     a [Deny] clause denies writes with reads. *)
+  Definition sb_write_of (a : access) : bool :=
+    match a with Read => false | Write => true | Deny => false end.
+
+  Fixpoint sb_read_rules (l : list entry) : list op_rule :=
+    match l with
+    | nil => nil
+    | (q, a) :: rest => (sb_read_of a, q) :: sb_read_rules rest
+    end.
+
+  Fixpoint sb_write_rules (l : list entry) : list op_rule :=
+    match l with
+    | nil => nil
+    | (q, a) :: rest => (sb_write_of a, q) :: sb_write_rules rest
+    end.
+
+  (* The base profile opens with [(deny default)]; [default_read_rule] then
+     allows all reads under [All] and nothing under [Denied]. So the read
+     default is [All => allow], [Denied => deny]; nothing re-allows writes
+     globally, so the write default is always deny. *)
+  Definition sb_read_default (d : reads_default) : bool :=
+    match d with All => true | Denied => false end.
+
+  Definition sb_write_default (d : reads_default) : bool :=
+    match d with All => false | Denied => false end.
+
+  (** Whether seatbelt admits a read of [p] under the rules emitted for [l] and
+      default [d]: the last matching read rule, or the read default. *)
+  Definition sb_reads (l : list entry) (d : reads_default) (p : path) : bool :=
+    match last_match (sb_read_rules l) p with
+    | Some b => b
+    | None => sb_read_default d
+    end.
+
+  (** Whether seatbelt admits a write of [p]: the last matching write rule, or
+      the write default. *)
+  Definition sb_writes (l : list entry) (d : reads_default) (p : path) : bool :=
+    match last_match (sb_write_rules l) p with
+    | Some b => b
+    | None => sb_write_default d
+    end.
+
+  (** {2 Bubblewrap: last-mount binds, resolved by mount order} *)
+
+  (* [filesystem_args] partitions the root clause out of the entries; this is
+     its access, [None] when no clause names the root. On a normalized list at
+     most one clause names the root, so the first is the only one. *)
+  Fixpoint bwrap_root_clause (l : list entry) : option access :=
+    match l with
+    | nil => None
+    | (nil, a) :: _ => Some a
+    | (_ :: _, _) :: rest => bwrap_root_clause rest
+    end.
+
+  (* The non-root clauses, in order — [filesystem_args]' [rest], each emitted
+     by [clause] as [--ro-bind] ([Read]), [--bind] ([Write]) or [--tmpfs]
+     ([Deny], sealed read-only by [seal_denials]). Those mount types carry the
+     clause's own access unchanged, so a non-root mount is its entry. *)
+  Fixpoint bwrap_rest (l : list entry) : list entry :=
+    match l with
+    | nil => nil
+    | (nil, _) :: rest => bwrap_rest rest
+    | (s :: q, a) :: rest => (s :: q, a) :: bwrap_rest rest
+    end.
+
+  (* [filesystem_args]' root mount follows the root clause's own access: a
+     [Write] clause binds the host root read-write ([--bind / /]), a [Read]
+     clause binds it read-only ([--ro-bind / /]), a [Deny] clause makes it a
+     sealed empty tmpfs ([--tmpfs /], sealed by [seal_root]). Only the root no
+     clause names takes the reads default — [Read] under [All], [Deny] under
+     [Denied]. This is exactly the resolution law's root fallback, so the root
+     mount is faithful for every policy. *)
+  Definition bwrap_root (root_acc : option access) (d : reads_default) :
+      access :=
+    match root_acc with
+    | Some a => a
+    | None => default_access d
+    end.
+
+  (* The hoisted root mount first, then the non-root mounts in policy order.
+     Bubblewrap applies mounts in order and the last covering one wins, so the
+     root — a prefix of every path — must precede the deeper mounts it would
+     otherwise shadow; [filesystem_args] hoists it for exactly this reason. *)
+  Definition bwrap_mounts (l : list entry) (d : reads_default) : list entry :=
+    (nil, bwrap_root (bwrap_root_clause l) d) :: bwrap_rest l.
+
+  (** The access bubblewrap gives [p]: the last mount covering it wins, which
+      is the model's [emitted]. The root mount covers every path, so the
+      default arm of [emitted] is never reached. *)
+  Definition bwrap_access (l : list entry) (d : reads_default) (p : path) :
+      access :=
+    emitted (bwrap_mounts l d) d p.
+
 End Confinement.

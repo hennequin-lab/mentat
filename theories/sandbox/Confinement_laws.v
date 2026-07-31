@@ -1650,4 +1650,441 @@ Section Laws.
     reflexivity.
   Qed.
 
+  (** {1 Seatbelt correspondence}
+
+      The premise [emitted_normalize_is_resolve] assumes for seatbelt, now
+      proved: the read and write decisions of the SBPL rules emitted for
+      [normalize l] agree with the resolution law — a read is admitted exactly
+      where the policy does not deny, a write exactly where it resolves to
+      [Write]. SBPL resolves per operation, so the two decisions are stated
+      separately, matching [clause_rules], which threads no [require-not] and
+      lets a later rule win per operation. *)
+
+  Lemma sb_read_of_eq : forall a, sb_read_of a = negb (acc_eqb a Deny).
+  Proof. intros a. destruct a; reflexivity. Qed.
+
+  Lemma sb_write_of_eq : forall a, sb_write_of a = acc_eqb a Write.
+  Proof. intros a. destruct a; reflexivity. Qed.
+
+  Lemma sb_read_default_eq :
+    forall d, sb_read_default d = negb (acc_eqb (default_access d) Deny).
+  Proof. intros d. destruct d; reflexivity. Qed.
+
+  Lemma sb_write_default_eq :
+    forall d, sb_write_default d = acc_eqb (default_access d) Write.
+  Proof. intros d. destruct d; reflexivity. Qed.
+
+  (* The read rule list resolves, per path, to the read projection of the last
+     covering clause — the emission is one rule per clause, in clause order. *)
+  Lemma sb_read_rules_last :
+    forall l p,
+      last_match seg seg_eqb (sb_read_rules seg l) p
+      = match last_covering seg seg_eqb l p with
+        | None => None
+        | Some a => Some (sb_read_of a)
+        end.
+  Proof.
+    intros l p. induction l as [| [q a] rest IH].
+    - reflexivity.
+    - cbn [sb_read_rules last_match last_covering]. rewrite IH.
+      destruct (last_covering seg seg_eqb rest p) as [b |].
+      + reflexivity.
+      + destruct (withinb seg seg_eqb q p); reflexivity.
+  Qed.
+
+  Lemma sb_write_rules_last :
+    forall l p,
+      last_match seg seg_eqb (sb_write_rules seg l) p
+      = match last_covering seg seg_eqb l p with
+        | None => None
+        | Some a => Some (sb_write_of a)
+        end.
+  Proof.
+    intros l p. induction l as [| [q a] rest IH].
+    - reflexivity.
+    - cbn [sb_write_rules last_match last_covering]. rewrite IH.
+      destruct (last_covering seg seg_eqb rest p) as [b |].
+      + reflexivity.
+      + destruct (withinb seg seg_eqb q p); reflexivity.
+  Qed.
+
+  Lemma last_covering_normalize :
+    forall l p,
+      last_covering seg seg_eqb (normalize seg seg_eqb path_leb l) p
+      = match deepest seg seg_eqb l p with
+        | None => None
+        | Some (_, b) => Some b
+        end.
+  Proof.
+    intros l p.
+    rewrite (last_covering_deepest (normalize seg seg_eqb path_leb l) p
+               (normalize_dsorted l) (normalize_nodup l)).
+    rewrite deepest_normalize. reflexivity.
+  Qed.
+
+  (** Seatbelt admits a read of [p] exactly where the policy does not resolve
+      to a denial. *)
+  Theorem seatbelt_reads_resolve :
+    forall l d p,
+      sb_reads seg seg_eqb (normalize seg seg_eqb path_leb l) d p
+      = negb (acc_eqb (resolve seg seg_eqb l d p) Deny).
+  Proof.
+    intros l d p. unfold sb_reads, resolve.
+    rewrite sb_read_rules_last. rewrite last_covering_normalize.
+    destruct (deepest seg seg_eqb l p) as [[dd b] |].
+    - exact (sb_read_of_eq b).
+    - exact (sb_read_default_eq d).
+  Qed.
+
+  (** Seatbelt admits a write of [p] exactly where the policy resolves to
+      [Write]. *)
+  Theorem seatbelt_writes_resolve :
+    forall l d p,
+      sb_writes seg seg_eqb (normalize seg seg_eqb path_leb l) d p
+      = acc_eqb (resolve seg seg_eqb l d p) Write.
+  Proof.
+    intros l d p. unfold sb_writes, resolve.
+    rewrite sb_write_rules_last. rewrite last_covering_normalize.
+    destruct (deepest seg seg_eqb l p) as [[dd b] |].
+    - exact (sb_write_of_eq b).
+    - exact (sb_write_default_eq d).
+  Qed.
+
+  (** {1 Bubblewrap correspondence}
+
+      Bubblewrap's access for a path is the model's [emitted] over its mount
+      list: the last covering mount wins. The mount list is the hoisted root
+      mount, then the non-root clauses in policy order — [bwrap_mounts]. The
+      proof relates that list back to [resolve], using the same [deepest]/
+      [omerge] algebra: the root is at depth zero, so any covering deep clause
+      wins over it, exactly as in resolution. The root mount is the one place
+      bubblewrap can diverge, characterized at the end. *)
+
+  Lemma omerge_none_left : forall y, omerge None y = y.
+  Proof. intros y. reflexivity. Qed.
+
+  Lemma omerge_swap12 :
+    forall x y z, omerge x (omerge y z) = omerge y (omerge x z).
+  Proof.
+    intros x y z. rewrite (omerge_assoc x y z). rewrite (omerge_comm x y).
+    rewrite <- (omerge_assoc y x z). reflexivity.
+  Qed.
+
+  Lemma depth_pos_of_nonnil :
+    forall q : path seg, q <> nil -> nat_ltb O (depth seg q) = true.
+  Proof.
+    intros q H. destruct q as [| s q'].
+    - exfalso. apply H. reflexivity.
+    - rewrite nat_ltb_negb_leb. reflexivity.
+  Qed.
+
+  (* The winning depth is the depth of a covering clause, so a list of clauses
+     all deeper than the root has a winner deeper than the root. *)
+  Lemma deepest_all_pos :
+    forall l p,
+      (forall q a, InE (q, a) l -> nat_ltb O (depth seg q) = true) ->
+      forall d b, deepest seg seg_eqb l p = Some (d, b) -> nat_ltb O d = true.
+  Proof.
+    intros l. induction l as [| [q0 a0] rest IH]; intros p H d b Hd.
+    - discriminate Hd.
+    - rewrite deepest_cons in Hd.
+      assert (Hrest : forall q a,
+                 InE (q, a) rest -> nat_ltb O (depth seg q) = true).
+      { intros q a Hin. exact (H q a (or_intror Hin)). }
+      destruct (withinb seg seg_eqb q0 p) eqn:W.
+      + pose proof (H q0 a0 (or_introl eq_refl)) as Hq0.
+        rewrite (single_covering p q0 a0 W) in Hd.
+        destruct (deepest seg seg_eqb rest p) as [[dr br] |] eqn:Hr.
+        * pose proof (IH p Hrest dr br Hr) as Hbr.
+          destruct (nat_ltb dr (depth seg q0)) eqn:E1.
+          -- rewrite (omerge_ss_lt (depth seg q0) a0 dr br E1) in Hd.
+             injection Hd as Hd1 _. rewrite <- Hd1. exact Hq0.
+          -- destruct (nat_ltb (depth seg q0) dr) eqn:E2.
+             ++ rewrite (omerge_ss_gt (depth seg q0) a0 dr br E1 E2) in Hd.
+                injection Hd as Hd1 _. rewrite <- Hd1. exact Hbr.
+             ++ rewrite (omerge_ss_eq (depth seg q0) a0 dr br E1 E2) in Hd.
+                injection Hd as Hd1 _. rewrite <- Hd1. exact Hq0.
+        * rewrite (omerge_none_r (Some (depth seg q0, a0))) in Hd.
+          injection Hd as Hd1 _. rewrite <- Hd1. exact Hq0.
+      + rewrite (single_uncovered p q0 a0 W) in Hd. simpl in Hd.
+        exact (IH p Hrest d b Hd).
+  Qed.
+
+  (** {2 The non-root mounts} *)
+
+  Lemma bwrap_rest_root :
+    forall a0 rest, bwrap_rest seg ((nil, a0) :: rest) = bwrap_rest seg rest.
+  Proof. reflexivity. Qed.
+
+  Lemma bwrap_rest_nonroot_cons :
+    forall (s : seg) q0' a0 rest,
+      bwrap_rest seg ((s :: q0', a0) :: rest)
+      = (s :: q0', a0) :: bwrap_rest seg rest.
+  Proof. reflexivity. Qed.
+
+  Lemma bwrap_rest_incl :
+    forall l e, InE e (bwrap_rest seg l) -> InE e l.
+  Proof.
+    intros l. induction l as [| [q0 a0] rest IH]; intros e H.
+    - destruct H.
+    - destruct q0 as [| s q0'].
+      + rewrite bwrap_rest_root in H. right. exact (IH e H).
+      + rewrite bwrap_rest_nonroot_cons in H. destruct H as [Heq | H].
+        * left. exact Heq.
+        * right. exact (IH e H).
+  Qed.
+
+  Lemma bwrap_rest_nonroot :
+    forall l q a, InE (q, a) (bwrap_rest seg l) -> q <> nil.
+  Proof.
+    intros l. induction l as [| [q0 a0] rest IH]; intros q a H.
+    - destruct H.
+    - destruct q0 as [| s q0'].
+      + rewrite bwrap_rest_root in H. exact (IH q a H).
+      + rewrite bwrap_rest_nonroot_cons in H. destruct H as [Heq | H].
+        * injection Heq as Hq _. rewrite <- Hq. intro C. discriminate C.
+        * exact (IH q a H).
+  Qed.
+
+  Lemma bwrap_rest_mem :
+    forall l r, mem_path r (bwrap_rest seg l) = true -> mem_path r l = true.
+  Proof.
+    intros l. induction l as [| [q0 a0] rest IH]; intros r H.
+    - simpl in H. discriminate H.
+    - destruct q0 as [| s q0'].
+      + rewrite bwrap_rest_root in H.
+        change (mem_path r ((nil, a0) :: rest))
+          with (orb (path_eqb seg seg_eqb nil r) (mem_path r rest)).
+        rewrite (IH r H).
+        destruct (path_eqb seg seg_eqb nil r); reflexivity.
+      + rewrite bwrap_rest_nonroot_cons in H.
+        change (mem_path r ((s :: q0', a0) :: bwrap_rest seg rest))
+          with (orb (path_eqb seg seg_eqb (s :: q0') r)
+                  (mem_path r (bwrap_rest seg rest))) in H.
+        change (mem_path r ((s :: q0', a0) :: rest))
+          with (orb (path_eqb seg seg_eqb (s :: q0') r) (mem_path r rest)).
+        destruct (path_eqb seg seg_eqb (s :: q0') r).
+        * reflexivity.
+        * simpl in H. rewrite (IH r H). reflexivity.
+  Qed.
+
+  Lemma bwrap_rest_nodup :
+    forall l, no_dup l = true -> no_dup (bwrap_rest seg l) = true.
+  Proof.
+    intros l. induction l as [| [q0 a0] rest IH]; intros H.
+    - reflexivity.
+    - change (no_dup ((q0, a0) :: rest))
+        with (andb (negb (mem_path q0 rest)) (no_dup rest)) in H.
+      destruct (andb_true_split _ _ H) as [Hm Hnd].
+      destruct q0 as [| s q0'].
+      + rewrite bwrap_rest_root. exact (IH Hnd).
+      + rewrite bwrap_rest_nonroot_cons.
+        change (no_dup ((s :: q0', a0) :: bwrap_rest seg rest))
+          with (andb (negb (mem_path (s :: q0') (bwrap_rest seg rest)))
+                  (no_dup (bwrap_rest seg rest))).
+        rewrite (IH Hnd).
+        destruct (mem_path (s :: q0') (bwrap_rest seg rest)) eqn:Em.
+        * pose proof (bwrap_rest_mem rest (s :: q0') Em) as Mr.
+          rewrite Mr in Hm. discriminate Hm.
+        * reflexivity.
+  Qed.
+
+  Lemma dsorted_cons_head :
+    forall a K,
+      (forall e,
+         InE e K -> nat_leb (depth seg (fst a)) (depth seg (fst e)) = true) ->
+      dsorted K = true ->
+      dsorted (a :: K) = true.
+  Proof.
+    intros a K Hle Hd. destruct K as [| b restb].
+    - reflexivity.
+    - change (dsorted (a :: b :: restb))
+        with (andb (nat_leb (depth seg (fst a)) (depth seg (fst b)))
+                (dsorted (b :: restb))).
+      rewrite (Hle b (or_introl eq_refl)). rewrite Hd. reflexivity.
+  Qed.
+
+  Lemma bwrap_rest_dsorted :
+    forall l, dsorted l = true -> dsorted (bwrap_rest seg l) = true.
+  Proof.
+    intros l. induction l as [| [q0 a0] rest IH]; intros H.
+    - reflexivity.
+    - pose proof (dsorted_tail (q0, a0) rest H) as Htail.
+      destruct q0 as [| s q0'].
+      + rewrite bwrap_rest_root. exact (IH Htail).
+      + rewrite bwrap_rest_nonroot_cons.
+        apply dsorted_cons_head.
+        * intros e Hin.
+          exact (dsorted_head_leb_all (s :: q0', a0) rest H e
+                   (bwrap_rest_incl rest e Hin)).
+        * exact (IH Htail).
+  Qed.
+
+  (** {2 The root clause} *)
+
+  Lemma bwrap_root_clause_none :
+    forall l, mem_path nil l = false -> bwrap_root_clause seg l = None.
+  Proof.
+    intros l. induction l as [| [q0 a0] rest IH]; intros H.
+    - reflexivity.
+    - destruct q0 as [| s q0'].
+      + simpl in H. discriminate H.
+      + cbn [bwrap_root_clause]. apply IH. simpl in H. exact H.
+  Qed.
+
+  Definition root_single (l : list (entry seg)) : option (nat * access) :=
+    match bwrap_root_clause seg l with
+    | Some a => Some (depth seg nil, a)
+    | None => None
+    end.
+
+  Lemma root_single_root :
+    forall a0 rest, root_single ((nil, a0) :: rest) = Some (depth seg nil, a0).
+  Proof. reflexivity. Qed.
+
+  Lemma root_single_nonroot :
+    forall (s : seg) q0' a0 rest,
+      root_single ((s :: q0', a0) :: rest) = root_single rest.
+  Proof. reflexivity. Qed.
+
+  Lemma root_single_none :
+    forall l, bwrap_root_clause seg l = None -> root_single l = None.
+  Proof. intros l H. unfold root_single. rewrite H. reflexivity. Qed.
+
+  (* [deepest] over the whole list is the root clause's contribution merged
+     with [deepest] over the non-root mounts — the merge is order- and
+     duplicate-insensitive, so splitting the root out changes nothing. *)
+  Lemma deepest_split_root :
+    forall l p,
+      no_dup l = true ->
+      deepest seg seg_eqb l p
+      = omerge (root_single l) (deepest seg seg_eqb (bwrap_rest seg l) p).
+  Proof.
+    intros l. induction l as [| [q0 a0] rest IH]; intros p Hnd.
+    - reflexivity.
+    - change (no_dup ((q0, a0) :: rest))
+        with (andb (negb (mem_path q0 rest)) (no_dup rest)) in Hnd.
+      destruct (andb_true_split _ _ Hnd) as [Hm Hnd'].
+      destruct q0 as [| s q0'].
+      + rewrite bwrap_rest_root. rewrite root_single_root.
+        rewrite deepest_cons.
+        rewrite (single_covering p nil a0 (withinb_nil p)).
+        assert (Hrc : bwrap_root_clause seg rest = None).
+        { apply bwrap_root_clause_none. exact (negb_true_false _ Hm). }
+        pose proof (IH p Hnd') as IHrest.
+        rewrite (root_single_none rest Hrc) in IHrest.
+        rewrite (omerge_none_left (deepest seg seg_eqb (bwrap_rest seg rest) p))
+          in IHrest.
+        rewrite IHrest. reflexivity.
+      + rewrite root_single_nonroot. rewrite bwrap_rest_nonroot_cons.
+        rewrite deepest_cons. rewrite deepest_cons. rewrite (IH p Hnd').
+        exact (omerge_swap12 (single p (s :: q0', a0)) (root_single rest)
+                 (deepest seg seg_eqb (bwrap_rest seg rest) p)).
+  Qed.
+
+  (** {2 The characterizations} *)
+
+  (* Bubblewrap's access: the deepest non-root mount covering [p], or the root
+     mount when none does. *)
+  Lemma bwrap_access_char :
+    forall l d p,
+      bwrap_access seg seg_eqb (normalize seg seg_eqb path_leb l) d p
+      = match
+          deepest seg seg_eqb
+            (bwrap_rest seg (normalize seg seg_eqb path_leb l)) p
+        with
+        | Some (_, br) => br
+        | None =>
+            bwrap_root
+              (bwrap_root_clause seg (normalize seg seg_eqb path_leb l)) d
+        end.
+  Proof.
+    intros l d p. unfold bwrap_access, emitted, bwrap_mounts.
+    cbn [last_covering].
+    rewrite (last_covering_deepest
+               (bwrap_rest seg (normalize seg seg_eqb path_leb l)) p
+               (bwrap_rest_dsorted (normalize seg seg_eqb path_leb l)
+                  (normalize_dsorted l))
+               (bwrap_rest_nodup (normalize seg seg_eqb path_leb l)
+                  (normalize_nodup l))).
+    destruct (deepest seg seg_eqb
+                (bwrap_rest seg (normalize seg seg_eqb path_leb l)) p)
+      as [[dr br] |].
+    - reflexivity.
+    - rewrite (withinb_nil p). reflexivity.
+  Qed.
+
+  (* Resolution, split the same way: the deepest non-root clause, or the root
+     clause's own access, or the default. *)
+  Lemma resolve_char :
+    forall l d p,
+      resolve seg seg_eqb l d p
+      = match
+          deepest seg seg_eqb
+            (bwrap_rest seg (normalize seg seg_eqb path_leb l)) p
+        with
+        | Some (_, br) => br
+        | None =>
+            match bwrap_root_clause seg (normalize seg seg_eqb path_leb l) with
+            | Some a => a
+            | None => default_access d
+            end
+        end.
+  Proof.
+    intros l d p.
+    rewrite <- (resolve_normalize l d p).
+    unfold resolve.
+    rewrite (deepest_split_root (normalize seg seg_eqb path_leb l) p
+               (normalize_nodup l)).
+    unfold root_single. rewrite depth_nil.
+    destruct (deepest seg seg_eqb
+                (bwrap_rest seg (normalize seg seg_eqb path_leb l)) p)
+      as [[dr br] |] eqn:HDR.
+    - assert (Hhyp : forall q a,
+                 InE (q, a) (bwrap_rest seg (normalize seg seg_eqb path_leb l)) ->
+                 nat_ltb O (depth seg q) = true).
+      { intros q a Hin. apply depth_pos_of_nonnil.
+        exact (bwrap_rest_nonroot _ q a Hin). }
+      pose proof (deepest_all_pos _ p Hhyp dr br HDR) as Hpos.
+      destruct (bwrap_root_clause seg (normalize seg seg_eqb path_leb l))
+        as [a |].
+      + rewrite (omerge_ss_gt O a dr br (nat_ltb_zero_r dr) Hpos).
+        reflexivity.
+      + rewrite (omerge_none_left (Some (dr, br))). reflexivity.
+    - destruct (bwrap_root_clause seg (normalize seg seg_eqb path_leb l))
+        as [a |].
+      + rewrite (omerge_none_r (Some (O, a))). reflexivity.
+      + rewrite (omerge_none_left (@None (nat * access)%type)). reflexivity.
+  Qed.
+
+  (** {2 The correspondence and its one gap} *)
+
+  (** Bubblewrap resolves every path exactly as the policy does, for every
+      policy and path. The root mount follows the root clause's own access
+      ([bwrap_root]), which is the resolution law's root fallback, so the two
+      characterizations differ nowhere: a covering non-root mount wins where one
+      exists, the root mount otherwise. *)
+  Theorem bubblewrap_resolves :
+    forall l d p,
+      bwrap_access seg seg_eqb (normalize seg seg_eqb path_leb l) d p
+      = resolve seg seg_eqb l d p.
+  Proof.
+    intros l d p.
+    rewrite bwrap_access_char. rewrite resolve_char.
+    destruct (deepest seg seg_eqb
+                (bwrap_rest seg (normalize seg seg_eqb path_leb l)) p)
+      as [[dr br] |].
+    - reflexivity.
+    - destruct (bwrap_root_clause seg (normalize seg seg_eqb path_leb l));
+        reflexivity.
+  Qed.
+
+  (** Its write decision therefore matches the resolution law too. *)
+  Theorem bubblewrap_writes_resolve :
+    forall l d p,
+      acc_eqb
+        (bwrap_access seg seg_eqb (normalize seg seg_eqb path_leb l) d p) Write
+      = acc_eqb (resolve seg seg_eqb l d p) Write.
+  Proof. intros l d p. rewrite (bubblewrap_resolves l d p). reflexivity. Qed.
+
 End Laws.
