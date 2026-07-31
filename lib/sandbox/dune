@@ -1,4 +1,4 @@
 (library
  (name mentat_sandbox)
  (private_modules seatbelt bubblewrap profile seal)
- (libraries jsont lpath mentat_digest))
+ (libraries jsont lpath mentat_digest mentat_sandbox_kernel))

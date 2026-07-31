@@ -23,14 +23,17 @@ module Network = struct
   let pp ppf t = Format.pp_print_string ppf (to_string t)
 end
 
-module Access = struct
-  type t = Read | Write | Deny
+(* The confinement semantics — normalization, resolution order, the widening
+   refusals — live in theories/sandbox/Confinement.v; the kernel library is
+   the OCaml extracted from it. Access and the reads default re-export the
+   kernel's types, so only paths convert at the boundary: a path crosses as
+   its component list — total in both directions, since the stored spelling
+   is canonical — and the kernel's equal-depth tie-break instantiates to
+   [Lpath.Abs.compare]'s byte order. *)
 
-  (* The precedence a tie between two clauses on one path is settled by: a
-     write outranks a read, and a denial outranks both. Not an ordering by
-     permissiveness — a write is the {e most} permissive of the three and still
-     outranks a read — but by which clause the posture meant, which is the
-     reference implementation's rule. *)
+module Access = struct
+  type t = Mentat_sandbox_kernel.Confinement.access = Read | Write | Deny
+
   let rank = function Read -> 0 | Write -> 1 | Deny -> 2
   let compare a b = Int.compare (rank a) (rank b)
   let equal a b = rank a = rank b
@@ -38,7 +41,9 @@ module Access = struct
   let pp ppf t = Format.pp_print_string ppf (to_string t)
 end
 
-type reads_default = All | Denied
+type reads_default = Mentat_sandbox_kernel.Confinement.reads_default =
+  | All
+  | Denied
 
 type t = {
   entries : (Lpath.Abs.t * Access.t) list;
@@ -46,37 +51,15 @@ type t = {
   network : Network.t;
 }
 
-(* Specificity is the component count, not the separator count: the two agree
-   everywhere except at the root, which is spelled ["/"] and so carries a
-   separator without naming a component. Counting separators would tie the root
-   with every single-component path — the one tie where the answer matters,
-   since the root contains them all. *)
-let depth path =
-  if Lpath.Abs.is_root path then 0
-  else
-    Lpath.Abs.to_string path
-    |> String.fold_left (fun n c -> if Char.equal c '/' then n + 1 else n) 0
+let render segs = "/" ^ String.concat "/" segs
+let path_leb a b = String.compare (render a) (render b) <= 0
+let to_kernel (path, access) = (Lpath.Abs.components path, access)
+let of_kernel (segs, access) = (Lpath.Abs.of_string_exn (render segs), access)
 
-(* Emission order is resolution order read backwards. Both backends let the
-   last clause touching a path win — SBPL by rule order, bubblewrap by mount
-   order — so sorting shallowest-first makes the most specific clause the one
-   that decides, and neither generator has to know that rule. Two clauses on one
-   path collapse to the stronger, which is what makes a carveout an ordinary
-   entry rather than an exception threaded through the rule that contains it. *)
 let normalize entries =
-  let table = Hashtbl.create 16 in
-  List.iter
-    (fun (path, access) ->
-      let key = Lpath.Abs.to_string path in
-      match Hashtbl.find_opt table key with
-      | Some (_, existing) when Access.compare existing access >= 0 -> ()
-      | Some _ | None -> Hashtbl.replace table key (path, access))
-    entries;
-  Hashtbl.fold (fun _ entry acc -> entry :: acc) table []
-  |> List.sort (fun (a, _) (b, _) ->
-      match Int.compare (depth a) (depth b) with
-      | 0 -> Lpath.Abs.compare a b
-      | order -> order)
+  List.map of_kernel
+    (Mentat_sandbox_kernel.Confinement.normalize String.equal path_leb
+       (List.map to_kernel entries))
 
 let make ~entries ~reads_default ~network =
   { entries = normalize entries; reads_default; network }
@@ -101,70 +84,18 @@ let readable_roots t =
       | Access.Deny -> None)
     t.entries
 
-(* A grant only ever widens, and normalization already keeps the stronger of two
-   clauses on one path — so a grant beneath an existing clause resolves by the
-   ordinary law and needs no special case. A denied path is the exception: it
-   would win that tie silently, and a grant answered by doing nothing is worse
-   than one that is refused, so the containment is checked here and reported.
-   Only the direction that would be defeated is refused. A grant *containing* a
-   denied path is admitted and the deeper denial keeps winning inside it, which
-   is how the deny set survives a grant made over a whole tree. *)
 let grant t entries =
-  (* A clause that grants less than one enclosing it was lowered on purpose —
-     [.git] inside the workspace, the dune store inside its cache. Those are
-     what a grant must not raise, and the deny set is only the loudest of them:
-     admitting a write over a carveout hands back exactly the path some earlier
-     ruling took away, and [normalize] would collapse the two clauses to the
-     stronger without a word.
-
-     Only a carveout, though. A read root is not a carveout, and a grant beneath
-     one is the ordinary case this exists to serve — [/usr] being unwritable is
-     the default reach, not a decision about [/usr/local/x]. So the test is
-     relative: refuse where the covering clause is weaker than the grant *and*
-     something shallower is stronger than it. *)
-  let carveouts =
-    List.filter
-      (fun (path, access) ->
-        List.exists
-          (fun (enclosing, enclosing_access) ->
-            (not (Lpath.Abs.equal enclosing path))
-            && Lpath.Abs.is_within ~root:enclosing path
-            && Access.compare enclosing_access access > 0)
-          t.entries)
-      t.entries
-  in
-  (* A grant naming the root is refused. Nothing else bounds a grant's breadth,
-     and it does not need to — a grant is approved per command and the approver
-     sees the path — but the root is the one spelling that makes a grant a
-     different thing than it claims to be: it is the escalation, wearing the
-     name of the narrow move and skipping the stance that gates the wide one. *)
-  let root_grant (path, _) =
-    if Lpath.Abs.is_root path then Some (path, path) else None
-  in
-  let defeated (path, access) =
-    List.find_opt
-      (fun (root, root_access) ->
-        Lpath.Abs.is_within ~root path && Access.compare root_access access < 0)
-      carveouts
-    |> Option.map (fun (root, _) -> (path, root))
-  in
-  let denied (path, _) =
-    List.find_opt (fun root -> Lpath.Abs.is_within ~root path) (denied_paths t)
-    |> Option.map (fun root -> (path, root))
-  in
   match
-    List.find_map
-      (fun entry ->
-        match root_grant entry with
-        | Some _ as defeat -> defeat
-        | None -> (
-            match denied entry with
-            | Some _ as defeat -> defeat
-            | None -> defeated entry))
-      entries
+    Mentat_sandbox_kernel.Confinement.grant String.equal path_leb
+      (List.map to_kernel t.entries)
+      (List.map to_kernel entries)
   with
-  | Some defeat -> Error defeat
-  | None -> Ok { t with entries = normalize (t.entries @ entries) }
+  | Mentat_sandbox_kernel.Confinement.Granted granted ->
+      Ok { t with entries = List.map of_kernel granted }
+  | Mentat_sandbox_kernel.Confinement.Refused (path, defeated_by) ->
+      Error
+        ( Lpath.Abs.of_string_exn (render path),
+          Lpath.Abs.of_string_exn (render defeated_by) )
 
 let reads_default_equal a b =
   match (a, b) with

@@ -1,0 +1,7 @@
+; The verified model of the confinement kernel. Building it checks the
+; proofs, so they gate every build that reaches this library.
+
+(rocq.theory
+ (name MentatSandbox)
+ (no_corelib)
+ (theories Corelib))
