@@ -1,0 +1,8 @@
+; Extraction of the verified kernel. The generated sources are promoted into
+; lib/permission/kernel, where they compile; see the dune file there.
+
+(rocq.extraction
+ (prelude extract)
+ (extracted_files decision.ml decision.mli)
+ (no_corelib)
+ (theories Corelib MentatPermission))

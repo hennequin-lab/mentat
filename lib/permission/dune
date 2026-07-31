@@ -1,3 +1,8 @@
 (library
  (name mentat_permission)
- (libraries jsont mentat_digest lpath mentat_workspace))
+ (libraries
+  jsont
+  mentat_digest
+  lpath
+  mentat_workspace
+  mentat_permission_kernel))
