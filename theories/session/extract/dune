@@ -1,0 +1,8 @@
+; Extraction of the verified fold. The generated sources are promoted into
+; lib/session/kernel, where they compile; see the dune file there.
+
+(rocq.extraction
+ (prelude extract)
+ (extracted_files replay.ml replay.mli)
+ (no_corelib)
+ (theories Corelib MentatSession))

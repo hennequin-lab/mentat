@@ -1545,14 +1545,20 @@ let apply event t =
       turn_error (Error.Turn.Interrupted turn)
   | Some _ | None -> apply_step event t
 
+(* [apply_all] runs the verified replay fold (theories/session/Replay.v): the
+   short-circuiting left fold is the extracted kernel, and the step it threads is
+   [apply] paired with the diagnostic event index this surface reports on the
+   first rejection. That the fold agrees with the incremental path — the state
+   [Mentat_session.append] maintains one [apply] per appended event — is
+   [Replay_laws.incremental_eq_full], proved for every event sequence. *)
 let apply_all events t =
-  let rec loop index t = function
-    | [] -> Ok t
-    | event :: events -> (
-        match apply event t with
-        | Error cause -> Error { Replay_error.index; event; cause }
-        | Ok t -> loop (index + 1) t events)
+  let step event (index, t) =
+    match apply event t with
+    | Ok t -> Ok (index + 1, t)
+    | Error cause -> Error { Replay_error.index; event; cause }
   in
-  loop 0 t events
+  match Mentat_session_kernel.Replay.full_fold step (0, t) events with
+  | Ok (_, t) -> Ok t
+  | Error replay_error -> Error replay_error
 
 let of_events events = apply_all events empty
