@@ -52,12 +52,23 @@
  ; value, and the old %{bin:mentat} spelling realpathed to the same
  ; bin/main.exe.
  ; Promotion caveat: dune drives every partition of this library inside
- ; one action and runs the per-file (diff? source source.corrected)
- ; steps only after every partition exits 0. windtrap 0.2 exits 1 for a
- ; failure that is not an expect mismatch (e.g. an uncaught exception),
- ; so one crashing test in any partition suppresses `dune promote` for
- ; the whole library's expect corrections — they print in the output
- ; but never register.
+ ; one action and runs the per-file (diff? source source.corrected) steps
+ ; only after every partition exits 0, so a crash in any partition still
+ ; withholds every other partition's expect correction from `dune
+ ; promote`. What changed is that this is no longer silent or
+ ; unavoidable. Every process that writes a correction now prints the
+ ; caveat naming both ways out (the writing process exits 0, so the old
+ ; notice stayed quiet in exactly this case), and WINDTRAP_UPDATE=1
+ ; writes accepted corrections into the source tree directly, per file,
+ ; bypassing the cross-file veto:
+ ;
+ ;   WINDTRAP_UPDATE=1 dune test test/tui/pty
+ ;
+ ; then review with `git diff` — acceptance is assertion authorship, so
+ ; read every hunk. It removes only the *cross-file* veto: a crash is
+ ; never promotable on either channel, and a partition carrying a
+ ; non-expect failure (an assertion beside a stale payload) accepts
+ ; nothing either, so the per-file masked-assertion rule still holds.
  (inline_tests
   (deps
    ../../../bin/main.exe
