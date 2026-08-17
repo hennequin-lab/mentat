@@ -4579,6 +4579,187 @@ let replay_group =
                   State.Replay_error.shift ~by:(-1) error));
     ]
 
+(* The journal as a state machine.
+
+   Every replay group above pins one hand-written journey. The architecture's
+   load-bearing replay claim is stronger than any list of journeys: over *every*
+   valid lifecycle, the projection [State.apply] maintains incrementally equals
+   the one [State.of_events] folds from scratch — full replay equals
+   snapshot-plus-suffix. Only a model over generated command sequences states
+   that quantifier, and when it breaks it shrinks to the shortest event sequence
+   that shows it.
+
+   The model is the turn-and-claim spec, not a second projection: which turn is
+   active, whether a provider claim is open, and whether the turn has been
+   forced interrupt-only — by an explicit request, or by an ambiguous
+   settlement, which the provider group pins as forcing the same way. *)
+
+type journal_model = {
+  next_turn : int;  (** names the next turn; ids are [turn-1], [turn-2], ... *)
+  next_claim : int;  (** names the next claim seed, so no turn reuses one *)
+  active : string option;  (** the active turn's id, when one is *)
+  pending : string option;  (** the open provider claim's seed, when one is *)
+  interrupt_asked : bool;  (** [Interrupt_requested] ran on the active turn *)
+  forced : bool;  (** the active turn may settle only [Interrupted] *)
+}
+
+let journal_model_empty =
+  {
+    next_turn = 1;
+    next_claim = 1;
+    active = None;
+    pending = None;
+    interrupt_asked = false;
+    forced = false;
+  }
+
+let pp_journal_model ppf m =
+  let opt ppf = function
+    | None -> Format.pp_print_string ppf "-"
+    | Some s -> Format.pp_print_string ppf s
+  in
+  Format.fprintf ppf "{ active = %a; claim = %a; interrupt = %b; forced = %b }"
+    opt m.active opt m.pending m.interrupt_asked m.forced
+
+(* The system under test: the incrementally maintained projection beside the
+   log that produced it, so the invariant can re-fold that log and compare. *)
+type journal_sut = { mutable proj : State.t; mutable rlog : Event.t list }
+
+(* The model claims every event it generates is admissible, so a refusal is a
+   failure of the specification, not an expected outcome to assert on. *)
+let journal_apply sut event =
+  match State.apply event sut.proj with
+  | Ok proj ->
+      sut.proj <- proj;
+      sut.rlog <- event :: sut.rlog
+  | Error error ->
+      failf "the model offered an event the journal refused: %s"
+        (State.Error.message error)
+
+let model_turn_id m = turn_id (Option.get m.active)
+let claim_seed n = Printf.sprintf "req-%d" n
+let turn_name n = Printf.sprintf "turn-%d" n
+
+(* What a provider claim settles as. [Responded] appends an assistant message;
+   [Failed] proves an outcome and forces nothing; [Ambiguous] is the crash
+   report, and forces the turn interrupt-only. *)
+type settlement = Responded | Settle_failed | Ambiguous
+
+let pp_settlement ppf s =
+  Format.pp_print_string ppf
+    (match s with
+    | Responded -> "responded"
+    | Settle_failed -> "failed"
+    | Ambiguous -> "ambiguous")
+
+let settlement_gen =
+  Gen.of_list [ Responded; Settle_failed; Ambiguous ]
+  |> Gen.with_pp pp_settlement
+
+let journal_commands =
+  [
+    call "start turn"
+      ~pre:(fun m -> m.active = None)
+      ~next:(fun m ->
+        {
+          m with
+          next_turn = m.next_turn + 1;
+          active = Some (turn_name m.next_turn);
+          pending = None;
+          interrupt_asked = false;
+          forced = false;
+        })
+      (fun m sut ->
+        let id = turn_name m.next_turn in
+        journal_apply sut (Event.turn_started (turn ~id ()));
+        equal (option string) ~msg:"the started turn is the active one"
+          (Some id)
+          (Option.map Session.Turn.Id.to_string (State.active_turn_id sut.proj)));
+    call "request provider"
+      ~pre:(fun m -> m.active <> None && m.pending = None && not m.forced)
+      ~next:(fun m ->
+        {
+          m with
+          next_claim = m.next_claim + 1;
+          pending = Some (claim_seed m.next_claim);
+        })
+      (fun m sut ->
+        let c = claim ~seed:(claim_seed m.next_claim) (model_turn_id m) in
+        journal_apply sut (Event.provider_requested c);
+        equal (option suspension_value) ~msg:"the open claim suspends the turn"
+          (Some (State.Provider c))
+          (State.suspension sut.proj));
+    command "settle provider" settlement_gen
+      ~pre:(fun m _ -> m.pending <> None)
+      ~next:(fun m s ->
+        { m with pending = None; forced = m.forced || s = Ambiguous })
+      (fun m s sut ->
+        let c = claim ~seed:(Option.get m.pending) (model_turn_id m) in
+        journal_apply sut
+          (match s with
+          | Responded -> respond c "done"
+          | Settle_failed -> settle_failed c
+          | Ambiguous -> settle_ambiguous c);
+        equal (option suspension_value) ~msg:"settling closes the suspension"
+          None
+          (State.suspension sut.proj));
+    call "request interrupt"
+      ~pre:(fun m -> m.active <> None && not m.forced)
+      ~next:(fun m -> { m with interrupt_asked = true; forced = true })
+      (fun m sut ->
+        journal_apply sut (Event.interrupt_requested ~turn:(model_turn_id m) ());
+        is_true ~msg:"the interrupt is recorded"
+          (State.interrupt_requested sut.proj));
+    call "finish turn"
+      ~pre:(fun m -> m.active <> None && m.pending = None)
+      ~next:(fun m ->
+        { m with active = None; interrupt_asked = false; forced = false })
+      (fun m sut ->
+        (* A forced turn may settle only [Interrupted]; anything else is the
+           replay error the provider group pins. *)
+        let outcome =
+          if m.forced then Session.Turn.Outcome.interrupted ~cancelled:false ()
+          else Session.Turn.Outcome.completed
+        in
+        let t_id = model_turn_id m in
+        journal_apply sut (Event.turn_finished ~turn:t_id outcome);
+        equal (option outcome_value) ~msg:"the turn settles with its outcome"
+          (Some outcome)
+          (State.turn_outcome t_id sut.proj);
+        equal (option turn_id_value) ~msg:"no turn is active after finishing"
+          None
+          (State.active_turn_id sut.proj));
+  ]
+
+let journal_machine_group =
+  group "replay: the journal as a state machine"
+    [
+      stateful "the incremental projection equals the full fold"
+        ~model:journal_model_empty ~pp_model:pp_journal_model
+        ~scope:(fun run -> run { proj = State.empty; rlog = [] })
+        ~invariant:(fun m sut ->
+          (* The load-bearing law: re-folding the whole log from empty must
+             reach the state the per-event applies built. *)
+          assert_states_equal ~msg:"incremental apply equals the full fold"
+            (state (List.rev sut.rlog))
+            sut.proj;
+          equal (option string) ~msg:"the model agrees on the active turn"
+            m.active
+            (Option.map Session.Turn.Id.to_string
+               (State.active_turn_id sut.proj));
+          equal bool ~msg:"the model agrees on the interrupt flag"
+            m.interrupt_asked
+            (State.interrupt_requested sut.proj);
+          equal bool ~msg:"a claim is open exactly when the model says so"
+            (m.pending <> None)
+            (Option.is_some (State.suspension sut.proj));
+          (* Both rare states have to be reached, or the commands that depend
+             on them never ran and the suite is quietly weaker than it reads. *)
+          cover ~label:"a turn forced interrupt-only" ~at_least:65. m.forced;
+          cover ~label:"an open provider claim" ~at_least:35. (m.pending <> None))
+        journal_commands;
+    ]
+
 (* The session document. *)
 
 let document_group =
@@ -5927,6 +6108,7 @@ let () =
       delegation_group;
       undo_group;
       replay_group;
+      journal_machine_group;
       document_group;
       branch_group;
       metrics_group;

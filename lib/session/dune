@@ -1,6 +1,10 @@
 (library
  (name mentat_session)
  (private_modules string_id import)
+ (instrumentation
+  (backend ppx_windtrap))
+ (instrumentation
+  (backend ppx_windtrap.mutate))
  (libraries
   jsont
   mentat_digest
