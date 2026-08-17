@@ -389,35 +389,24 @@ let all_read_section = {|(allow file-read*)
 
 let seatbelt_read_only_golden () =
   let text, params = seatbelt_sbpl (confined ()) in
-  is_true ~msg:"profile starts closed-by-default"
-    (String.includes ~affix:"(deny default)" text);
-  is_true ~msg:"host-wide reads section is exact"
-    (String.includes ~affix:all_read_section text);
+  contains ~msg:"profile starts closed-by-default" ~sub:"(deny default)" text;
+  contains ~msg:"host-wide reads section is exact" ~sub:all_read_section text;
   (* A posture that grants no writable root emits no write section and no
      socket section. The socket guard is the load-bearing half: an allow with
      an empty predicate list is an unconditional allow, so emitting one here
      would hand every command full outbound under a restricted network. *)
-  is_false ~msg:"no writable root, so no write section"
-    (String.includes ~affix:"WRITABLE_ROOT_0" text);
-  is_false ~msg:"no writable root, so no unfiltered socket allow"
-    (String.includes ~affix:"(allow network-bind network-outbound" text);
+  not_contains ~msg:"no writable root, so no write section"
+    ~sub:"WRITABLE_ROOT_0" text;
+  not_contains ~msg:"no writable root, so no unfiltered socket allow"
+    ~sub:"(allow network-bind network-outbound" text;
   equal (list (pair string string)) ~msg:"no roots, no parameters" [] params;
-  is_false
+  not_contains
     ~msg:"restricted network opens no INET boundary (no blanket outbound rule)"
-    (String.includes ~affix:"(allow network-outbound)" text)
+    ~sub:"(allow network-outbound)" text
 
 (* The profile is one rule per clause in emission order, so what these pin is
    the resolution law rather than a layout: the clause that decides a path is
    the last one naming it. *)
-let index_of needle haystack =
-  let n = String.length needle and h = String.length haystack in
-  let rec go i =
-    if i + n > h then -1
-    else if String.equal (String.sub haystack i n) needle then i
-    else go (i + 1)
-  in
-  go 0
-
 let seatbelt_scoped_reads_golden () =
   let policy =
     confined
@@ -427,32 +416,32 @@ let seatbelt_scoped_reads_golden () =
       ()
   in
   let text, params = seatbelt_sbpl policy in
-  is_false ~msg:"scoped reads drop the host-wide read rule"
-    (String.includes ~affix:"(allow file-read*)" text);
+  not_contains ~msg:"scoped reads drop the host-wide read rule"
+    ~sub:"(allow file-read*)" text;
   equal
     (list (pair string string))
     ~msg:"every clause is a parameter, shallowest first"
     [ ("PATH_0", "/work"); ("PATH_1", "/opt/ocaml"); ("PATH_2", "/work/.git") ]
     params;
-  is_true ~msg:"the writable clause grants writes"
-    (String.includes ~affix:"(allow file-write*\n(subpath (param \"PATH_0\")))"
-       text);
-  is_true ~msg:"the carveout denies writes"
-    (String.includes ~affix:"(deny file-write*\n(subpath (param \"PATH_2\")))"
-       text);
-  is_true
+  contains ~msg:"the writable clause grants writes"
+    ~sub:"(allow file-write*\n(subpath (param \"PATH_0\")))" text;
+  in_order
     ~msg:"the carveout's deny follows the grant it overrides, so it decides"
-    (index_of "(deny file-write*\n(subpath (param \"PATH_2\")))" text
-    > index_of "(allow file-write*\n(subpath (param \"PATH_0\")))" text);
+    ~subs:
+      [
+        "(allow file-write*\n(subpath (param \"PATH_0\")))";
+        "(deny file-write*\n(subpath (param \"PATH_2\")))";
+      ]
+    text;
   is_true
     ~msg:"local Unix-socket IPC is admitted under the writable clause only"
     (String.includes
        ~affix:
          "(allow network-bind network-outbound\n(subpath (param \"PATH_0\"))\n)"
        text);
-  is_false
+  not_contains
     ~msg:"restricted network opens no INET boundary (no blanket outbound rule)"
-    (String.includes ~affix:"(allow network-outbound)" text)
+    ~sub:"(allow network-outbound)" text
 
 let seatbelt_carveout_golden () =
   let policy =
@@ -480,9 +469,10 @@ let seatbelt_carveout_golden () =
         (String.includes
            ~affix:("(deny file-write*\n(subpath (param \"" ^ param ^ "\")))")
            text);
-      is_true
+      contains
         ~msg:("the carveout " ^ param ^ " still reads")
-        (String.includes ~affix:("(subpath (param \"" ^ param ^ "\")))") text))
+        ~sub:("(subpath (param \"" ^ param ^ "\")))")
+        text)
     [ "PATH_2"; "PATH_3"; "PATH_4" ]
 
 let seatbelt_nested_roots_share_carveouts () =
@@ -504,23 +494,23 @@ let seatbelt_nested_roots_share_carveouts () =
   in
   match (param_of "/private/tmp/ws/.git", param_of "/private/tmp") with
   | Some carveout, Some enclosing ->
-      is_true ~msg:"the enclosing root's write grant precedes the carveout"
-        (index_of
-           ("(deny file-write*\n(subpath (param \"" ^ carveout ^ "\")))")
-           text
-        > index_of
-            ("(allow file-write*\n(subpath (param \"" ^ enclosing ^ "\")))")
-            text)
+      in_order ~msg:"the enclosing root's write grant precedes the carveout"
+        ~subs:
+          [
+            "(allow file-write*\n(subpath (param \"" ^ enclosing ^ "\")))";
+            "(deny file-write*\n(subpath (param \"" ^ carveout ^ "\")))";
+          ]
+        text
   | _ -> fail "both the enclosing root and its carveout must be parameters"
 
 let seatbelt_network_enabled_golden () =
   let text, _ = seatbelt_sbpl (confined ~network:Policy.Network.Enabled ()) in
-  is_true ~msg:"enabled network allows outbound"
-    (String.includes ~affix:"(allow network-outbound)" text);
-  is_true ~msg:"enabled network admits inbound"
-    (String.includes ~affix:"(allow network-inbound)" text);
-  is_true ~msg:"enabled network admits the TLS platform services"
-    (String.includes ~affix:"com.apple.SecurityServer" text)
+  contains ~msg:"enabled network allows outbound"
+    ~sub:"(allow network-outbound)" text;
+  contains ~msg:"enabled network admits inbound" ~sub:"(allow network-inbound)"
+    text;
+  contains ~msg:"enabled network admits the TLS platform services"
+    ~sub:"com.apple.SecurityServer" text
 
 let seatbelt_no_path_enters_the_text () =
   (* Hardening #1: no path byte enters the SBPL text; every resolved path is a
@@ -538,9 +528,9 @@ let seatbelt_no_path_enters_the_text () =
   let values = List.map snd params in
   List.iter
     (fun path ->
-      is_false
+      not_contains
         ~msg:(Printf.sprintf "no path %s appears in the SBPL text" path)
-        (String.includes ~affix:path text);
+        ~sub:path text;
       is_true
         ~msg:(Printf.sprintf "path %s travels as a -D parameter" path)
         (List.mem path values))
@@ -894,15 +884,15 @@ let denials_are_lowered_last () =
   is_true ~msg:"the mask is remounted read-only, not merely emptied"
     (List.exists (String.equal "--remount-ro") bwrap);
   let sbpl, params = seatbelt_sbpl policy in
-  is_true ~msg:"seatbelt denies reads and writes at the denied path"
-    (String.includes ~affix:"(deny file-read* file-write*" sbpl);
+  contains ~msg:"seatbelt denies reads and writes at the denied path"
+    ~sub:"(deny file-read* file-write*" sbpl;
   is_true ~msg:"the denied path is a parameter, never profile text"
     (List.exists
        (fun (_, value) -> String.equal value "/elsewhere/mentat")
        params);
-  is_false ~msg:"a deny-free profile emits no deny section"
-    (String.includes ~affix:"(deny file-read* file-write*"
-       (fst (seatbelt_sbpl (confined ~reads:[ abs "/usr" ] ()))))
+  not_contains ~msg:"a deny-free profile emits no deny section"
+    ~sub:"(deny file-read* file-write*"
+    (fst (seatbelt_sbpl (confined ~reads:[ abs "/usr" ] ())))
 
 let bubblewrap_uses_strict_ro_bind () =
   (* Hardening #2: carveouts use strict [--ro-bind], never [--ro-bind-try],

@@ -33,7 +33,7 @@ let now = 1000.
 let session = Session.Id.of_string "sess-1"
 let position seq = Position.make ~session ~seq
 
-let contains ~needle haystack =
+let has_sub ~needle haystack =
   let needle_len = String.length needle and hay_len = String.length haystack in
   let rec loop i =
     i + needle_len <= hay_len
@@ -132,12 +132,12 @@ let escaping_tests =
       test "At.v escapes attribute values" (fun () ->
           let node = Html.El.div ~at:[ Html.At.v "title" "a\"><b" ] [] in
           let html = Html.to_string node in
-          is_true ~msg:html (contains ~needle:"a&quot;&gt;&lt;b" html);
-          is_false (contains ~needle:"\"><b" html));
+          contains ~msg:html ~sub:"a&quot;&gt;&lt;b" html;
+          not_contains ~sub:"\"><b" html);
       test "unsafe_raw is verbatim" (fun () ->
           equal string "<hr>" (Html.to_string (Html.El.unsafe_raw "<hr>")));
       test "void elements self-close" (fun () ->
-          is_true (contains ~needle:"<hr" (Html.to_string (Html.El.hr ()))));
+          contains ~sub:"<hr" (Html.to_string (Html.El.hr ())));
     ]
 
 (* ── Fact arm coverage ──────────────────────────────────────────────────── *)
@@ -148,9 +148,9 @@ let turn_family_tests =
       test "turn.started renders the user article" (fun () ->
           let _acc, blocks = started () in
           let html = html_of blocks in
-          is_true ~msg:html (contains ~needle:"msg user" html);
-          is_true (contains ~needle:"turn-turn-1-user" html);
-          is_true (contains ~needle:"Refactor." html));
+          contains ~msg:html ~sub:"msg user" html;
+          contains ~sub:"turn-turn-1-user" html;
+          contains ~sub:"Refactor." html);
       test "turn.started for a non-user origin renders no speech" (fun () ->
           let acc, blocks =
             fold Render.initial (position 0)
@@ -167,10 +167,10 @@ let turn_family_tests =
               (Fact.Turn_assistant (response "**bold** `code`"))
           in
           let html = html_of blocks in
-          is_true ~msg:html (contains ~needle:"<strong>bold</strong>" html);
-          is_true (contains ~needle:"<code>code</code>" html);
-          is_true (contains ~needle:"msg assistant" html);
-          is_true (contains ~needle:"f-1" html));
+          contains ~msg:html ~sub:"<strong>bold</strong>" html;
+          contains ~sub:"<code>code</code>" html;
+          contains ~sub:"msg assistant" html;
+          contains ~sub:"f-1" html);
       test "turn.assistant renders a reasoning details block" (fun () ->
           let acc, _ = started () in
           let _acc, blocks =
@@ -179,8 +179,8 @@ let turn_family_tests =
                  (response ~reasoning:[ "I thought hard." ] "hi"))
           in
           let html = html_of blocks in
-          is_true ~msg:html (contains ~needle:"<details" html);
-          is_true (contains ~needle:"I thought hard." html));
+          contains ~msg:html ~sub:"<details" html;
+          contains ~sub:"I thought hard." html);
       test "turn.assistant_interrupted renders escaped prose" (fun () ->
           let acc, _ = started () in
           let _acc, blocks =
@@ -188,8 +188,8 @@ let turn_family_tests =
               (Fact.Turn_assistant_interrupted { text = "partial" })
           in
           let html = html_of blocks in
-          is_true ~msg:html (contains ~needle:"interrupted" html);
-          is_true (contains ~needle:"partial" html));
+          contains ~msg:html ~sub:"interrupted" html;
+          contains ~sub:"partial" html);
       test "turn.provider_failed renders a failure notice" (fun () ->
           let acc, _ = started () in
           let error = Llm.Error.make ~kind:Llm.Error.Auth ~provider "boom" in
@@ -198,8 +198,8 @@ let turn_family_tests =
             fold acc (position 1) (Fact.Turn_provider_failed { claim; error })
           in
           let html = html_of blocks in
-          is_true ~msg:html (contains ~needle:"notice failure" html);
-          is_true (contains ~needle:"boom" html));
+          contains ~msg:html ~sub:"notice failure" html;
+          contains ~sub:"boom" html);
       test "turn.message system renders an event notice" (fun () ->
           let acc, _ = started () in
           let _acc, blocks =
@@ -207,7 +207,7 @@ let turn_family_tests =
               (Fact.Turn_message (Llm.Message.system "reindexed"))
           in
           let html = html_of blocks in
-          is_true ~msg:html (contains ~needle:"System — reindexed" html));
+          contains ~msg:html ~sub:"System — reindexed" html);
       test "turn.message assistant is rejected as a firewall miss" (fun () ->
           let acc, _ = started () in
           let message =
@@ -227,8 +227,8 @@ let turn_family_tests =
               (Fact.Turn_message (Llm.Message.tool_result result))
           in
           let html = html_of blocks in
-          is_true ~msg:html (contains ~needle:"tool" html);
-          is_true (contains ~needle:"read_file" html));
+          contains ~msg:html ~sub:"tool" html;
+          contains ~sub:"read_file" html);
       test "turn.settled with elapsed renders the worked receipt" (fun () ->
           let acc, _ = started () in
           let _acc, blocks =
@@ -240,7 +240,7 @@ let turn_family_tests =
                  })
           in
           let html = html_of blocks in
-          is_true ~msg:html (contains ~needle:"Worked for 5s" html));
+          contains ~msg:html ~sub:"Worked for 5s" html);
       test "turn.settled with an open tool is a finding" (fun () ->
           let acc, _ = with_tool () in
           match
@@ -262,9 +262,9 @@ let tool_family_tests =
       test "tool.started adds a running row to the live region" (fun () ->
           let acc, _ = with_tool () in
           let html = live acc in
-          is_true ~msg:html (contains ~needle:"tool running" html);
-          is_true (contains ~needle:"tool-" html);
-          is_true (contains ~needle:"read_file" html));
+          contains ~msg:html ~sub:"tool running" html;
+          contains ~sub:"tool-" html;
+          contains ~sub:"read_file" html);
       test "tool.returned renders a settled committed row" (fun () ->
           let acc, claim = with_tool () in
           let _acc, blocks =
@@ -273,9 +273,9 @@ let tool_family_tests =
                  { claim; result = completed "hello world"; mutation = None })
           in
           let html = html_of blocks in
-          is_true ~msg:html (contains ~needle:"tool done" html);
-          is_true (contains ~needle:"read_file" html);
-          is_true (contains ~needle:"hello world" html));
+          contains ~msg:html ~sub:"tool done" html;
+          contains ~sub:"read_file" html;
+          contains ~sub:"hello world" html);
       test "tool.prepared morphs the row to awaiting" (fun () ->
           let acc, _ = started () in
           let claim = tool_claim ~stage:Tool.Stage.Prepare () in
@@ -290,8 +290,8 @@ let tool_family_tests =
                  })
           in
           let html = live acc in
-          is_true ~msg:html (contains ~needle:"tool awaiting" html);
-          is_true (contains ~needle:"will edit README" html));
+          contains ~msg:html ~sub:"tool awaiting" html;
+          contains ~sub:"will edit README" html);
       test "tool.ambiguous renders an ambiguous committed row" (fun () ->
           let acc, claim = with_tool () in
           let _acc, blocks =
@@ -299,7 +299,7 @@ let tool_family_tests =
               (Fact.Tool_ambiguous { claim; mutation = None })
           in
           let html = html_of blocks in
-          is_true ~msg:html (contains ~needle:"tool ambiguous" html));
+          contains ~msg:html ~sub:"tool ambiguous" html);
     ]
 
 let decision_family_tests =
@@ -313,10 +313,10 @@ let decision_family_tests =
             fold acc (position 1) (Fact.Decision_requested request)
           in
           let html = live acc in
-          is_true ~msg:html (contains ~needle:"class=\"decision\"" html);
-          is_true (contains ~needle:"method=\"post\"" html);
-          is_true (contains ~needle:"/session/sess-1/decision/" html);
-          is_true (contains ~needle:"Proceed?" html));
+          contains ~msg:html ~sub:"class=\"decision\"" html;
+          contains ~sub:"method=\"post\"" html;
+          contains ~sub:"/session/sess-1/decision/" html;
+          contains ~sub:"Proceed?" html);
       test "decision.requested renders permission allow/deny buttons" (fun () ->
           let acc, _ = started () in
           let request = permission_request ~turn:(turn_id "turn-1") () in
@@ -324,9 +324,9 @@ let decision_family_tests =
             fold acc (position 1) (Fact.Decision_requested request)
           in
           let html = live acc in
-          is_true ~msg:html (contains ~needle:"value=\"allow-once\"" html);
-          is_true (contains ~needle:"value=\"deny\"" html);
-          is_true (contains ~needle:"read a file" html));
+          contains ~msg:html ~sub:"value=\"allow-once\"" html;
+          contains ~sub:"value=\"deny\"" html;
+          contains ~sub:"read a file" html);
       test "decision.requested renders plan approve/revise buttons" (fun () ->
           let acc, _ = started () in
           let request = plan_request ~turn:(turn_id "turn-1") () in
@@ -334,8 +334,8 @@ let decision_family_tests =
             fold acc (position 1) (Fact.Decision_requested request)
           in
           let html = live acc in
-          is_true ~msg:html (contains ~needle:"value=\"approve\"" html);
-          is_true (contains ~needle:"Do the thing." html));
+          contains ~msg:html ~sub:"value=\"approve\"" html;
+          contains ~sub:"Do the thing." html);
       test "decision.resolved renders an answered block and clears the form"
         (fun () ->
           let acc, _ = started () in
@@ -356,9 +356,8 @@ let decision_family_tests =
             fold acc (position 2) (Fact.Decision_resolved resolved)
           in
           let committed = html_of blocks in
-          is_true ~msg:committed
-            (contains ~needle:"You answered: yes" committed);
-          is_false (contains ~needle:"class=\"decision\"" (live acc)));
+          contains ~msg:committed ~sub:"You answered: yes" committed;
+          not_contains ~sub:"class=\"decision\"" (live acc));
     ]
 
 let journal_family_tests =
@@ -376,9 +375,9 @@ let journal_family_tests =
           let board = Result.get_ok (Session.Task.Board.make [ item ]) in
           let acc, _ = fold acc (position 1) (Fact.Journal_task_board board) in
           let html = live acc in
-          is_true ~msg:html (contains ~needle:"class=\"board\"" html);
-          is_true (contains ~needle:"task in_progress" html);
-          is_true (contains ~needle:"write the code" html));
+          contains ~msg:html ~sub:"class=\"board\"" html;
+          contains ~sub:"task in_progress" html;
+          contains ~sub:"write the code" html);
       test "journal.goal renders a goal chip" (fun () ->
           let acc, _ = started () in
           let update =
@@ -387,7 +386,7 @@ let journal_family_tests =
               ~objective:"ship the release" ()
           in
           let acc, _ = fold acc (position 1) (Fact.Journal_goal update) in
-          is_true (contains ~needle:"ship the release" (live acc)));
+          contains ~sub:"ship the release" (live acc));
       test "journal.queue renders a queue chip" (fun () ->
           let acc, _ = started () in
           let entry =
@@ -397,7 +396,7 @@ let journal_family_tests =
           in
           let update = Session.Queue.Update.enqueued entry in
           let acc, _ = fold acc (position 1) (Fact.Journal_queue update) in
-          is_true (contains ~needle:"queued" (live acc)));
+          contains ~sub:"queued" (live acc));
       test "journal.delegation renders a child link" (fun () ->
           let acc, _ = started () in
           let edge =
@@ -412,8 +411,8 @@ let journal_family_tests =
             fold acc (position 1) (Fact.Journal_delegation edge)
           in
           let html = html_of blocks in
-          is_true ~msg:html (contains ~needle:"/session/child-1" html);
-          is_true (contains ~needle:"explore the codebase" html));
+          contains ~msg:html ~sub:"/session/child-1" html;
+          contains ~sub:"explore the codebase" html);
       test "compaction renders a seam with a labelled boundary" (fun () ->
           let acc, _ = started () in
           let compaction =
@@ -432,8 +431,8 @@ let journal_family_tests =
             fold acc (position 1) (Fact.Compaction compaction)
           in
           let html = html_of blocks in
-          is_true ~msg:html (contains ~needle:"class=\"seam\"" html);
-          is_true (contains ~needle:"compacted" html));
+          contains ~msg:html ~sub:"class=\"seam\"" html;
+          contains ~sub:"compacted" html);
     ]
 
 (* ── Progress folds ─────────────────────────────────────────────────────── *)
@@ -452,9 +451,9 @@ let progress_tests =
                  (Progress.Model.Assistant_delta { text = "**not bold**" }))
           in
           let html = live acc in
-          is_true ~msg:html (contains ~needle:"streaming" html);
-          is_true (contains ~needle:"**not bold**" html);
-          is_false (contains ~needle:"<strong>" html));
+          contains ~msg:html ~sub:"streaming" html;
+          contains ~sub:"**not bold**" html;
+          not_contains ~sub:"<strong>" html);
       test "reasoning delta streams into the ticker" (fun () ->
           let acc, _ = started () in
           let acc =
@@ -462,7 +461,7 @@ let progress_tests =
               (pulse (turn_id "turn-1")
                  (Progress.Model.Reasoning_delta { text = "hmm" }))
           in
-          is_true (contains ~needle:"hmm" (live acc)));
+          contains ~sub:"hmm" (live acc));
       test "usage pulse feeds the working line token count" (fun () ->
           let acc, _ = started () in
           let usage = Llm.Usage.make ~input:10 ~output:2500 () in
@@ -470,7 +469,7 @@ let progress_tests =
             Render.progress acc
               (pulse (turn_id "turn-1") (Progress.Model.Usage usage))
           in
-          is_true (contains ~needle:"2.5k tokens" (live acc)));
+          contains ~sub:"2.5k tokens" (live acc));
       test "model download pulse renders a download banner" (fun () ->
           let acc, _ = started () in
           let update =
@@ -486,7 +485,7 @@ let progress_tests =
               (Progress.Model_download { turn = turn_id "turn-1"; update })
           in
           let html = live acc in
-          is_true ~msg:html (contains ~needle:"Downloading qwen" html));
+          contains ~msg:html ~sub:"Downloading qwen" html);
       test "compaction pulse shows the compacting banner" (fun () ->
           let acc, _ = started () in
           let acc =
@@ -499,7 +498,7 @@ let progress_tests =
                        { reason = Session.Compaction.Reason.Context_pressure };
                  })
           in
-          is_true (contains ~needle:"Compacting" (live acc)));
+          contains ~sub:"Compacting" (live acc));
       test "a pulse for an inactive turn is ignored" (fun () ->
           let acc, _ = started () in
           let acc =
@@ -507,7 +506,7 @@ let progress_tests =
               (pulse (turn_id "other")
                  (Progress.Model.Assistant_delta { text = "ghost" }))
           in
-          is_false (contains ~needle:"ghost" (live acc)));
+          not_contains ~sub:"ghost" (live acc));
       test "workspace notice replaces in place by key" (fun () ->
           let acc, _ = started () in
           let notice title =
@@ -525,8 +524,8 @@ let progress_tests =
                  { turn = turn_id "turn-1"; notice = notice "second" })
           in
           let html = live acc in
-          is_true ~msg:html (contains ~needle:"second" html);
-          is_false (contains ~needle:"first" html));
+          contains ~msg:html ~sub:"second" html;
+          not_contains ~sub:"first" html);
     ]
 
 (* ── Cold load ──────────────────────────────────────────────────────────── *)
@@ -557,10 +556,10 @@ let cold_tests =
           in
           let _acc, body = ok (Render.cold ~now ~session view) in
           let html = Html.to_string body in
-          is_true ~msg:html (contains ~needle:"id=\"transcript\"" html);
-          is_true (contains ~needle:"id=\"live\"" html);
-          is_true (contains ~needle:"Refactor." html);
-          is_true (contains ~needle:"done" html));
+          contains ~msg:html ~sub:"id=\"transcript\"" html;
+          contains ~sub:"id=\"live\"" html;
+          contains ~sub:"Refactor." html;
+          contains ~sub:"done" html);
       test "cold seeds the pending decision form from the tail" (fun () ->
           let facts = [ (position 0, Fact.Turn_started (turn ())) ] in
           let page = { Protocol.Transcript.Page.facts; before = None } in
@@ -573,7 +572,7 @@ let cold_tests =
             }
           in
           let _acc, body = ok (Render.cold ~now ~session view) in
-          is_true (contains ~needle:"class=\"decision\"" (Html.to_string body)));
+          contains ~sub:"class=\"decision\"" (Html.to_string body));
     ]
 
 (* ── Windowed reads: mid-turn seeding ───────────────────────────────────── *)
@@ -608,18 +607,18 @@ let windowed_tests =
             ok (Render.cold ~now ~session (view_of (orphan_window ())))
           in
           let html = Html.to_string body in
-          is_true ~msg:html (contains ~needle:"truncated" html);
-          is_true (contains ~needle:"Earlier messages" html);
-          is_true (contains ~needle:"complete answer" html);
-          is_false (contains ~needle:"orphan tail" html));
+          contains ~msg:html ~sub:"truncated" html;
+          contains ~sub:"Earlier messages" html;
+          contains ~sub:"complete answer" html;
+          not_contains ~sub:"orphan tail" html);
       test "page folds a backward window without an inline marker" (fun () ->
           match Render.page ~now (orphan_window ()) with
           | Error error -> failf "page error: %s" (Render.Error.message error)
           | Ok (_acc, blocks) ->
               let html = html_of blocks in
-              is_true ~msg:html (contains ~needle:"complete answer" html);
-              is_false (contains ~needle:"orphan tail" html);
-              is_false (contains ~needle:"Earlier messages" html));
+              contains ~msg:html ~sub:"complete answer" html;
+              not_contains ~sub:"orphan tail" html;
+              not_contains ~sub:"Earlier messages" html);
       test "attach seeds a running turn so a live fact folds" (fun () ->
           let seed =
             [
@@ -670,10 +669,9 @@ let hostile = "<script>alert('XSS')</script>\" onload=\"evil()\" ]]>"
 
 let assert_no_injection ~context html =
   let banned needle =
-    is_false
-      ~msg:
-        (Printf.sprintf "%s: unescaped %S survived in %s" context needle html)
-      (contains ~needle html)
+    not_contains
+      ~msg:(Printf.sprintf "%s: unescaped %S survived" context needle)
+      ~sub:needle html
   in
   banned "<script>";
   banned "</script>";
@@ -690,7 +688,7 @@ let fuzz_tests =
           in
           let html = html_of blocks in
           assert_no_injection ~context:"assistant" html;
-          is_true (contains ~needle:"&lt;script&gt;" html));
+          contains ~sub:"&lt;script&gt;" html);
       test "a javascript link destination is dropped" (fun () ->
           let acc, _ = started () in
           let _acc, blocks =
@@ -698,8 +696,8 @@ let fuzz_tests =
               (Fact.Turn_assistant (response "[click](javascript:alert(1))"))
           in
           let html = html_of blocks in
-          is_false ~msg:html (contains ~needle:"javascript:" html);
-          is_true (contains ~needle:"click" html));
+          not_contains ~msg:html ~sub:"javascript:" html;
+          contains ~sub:"click" html);
       test "user prompt text is escaped" (fun () ->
           let acc, blocks =
             fold Render.initial (position 0)
@@ -977,12 +975,12 @@ let page_tests =
                  ~resume:(Some (position 3))
                  ~earlier:None ~body:Html.El.void)
           in
-          is_true ~msg:html (contains ~needle:"Content-Security-Policy" html);
-          is_true (contains ~needle:"default-src &#39;none&#39;" html);
-          is_true (contains ~needle:"script-src &#39;self&#39;" html);
-          is_true (contains ~needle:"/static/app.js" html);
-          is_true (contains ~needle:"id=\"composer\"" html);
-          is_true (contains ~needle:"data-resume=\"3\"" html));
+          contains ~msg:html ~sub:"Content-Security-Policy" html;
+          contains ~sub:"default-src &#39;none&#39;" html;
+          contains ~sub:"script-src &#39;self&#39;" html;
+          contains ~sub:"/static/app.js" html;
+          contains ~sub:"id=\"composer\"" html;
+          contains ~sub:"data-resume=\"3\"" html);
       test "a hostile session title is escaped in the shell" (fun () ->
           (* The shell legitimately carries its own [<script src>] chrome, so the
              fragment fuzz's blanket [</script>] ban does not apply; assert the
@@ -992,10 +990,9 @@ let page_tests =
               (Page.session ~title:hostile ~session ~resume:None ~earlier:None
                  ~body:Html.El.void)
           in
-          is_true ~msg:html
-            (contains ~needle:"&lt;script&gt;alert(&#39;XSS&#39;)" html);
-          is_false (contains ~needle:"<script>alert" html);
-          is_false (contains ~needle:"onload=\"evil" html));
+          contains ~msg:html ~sub:"&lt;script&gt;alert(&#39;XSS&#39;)" html;
+          not_contains ~sub:"<script>alert" html;
+          not_contains ~sub:"onload=\"evil" html);
       test "the session index lists rows and the new-session form" (fun () ->
           let html =
             Html.to_string
@@ -1003,14 +1000,14 @@ let page_tests =
                  ~sessions:[ summary_of ~title:"Alpha" "sess-1" ]
                  ~unreadable:0)
           in
-          is_true ~msg:html (contains ~needle:"/session/sess-1" html);
-          is_true (contains ~needle:"Alpha" html);
-          is_true (contains ~needle:"New session" html));
+          contains ~msg:html ~sub:"/session/sess-1" html;
+          contains ~sub:"Alpha" html;
+          contains ~sub:"New session" html);
       test "unreadable store entries surface a notice" (fun () ->
           let html =
             Html.to_string (Page.session_list ~sessions:[] ~unreadable:2)
           in
-          is_true ~msg:html (contains ~needle:"could not be read" html));
+          contains ~msg:html ~sub:"could not be read" html);
     ]
 
 (* ── Routes ─────────────────────────────────────────────────────────────── *)
@@ -1032,8 +1029,7 @@ let route_tests =
             Routes.handle (env_of client) ~meth:"GET" ~path:[] ~query:[]
               ~body:[]
           with
-          | Routes.Html node ->
-              is_true (contains ~needle:"Alpha" (Html.to_string node))
+          | Routes.Html node -> contains ~sub:"Alpha" (Html.to_string node)
           | _ -> fail "expected an Html response");
       test "GET /session/<id> cold-loads transcript, live, and resume"
         (fun () ->
@@ -1073,11 +1069,11 @@ let route_tests =
           with
           | Routes.Html node ->
               let html = Html.to_string node in
-              is_true ~msg:html (contains ~needle:"id=\"transcript\"" html);
-              is_true (contains ~needle:"id=\"live\"" html);
-              is_true (contains ~needle:"My Session" html);
-              is_true (contains ~needle:"Refactor." html);
-              is_true (contains ~needle:"data-resume=\"2\"" html)
+              contains ~msg:html ~sub:"id=\"transcript\"" html;
+              contains ~sub:"id=\"live\"" html;
+              contains ~sub:"My Session" html;
+              contains ~sub:"Refactor." html;
+              contains ~sub:"data-resume=\"2\"" html
           | _ -> fail "expected an Html response");
       test "GET /session/<id>/before returns an earlier-page fragment"
         (fun () ->
@@ -1098,8 +1094,8 @@ let route_tests =
           with
           | Routes.Fragment nodes ->
               let html = html_of nodes in
-              is_true ~msg:html (contains ~needle:"id=\"earlier\"" html);
-              is_true (contains ~needle:"Refactor." html)
+              contains ~msg:html ~sub:"id=\"earlier\"" html;
+              contains ~sub:"Refactor." html
           | _ -> fail "expected a Fragment response");
       test "POST prompt submits a client-minted turn and redirects" (fun () ->
           let submitted = ref None in
@@ -1185,8 +1181,8 @@ let route_tests =
               ~path:[ "static"; "app.js" ] ~query:[] ~body:[]
           with
           | Routes.Asset { media_type; body } ->
-              is_true (contains ~needle:"javascript" media_type);
-              is_true (contains ~needle:"EventSource" body)
+              contains ~sub:"javascript" media_type;
+              contains ~sub:"EventSource" body
           | _ -> fail "expected an Asset response");
       test "an unrouted path is Not_found" (fun () ->
           let client = client_of () in
@@ -1260,19 +1256,18 @@ let feed_tests =
                 (List.exists
                    (fun f ->
                      frame_id f = Some 0
-                     && contains ~needle:"msg user" (frame_html f))
+                     && has_sub ~needle:"msg user" (frame_html f))
                    frames);
               is_true ~msg:"the settled assistant appends as f-1"
                 (List.exists
                    (fun f ->
-                     frame_id f = Some 1
-                     && contains ~needle:"f-1" (frame_html f))
+                     frame_id f = Some 1 && has_sub ~needle:"f-1" (frame_html f))
                    frames);
               is_true ~msg:"a live morph re-renders the streaming region"
                 (List.exists
                    (fun f ->
                      frame_id f = None
-                     && contains ~needle:"streaming hi" (frame_html f))
+                     && has_sub ~needle:"streaming hi" (frame_html f))
                    frames)));
       test "resume gates emission but still rebuilds the accumulator" (fun () ->
           with_eio (fun sw ->
@@ -1313,12 +1308,12 @@ let feed_tests =
               let frames = List.rev !frames in
               is_false ~msg:"the pre-cursor user article is not re-emitted"
                 (List.exists
-                   (fun f -> contains ~needle:"msg user" (frame_html f))
+                   (fun f -> has_sub ~needle:"msg user" (frame_html f))
                    frames);
               is_true
                 ~msg:"the in-flight turn's progress applies after the rebuild"
                 (List.exists
-                   (fun f -> contains ~needle:"after resume" (frame_html f))
+                   (fun f -> has_sub ~needle:"after resume" (frame_html f))
                    frames);
               is_true ~msg:"the post-cursor assistant is emitted"
                 (List.exists (fun f -> frame_id f = Some 1) frames)));
@@ -1357,7 +1352,7 @@ let feed_tests =
               | Error (Routes.Render_fault Render.Error.Assistant_message) ->
                   is_false ~msg:"the faulty fragment was never emitted"
                     (List.exists
-                       (fun f -> contains ~needle:"leak" (frame_html f))
+                       (fun f -> has_sub ~needle:"leak" (frame_html f))
                        !frames)
               | Error _ -> fail "expected the assistant firewall fault"
               | Ok () -> fail "expected the feed to abort"));
