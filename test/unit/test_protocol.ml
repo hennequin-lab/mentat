@@ -2740,16 +2740,20 @@ let wire_corpus_group =
                manifest and shape files track the vocabulary"
             (List.sort String.compare (List.map fst wire_shapes))
             stored_shapes);
-      test "every wire shape encodes byte-for-byte to its stored golden"
+      (* Regeneration is one test, because it is one side effect over the whole
+         inventory; the comparison below is one test per shape. *)
+      test "regeneration rewrites every shape under WIRE_CORPUS_UPDATE"
         (fun () ->
           if corpus_updating then
-            List.iter (fun (name, json) -> write_corpus name json) wire_shapes;
-          List.iter
-            (fun (name, json) ->
-              equal string
-                ~msg:(shape_change_message name)
-                (read_corpus name) json)
-            wire_shapes);
+            List.iter (fun (name, json) -> write_corpus name json) wire_shapes
+          else skip ~reason:"WIRE_CORPUS_UPDATE is unset" ());
+      (* One selectable test per shape: a drifted arm names itself in the
+         report and the 71 shapes behind it still run, where a single
+         [List.iter] stopped at the first and hid the blast radius of a codec
+         change behind one failure. *)
+      cases ~name:fst "every wire shape encodes byte-for-byte to its golden"
+        wire_shapes (fun (name, json) ->
+          equal string ~msg:(shape_change_message name) (read_corpus name) json);
     ]
 
 (* User command codec. *)
