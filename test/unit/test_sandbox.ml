@@ -254,16 +254,29 @@ let policy_keeps_every_clause () =
          Abs.equal path (abs "/outside/.mentat")
          && Policy.Access.equal access Policy.Access.Read)
        (Policy.entries policy));
-  is_true ~msg:"a nested carveout is emitted after the root that contains it"
-    (let index p =
-       let rec find i = function
-         | [] -> -1
-         | (path, _) :: _ when Abs.equal path (abs p) -> i
-         | _ :: rest -> find (i + 1) rest
-       in
-       find 0 (Policy.entries policy)
-     in
-     index "/private/tmp/ws/.mentat" > index "/private/tmp/ws")
+  (* Both positions are asserted present before they are compared. The [-1]-on-
+     miss spelling this replaces passed vacuously in the case that matters: when
+     the *root* is the entry that vanished, [3 > -1] holds and the assertion
+     claims an ordering between an entry and one that was never emitted. *)
+  let position p =
+    let rec find i = function
+      | [] -> None
+      | (path, _) :: _ when Abs.equal path (abs p) -> Some i
+      | _ :: rest -> find (i + 1) rest
+    in
+    find 0 (Policy.entries policy)
+  in
+  let root =
+    require_some ~msg:"the containing root is emitted"
+      (position "/private/tmp/ws")
+  in
+  let nested =
+    require_some ~msg:"the nested carveout is emitted"
+      (position "/private/tmp/ws/.mentat")
+  in
+  greater int
+    ~msg:"a nested carveout is emitted after the root that contains it"
+    ~than:root nested
 
 let policy_folds_writable_into_reads () =
   let policy =
