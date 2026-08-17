@@ -103,16 +103,6 @@ let write_file path contents =
   Out_channel.with_open_bin path (fun channel ->
       Out_channel.output_string channel contents)
 
-let with_env name value fn =
-  let saved = Sys.getenv_opt name in
-  Unix.putenv name value;
-  Fun.protect
-    ~finally:(fun () ->
-      match saved with
-      | Some value -> Unix.putenv name value
-      | None -> Unix.unsetenv name)
-    fn
-
 let populate_fixture ws_dir out_dir =
   write_file
     (Filename.concat ws_dir "note.txt")
@@ -216,9 +206,7 @@ let populate_fixture ws_dir out_dir =
 let with_world fn =
   Eio_main.run @@ fun stdenv ->
   let stdenv = (stdenv :> Eio_unix.Stdenv.base) in
-  let raw = Filename.temp_dir "mentat-read-file-" "" in
-  Fun.protect ~finally:(fun () -> remove_tree raw) @@ fun () ->
-  let base = Unix.realpath raw in
+  let base = Unix.realpath (temp_dir ~prefix:"mentat-read-file" ()) in
   let ws_dir = Filename.concat base "workspace" in
   let out_dir = Filename.concat base "outside" in
   let tmp_dir = Filename.concat base "tmp" in
@@ -226,7 +214,7 @@ let with_world fn =
   populate_fixture ws_dir out_dir;
   let primary = Workspace.Root.of_dir (abs ws_dir) in
   let logical = Workspace.single primary in
-  with_env "TMPDIR" tmp_dir @@ fun () ->
+  setenv "TMPDIR" (Some tmp_dir);
   Eio.Switch.run @@ fun sw ->
   let io = resolve_exn ~sw ~stdenv ~logical () in
   let tool = Read_file.make io in

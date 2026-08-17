@@ -91,14 +91,6 @@ let write_disk path contents =
   Out_channel.with_open_bin path (fun channel ->
       Out_channel.output_string channel contents)
 
-let with_env name value fn =
-  let previous = Sys.getenv_opt name in
-  Unix.putenv name value;
-  Fun.protect fn ~finally:(fun () ->
-      match previous with
-      | Some value -> Unix.putenv name value
-      | None -> Unix.unsetenv name)
-
 let fake_dune_script =
   String.concat "\n"
     [
@@ -197,9 +189,9 @@ let with_world ?(current = Primary_root)
     ?(mode = Mentat_config.Mode.Danger_full_access) ?clock ?program name fn =
   Eio_main.run @@ fun stdenv ->
   let stdenv = (stdenv :> Eio_unix.Stdenv.base) in
-  let raw = Filename.temp_dir ("mentat-dune-describe-" ^ name ^ "-") "" in
-  Fun.protect ~finally:(fun () -> remove_tree raw) @@ fun () ->
-  let base = Unix.realpath raw in
+  let base =
+    Unix.realpath (temp_dir ~prefix:("mentat-dune-describe-" ^ name) ())
+  in
   let primary_dir = Filename.concat base "primary" in
   let auxiliary_dir = Filename.concat base "auxiliary" in
   let outside_dir = Filename.concat base "outside" in
@@ -211,8 +203,8 @@ let with_world ?(current = Primary_root)
   List.iter mkdir [ plan_dir; harness_dir ];
   let fake_dune = Filename.concat harness_dir "fake-dune" in
   install_executable fake_dune fake_dune_script;
-  with_env "TMPDIR" tmp_dir @@ fun () ->
-  with_env "MENTAT_DUNE_DESCRIBE_SECRET" "ambient-secret" @@ fun () ->
+  setenv "TMPDIR" (Some tmp_dir);
+  setenv "MENTAT_DUNE_DESCRIBE_SECRET" (Some "ambient-secret");
   Eio.Switch.run @@ fun sw ->
   let logical = workspace ~current primary_dir auxiliary_dir in
   let io = resolve_exn ~sw ~stdenv ~logical ~mode () in

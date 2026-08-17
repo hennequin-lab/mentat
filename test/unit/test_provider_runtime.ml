@@ -68,11 +68,9 @@ let problem_t =
 
 let with_runtime name f =
   Eio_main.run @@ fun env ->
-  let raw = Filename.temp_dir ("mentat-provider-runtime-" ^ name) "" in
+  let raw = temp_dir ~prefix:("mentat-provider-runtime-" ^ name) () in
   let config_dir = Eio.Path.( / ) (Eio.Stdenv.fs env) raw in
-  Fun.protect
-    ~finally:(fun () -> ignore (Sys.command ("rm -rf " ^ Filename.quote raw)))
-    (fun () -> f env raw (Runtime.create ~config_dir))
+  f env raw (Runtime.create ~config_dir)
 
 let now env = Int64.of_float (Eio.Time.now (Eio.Stdenv.clock env))
 
@@ -185,14 +183,11 @@ let create_performs_no_io () =
   (* create binds the store path but reads and writes nothing: pointed at a
      nonexistent nested config dir, it creates no file or directory. *)
   Eio_main.run @@ fun env ->
-  let raw = Filename.temp_dir "mentat-provider-runtime-noio" "" in
-  Fun.protect
-    ~finally:(fun () -> ignore (Sys.command ("rm -rf " ^ Filename.quote raw)))
-    (fun () ->
-      let nested = Filename.concat raw "does/not/exist" in
-      let config_dir = Eio.Path.( / ) (Eio.Stdenv.fs env) nested in
-      let (_ : Runtime.t) = Runtime.create ~config_dir in
-      is_false (Sys.file_exists (Filename.concat raw "does")))
+  let raw = temp_dir ~prefix:"mentat-provider-runtime-noio" () in
+  let nested = Filename.concat raw "does/not/exist" in
+  let config_dir = Eio.Path.( / ) (Eio.Stdenv.fs env) nested in
+  let (_ : Runtime.t) = Runtime.create ~config_dir in
+  is_false (Sys.file_exists (Filename.concat raw "does"))
 
 (* {2 Credential resolution and connectivity} *)
 

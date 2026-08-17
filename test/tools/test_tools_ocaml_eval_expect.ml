@@ -186,9 +186,7 @@ let with_world ?(cwd = Root) ?(mode = Mentat_config.Mode.Danger_full_access)
     ?clock ?program name fn =
   Eio_main.run @@ fun stdenv ->
   let stdenv = (stdenv :> Eio_unix.Stdenv.base) in
-  let raw = Filename.temp_dir ("mentat-eval-" ^ name ^ "-") "" in
-  Fun.protect ~finally:(fun () -> remove_tree raw) @@ fun () ->
-  let base = Unix.realpath raw in
+  let base = Unix.realpath (temp_dir ~prefix:("mentat-eval-" ^ name) ()) in
   let ws_dir = Filename.concat base "workspace" in
   let outside_dir = Filename.concat base "outside" in
   let tmp_dir = Filename.concat base "tmp" in
@@ -201,13 +199,7 @@ let with_world ?(cwd = Root) ?(mode = Mentat_config.Mode.Danger_full_access)
   Unix.symlink outside_dir (Filename.concat ws_dir "outside-link");
   let fake = Filename.concat ws_dir "fake-dune" in
   install_executable fake fake_dune_script;
-  let saved_tmpdir = Sys.getenv_opt "TMPDIR" in
-  Unix.putenv "TMPDIR" tmp_dir;
-  Fun.protect ~finally:(fun () ->
-      match saved_tmpdir with
-      | Some value -> Unix.putenv "TMPDIR" value
-      | None -> Unix.unsetenv "TMPDIR")
-  @@ fun () ->
+  setenv "TMPDIR" (Some tmp_dir);
   Eio.Switch.run @@ fun sw ->
   let logical = workspace ~cwd ws_dir in
   let io = resolve_exn ~sw ~stdenv ~logical ~mode () in

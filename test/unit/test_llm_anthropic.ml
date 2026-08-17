@@ -203,7 +203,7 @@ let with_anthropic_server respond f =
     | Unix.ADDR_UNIX path ->
         failf "expected inet socket, got unix socket %s" path
   in
-  let requests_path = Filename.temp_file "mentat-anthropic-requests" ".bin" in
+  let requests_path = temp_file ~suffix:".bin" () in
   match Unix.fork () with
   | 0 -> (
       match

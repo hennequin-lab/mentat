@@ -164,9 +164,7 @@ let workspace ~cwd ws_dir aux_dir =
 let with_world ?(cwd = Primary_root) fn =
   Eio_main.run @@ fun stdenv ->
   let stdenv = (stdenv :> Eio_unix.Stdenv.base) in
-  let raw = Filename.temp_dir "mentat-ocaml-search-" "" in
-  Fun.protect ~finally:(fun () -> remove_tree raw) @@ fun () ->
-  let base = Unix.realpath raw in
+  let base = Unix.realpath (temp_dir ~prefix:"mentat-ocaml-search" ()) in
   let ws_dir = Filename.concat base "workspace" in
   let aux_dir = Filename.concat base "auxiliary" in
   let outside_dir = Filename.concat base "outside" in

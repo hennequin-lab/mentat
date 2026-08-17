@@ -35,20 +35,12 @@ let abs = Lpath.Abs.of_string_exn
 let with_world name fn =
   Eio_main.run @@ fun stdenv ->
   let stdenv = (stdenv :> Eio_unix.Stdenv.base) in
-  let raw = Filename.temp_dir ("mentat-bg-" ^ name ^ "-") "" in
-  Fun.protect ~finally:(fun () -> remove_tree raw) @@ fun () ->
-  let base = Unix.realpath raw in
+  let base = Unix.realpath (temp_dir ~prefix:("mentat-bg-" ^ name) ()) in
   let ws_dir = Filename.concat base "workspace" in
   let tmp_dir = Filename.concat base "tmp" in
   List.iter mkdir [ ws_dir; tmp_dir ];
   let logical = Workspace.single (Workspace.Root.of_dir (abs ws_dir)) in
-  let saved = Sys.getenv_opt "TMPDIR" in
-  Unix.putenv "TMPDIR" tmp_dir;
-  Fun.protect ~finally:(fun () ->
-      match saved with
-      | Some v -> Unix.putenv "TMPDIR" v
-      | None -> Unix.unsetenv "TMPDIR")
-  @@ fun () ->
+  setenv "TMPDIR" (Some tmp_dir);
   Eio.Switch.run @@ fun sw ->
   let io = resolve_exn ~sw ~stdenv ~logical () in
   let clock = Eio.Stdenv.mono_clock stdenv in

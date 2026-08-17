@@ -2147,7 +2147,7 @@ let a_discovery ?web_url ~socket ~pid () =
 (* A guaranteed-fresh 0700 directory. The discovery file has no sun_path limit
    (unlike the socket dir), so a long temp-dir path is fine. *)
 let fresh_daemon_dir () =
-  Lpath.Abs.of_string_exn (Filename.temp_dir "mtdaemon" "")
+  Lpath.Abs.of_string_exn (temp_dir ~prefix:"mtdaemon" ())
 
 let discovery_group =
   group "daemon discovery"

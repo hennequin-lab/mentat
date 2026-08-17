@@ -51,25 +51,12 @@ module Context_tests = struct
     Out_channel.with_open_bin path (fun oc ->
         Out_channel.output_string oc contents)
 
-  let rec rm_rf path =
-    match Sys.is_directory path with
-    | true -> (
-        Array.iter
-          (fun name -> rm_rf (Filename.concat path name))
-          (Sys.readdir path);
-        try Unix.rmdir path with Unix.Unix_error _ -> ())
-    | false -> ( try Sys.remove path with Sys_error _ -> ())
-    | exception Sys_error _ -> ()
-
   let with_workspace name fn =
     Eio_main.run @@ fun stdenv ->
     let stdenv = (stdenv :> Eio_unix.Stdenv.base) in
-    let raw = Filename.temp_dir ("mentat-ctx-" ^ name) "" in
-    let base = Unix.realpath raw in
+    let base = Unix.realpath (temp_dir ~prefix:("mentat-ctx-" ^ name) ()) in
     let root = Abs.of_string_exn base in
-    Fun.protect
-      ~finally:(fun () -> rm_rf base)
-      (fun () -> fn ~stdenv ~base ~root)
+    fn ~stdenv ~base ~root
 
   let load ?(nested_scan = false) ?(settings = []) ?(trusted = true)
       ?(environment = C.Environment.none) ~stdenv ~root ~cwd () =
@@ -306,14 +293,6 @@ module Skills_tests = struct
      removed on the way out; paths are [realpath]'d so they compare equal to the
      loader's canonical spellings. *)
 
-  let rec rm_rf path =
-    match Unix.lstat path with
-    | exception Unix.Unix_error (Unix.ENOENT, _, _) -> ()
-    | { Unix.st_kind = Unix.S_DIR; _ } ->
-        Array.iter (fun e -> rm_rf (Filename.concat path e)) (Sys.readdir path);
-        Unix.rmdir path
-    | _ | (exception _) -> ( try Unix.unlink path with _ -> ())
-
   let rec mkdir_p dir =
     if Sys.file_exists dir then ()
     else begin
@@ -351,10 +330,8 @@ module Skills_tests = struct
   let with_base name fn =
     Eio_main.run @@ fun stdenv ->
     let stdenv = (stdenv :> Eio_unix.Stdenv.base) in
-    let raw = Filename.temp_dir ("mentat-skills-" ^ name) "" in
-    Fun.protect
-      ~finally:(fun () -> rm_rf raw)
-      (fun () -> fn ~stdenv ~base:(Unix.realpath raw))
+    let raw = temp_dir ~prefix:("mentat-skills-" ^ name) () in
+    fn ~stdenv ~base:(Unix.realpath raw)
 
   let set field value doc =
     match Mentat_config.set field value doc with
@@ -1189,18 +1166,14 @@ module Commands_tests = struct
         test "an @file that escapes the workspace via symlink is rejected"
           (fun () ->
             Skills_tests.with_base "at-escape" @@ fun ~stdenv ~base ->
-            let outside = Filename.temp_file "mentat-outside" ".txt" in
-            Fun.protect
-              ~finally:(fun () -> try Unix.unlink outside with _ -> ())
-              (fun () ->
-                Skills_tests.write_file outside "outside the workspace";
-                Unix.symlink outside (Filename.concat base "escape.txt");
-                write_command ~base ~sub:".mentat/commands" ~path:"c.md"
-                  ~content:(command_doc ~body:"@escape.txt" ());
-                let t = load ~stdenv ~base () in
-                equal string
-                  "unresolved:escape.txt:resolves outside the workspace"
-                  (text_of (Commands.expand t ~name:(nm "c") ~arguments:""))));
+            let outside = temp_file ~suffix:".txt" () in
+            Skills_tests.write_file outside "outside the workspace";
+            Unix.symlink outside (Filename.concat base "escape.txt");
+            write_command ~base ~sub:".mentat/commands" ~path:"c.md"
+              ~content:(command_doc ~body:"@escape.txt" ());
+            let t = load ~stdenv ~base () in
+            equal string "unresolved:escape.txt:resolves outside the workspace"
+              (text_of (Commands.expand t ~name:(nm "c") ~arguments:"")));
         test "an @file in an untrusted workspace does not resolve" (fun () ->
             Skills_tests.with_base "at-untrusted" @@ fun ~stdenv ~base ->
             (* The file exists, but an untrusted checkout's bytes stay out of the

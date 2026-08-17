@@ -84,16 +84,6 @@ let write_disk path contents =
   Out_channel.with_open_bin path (fun channel ->
       Out_channel.output_string channel contents)
 
-let with_env name value fn =
-  let saved = Sys.getenv_opt name in
-  Unix.putenv name value;
-  Fun.protect
-    ~finally:(fun () ->
-      match saved with
-      | Some value -> Unix.putenv name value
-      | None -> Unix.unsetenv name)
-    fn
-
 let populate_main root =
   let file path contents = write_disk (Filename.concat root path) contents in
   file "source.txt" "line1\nline2\nline3\n";
@@ -147,9 +137,7 @@ let with_world ?(cwd = Primary_root)
     ?(mode = Mentat_config.Mode.Danger_full_access) fn =
   Eio_main.run @@ fun stdenv ->
   let stdenv = (stdenv :> Eio_unix.Stdenv.base) in
-  let raw = Filename.temp_dir "mentat-apply-patch-" "" in
-  Fun.protect ~finally:(fun () -> remove_tree raw) @@ fun () ->
-  let base = Unix.realpath raw in
+  let base = Unix.realpath (temp_dir ~prefix:"mentat-apply-patch" ()) in
   let ws_dir = Filename.concat base "workspace" in
   let aux_dir = Filename.concat base "auxiliary" in
   let outside_dir = Filename.concat base "outside" in
@@ -159,7 +147,7 @@ let with_world ?(cwd = Primary_root)
   populate_aux aux_dir;
   write_disk (Filename.concat outside_dir "secret.txt") "outside\n";
   let logical = workspace ~cwd ws_dir aux_dir in
-  with_env "TMPDIR" tmp_dir @@ fun () ->
+  setenv "TMPDIR" (Some tmp_dir);
   Eio.Switch.run @@ fun sw ->
   let io = resolve_exn ~sw ~stdenv ~logical ~mode () in
   fn { ws_dir; aux_dir; outside_dir; io; tool = Apply_patch.make io }

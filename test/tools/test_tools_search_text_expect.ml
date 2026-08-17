@@ -88,21 +88,11 @@ let write_file path contents =
   Out_channel.with_open_bin path (fun channel ->
       Out_channel.output_string channel contents)
 
-let with_env name value fn =
-  let saved = Sys.getenv_opt name in
-  Unix.putenv name value;
-  Fun.protect
-    ~finally:(fun () ->
-      match saved with
-      | Some value -> Unix.putenv name value
-      | None -> Unix.unsetenv name)
-    fn
-
 let with_ripgrep_config contents fn =
-  let path = Filename.temp_file "mentat-rg-config-" ".conf" in
-  Fun.protect ~finally:(fun () -> remove_tree path) @@ fun () ->
+  let path = temp_file ~suffix:".conf" () in
   write_file path contents;
-  with_env "RIPGREP_CONFIG_PATH" path fn
+  setenv "RIPGREP_CONFIG_PATH" (Some path);
+  fn ()
 
 let populate_fixture ws_dir out_dir =
   write_file (Filename.concat ws_dir ".env") "alpha env\n";
@@ -147,9 +137,7 @@ let with_world ?(rg = Ambient) ?clock
     ?(mode = Mentat_config.Mode.Danger_full_access) fn =
   Eio_main.run @@ fun stdenv ->
   let stdenv = (stdenv :> Eio_unix.Stdenv.base) in
-  let raw = Filename.temp_dir "mentat-search-text-" "" in
-  Fun.protect ~finally:(fun () -> remove_tree raw) @@ fun () ->
-  let base = Unix.realpath raw in
+  let base = Unix.realpath (temp_dir ~prefix:"mentat-search-text" ()) in
   let ws_dir = Filename.concat base "workspace" in
   let out_dir = Filename.concat base "outside" in
   let tmp_dir = Filename.concat base "tmp" in
@@ -166,8 +154,8 @@ let with_world ?(rg = Ambient) ?clock
         bin_dir
   in
   let logical = Workspace.single (Workspace.Root.of_dir (abs ws_dir)) in
-  with_env "TMPDIR" tmp_dir @@ fun () ->
-  with_env "PATH" path @@ fun () ->
+  setenv "TMPDIR" (Some tmp_dir);
+  setenv "PATH" (Some path);
   Eio.Switch.run @@ fun sw ->
   let io = resolve_exn ~sw ~stdenv ~logical ~mode () in
   let tool =

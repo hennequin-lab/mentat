@@ -118,41 +118,22 @@ let fit_verdicts () =
     (starved.Local.Fit.need_bytes > starved.Local.Fit.budget_bytes);
   check "unknown ids have no verdict"
     (Option.is_none (Local.Fit.find ~config:(config gib) "not-a-model"));
-  Unix.putenv "MENTAT_LOCAL_MEMORY_BUDGET" (string_of_int (8 * gib));
+  setenv "MENTAT_LOCAL_MEMORY_BUDGET" (Some (string_of_int (8 * gib)));
   let from_env =
     expect_fit "env budget"
       (Local.Fit.find ~config:(Local.Config.make ()) "gpt-oss-20b")
   in
-  Unix.putenv "MENTAT_LOCAL_MEMORY_BUDGET" "";
   equal int ~msg:"env var supplies the default budget" (8 * gib)
     from_env.Local.Fit.budget_bytes
 
 (* Artifact status *)
-
-let with_temp_dir f =
-  let dir = Filename.temp_file "mentat-local-test" "" in
-  Sys.remove dir;
-  Unix.mkdir dir 0o700;
-  Fun.protect
-    ~finally:(fun () ->
-      let rec remove path =
-        if Sys.is_directory path then begin
-          Array.iter
-            (fun entry -> remove (Filename.concat path entry))
-            (Sys.readdir path);
-          Unix.rmdir path
-        end
-        else Sys.remove path
-      in
-      try remove dir with Sys_error _ | Unix.Unix_error _ -> ())
-    (fun () -> f dir)
 
 let expect_status msg = function
   | Ok status -> status
   | Error message -> failf "%s: %s" msg message
 
 let artifact_status () =
-  with_temp_dir @@ fun dir ->
+  let dir = temp_dir ~prefix:"mentat-local-test" () in
   let config = Local.Config.make ~model_dir:dir () in
   (match
      expect_status "missing" (Local.Artifact.status ~config "gpt-oss-20b")
@@ -189,7 +170,7 @@ let artifact_status () =
       failf "expected Explicit_path for unknown id"
 
 let artifact_prepare_cancellation () =
-  with_temp_dir @@ fun dir ->
+  let dir = temp_dir ~prefix:"mentat-local-test" () in
   Eio_main.run @@ fun env ->
   Eio.Switch.run @@ fun sw ->
   let config = Local.Config.make ~model_dir:dir () in
@@ -213,17 +194,10 @@ let fake_server_binary () =
   if Sys.file_exists path then path
   else failf "fake_llama_server.exe not found at %s" path
 
-let with_env bindings f =
-  let saved =
-    List.map (fun (name, _) -> (name, Sys.getenv_opt name)) bindings
-  in
-  List.iter (fun (name, value) -> Unix.putenv name value) bindings;
-  Fun.protect
-    ~finally:(fun () ->
-      List.iter
-        (fun (name, value) -> Unix.putenv name (Option.value value ~default:""))
-        saved)
-    f
+(* Bind a whole table for the rest of the test; the runner restores each
+   name on every outcome. *)
+let setenv_all bindings =
+  List.iter (fun (name, value) -> setenv name (Some value)) bindings
 
 let process_exists pid =
   match Unix.kill pid 0 with
@@ -327,18 +301,17 @@ let scenario =
     ]
 
 let with_fake ?(startup_timeout_s = 2.) ?(env = []) f =
-  with_temp_dir @@ fun dir ->
+  let dir = temp_dir ~prefix:"mentat-local-test" () in
   let gguf = Filename.concat dir "lifecycle.gguf" in
   Out_channel.with_open_bin gguf (fun output ->
       Out_channel.output_string output "g");
   let sse_path = Filename.concat dir "lifecycle.sse" in
   Out_channel.with_open_bin sse_path (fun output ->
       Out_channel.output_string output scenario);
-  with_env
+  setenv_all
     (("MENTAT_FAKE_LLAMA_SSE", sse_path)
     :: ("MENTAT_FAKE_LLAMA_DUMP", "")
-    :: env)
-  @@ fun () ->
+    :: env);
   let config =
     Local.Config.make ~model_dir:dir ~server_binary:(fake_server_binary ())
       ~ctx_size:4096 ~startup_timeout_s ()
@@ -375,7 +348,7 @@ let request ~model_id =
     (Llm.Transcript.of_list_exn [ Llm.Message.user_text "hello" ])
 
 let unresolved_references_do_not_resolve_models () =
-  with_temp_dir @@ fun dir ->
+  let dir = temp_dir ~prefix:"mentat-local-test" () in
   Eio_main.run @@ fun env ->
   Eio.Switch.run @@ fun sw ->
   let config =
@@ -399,7 +372,7 @@ let unresolved_references_do_not_resolve_models () =
       equal_error_kind "error kind" Llm.Error.Invalid_request error
 
 let managed_server_round_trip () =
-  with_temp_dir @@ fun dir ->
+  let dir = temp_dir ~prefix:"mentat-local-test" () in
   let gguf = Filename.concat dir "tiny.gguf" in
   Out_channel.with_open_bin gguf (fun oc -> Out_channel.output_string oc "g");
   let sse_path = Filename.concat dir "scenario.sse" in
@@ -410,11 +383,8 @@ let managed_server_round_trip () =
     Local.Config.make ~model_dir:dir ~server_binary:(fake_server_binary ())
       ~ctx_size:4096 ~startup_timeout_s:20. ()
   in
-  with_env
-    [
-      ("MENTAT_FAKE_LLAMA_SSE", sse_path); ("MENTAT_FAKE_LLAMA_DUMP", dump_path);
-    ]
-  @@ fun () ->
+  setenv "MENTAT_FAKE_LLAMA_SSE" (Some sse_path);
+  setenv "MENTAT_FAKE_LLAMA_DUMP" (Some dump_path);
   Eio_main.run @@ fun env ->
   Eio.Switch.run @@ fun sw ->
   let client = Local.client ~sw ~env ~config () in
@@ -492,7 +462,7 @@ let managed_server_round_trip () =
 let owner_switch_reaps_server () =
   with_fake @@ fun ~dir ~gguf ~config ->
   let pid_file = Filename.concat dir "owner.pid" in
-  with_env [ ("MENTAT_FAKE_LLAMA_PID_FILE", pid_file) ] @@ fun () ->
+  setenv "MENTAT_FAKE_LLAMA_PID_FILE" (Some pid_file);
   let pid =
     Eio_main.run @@ fun env ->
     Eio.Switch.run @@ fun sw ->
@@ -508,7 +478,7 @@ let readiness_result_cancellation_reaps_server () =
   with_fake ~env:[ ("MENTAT_FAKE_LLAMA_UNHEALTHY", "1") ]
   @@ fun ~dir ~gguf ~config ->
   let pid_file = Filename.concat dir "cancelled-result.pid" in
-  with_env [ ("MENTAT_FAKE_LLAMA_PID_FILE", pid_file) ] @@ fun () ->
+  setenv "MENTAT_FAKE_LLAMA_PID_FILE" (Some pid_file);
   Eio_main.run @@ fun env ->
   Eio.Switch.run @@ fun sw ->
   let client = Local.client ~sw ~env ~config () in
@@ -524,7 +494,7 @@ let readiness_exception_cancellation_reaps_server () =
   with_fake ~env:[ ("MENTAT_FAKE_LLAMA_PARTIAL_HEALTH_COUNT", "1") ]
   @@ fun ~dir ~gguf ~config ->
   let pid_file = Filename.concat dir "cancelled-exception.pid" in
-  with_env [ ("MENTAT_FAKE_LLAMA_PID_FILE", pid_file) ] @@ fun () ->
+  setenv "MENTAT_FAKE_LLAMA_PID_FILE" (Some pid_file);
   Eio_main.run @@ fun env ->
   Eio.Switch.run @@ fun sw ->
   let clock = Eio.Stdenv.clock env in
@@ -551,7 +521,7 @@ let failed_readiness_reaps_server () =
   with_fake ~env:[ ("MENTAT_FAKE_LLAMA_EXIT_BEFORE_BIND", "1") ]
   @@ fun ~dir ~gguf ~config ->
   let pid_file = Filename.concat dir "early-exit.pid" in
-  with_env [ ("MENTAT_FAKE_LLAMA_PID_FILE", pid_file) ] @@ fun () ->
+  setenv "MENTAT_FAKE_LLAMA_PID_FILE" (Some pid_file);
   Eio_main.run @@ fun env ->
   Eio.Switch.run @@ fun sw ->
   let client = Local.client ~sw ~env ~config () in
@@ -573,12 +543,8 @@ let term_ignoring_readiness_is_killed () =
   @@ fun ~dir ~gguf ~config ->
   let pid_file = Filename.concat dir "term-ignore.pid" in
   let term_file = Filename.concat dir "term-observed" in
-  with_env
-    [
-      ("MENTAT_FAKE_LLAMA_PID_FILE", pid_file);
-      ("MENTAT_FAKE_LLAMA_TERM_FILE", term_file);
-    ]
-  @@ fun () ->
+  setenv "MENTAT_FAKE_LLAMA_PID_FILE" (Some pid_file);
+  setenv "MENTAT_FAKE_LLAMA_TERM_FILE" (Some term_file);
   let started = Unix.gettimeofday () in
   Eio_main.run @@ fun env ->
   Eio.Switch.run @@ fun sw ->
@@ -594,7 +560,7 @@ let spontaneous_exit_respawns_in_owner () =
   with_fake ~env:[ ("MENTAT_FAKE_LLAMA_EXIT_AFTER_CHAT", "1") ]
   @@ fun ~dir ~gguf ~config ->
   let pid_file = Filename.concat dir "respawn.pids" in
-  with_env [ ("MENTAT_FAKE_LLAMA_PID_FILE", pid_file) ] @@ fun () ->
+  setenv "MENTAT_FAKE_LLAMA_PID_FILE" (Some pid_file);
   Eio_main.run @@ fun env ->
   Eio.Switch.run @@ fun sw ->
   let clock = Eio.Stdenv.clock env in
@@ -614,7 +580,7 @@ let spontaneous_exit_respawns_in_owner () =
   | values -> failf "expected two server starts, got %d" (List.length values)
 
 let health_timeout_releases_the_connection () =
-  with_temp_dir @@ fun dir ->
+  let dir = temp_dir ~prefix:"mentat-local-test" () in
   let gguf = Filename.concat dir "partial-health.gguf" in
   Out_channel.with_open_bin gguf (fun output ->
       Out_channel.output_string output "g");
@@ -622,25 +588,20 @@ let health_timeout_releases_the_connection () =
   Out_channel.with_open_bin sse_path (fun output ->
       Out_channel.output_string output scenario);
   let health_dump = Filename.concat dir "health-requests" in
-  Unix.putenv "MENTAT_FAKE_LLAMA_SSE" sse_path;
-  Unix.putenv "MENTAT_FAKE_LLAMA_DUMP" "";
-  Unix.putenv "MENTAT_FAKE_LLAMA_PARTIAL_HEALTH_COUNT" "1";
-  Unix.putenv "MENTAT_FAKE_LLAMA_HEALTH_DUMP" health_dump;
-  Fun.protect
-    ~finally:(fun () ->
-      Unix.putenv "MENTAT_FAKE_LLAMA_PARTIAL_HEALTH_COUNT" "";
-      Unix.putenv "MENTAT_FAKE_LLAMA_HEALTH_DUMP" "")
-    (fun () ->
-      let config =
-        Local.Config.make ~model_dir:dir ~server_binary:(fake_server_binary ())
-          ~ctx_size:4096 ~startup_timeout_s:10. ()
-      in
-      Eio_main.run @@ fun env ->
-      Eio.Switch.run @@ fun sw ->
-      let client = Local.client ~sw ~env ~config () in
-      ignore
-        (expect_stream_ok "partial health recovers"
-           (run_stream client (request ~model_id:gguf))));
+  setenv "MENTAT_FAKE_LLAMA_SSE" (Some sse_path);
+  setenv "MENTAT_FAKE_LLAMA_DUMP" (Some "");
+  setenv "MENTAT_FAKE_LLAMA_PARTIAL_HEALTH_COUNT" (Some "1");
+  setenv "MENTAT_FAKE_LLAMA_HEALTH_DUMP" (Some health_dump);
+  (let config =
+     Local.Config.make ~model_dir:dir ~server_binary:(fake_server_binary ())
+       ~ctx_size:4096 ~startup_timeout_s:10. ()
+   in
+   Eio_main.run @@ fun env ->
+   Eio.Switch.run @@ fun sw ->
+   let client = Local.client ~sw ~env ~config () in
+   ignore
+     (expect_stream_ok "partial health recovers"
+        (run_stream client (request ~model_id:gguf))));
   let requests =
     In_channel.with_open_bin health_dump In_channel.input_all
     |> String.split_on_char '\n'
@@ -688,7 +649,7 @@ let write_tiny_gguf path =
    with, so a request that lands in a *new* dump file proves a fresh spawn,
    and one that does not proves reuse. *)
 let run_tagged ~client ~gguf dump =
-  Unix.putenv "MENTAT_FAKE_LLAMA_DUMP" dump;
+  setenv "MENTAT_FAKE_LLAMA_DUMP" (Some dump);
   let _, response =
     expect_stream_ok "tagged run" (run_stream client (request ~model_id:gguf))
   in
@@ -703,7 +664,7 @@ type two_models = {
 }
 
 let with_two_models budget f =
-  with_temp_dir @@ fun dir ->
+  let dir = temp_dir ~prefix:"mentat-local-test" () in
   let gguf_a = Filename.concat dir "model-a.gguf" in
   let gguf_b = Filename.concat dir "model-b.gguf" in
   write_tiny_gguf gguf_a;
@@ -711,7 +672,7 @@ let with_two_models budget f =
   let sse_path = Filename.concat dir "scenario.sse" in
   Out_channel.with_open_bin sse_path (fun oc ->
       Out_channel.output_string oc scenario);
-  Unix.putenv "MENTAT_FAKE_LLAMA_SSE" sse_path;
+  setenv "MENTAT_FAKE_LLAMA_SSE" (Some sse_path);
   let config =
     Local.Config.make ~model_dir:dir ~server_binary:(fake_server_binary ())
       ~ctx_size:4096 ~startup_timeout_s:20. ~memory_budget:budget ()
@@ -727,7 +688,7 @@ let co_resident_servers () =
   with_two_models (4 * gib) @@ fun { dir; config; client; gguf_a; gguf_b } ->
   run_tagged ~client ~gguf:gguf_a (Filename.concat dir "dump_a");
   run_tagged ~client ~gguf:gguf_b (Filename.concat dir "dump_b");
-  Unix.putenv "MENTAT_FAKE_LLAMA_DUMP" (Filename.concat dir "dump_c");
+  setenv "MENTAT_FAKE_LLAMA_DUMP" (Some (Filename.concat dir "dump_c"));
   let _, response =
     expect_stream_ok "reuse" (run_stream client (request ~model_id:gguf_a))
   in
@@ -758,7 +719,7 @@ let eviction_under_budget () =
     (Sys.file_exists (Filename.concat setup.dir "dump_f"))
 
 let missing_binary_is_reported () =
-  with_temp_dir @@ fun dir ->
+  let dir = temp_dir ~prefix:"mentat-local-test" () in
   let gguf = Filename.concat dir "tiny2.gguf" in
   Out_channel.with_open_bin gguf (fun oc -> Out_channel.output_string oc "g");
   let config =

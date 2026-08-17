@@ -246,9 +246,7 @@ let fake_merlin =
 let with_world_using ?clock name fn =
   Eio_main.run @@ fun stdenv ->
   let stdenv = (stdenv :> Eio_unix.Stdenv.base) in
-  let raw = Filename.temp_dir ("mentat-rename-" ^ name ^ "-") "" in
-  Fun.protect ~finally:(fun () -> remove_tree raw) @@ fun () ->
-  let base = Unix.realpath raw in
+  let base = Unix.realpath (temp_dir ~prefix:("mentat-rename-" ^ name) ()) in
   let ws_dir = Filename.concat base "workspace" in
   let aux_dir = Filename.concat base "auxiliary" in
   let outside_dir = Filename.concat base "outside" in
@@ -266,18 +264,8 @@ let with_world_using ?clock name fn =
   write_disk (Filename.concat outside_dir "outside.ml") "let target = 2\n";
   let fake = Filename.concat ws_dir "fake-ocamlmerlin" in
   install_executable fake fake_merlin;
-  let saved_tmpdir = Sys.getenv_opt "TMPDIR" in
-  let saved_secret = Sys.getenv_opt "MENTAT_RENAME_EXPECT_SECRET" in
-  Unix.putenv "TMPDIR" tmp_dir;
-  Unix.putenv "MENTAT_RENAME_EXPECT_SECRET" "ambient-secret";
-  Fun.protect ~finally:(fun () ->
-      (match saved_tmpdir with
-      | None -> Unix.unsetenv "TMPDIR"
-      | Some value -> Unix.putenv "TMPDIR" value);
-      match saved_secret with
-      | None -> Unix.unsetenv "MENTAT_RENAME_EXPECT_SECRET"
-      | Some value -> Unix.putenv "MENTAT_RENAME_EXPECT_SECRET" value)
-  @@ fun () ->
+  setenv "TMPDIR" (Some tmp_dir);
+  setenv "MENTAT_RENAME_EXPECT_SECRET" (Some "ambient-secret");
   Eio.Switch.run @@ fun sw ->
   let logical = workspace ws_dir aux_dir in
   let io = resolve_exn ~sw ~stdenv ~logical () in

@@ -180,9 +180,7 @@ let make_tool world ?(merlin_program = [ world.fake; world.plan_dir; "merlin" ])
 let with_world_using ~clock ?(switch = true) name fn =
   Eio_main.run @@ fun stdenv ->
   let stdenv = (stdenv :> Eio_unix.Stdenv.base) in
-  let raw = Filename.temp_dir ("mentat-docs-" ^ name ^ "-") "" in
-  Fun.protect ~finally:(fun () -> remove_tree raw) @@ fun () ->
-  let base = Unix.realpath raw in
+  let base = Unix.realpath (temp_dir ~prefix:("mentat-docs-" ^ name) ()) in
   let ws_dir = Filename.concat base "workspace" in
   let outside_dir = Filename.concat base "outside" in
   let switch_dir = Filename.concat base "switch" in
@@ -210,18 +208,8 @@ let with_world_using ~clock ?(switch = true) name fn =
   write_disk (Filename.concat outside_dir "escape.mli") "val escaped : int\n";
   let fake = Filename.concat ws_dir "fake-toolchain" in
   install_executable fake fake_program;
-  let saved_tmpdir = Sys.getenv_opt "TMPDIR" in
-  let saved_secret = Sys.getenv_opt "MENTAT_DOCS_EXPECT_SECRET" in
-  Unix.putenv "TMPDIR" tmp_dir;
-  Unix.putenv "MENTAT_DOCS_EXPECT_SECRET" "hidden";
-  Fun.protect ~finally:(fun () ->
-      (match saved_tmpdir with
-      | None -> Unix.unsetenv "TMPDIR"
-      | Some value -> Unix.putenv "TMPDIR" value);
-      match saved_secret with
-      | None -> Unix.unsetenv "MENTAT_DOCS_EXPECT_SECRET"
-      | Some value -> Unix.putenv "MENTAT_DOCS_EXPECT_SECRET" value)
-  @@ fun () ->
+  setenv "TMPDIR" (Some tmp_dir);
+  setenv "MENTAT_DOCS_EXPECT_SECRET" (Some "hidden");
   Eio.Switch.run @@ fun sw ->
   let logical = workspace ws_dir switch_dir in
   let io = resolve_exn ~sw ~stdenv ~logical () in

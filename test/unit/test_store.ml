@@ -117,16 +117,6 @@ let append_raw path bytes =
 
 let read_file path = In_channel.with_open_bin path In_channel.input_all
 
-let rec rm_rf path =
-  match Unix.lstat path with
-  | { Unix.st_kind = Unix.S_DIR; _ } -> (
-      Array.iter
-        (fun name -> rm_rf (Filename.concat path name))
-        (Sys.readdir path);
-      try Unix.rmdir path with Unix.Unix_error _ -> ())
-  | _ -> ( try Unix.unlink path with Unix.Unix_error _ -> ())
-  | exception Unix.Unix_error (Unix.ENOENT, _, _) -> ()
-
 let windtrap_seed () =
   match Sys.getenv_opt "WINDTRAP_SEED" with
   | Some value -> ( try int_of_string (String.trim value) with _ -> 0x570125)
@@ -151,9 +141,7 @@ let open_root ~sw ~fs base =
 let with_store name fn =
   Eio_main.run @@ fun env ->
   let fs = Eio.Stdenv.fs env in
-  let raw = Filename.temp_dir ("mentat-store-" ^ name) "" in
-  Fun.protect ~finally:(fun () -> rm_rf raw) @@ fun () ->
-  let base = Unix.realpath raw in
+  let base = Unix.realpath (temp_dir ~prefix:("mentat-store-" ^ name) ()) in
   Eio.Switch.run @@ fun sw ->
   let root = open_root ~sw ~fs base in
   fn ~sw ~base ~session:root ~mutation:root
@@ -161,9 +149,7 @@ let with_store name fn =
 let with_two_stores name fn =
   Eio_main.run @@ fun env ->
   let fs = Eio.Stdenv.fs env in
-  let raw = Filename.temp_dir ("mentat-store-" ^ name) "" in
-  Fun.protect ~finally:(fun () -> rm_rf raw) @@ fun () ->
-  let base = Unix.realpath raw in
+  let base = Unix.realpath (temp_dir ~prefix:("mentat-store-" ^ name) ()) in
   Eio.Switch.run @@ fun sw ->
   let first = open_root ~sw ~fs base in
   let second = open_root ~sw ~fs base in
@@ -208,9 +194,7 @@ let with_doc_lock_holder path fn =
 let with_review name fn =
   Eio_main.run @@ fun env ->
   let fs = Eio.Stdenv.fs env in
-  let raw = Filename.temp_dir ("mentat-review-" ^ name) "" in
-  Fun.protect ~finally:(fun () -> rm_rf raw) @@ fun () ->
-  let base = Unix.realpath raw in
+  let base = Unix.realpath (temp_dir ~prefix:("mentat-review-" ^ name) ()) in
   Eio.Switch.run @@ fun sw ->
   let root = open_root ~sw ~fs base in
   fn ~base ~review:root
@@ -793,13 +777,8 @@ let released_guards_are_refused_by_appends () =
 let guards_never_cross_root_registries () =
   Eio_main.run @@ fun env ->
   let fs = Eio.Stdenv.fs env in
-  let raw_a = Filename.temp_dir "mentat-store-cross-a" "" in
-  let raw_b = Filename.temp_dir "mentat-store-cross-b" "" in
-  Fun.protect ~finally:(fun () ->
-      rm_rf raw_a;
-      rm_rf raw_b)
-  @@ fun () ->
-  let base_a = Unix.realpath raw_a and base_b = Unix.realpath raw_b in
+  let base_a = Unix.realpath (temp_dir ~prefix:"mentat-store-cross-a" ())
+  and base_b = Unix.realpath (temp_dir ~prefix:"mentat-store-cross-b" ()) in
   Eio.Switch.run @@ fun sw ->
   let root_a = open_root ~sw ~fs base_a in
   let root_b = open_root ~sw ~fs base_b in
@@ -2724,9 +2703,7 @@ let attachment_store_is_content_addressed () =
 let open_refuses_a_non_directory_layout_child () =
   Eio_main.run @@ fun env ->
   let fs = Eio.Stdenv.fs env in
-  let raw = Filename.temp_dir "mentat-store-layout" "" in
-  Fun.protect ~finally:(fun () -> rm_rf raw) @@ fun () ->
-  let base = Unix.realpath raw in
+  let base = Unix.realpath (temp_dir ~prefix:"mentat-store-layout" ()) in
   write_file (Filename.concat base "sessions") "not a directory";
   Eio.Switch.run @@ fun sw ->
   match Store.open_ ~sw (Eio.Path.( / ) fs base) with

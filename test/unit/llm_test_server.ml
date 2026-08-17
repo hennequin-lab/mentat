@@ -89,7 +89,7 @@ let with_server ~name respond f =
         failf "expected TCP test socket, got Unix socket %S" path
   in
   let requests_path =
-    Filename.temp_file ("mentat-" ^ name ^ "-requests") ".bin"
+    Filename.concat (temp_dir ~prefix:("mentat-" ^ name) ()) "requests.bin"
   in
   match Unix.fork () with
   | 0 -> (

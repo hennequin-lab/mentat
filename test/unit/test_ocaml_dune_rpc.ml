@@ -9,28 +9,12 @@ module Health = Mentat_ocaml_dune_rpc.Instance.Health
 let realpath_or path =
   match Unix.realpath path with p -> p | exception Unix.Unix_error _ -> path
 
+(* Canonicalise: Dune registers its RPC endpoint under the realpath of the
+   root, and the instance matches endpoints against the workspace root after
+   [realpath]; on macOS the temp directory is a [/var/...] path that is a
+   symlink to [/private/var/...]. *)
 let with_temp_dir f =
-  let dir = Filename.temp_file "mentat-dune-rpc-test" "" in
-  Sys.remove dir;
-  Unix.mkdir dir 0o700;
-  (* Canonicalise: Dune registers its RPC endpoint under the realpath of the
-     root, and the instance matches endpoints against the workspace root after
-     [realpath]; on macOS [Filename.temp_file] hands back a [/var/...] path that
-     is a symlink to [/private/var/...]. *)
-  let dir = realpath_or dir in
-  Fun.protect
-    ~finally:(fun () ->
-      let rec remove path =
-        if try Sys.is_directory path with Sys_error _ -> false then begin
-          Array.iter
-            (fun entry -> remove (Filename.concat path entry))
-            (Sys.readdir path);
-          try Unix.rmdir path with Unix.Unix_error _ -> ()
-        end
-        else try Sys.remove path with Sys_error _ -> ()
-      in
-      try remove dir with Sys_error _ | Unix.Unix_error _ -> ())
-    (fun () -> f dir)
+  f (realpath_or (temp_dir ~prefix:"mentat-dune-rpc-test" ()))
 
 let write_file path contents =
   Out_channel.with_open_bin path (fun oc ->

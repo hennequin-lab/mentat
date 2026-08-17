@@ -75,16 +75,6 @@ let write_disk path contents =
   Out_channel.with_open_bin path (fun channel ->
       Out_channel.output_string channel contents)
 
-let with_env name value fn =
-  let saved = Sys.getenv_opt name in
-  Unix.putenv name value;
-  Fun.protect
-    ~finally:(fun () ->
-      match saved with
-      | Some value -> Unix.putenv name value
-      | None -> Unix.unsetenv name)
-    fn
-
 let populate_fixture ws_dir out_dir =
   write_disk (Filename.concat ws_dir "note.txt") "alpha\n";
   write_disk (Filename.concat ws_dir "bom.txt") "\239\187\191alpha\n";
@@ -110,16 +100,14 @@ let populate_fixture ws_dir out_dir =
 let with_world ?(mode = Mentat_config.Mode.Danger_full_access) fn =
   Eio_main.run @@ fun stdenv ->
   let stdenv = (stdenv :> Eio_unix.Stdenv.base) in
-  let raw = Filename.temp_dir "mentat-write-file-" "" in
-  Fun.protect ~finally:(fun () -> remove_tree raw) @@ fun () ->
-  let base = Unix.realpath raw in
+  let base = Unix.realpath (temp_dir ~prefix:"mentat-write-file" ()) in
   let ws_dir = Filename.concat base "workspace" in
   let out_dir = Filename.concat base "outside" in
   let tmp_dir = Filename.concat base "tmp" in
   List.iter mkdir [ ws_dir; out_dir; tmp_dir ];
   populate_fixture ws_dir out_dir;
   let logical = Workspace.single (Workspace.Root.of_dir (abs ws_dir)) in
-  with_env "TMPDIR" tmp_dir @@ fun () ->
+  setenv "TMPDIR" (Some tmp_dir);
   Eio.Switch.run @@ fun sw ->
   let io = resolve_exn ~sw ~stdenv ~logical ~mode () in
   fn { ws_dir; io; tool = Write_file.make io }

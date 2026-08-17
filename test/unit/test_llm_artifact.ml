@@ -18,21 +18,7 @@ let contains ~needle haystack =
   in
   nlen = 0 || at 0
 
-let with_temp_dir f =
-  let dir = Filename.temp_file "mentat-artifact-test" "" in
-  Sys.remove dir;
-  Unix.mkdir dir 0o700;
-  Fun.protect
-    ~finally:(fun () ->
-      Array.iter
-        (fun name ->
-          let path = Filename.concat dir name in
-          match Unix.unlink path with
-          | () -> ()
-          | exception Unix.Unix_error (Unix.ENOENT, _, _) -> ())
-        (Sys.readdir dir);
-      Unix.rmdir dir)
-    (fun () -> f dir)
+let with_temp_dir f = f (temp_dir ~prefix:"mentat-artifact-test" ())
 
 let rec write_all fd bytes offset length =
   if length > 0 then

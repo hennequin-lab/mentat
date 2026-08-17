@@ -165,27 +165,13 @@ let write_disk path contents =
   Out_channel.with_open_bin path (fun channel ->
       Out_channel.output_string channel contents)
 
-let with_env bindings fn =
-  let saved =
-    List.map (fun (name, _) -> (name, Sys.getenv_opt name)) bindings
-  in
-  let set (name, value) =
-    match value with
-    | Some value -> Unix.putenv name value
-    | None -> Unix.unsetenv name
-  in
-  List.iter set bindings;
-  Fun.protect ~finally:(fun () -> List.iter set saved) fn
-
 let with_world ?(mode = Mentat_config.Mode.Danger_full_access)
     ?(read = Mentat_config.Read.All)
     ?(network = Sandbox.Policy.Network.Restricted) ?(shell = fun _ -> "/bin/sh")
     name fn =
   Eio_main.run @@ fun stdenv ->
   let stdenv = (stdenv :> Eio_unix.Stdenv.base) in
-  let raw = Filename.temp_dir ("mentat-shell-" ^ name ^ "-") "" in
-  Fun.protect ~finally:(fun () -> remove_tree raw) @@ fun () ->
-  let base = Unix.realpath raw in
+  let base = Unix.realpath (temp_dir ~prefix:("mentat-shell-" ^ name) ()) in
   let ws_dir = Filename.concat base "workspace" in
   let out_dir = Filename.concat base "outside" in
   let tmp_dir = Filename.concat base "tmp" in
@@ -197,12 +183,8 @@ let with_world ?(mode = Mentat_config.Mode.Danger_full_access)
   Unix.symlink out_dir (Filename.concat ws_dir "outside-link");
   let shell = shell ws_dir in
   let logical = Workspace.single (Workspace.Root.of_dir (abs ws_dir)) in
-  with_env
-    [
-      ("TMPDIR", Some tmp_dir);
-      ("MENTAT_SHELL_EXPECT_SECRET", Some "must-not-leak");
-    ]
-  @@ fun () ->
+  setenv "TMPDIR" (Some tmp_dir);
+  setenv "MENTAT_SHELL_EXPECT_SECRET" (Some "must-not-leak");
   Eio.Switch.run @@ fun sw ->
   let io = resolve_exn ~sw ~stdenv ~logical ~mode ~read ~network () in
   let clock = Eio.Stdenv.mono_clock stdenv in

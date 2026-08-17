@@ -43,7 +43,7 @@ let rec remove_tree path =
   else Sys.remove path
 
 let with_layout f =
-  let root = Filename.temp_dir "mentat_tc" "" in
+  let root = temp_dir ~prefix:"mentat_tc" () in
   let mkdir_p dir =
     ignore
       (List.fold_left
