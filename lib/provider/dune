@@ -1,3 +1,7 @@
 (library
  (name mentat_provider)
+ (instrumentation
+  (backend ppx_windtrap.coverage))
+ (instrumentation
+  (backend ppx_windtrap.mutate))
  (libraries jsont oauth2 mentat_llm uri))

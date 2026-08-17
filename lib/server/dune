@@ -1,5 +1,9 @@
 (library
  (name mentat_server)
+ (instrumentation
+  (backend ppx_windtrap.coverage))
+ (instrumentation
+  (backend ppx_windtrap.mutate))
  (private_modules codecs discovery flow_codec endpoint wire)
  (libraries
   ;; the wire spine and the multi-source client seam this library refills

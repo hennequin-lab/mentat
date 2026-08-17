@@ -1,3 +1,7 @@
 (library
  (name mentat_edit)
+ (instrumentation
+  (backend ppx_windtrap.coverage))
+ (instrumentation
+  (backend ppx_windtrap.mutate))
  (libraries textdiff mentat_digest mentat_workspace))

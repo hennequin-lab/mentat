@@ -1,5 +1,9 @@
 (library
  (name mentat_tui)
+ (instrumentation
+  (backend ppx_windtrap.coverage))
+ (instrumentation
+  (backend ppx_windtrap.mutate))
  (modules
   auth_panel
   app

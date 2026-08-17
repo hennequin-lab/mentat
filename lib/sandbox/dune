@@ -1,4 +1,8 @@
 (library
  (name mentat_sandbox)
+ (instrumentation
+  (backend ppx_windtrap.coverage))
+ (instrumentation
+  (backend ppx_windtrap.mutate))
  (private_modules seatbelt bubblewrap profile seal)
  (libraries jsont lpath mentat_digest mentat_sandbox_kernel))

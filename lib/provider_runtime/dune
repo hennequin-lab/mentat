@@ -1,5 +1,9 @@
 (library
  (name mentat_provider_runtime)
+ (instrumentation
+  (backend ppx_windtrap.coverage))
+ (instrumentation
+  (backend ppx_windtrap.mutate))
  (private_modules
   tls_setup
   oauth_flow

@@ -1,4 +1,8 @@
 (library
  (name mentat_diagnostic)
+ (instrumentation
+  (backend ppx_windtrap.coverage))
+ (instrumentation
+  (backend ppx_windtrap.mutate))
  (public_name mentat.diagnostic)
  (libraries jsont))

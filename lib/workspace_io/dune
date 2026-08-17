@@ -1,5 +1,9 @@
 (library
  (name mentat_workspace_io)
+ (instrumentation
+  (backend ppx_windtrap.coverage))
+ (instrumentation
+  (backend ppx_windtrap.mutate))
  (private_modules child_env derive probe)
  (libraries
   cstruct

@@ -2,6 +2,10 @@
 
 (library
  (name mentat_tools)
+ (instrumentation
+  (backend ppx_windtrap.coverage))
+ (instrumentation
+  (backend ppx_windtrap.mutate))
  (private_modules
   address
   change_evidence

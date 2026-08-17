@@ -1,3 +1,7 @@
 (library
  (name mentat_permission)
+ (instrumentation
+  (backend ppx_windtrap.coverage))
+ (instrumentation
+  (backend ppx_windtrap.mutate))
  (libraries jsont mentat_digest lpath mentat_workspace))

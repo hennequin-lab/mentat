@@ -1,5 +1,9 @@
 (library
  (name mentat_mutation)
+ (instrumentation
+  (backend ppx_windtrap.coverage))
+ (instrumentation
+  (backend ppx_windtrap.mutate))
  (private_modules import string_id canon change_id)
  (libraries
   jsont
