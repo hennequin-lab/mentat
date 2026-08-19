@@ -94,8 +94,11 @@ module Settled : sig
     | Responded of Mentat_llm.Response.t
         (** The provider responded; the response is appended to the transcript.
         *)
-    | Interrupted of { text : string }
-        (** A cooperative cancel retained visible prose, proven quiescent. *)
+    | Interrupted of { text : string; usage : Mentat_llm.Usage.t option }
+        (** A cooperative cancel retained visible prose, proven quiescent.
+            [usage] is the last usage snapshot the provider reported before the
+            cancel, when one arrived: provider-reported spend, never an
+            estimate. *)
     | Failed of Mentat_llm.Error.t
         (** A known provider failure (auth rejected, quota, model gone, …): the
             call finished and did not succeed. It carries the provider layer's
@@ -114,9 +117,10 @@ module Settled : sig
   (** [responded ~id response] settles the claim [id] refers to. [id] is the
       opener's {!Started.id}. *)
 
-  val interrupted : id:Id.t -> text:string -> t
-  (** [interrupted ~id ~text] settles claim [id] with retained interrupted
-      prose.
+  val interrupted : id:Id.t -> ?usage:Mentat_llm.Usage.t -> text:string -> unit -> t
+  (** [interrupted ~id ?usage ~text ()] settles claim [id] with retained
+      interrupted prose and, when the stream reported one before the cancel,
+      the last provider usage snapshot.
 
       Raises [Invalid_argument] if [text] is empty or whitespace-only. *)
 

@@ -869,7 +869,7 @@ let apply_provider_settled settled t =
              interrupt. The engine settles the turn [Failed] in the same
              suffix. *)
           commit t
-      | Provider_request.Settled.Interrupted { text } -> (
+      | Provider_request.Settled.Interrupted { text; _ } -> (
           match add_transcript (Mentat_llm.Message.assistant_text text) t with
           | Error _ as e -> e
           | Ok t -> commit t)

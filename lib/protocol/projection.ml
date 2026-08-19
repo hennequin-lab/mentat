@@ -170,7 +170,7 @@ let project_event ~session_id ~session_state ~mutation ~emit ~seq
         match Mentat_session.Provider_request.Settled.outcome settlement with
         | Mentat_session.Provider_request.Settled.Responded response ->
             (rev_cumulative, true, mk (Fact.Turn_assistant response))
-        | Mentat_session.Provider_request.Settled.Interrupted { text } ->
+        | Mentat_session.Provider_request.Settled.Interrupted { text; _ } ->
             (rev_cumulative, true, mk (Fact.Turn_assistant_interrupted { text }))
         | Mentat_session.Provider_request.Settled.Failed error ->
             let claim = Mentat_session.Provider_request.Settled.id settlement in

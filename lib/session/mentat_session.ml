@@ -731,7 +731,14 @@ let metrics session =
                   rejections,
                   denials,
                   compaction_ids )
-            | Provider_request.Settled.Interrupted _
+            | Provider_request.Settled.Interrupted { usage = retained; _ } ->
+                (* Interrupted spend is provider-reported and was billed; it
+                   folds into usage without counting as a response. *)
+                let usage =
+                  Mentat_llm.Usage.add usage
+                    (Option.value retained ~default:Mentat_llm.Usage.zero)
+                in
+                (usage, responses, turns, rejections, denials, compaction_ids)
             | Provider_request.Settled.Failed _
             | Provider_request.Settled.Ambiguous ->
                 (usage, responses, turns, rejections, denials, compaction_ids))

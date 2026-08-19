@@ -2342,7 +2342,7 @@ let rec begin_turn (fixture : fixture) ~turn_id ~session ~prompt ~content ~mode
               else
                 ( Session.Event.provider_settled
                     (Session.Provider_request.Settled.interrupted ~id:claim_id
-                       ~text:assistant_text),
+                       ~text:assistant_text ()),
                   [
                     Protocol.Fact.Turn_assistant_interrupted
                       { text = assistant_text };

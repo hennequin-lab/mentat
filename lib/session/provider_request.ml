@@ -48,7 +48,7 @@ end
 module Settled = struct
   type outcome =
     | Responded of Mentat_llm.Response.t
-    | Interrupted of { text : string }
+    | Interrupted of { text : string; usage : Mentat_llm.Usage.t option }
     | Failed of Mentat_llm.Error.t
     | Ambiguous
 
@@ -56,10 +56,10 @@ module Settled = struct
 
   let responded ~id response = { id; outcome = Responded response }
 
-  let interrupted ~id ~text =
+  let interrupted ~id ?usage ~text () =
     if String.is_empty (String.trim text) then
       invalid "Settled.interrupted" "text must contain visible prose";
-    { id; outcome = Interrupted { text } }
+    { id; outcome = Interrupted { text; usage } }
 
   let failed ~id error = { id; outcome = Failed error }
   let ambiguous ~id = { id; outcome = Ambiguous }
@@ -69,7 +69,9 @@ module Settled = struct
   let equal_outcome a b =
     match (a, b) with
     | Responded a, Responded b -> Mentat_llm.Response.equal a b
-    | Interrupted a, Interrupted b -> String.equal a.text b.text
+    | Interrupted a, Interrupted b ->
+        String.equal a.text b.text
+        && Option.equal Mentat_llm.Usage.equal a.usage b.usage
     | Failed a, Failed b -> Mentat_llm.Error.equal a b
     | Ambiguous, Ambiguous -> true
     | (Responded _ | Interrupted _ | Failed _ | Ambiguous), _ -> false
@@ -81,7 +83,7 @@ module Settled = struct
     | Responded response ->
         Format.fprintf ppf "responded(%a, %S)" Id.pp t.id
           (Mentat_llm.Response.text response)
-    | Interrupted { text } ->
+    | Interrupted { text; _ } ->
         Format.fprintf ppf "interrupted(%a, %S)" Id.pp t.id text
     | Failed error ->
         Format.fprintf ppf "failed(%a, %a)" Id.pp t.id Mentat_llm.Error.pp error
@@ -100,12 +102,16 @@ module Settled = struct
       |> Jsont.Object.Case.map "responded" ~dec:Fun.id
     in
     let interrupted_case =
-      Jsont.Object.map ~kind:"provider interrupted" (fun id text ->
-          decode_invalid_arg (fun () -> interrupted ~id ~text))
+      Jsont.Object.map ~kind:"provider interrupted" (fun id text usage ->
+          decode_invalid_arg (fun () -> interrupted ~id ?usage ~text ()))
       |> Jsont.Object.mem "id" Id.jsont ~enc:id
       |> Jsont.Object.mem "text" Jsont.string ~enc:(fun t ->
           match t.outcome with
-          | Interrupted { text } -> text
+          | Interrupted { text; _ } -> text
+          | Responded _ | Failed _ | Ambiguous -> assert false)
+      |> Jsont.Object.opt_mem "usage" Mentat_llm.Usage.jsont ~enc:(fun t ->
+          match t.outcome with
+          | Interrupted { usage; _ } -> usage
           | Responded _ | Failed _ | Ambiguous -> assert false)
       |> Jsont.Object.error_unknown |> Jsont.Object.finish
       |> Jsont.Object.Case.map "interrupted" ~dec:Fun.id

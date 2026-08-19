@@ -204,7 +204,8 @@ module Metrics : sig
 
   type t = private {
     usage : Mentat_llm.Usage.t;
-        (** Lane-wise sum of provider-reported response usage. *)
+        (** Lane-wise sum of provider-reported usage: appended responses,
+            retained interrupted prose, and installed compaction summaries. *)
     responses : int;  (** Number of provider responses. *)
     turns : int;  (** Number of terminal turn events. *)
     tool_calls : int;  (** Number of returned executable tool calls. *)

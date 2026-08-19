@@ -1895,7 +1895,7 @@ let interrupt ?reason ?assistant_text session =
             [
               Mentat_session.Event.provider_settled
                 (Mentat_session.Provider_request.Settled.interrupted ~id
-                   ~text:prose_text);
+                   ~text:prose_text ());
             ]
         | None ->
             [

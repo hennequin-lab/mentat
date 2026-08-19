@@ -311,9 +311,10 @@ let settle_responded ?(model = model) ?usage claim assistant =
 let respond ?model ?usage claim text =
   settle_responded ?model ?usage claim (Llm.Message.Assistant.text text)
 
-let settle_interrupted claim text =
+let settle_interrupted ?usage claim text =
   Event.provider_settled
-    (Session.Provider_request.Settled.interrupted ~id:(claim_id claim) ~text)
+    (Session.Provider_request.Settled.interrupted ~id:(claim_id claim) ?usage
+       ~text ())
 
 let settle_ambiguous claim =
   Event.provider_settled
@@ -2205,7 +2206,35 @@ let provider_group =
           expect_invalid_arg "whitespace-only prose" (fun () ->
               Session.Provider_request.Settled.interrupted
                 ~id:(claim_id (claim (turn_id "turn-1")))
-                ~text:"  \n "));
+                ~text:"  \n " ()));
+      test "an interrupted settlement retains provider usage" (fun () ->
+          let id = claim_id (claim (turn_id "turn-1")) in
+          let with_usage =
+            Session.Provider_request.Settled.interrupted ~id
+              ~usage:(usage ~input:120 ~output:8) ~text:"partial" ()
+          in
+          is_true ~msg:"usage round-trips"
+            (Session.Provider_request.Settled.equal with_usage
+               (decode Session.Provider_request.Settled.jsont
+                  (encode Session.Provider_request.Settled.jsont with_usage)));
+          let bare =
+            Session.Provider_request.Settled.interrupted ~id ~text:"partial" ()
+          in
+          is_false ~msg:"usage distinguishes two otherwise-equal settlements"
+            (Session.Provider_request.Settled.equal with_usage bare);
+          (* An old document records no [usage] member; it decodes to a
+             usage-less settlement, byte-identical to the pre-field shape. *)
+          let legacy =
+            decode Session.Provider_request.Settled.jsont
+              (json_object
+                 [
+                   ("type", Json.string "interrupted");
+                   ("id", encode Session.Provider_request.Id.jsont id);
+                   ("text", Json.string "partial");
+                 ])
+          in
+          is_true ~msg:"a usage-less document decodes to a usage-less settlement"
+            (Session.Provider_request.Settled.equal bare legacy));
     ]
 
 (* Replay: tool claims. *)
@@ -5361,6 +5390,28 @@ let metrics_group =
             m.Session.Metrics.tool_calls_by_name;
           equal int ~msg:"permission denials" 1
             m.Session.Metrics.permission_denials);
+      test "interrupted spend folds into usage without counting a response"
+        (fun () ->
+          let t = turn () in
+          let t_id = Session.Turn.id t in
+          let c = claim t_id in
+          let events =
+            [
+              Event.turn_started t;
+              Event.provider_requested c;
+              Event.interrupt_requested ~turn:t_id ();
+              settle_interrupted ~usage:(usage ~input:120 ~output:8) c
+                "Stopping.";
+              finish
+                ~outcome:(Session.Turn.Outcome.interrupted ~cancelled:true ())
+                t;
+            ]
+          in
+          let m = Session.metrics (saved events) in
+          equal usage_value ~msg:"usage counts the retained snapshot"
+            (usage ~input:120 ~output:8)
+            m.Session.Metrics.usage;
+          equal int ~msg:"no response is counted" 0 m.Session.Metrics.responses);
       test "metrics jsont round-trips and rejects invalid shapes" (fun () ->
           let m = Session.metrics (saved (journal ()).events) in
           let json = encode Session.Metrics.jsont m in

@@ -242,7 +242,7 @@ let respond ?model ?usage claim text =
 
 let settle_interrupted claim text =
   Event.provider_settled
-    (Session.Provider_request.Settled.interrupted ~id:(claim_id claim) ~text)
+    (Session.Provider_request.Settled.interrupted ~id:(claim_id claim) ~text ())
 
 let settle_ambiguous claim =
   Event.provider_settled
