@@ -1250,6 +1250,14 @@ let high_impact_command_matcher () =
   yes "git push -f is high_impact" (exec "git" [ "push"; "-f" ]);
   no "an ordinary git push is not flagged"
     (exec "git" [ "push"; "origin"; "main" ]);
+  yes "git -C cannot hide a force push"
+    (exec "git" [ "-C"; "repo"; "push"; "--force" ]);
+  yes "git -c cannot hide a hard reset"
+    (exec "git" [ "-c"; "a=b"; "reset"; "--hard" ]);
+  yes "a separated --git-dir cannot hide a clean"
+    (exec "git" [ "--git-dir"; "/tmp/g"; "clean"; "-f" ]);
+  no "git -C of an ordinary status is not flagged"
+    (exec "git" [ "-C"; "repo"; "status" ]);
   yes "git reset --hard is high_impact" (exec "git" [ "reset"; "--hard" ]);
   no "a plain git reset is not flagged" (exec "git" [ "reset" ]);
   yes "git clean --force is high_impact" (exec "git" [ "clean"; "-fd" ]);

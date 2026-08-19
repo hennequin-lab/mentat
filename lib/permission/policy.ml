@@ -186,10 +186,21 @@ module Command_match = struct
   let has_flag ~long ~short args =
     List.exists (fun t -> List.mem t long || short_flag short t) args
 
+  (* Git names its subcommand after global options, and [-C], [-c],
+     [--git-dir], [--work-tree], and [--namespace] take their value as a
+     separate word, so the scan steps over the pair. Inline-value spellings
+     ([--git-dir=...]) fall to the ordinary dash skip. *)
+  let rec git_subcommand = function
+    | ("-C" | "-c" | "--git-dir" | "--work-tree" | "--namespace") :: _ :: rest
+      ->
+        git_subcommand rest
+    | token :: rest when String.length token > 0 && token.[0] = '-' ->
+        git_subcommand rest
+    | token :: _ -> Some token
+    | [] -> None
+
   let git_is_high_impact args =
-    match
-      List.find_opt (fun t -> not (String.length t > 0 && t.[0] = '-')) args
-    with
+    match git_subcommand args with
     | Some "push" ->
         has_flag ~long:[ "--force"; "--force-with-lease" ] ~short:'f' args
     | Some "reset" -> List.mem "--hard" args
