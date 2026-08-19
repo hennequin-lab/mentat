@@ -109,17 +109,23 @@ module Match : sig
     val high_impact : t
     (** [high_impact] matches plainly visible bulk or irreversible intent:
         recursive [rm], [git push --force], [git reset --hard],
-        [git clean --force], direct-device [dd], [shred], and [mkfs].
+        [git clean --force], direct-device [dd], [shred], and [mkfs]. In
+        visible shell segments it also matches a word carrying unquoted
+        expansion syntax — a glob, a brace pair, or a substitution — where the
+        operation is named, at the segment head or in a flag: such a word
+        expands to an operation the scan cannot read, so the spelling itself
+        is worth review. An argument glob does not match; it leaves the
+        operation visible, and confinement bounds what it may touch.
 
         Placed as a {!Rule.review} rule before a broad command {!Rule.allow},
         this keeps such commands reviewable even under a posture that otherwise
         allows commands, because a sandbox bounds where a command writes but not
         whether the loss is recoverable. The classifier reads the already-parsed
         argv structurally and uses a lenient token scan for visible shell
-        segments. Opaque code, substitutions, privilege wrappers, and parse
-        failures do not match merely because the classifier cannot understand
-        them; confinement owns code safety. A match is worth review, and a
-        non-match is not a guarantee of safety. *)
+        segments. Opaque code, argument-position substitutions, privilege
+        wrappers, and parse failures do not match merely because the classifier
+        cannot understand them; confinement owns code safety. A match is worth
+        review, and a non-match is not a guarantee of safety. *)
 
     val execution : Access.Command.execution -> t
     (** [execution route] matches command accesses whose host-produced execution

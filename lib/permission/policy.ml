@@ -148,11 +148,48 @@ module Command_match = struct
     let last = right (len - 1) in
     if last < first then "" else String.sub token first (last - first + 1)
 
-  let scan_words sub =
+  let scan_raw_words sub =
     String.map (function '\t' | '\n' | '\r' -> ' ' | c -> c) sub
     |> String.split_on_char ' '
-    |> List.filter_map (fun raw ->
-        match unquote raw with "" -> None | word -> Some word)
+    |> List.filter (fun raw -> not (String.equal raw ""))
+
+  let unquoted_words raws =
+    List.filter_map
+      (fun raw -> match unquote raw with "" -> None | word -> Some word)
+      raws
+
+  (* Expansion syntax where the operation is named is itself the signal: a
+     segment head or flag word carrying an unquoted glob, brace pair, or
+     substitution expands to an operation this scan cannot read — [rm
+     --recursi*], [-{r,f}], [$CMD -rf] — so the spelling earns review. An
+     argument glob leaves the operation visible and the execution boundary
+     bounds what it may touch, and a tilde rewrites only a path prefix, never
+     an operation, so neither matches. Only a single-quoted word is surely
+     literal, and an unmatched bracket or brace is literal in the shell, so
+     both stay quiet. *)
+  let paired opener closer word =
+    match String.index_opt word opener with
+    | None -> false
+    | Some i -> (
+        match String.rindex_opt word closer with
+        | Some j -> i < j
+        | None -> false)
+
+  let dynamic_word raw =
+    String.length raw > 0
+    && raw.[0] <> '\''
+    && (String.exists (function '*' | '?' | '$' | '`' -> true | _ -> false) raw
+       || paired '[' ']' raw
+       || paired '{' '}' raw)
+
+  let words_hide_operation = function
+    | [] -> false
+    | head :: args ->
+        dynamic_word head
+        || List.exists
+             (fun raw ->
+               String.length raw > 0 && raw.[0] = '-' && dynamic_word raw)
+             args
 
   let scan_subcommands command =
     let buf = Buffer.create (String.length command) in
@@ -255,7 +292,10 @@ module Command_match = struct
 
   and shell_text_is_high_impact text =
     List.exists
-      (fun sub -> tokens_contain_high_impact (scan_words sub))
+      (fun sub ->
+        let raws = scan_raw_words sub in
+        words_hide_operation raws
+        || tokens_contain_high_impact (unquoted_words raws))
       (scan_subcommands text)
 
   let command_is_high_impact = function

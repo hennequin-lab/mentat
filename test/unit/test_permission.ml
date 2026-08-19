@@ -1296,6 +1296,14 @@ let high_impact_command_matcher () =
   no "an opaque command substitution is left to confinement"
     (shell "echo $(pick-command)");
   no "dynamic eval is left to confinement" (shell "eval \"$ACTION\"");
+  yes "an expanded flag spelling earns review" (shell "rm --recursi*");
+  yes "a brace-expanded flag earns review" (shell "find x -{delete,print}");
+  yes "a substituted program earns review" (shell "$CMD -rf x");
+  no "an argument glob is not flagged" (shell "ls *.ml");
+  no "a directory glob argument is not flagged" (shell "cat foo/*.log");
+  no "an argument variable is not flagged" (shell "echo $HOME");
+  no "a single-quoted flag spelling stays literal" (shell "rm '--recursi*'");
+  no "a test bracket is not expansion" (shell "[ -f x ] && echo ok");
   no "a benign command with a redirect is not flagged"
     (shell "dune build 2> log.txt");
   no "a read-only shell command is not flagged" (shell "git status");
