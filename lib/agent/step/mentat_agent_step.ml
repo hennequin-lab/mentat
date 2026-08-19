@@ -1871,7 +1871,7 @@ let deliver_child env ~wait ~settled session =
           ]
       else Ok { Step.events = []; action = Step.Await_children wait }
 
-let interrupt ?reason ?assistant_text session =
+let interrupt ?reason ?assistant_text ?usage session =
   (match reason with
   | Some "" ->
       invalid_arg "Mentat_agent_step.interrupt: reason must not be empty"
@@ -1894,7 +1894,7 @@ let interrupt ?reason ?assistant_text session =
         | Some prose_text ->
             [
               Mentat_session.Event.provider_settled
-                (Mentat_session.Provider_request.Settled.interrupted ~id
+                (Mentat_session.Provider_request.Settled.interrupted ~id ?usage
                    ~text:prose_text ());
             ]
         | None ->

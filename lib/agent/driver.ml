@@ -683,6 +683,7 @@ and perform t eff =
   | Some turn -> (
       let turn_id = Mentat_session.Turn.id turn in
       let buffer = Buffer.create 256 in
+      let stream_usage = ref None in
       let closer = ref None in
       let sw_cell = ref None in
       let done_p, done_r = Eio.Promise.create () in
@@ -692,17 +693,18 @@ and perform t eff =
               Ok
                 (Eio.Switch.run (fun sw ->
                      sw_cell := Some sw;
-                     exec t eff ~turn:turn_id ~buffer ~closer))
+                     exec t eff ~turn:turn_id ~buffer ~stream_usage ~closer))
             with exn -> Error exn
           in
           Eio.Promise.resolve done_r outcome);
       let outcome = supervise t ~done_p ~sw_cell ~turn:turn_id in
       let result =
-        Eio.Cancel.protect (fun () -> settle t eff ~outcome ~buffer ~closer)
+        Eio.Cancel.protect (fun () ->
+            settle t eff ~outcome ~buffer ~stream_usage ~closer)
       in
       match result with Error e -> fault t e | Ok step -> act t step)
 
-and exec t eff ~turn ~buffer ~closer =
+and exec t eff ~turn ~buffer ~stream_usage ~closer =
   match eff with
   | Mentat_agent_step.Step.Effect.Model { request; purpose; _ } ->
       (match purpose with
@@ -728,7 +730,7 @@ and exec t eff ~turn ~buffer ~closer =
                }));
       Model_work
         (t.io.provider_call request
-           ~on_event:(model_event t ~turn ~purpose ~buffer)
+           ~on_event:(model_event t ~turn ~purpose ~buffer ~stream_usage)
            ~on_download:(fun update ->
              pulse t (Mentat_protocol.Progress.Model_download { turn; update }))
            ~cancelled:(fun () -> Atomic.get t.flag))
@@ -742,7 +744,7 @@ and exec t eff ~turn ~buffer ~closer =
       Tool_work
         (Mentat_tool.Call.run call ~cancelled:(fun () -> Atomic.get t.flag))
 
-and model_event t ~turn ~purpose ~buffer event =
+and model_event t ~turn ~purpose ~buffer ~stream_usage event =
   match purpose with
   | `Compaction _ -> (
       match event with
@@ -765,6 +767,9 @@ and model_event t ~turn ~purpose ~buffer event =
       | Mentat_llm.Event.Reasoning_summary_delta text ->
           model (Mentat_protocol.Progress.Model.Reasoning_delta { text })
       | Mentat_llm.Event.Usage usage ->
+          (* Retained for the interrupt settlement: snapshots are cumulative,
+             so the last one is the spend the provider reported. *)
+          stream_usage := Some usage;
           model (Mentat_protocol.Progress.Model.Usage usage)
       | Mentat_llm.Event.Retry retry ->
           model (Mentat_protocol.Progress.Model.Retrying retry)
@@ -883,7 +888,7 @@ and feed_commit t f =
   | Ok step -> (
       match commit_step t step with Error e -> Error e | Ok () -> Ok step)
 
-and settle t eff ~outcome ~buffer ~closer =
+and settle t eff ~outcome ~buffer ~stream_usage ~closer =
   match eff with
   | Mentat_agent_step.Step.Effect.Model { claim; purpose; _ } ->
       let id = Mentat_session.Provider_request.Started.id claim in
@@ -891,13 +896,13 @@ and settle t eff ~outcome ~buffer ~closer =
         let text = String.trim (Buffer.contents buffer) in
         if String.equal text "" then None else Some text
       in
-      settle_model t ~id ~purpose ~prose outcome
+      settle_model t ~id ~purpose ~prose ~stream_usage outcome
   | Mentat_agent_step.Step.Effect.Tool { claim; _ } ->
       let id = Mentat_session.Tool_claim.Started.id claim in
       let turn = Mentat_session.Tool_claim.Started.turn claim in
       settle_tool_effect t ~id ~turn ~closer outcome
 
-and settle_model t ~id ~purpose ~prose outcome =
+and settle_model t ~id ~purpose ~prose ~stream_usage outcome =
   match outcome with
   | Ok (Model_work (Ok response)) -> (
       match purpose with
@@ -911,7 +916,7 @@ and settle_model t ~id ~purpose ~prose outcome =
         when Mentat_session.State.interrupt_requested (state t) ->
           feed_commit t (fun s ->
               Mentat_agent_step.interrupt ?reason:t.interrupt_reason
-                ?assistant_text:prose s)
+                ?assistant_text:prose ?usage:!stream_usage s)
       | Mentat_llm.Error.Context_overflow -> (
           match purpose with
           | `Turn ->
@@ -943,7 +948,7 @@ and settle_model t ~id ~purpose ~prose outcome =
   | Error Interrupted_by_driver ->
       feed_commit t (fun s ->
           Mentat_agent_step.interrupt ?reason:t.interrupt_reason
-            ?assistant_text:prose s)
+            ?assistant_text:prose ?usage:!stream_usage s)
   | Error (Store_failed e) -> Error (Error.Store e)
   | Error _exn ->
       (* A callback exception does not prove the call produced no effects:

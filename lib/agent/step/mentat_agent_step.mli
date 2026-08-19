@@ -511,11 +511,13 @@ val settled_messages : Mentat_session.t -> Step.Child_message.t list
 val interrupt :
   ?reason:string ->
   ?assistant_text:string ->
+  ?usage:Mentat_llm.Usage.t ->
   Mentat_session.t ->
   (Step.t, Error.t) result
-(** [interrupt ?reason ?assistant_text session] is the live cooperative
+(** [interrupt ?reason ?assistant_text ?usage session] is the live cooperative
     interrupt: an open provider claim settles [Interrupted] retaining non-empty
-    streamed prose ([Ambiguous] without prose, which forces the same terminal);
+    streamed prose and, when [usage] is given, the last provider-reported usage
+    snapshot ([Ambiguous] without prose, which forces the same terminal);
     an open tool claim settles with a synthesized interrupted result; every
     remaining unanswered call receives a synthesized interrupted tool result;
     the turn settles [Interrupted]. The crash path is {!recover}, which settles

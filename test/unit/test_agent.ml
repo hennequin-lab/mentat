@@ -6052,6 +6052,53 @@ let export_rejects_oversize () =
       | Ok _ ->
           fail "an oversize bundle must be refused, not buffered over the wire")
 
+(* Interrupted-usage plumbing. The stream reports prose and a cumulative usage
+   snapshot, then hangs until the driver cancels; the interrupt settlement
+   retains the snapshot, so metrics counts the billed spend. *)
+
+let an_interrupt_retains_the_streamed_usage () =
+  let streaming = ref false in
+  let script _request ~on_event ~on_download:_ ~cancelled =
+    on_event (Llm.Event.text_delta "partial thought");
+    on_event (Llm.Event.usage (Llm.Usage.make ~input:120 ~output:8 ()));
+    streaming := true;
+    let rec loop () =
+      if cancelled () then
+        Error
+          (Llm.Error.make ~kind:Llm.Error.Cancelled ~phase:Llm.Error.Stream
+             "cancelled by driver")
+      else begin
+        Eio.Fiber.yield ();
+        loop ()
+      end
+    in
+    loop ()
+  in
+  with_engine ~script (fun ~sw:_ ~client ~store ~engine:_ ->
+      submit_ok client
+        (prompt ~session:(sid "root") ~turn:(tid "t-usage") "hang");
+      let feed = follow_ok client (sid "root") in
+      while not !streaming do
+        Eio.Fiber.yield ()
+      done;
+      (match
+         Protocol.Command.interrupt ~session:(sid "root") ~reason:"stop" ()
+       with
+      | Ok cmd -> submit_ok client cmd
+      | Error e ->
+          failf "interrupt command: %s" (Protocol.Command.Invalid.message e));
+      ignore (drain_n_settled 1 feed);
+      let session =
+        match Hashtbl.find_opt store.sessions "root" with
+        | Some s -> s
+        | None -> fail "root session vanished"
+      in
+      let usage = (Session.metrics session).Session.Metrics.usage in
+      equal int ~msg:"interrupted input spend survives" 120
+        (Llm.Usage.input_total usage);
+      equal int ~msg:"interrupted output spend survives" 8
+        (Llm.Usage.output_total usage))
+
 let () =
   run "mentat.agent"
     [
@@ -6346,5 +6393,10 @@ let () =
             "the client submits, follows (`Beginning and `Now), and forks over \
              the engine"
             the_client_submits_follows_and_forks_over_the_engine;
+        ];
+      group "interrupted usage"
+        [
+          test "an interrupt retains the streamed usage snapshot"
+            an_interrupt_retains_the_streamed_usage;
         ];
     ]
