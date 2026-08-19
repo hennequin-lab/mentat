@@ -1270,6 +1270,15 @@ let high_impact_command_matcher () =
   yes "command pass-through cannot hide destruction"
     (shell "command rm -rf build");
   yes "exec pass-through cannot hide destruction" (shell "exec rm -rf build");
+  yes "a wrapper's flags cannot hide destruction"
+    (shell "env -i rm -rf build");
+  yes "wrapper flags in argv cannot hide destruction"
+    (exec "env" [ "-i"; "rm"; "-rf"; "x" ]);
+  yes "a wrapper flag with an argument cannot hide destruction"
+    (shell "stdbuf -o0 rm -rf build");
+  yes "an environment assignment cannot hide destruction"
+    (shell "FOO=1 rm -rf build");
+  no "a flag-only wrapper line is not flagged" (shell "env -i");
   yes "shell -c argv is inspected recursively"
     (exec "bash" [ "-lc"; "rm -rf build" ]);
   yes "shell -c text is inspected recursively"

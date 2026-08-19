@@ -168,30 +168,12 @@ module Command_match = struct
     flush ();
     List.rev !acc
 
-  let is_env_assignment token =
-    match String.index_opt token '=' with
-    | None | Some 0 -> false
-    | Some equals ->
-        let name_char c =
-          c = '_'
-          || (c >= 'A' && c <= 'Z')
-          || (c >= 'a' && c <= 'z')
-          || (c >= '0' && c <= '9')
-        in
-        let ok = ref true in
-        String.iteri
-          (fun i c -> if i < equals && not (name_char c) then ok := false)
-          token;
-        !ok
-
-  let pass_through_wrapper = function
-    | "command" | "env" | "exec" | "xargs" | "nohup" | "stdbuf" -> true
-    | _ -> false
-
-  let rec program_and_args = function
-    | token :: rest when is_env_assignment token -> program_and_args rest
-    | token :: rest when pass_through_wrapper (Filename.basename token) ->
-        program_and_args rest
+  (* No wrapper or assignment stripping: the classifier tries every token as a
+     program head, so a command reached through [env -i], [xargs], or a
+     [NAME=value] prefix is classified at its own suffix. Skipping k leading
+     tokens of one suffix only reproduces a later suffix the walk already
+     tries. *)
+  let program_and_args = function
     | token :: rest -> Some (Filename.basename token, rest)
     | [] -> None
 
