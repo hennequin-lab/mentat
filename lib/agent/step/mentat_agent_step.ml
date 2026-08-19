@@ -852,11 +852,25 @@ let dispatch env session state turn_id turn call =
 let compaction_summary_prompt = Mentat_prompts.Compaction.summary
 let cache_key session = Mentat_session.Id.to_string (Mentat_session.id session)
 
-(* The one summary request: the current model view followed by the summary
-   prompt, shared by the pressure trigger, the manual flow, and the overflow
-   recovery below. An awaiting model view (unreachable at a request boundary)
-   falls back so [Request.make] stays the single error surface. *)
-let summary_request env session state contract =
+(* The summarizer prelude replaces the agent's for a summary request: a
+   summarizer that inherits the acting persona and reads a conversation ending
+   on a question may answer it instead of summarizing. A system message always
+   satisfies the prelude invariant, so construction cannot fail; the empty
+   fallback names that invariant without a partial pattern. *)
+let summary_prelude =
+  match
+    Mentat_llm.Request.Prelude.make
+      [ Mentat_llm.Message.system Mentat_prompts.Compaction.system ]
+  with
+  | Ok prelude -> prelude
+  | Error _ -> Mentat_llm.Request.Prelude.empty
+
+(* The one summary request: the current model view under the summarizer
+   prelude, followed by the summary prompt — shared by the pressure trigger,
+   the manual flow, and the overflow recovery below. An awaiting model view
+   (unreachable at a request boundary) falls back so [Request.make] stays the
+   single error surface. *)
+let summary_request session state contract =
   let transcript = Mentat_session.State.model_transcript state in
   let transcript =
     match
@@ -869,7 +883,7 @@ let summary_request env session state contract =
   in
   Mentat_llm.Request.make
     ~model:(Mentat_session.Contract.model contract)
-    ~prelude:env.Env.prelude ~cache_key:(cache_key session) transcript
+    ~prelude:summary_prelude ~cache_key:(cache_key session) transcript
 
 (* The context reading behind the pressure checks: the latest provider-reported
    usage plus a byte-derived estimate — about four bytes per token — of the
@@ -948,7 +962,7 @@ let compaction_request env session state contract =
   | Some threshold -> (
       if context_tokens state < threshold || nothing_to_compact state then None
       else
-        match summary_request env session state contract with
+        match summary_request session state contract with
         | Ok request ->
             Some (request, Mentat_session.Compaction.Reason.Context_pressure)
         | Error _ -> None)
@@ -1149,7 +1163,7 @@ let model_boundary env session state turn_id turn =
   then
     (* The turn's model request overflowed and the turn has not yet spent its one
        overflow compaction: compact ([Context_overflow]) before re-issuing. *)
-    match summary_request env session state contract with
+    match summary_request session state contract with
     | Ok request ->
         Ok
           (compaction_effect request
@@ -1347,7 +1361,7 @@ let compact env contract ~id session =
             ~input:Mentat_session.Turn.Input.continue
             ~max_steps:env.Env.max_steps ~contract ()
         in
-        match summary_request env session state contract with
+        match summary_request session state contract with
         | Error e -> Error (Error.Request e)
         | Ok request ->
             let claim =

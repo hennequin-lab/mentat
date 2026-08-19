@@ -3765,6 +3765,40 @@ let a_repeat_length_stop_completes_after_one_recovery () =
           equal int ~msg:"exactly one recovery compaction per turn" 1
             compactions)
 
+let a_summary_request_carries_the_summarizer_prelude () =
+  (* The summarizer runs under its own system prelude, never the acting
+     agent's: the summary request states the summarizer role and ordinary turn
+     requests never do. *)
+  let summarizer_marker = "context summarization agent" in
+  let saw_marker_on_summary = ref false in
+  let saw_marker_on_turn = ref false in
+  let script =
+    Ports.script @@ fun request ->
+    if request_contains request "Summarize this conversation" then begin
+      if request_contains request summarizer_marker then
+        saw_marker_on_summary := true;
+      Ok (plain_response "Conversation summary.")
+    end
+    else begin
+      if request_contains request summarizer_marker then
+        saw_marker_on_turn := true;
+      Ok (plain_response "Done.")
+    end
+  in
+  with_engine ~script (fun ~sw:_ ~client ~store:_ ~engine:_ ->
+      submit_ok client (prompt ~session:(sid "root") ~turn:(tid "t-1") "hi");
+      let _ = drain_committed (follow_ok client (sid "root")) in
+      (match
+         Client.compact client.c ~session:(sid "root") ~turn:(tid "compact-1")
+       with
+      | Ok Client.Installed -> ()
+      | Ok Client.Skipped -> fail "there was a transcript to summarize"
+      | Error e -> failf "unexpected compact error: %a" Protocol.Error.pp e);
+      is_true ~msg:"the summary request states the summarizer role"
+        !saw_marker_on_summary;
+      is_false ~msg:"turn requests never state the summarizer role"
+        !saw_marker_on_turn)
+
 (* Runtime: scheduler and subagents. *)
 
 (* A parent spawns exactly one child. A one-shot latch (the marker "PLEASE_SPAWN"
@@ -6217,6 +6251,8 @@ let () =
             a_length_stop_at_pressure_compacts_and_retries;
           test "a repeat length stop completes after one recovery"
             a_repeat_length_stop_completes_after_one_recovery;
+          test "a summary request carries the summarizer prelude"
+            a_summary_request_carries_the_summarizer_prelude;
           test "a mid-turn workspace notice rides the next request"
             a_mid_turn_notice_rides_the_next_request;
           test "a turn states every observation it made"

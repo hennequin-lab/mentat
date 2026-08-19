@@ -269,7 +269,8 @@ val start :
     turn's continuation requests carry them — never a later turn's. The driver
     records further observations against the turn as it runs; every continuation
     request states all of the turn's observations in the order they arrived. A
-    compaction request carries the environment prelude alone and states none. *)
+    compaction request carries the summarizer prelude alone — never the acting
+    agent's — and states none. *)
 
 (** The type for the manual-compaction admission decision. *)
 type compaction_start =
