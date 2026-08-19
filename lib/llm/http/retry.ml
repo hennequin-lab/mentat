@@ -116,7 +116,11 @@ let pre_stream ~clock ~max_retries ?(terminal = fun _ -> false)
    transport drop. The terminal, request-shaped kinds — auth, quota, context
    overflow, invalid request, content policy, an unsupported feature, a decode
    fault, or a cancellation — would fail identically on a fresh request, so they
-   surface at once. *)
+   surface at once. [Timeout] is terminal even though a stall is transient,
+   because the kind only ever names failures already past their retries: a [408]
+   spends the pre-stream budget before it classifies as [Timeout], and the
+   client-deadline timeout cancels this loop from outside, leaving nothing to
+   re-run. *)
 let stream_retryable_kind = function
   | Mentat_llm.Error.Provider | Mentat_llm.Error.Rate_limited
   | Mentat_llm.Error.Malformed_stream | Mentat_llm.Error.Transport ->
