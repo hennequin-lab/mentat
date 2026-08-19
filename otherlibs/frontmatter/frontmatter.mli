@@ -60,6 +60,13 @@ val parse : string -> (t, Error.t) result
     YAML errors with [Not_a_mapping]. A document that does not start with an
     exact opening fence has no fields and is all body.
 
+    An unquoted colon inside a plain value is invalid YAML yet common in
+    headers written for lenient parsers. A header that fails to parse is
+    retried once with every unindented plain [key: value] line whose value
+    embeds a colon read as if the value were single-quoted, so
+    [description: Build for AWS: ECS] reads as the full string; a header that
+    still fails reports its original error.
+
     The body is the byte suffix following the closing fence line and its
     newline, if present, unchanged: no trimming, no line-ending normalization.
 *)

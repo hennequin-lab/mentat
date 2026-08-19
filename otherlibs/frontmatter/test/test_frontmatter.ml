@@ -100,6 +100,19 @@ let invalid_yaml () =
   | F.Error.Invalid_yaml _ -> ()
   | e -> failf "expected Invalid_yaml, got %s" (F.Error.message e)
 
+let unquoted_colon_values () =
+  let t = parse_ok "---\ndesc: Build for AWS: ECS\nother: plain\n---\nbody" in
+  equal (option string) ~msg:"an unquoted colon value reads as the full string"
+    (Some "Build for AWS: ECS") (F.string "desc" t);
+  equal (option string) ~msg:"untouched lines keep their values" (Some "plain")
+    (F.string "other" t);
+  let t = parse_ok "---\ndesc: don't stop: now\n---\n" in
+  equal (option string) ~msg:"a single quote in the value survives repair"
+    (Some "don't stop: now") (F.string "desc" t);
+  match parse_err "---\ndesc: [broken: still\n---\n" with
+  | F.Error.Invalid_yaml _ -> ()
+  | e -> failf "expected the original Invalid_yaml, got %s" (F.Error.message e)
+
 let not_a_mapping () =
   (match parse_err "---\n- a\n- b\n---\n" with
   | F.Error.Not_a_mapping -> ()
@@ -121,6 +134,7 @@ let suite =
     test "indented dashes do not open a fence" indented_dashes_are_not_a_fence;
     test "an unterminated fence errors" unterminated;
     test "invalid YAML errors" invalid_yaml;
+    test "unquoted colon values are repaired to strings" unquoted_colon_values;
     test "a non-mapping header errors" not_a_mapping;
   ]
 

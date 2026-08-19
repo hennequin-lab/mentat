@@ -54,6 +54,49 @@ let fields members =
   in
   loop [] members
 
+(* An unquoted colon in a plain value ([description: Build for AWS: ECS]) is
+   invalid YAML yet common in headers written for lenient parsers. When the
+   header fails to parse, it is retried once with every unindented plain
+   [key: value] line whose value embeds a colon rewritten to single-quote the
+   value; a header that still fails keeps its original error. *)
+
+let is_key_char = function
+  | 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '-' | '_' -> true
+  | _ -> false
+
+let quote_colon_value line =
+  match String.index_opt line ':' with
+  | None | Some 0 -> None
+  | Some i ->
+      let key = String.sub line 0 i in
+      let value = String.sub line (i + 1) (String.length line - i - 1) in
+      let value = String.trim value in
+      if not (String.for_all is_key_char key) then None
+      else if value = "" || not (String.contains value ':') then None
+      else (
+        match value.[0] with
+        | '\'' | '"' | '|' | '>' | '[' | '{' | '&' | '*' | '#' | '!' | '%'
+        | '@' | '`' ->
+            None
+        | _ ->
+            let escaped =
+              String.concat "''" (String.split_on_char '\'' value)
+            in
+            Some (key ^ ": '" ^ escaped ^ "'"))
+
+let quote_colon_values yaml_text =
+  let changed = ref false in
+  let lines =
+    String.split_on_char '\n' yaml_text
+    |> List.map (fun line ->
+        match quote_colon_value line with
+        | None -> line
+        | Some line ->
+            changed := true;
+            line)
+  in
+  if !changed then Some (String.concat "\n" lines) else None
+
 let parse doc =
   let len = String.length doc in
   let first_end = line_end doc 0 in
@@ -73,15 +116,27 @@ let parse doc =
         let yaml_text = String.sub doc yaml_start (close_start - yaml_start) in
         let body_start = next_line_start doc close_stop in
         let body = String.sub doc body_start (len - body_start) in
-        if String.trim yaml_text = "" then Ok { fields = []; body }
-        else
+        let decode yaml_text =
           match Yaml.yaml_of_string yaml_text with
           | Error (`Msg message) -> Error (Error.Invalid_yaml message)
           | Ok (`O { Yaml.m_members; _ }) -> (
               match fields m_members with
               | Ok fields -> Ok { fields; body }
               | Error _ as error -> error)
-          | Ok (`Scalar _ | `Alias _ | `A _) -> Error Error.Not_a_mapping)
+          | Ok (`Scalar _ | `Alias _ | `A _) -> Error Error.Not_a_mapping
+        in
+        if String.trim yaml_text = "" then Ok { fields = []; body }
+        else
+          match decode yaml_text with
+          | Ok _ as ok -> ok
+          | Error (Error.Invalid_yaml _) as error -> (
+              match quote_colon_values yaml_text with
+              | None -> error
+              | Some repaired -> (
+                  match decode repaired with
+                  | Ok _ as ok -> ok
+                  | Error _ -> error))
+          | Error _ as error -> error)
 
 let body t = t.body
 let keys t = List.map fst t.fields
