@@ -232,7 +232,14 @@ val load :
     [root/.agents/skills] ({!Skill.Compat_agents}), [root/.claude/skills]
     ({!Skill.Compat_claude}) — the three only when [trusted] — then the config
     home's [skills] ({!Skill.User}), each [skills.paths] root ({!Skill.Path}),
-    and the [builtins] ({!Skill.Builtin}). Within that order the first
+    and the [builtins] ({!Skill.Builtin}). Under each filesystem root, a
+    directory holding a [SKILL.md] file is a candidate named by that directory
+    — its subdirectories are the skill's resources, never further skills — and
+    a directory without one is a grouping folder whose subdirectories are
+    searched in turn, so a shared pack may organize skills in nested folders.
+    The search takes candidates in path order, skips dot-directories, follows
+    symbolic links only while they resolve in-root, and is depth-bounded, so a
+    link cycle terminates. Within the visit order the first
     {!Skill.Active} candidate for a name wins and later candidates of the name
     become {!Skill.Shadowed}; a name in [skills.disabled] is marked
     {!Skill.Disabled} before shadowing, so no lower-precedence candidate takes

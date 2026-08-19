@@ -552,42 +552,65 @@ let read_candidate ~fs ~dir_abs ~skill_abs =
       | Ok content -> Skill.Active content
       | Error invalid -> Skill.Invalid invalid)
 
-let classify_entry ~fs ~root_abs ~kind ~gate entry =
-  match Skill.Name.of_string entry with
-  | Error _ -> None (* not a candidate, like bare files *)
-  | Ok name -> (
-      match child root_abs entry with
-      | None -> None
-      | Some dir_abs -> (
-          let origin = Lpath.Abs.to_string dir_abs in
-          let make status =
-            Some { Skill.name; kind; status; origin; dir = Some dir_abs }
-          in
-          match child dir_abs skill_file with
-          | None -> None
-          | Some skill_abs -> (
-              match Io.observe ~fs ~root:root_abs skill_abs with
-              | Io.Missing -> None (* no SKILL.md: not a skill directory *)
-              | Io.Found Io.Regular -> (
-                  match gate with
-                  | Some disabled -> make (Skill.Disabled disabled)
-                  | None -> make (read_candidate ~fs ~dir_abs ~skill_abs))
-              | Io.Found (Io.Directory | Io.Other) ->
-                  None (* SKILL.md is not a regular file *)
-              | Io.Escapes ->
-                  make
-                    (Skill.Invalid
-                       (`Unreadable
-                          (skill_file ^ " resolves outside the skill directory")))
-              | Io.Failed message -> make (Skill.Invalid (`Unreadable message)))
-          ))
+(* A directory holding a [SKILL.md] is a skill named by that directory — its
+   subdirectories are resources, never further skills — and a directory
+   without one is a grouping folder searched in turn, so shared packs may
+   organize skills in nested folders. Dot-directories are skipped; the depth
+   bound keeps an in-root symbolic-link cycle finite. *)
+let max_group_depth = 8
 
-let filesystem_root ~fs ~kind ~gate root_abs =
-  match Io.read_dir_names ~fs root_abs with
+let rec directory_candidates ~fs ~root_abs ~kind ~gate ~depth dir_abs =
+  match Io.read_dir_names ~fs dir_abs with
   | Error _ -> []
   | Ok names ->
       names |> List.sort String.compare
-      |> List.filter_map (classify_entry ~fs ~root_abs ~kind ~gate)
+      |> List.concat_map (fun entry ->
+          if entry = "" || entry.[0] = '.' then []
+          else
+            match child dir_abs entry with
+            | None -> []
+            | Some entry_abs ->
+                classify_entry ~fs ~root_abs ~kind ~gate ~depth entry_abs entry)
+
+and classify_entry ~fs ~root_abs ~kind ~gate ~depth dir_abs entry =
+  let candidate status =
+    match Skill.Name.of_string entry with
+    | Error _ -> [] (* not a candidate, like misnamed directories *)
+    | Ok name ->
+        let origin = Lpath.Abs.to_string dir_abs in
+        [ { Skill.name; kind; status; origin; dir = Some dir_abs } ]
+  in
+  match child dir_abs skill_file with
+  | None -> []
+  | Some skill_abs -> (
+      match Io.observe ~fs ~root:root_abs skill_abs with
+      | Io.Missing ->
+          (* No SKILL.md: possibly a grouping folder, searched while it stays
+             a directory in-root and within the depth bound. *)
+          if depth >= max_group_depth then []
+          else (
+            match Io.observe ~fs ~root:root_abs dir_abs with
+            | Io.Found Io.Directory ->
+                directory_candidates ~fs ~root_abs ~kind ~gate
+                  ~depth:(depth + 1) dir_abs
+            | Io.Found (Io.Regular | Io.Other)
+            | Io.Missing | Io.Escapes | Io.Failed _ ->
+                [])
+      | Io.Found Io.Regular -> (
+          match gate with
+          | Some disabled -> candidate (Skill.Disabled disabled)
+          | None -> candidate (read_candidate ~fs ~dir_abs ~skill_abs))
+      | Io.Found (Io.Directory | Io.Other) ->
+          [] (* SKILL.md is not a regular file *)
+      | Io.Escapes ->
+          candidate
+            (Skill.Invalid
+               (`Unreadable
+                  (skill_file ^ " resolves outside the skill directory")))
+      | Io.Failed message -> candidate (Skill.Invalid (`Unreadable message)))
+
+let filesystem_root ~fs ~kind ~gate root_abs =
+  directory_candidates ~fs ~root_abs ~kind ~gate ~depth:0 root_abs
 
 let builtin_skills ~builtins ~origin ~gate =
   List.filter_map

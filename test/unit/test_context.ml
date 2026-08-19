@@ -503,6 +503,71 @@ module Skills_tests = struct
               (Skills.Catalog.text (Skills.catalog t)));
       ]
 
+  (* --- Nested discovery --- *)
+
+  let nested =
+    group "Nested discovery"
+      [
+        test "a grouping folder's skills are discovered" (fun () ->
+            with_base "nested-pack" @@ fun ~stdenv ~base ->
+            write_skill ~base ~sub:".agents/skills/pack" ~name:"foo"
+              ~content:(skill_doc ~description:"packed foo" ());
+            let t = load ~stdenv ~base () in
+            let skill = Option.get (find t "foo") in
+            equal string "active" (Skill.state_string (Skill.status skill));
+            equal string "compat_agents" (Skill.kind_string (Skill.kind skill));
+            is_true (contains ~needle:"pack" (Skill.origin skill)));
+        test "a top-level candidate wins over a nested one across roots"
+          (fun () ->
+            with_base "nested-shadow" @@ fun ~stdenv ~base ->
+            write_skill ~base ~sub:".mentat/skills" ~name:"foo"
+              ~content:(skill_doc ~description:"project foo" ());
+            write_skill ~base ~sub:".agents/skills/group" ~name:"foo"
+              ~content:(skill_doc ~description:"agents foo" ());
+            let t = load ~stdenv ~base () in
+            let project = Option.get (find_kind t "foo" Skill.Project) in
+            let agents = Option.get (find_kind t "foo" Skill.Compat_agents) in
+            equal string "active" (Skill.state_string (Skill.status project));
+            equal string "shadowed" (Skill.state_string (Skill.status agents)));
+        test "skills.disabled blocks a nested candidate" (fun () ->
+            with_base "nested-disabled" @@ fun ~stdenv ~base ->
+            write_skill ~base ~sub:".mentat/skills/group" ~name:"foo"
+              ~content:(skill_doc ~description:"foo" ());
+            let t =
+              load ~stdenv ~base
+                ~configure:(set Mentat_config.Field.skills_disabled [ "foo" ])
+                ()
+            in
+            equal string "disabled" (state t "foo");
+            equal (option string) (Some "config_disabled") (reason t "foo"));
+        test "a skill directory's subdirectories are resources, not skills"
+          (fun () ->
+            with_base "nested-inside-skill" @@ fun ~stdenv ~base ->
+            write_skill ~base ~sub:".mentat/skills" ~name:"parent"
+              ~content:(skill_doc ~description:"parent" ());
+            write_skill ~base ~sub:".mentat/skills/parent" ~name:"inner"
+              ~content:(skill_doc ~description:"inner" ());
+            let t = load ~stdenv ~base () in
+            equal string "active" (state t "parent");
+            equal string "absent" (state t "inner"));
+        test "dot-directories are not searched" (fun () ->
+            with_base "nested-dot" @@ fun ~stdenv ~base ->
+            write_skill ~base ~sub:".mentat/skills/.hidden" ~name:"foo"
+              ~content:(skill_doc ~description:"foo" ());
+            let t = load ~stdenv ~base () in
+            equal string "absent" (state t "foo"));
+        test "an in-root symlink cycle terminates" (fun () ->
+            with_base "nested-cycle" @@ fun ~stdenv ~base ->
+            write_skill ~base ~sub:".mentat/skills/group" ~name:"foo"
+              ~content:(skill_doc ~description:"foo" ());
+            let group_dir =
+              Filename.concat base (Filename.concat ".mentat/skills" "group")
+            in
+            Unix.symlink group_dir (Filename.concat group_dir "back");
+            let t = load ~stdenv ~base () in
+            equal string "active" (state t "foo"));
+      ]
+
   (* --- Disabled filtering --- *)
 
   let disabled =
@@ -595,6 +660,18 @@ module Skills_tests = struct
               (List.exists
                  (contains ~needle:"must be a string")
                  (Skills.warnings t)));
+        test "an unquoted colon in the description stays a string" (fun () ->
+            load_one ~name:"colon"
+              ~content:(skill_doc ~description:"Build for AWS: ECS" ())
+            @@ fun t ->
+            equal string "active" (state t "colon");
+            match find t "colon" with
+            | Some s -> (
+                match Skill.status s with
+                | Skill.Active c ->
+                    equal string "Build for AWS: ECS" c.Skill.description
+                | _ -> fail "expected an active skill")
+            | None -> fail "expected the skill to be discovered");
         test "unterminated frontmatter is invalid" (fun () ->
             load_one ~name:"unterminated" ~content:"---\ndescription: x\nbody"
             @@ fun t ->
@@ -687,6 +764,7 @@ module Skills_tests = struct
     [
       catalog_budget;
       shadowing;
+      nested;
       disabled;
       invalid_frontmatter;
       injections;
