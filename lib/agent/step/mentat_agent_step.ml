@@ -973,6 +973,12 @@ let active_turn_events session turn_id =
   in
   after (Mentat_session.events session)
 
+let compacted_this_turn session turn_id =
+  List.exists
+    (function
+      | Mentat_session.Event.Compaction_installed _ -> true | _ -> false)
+    (active_turn_events session turn_id)
+
 let overflow_compacted_this_turn session turn_id =
   List.exists
     (function
@@ -1367,6 +1373,28 @@ let compact env contract ~id session =
 
 (* Typed feed-backs. *)
 
+(* A response cut at the output limit while the context reading meets the
+   pressure threshold is the window showing, not a finished answer: the turn
+   stays active so the next request boundary compacts under pressure and
+   re-issues over the reduced view. Below the threshold, or with automatic
+   compaction disabled, a length stop is an ordinary completion at the model's
+   output cap. *)
+let truncated_at_pressure env response state =
+  match env.Env.compaction_pressure_tokens with
+  | None -> false
+  | Some threshold -> (
+      match Mentat_llm.Response.stop response with
+      | Some Mentat_llm.Response.Stop.Length ->
+          let reading =
+            match Mentat_llm.Response.usage response with
+            | Some usage ->
+                Mentat_llm.Usage.input_total usage
+                + Mentat_llm.Usage.output_total usage
+            | None -> context_tokens state
+          in
+          reading >= threshold
+      | Some _ | None -> false)
+
 let accept_response env id response session =
   let* turn = active_turn session in
   let turn_id = Mentat_session.Turn.id turn in
@@ -1391,6 +1419,12 @@ let accept_response env id response session =
            nudge budget is spent. A mid-turn transcript reminder is not an option
            — the session admits injected user messages only at turn boundaries —
            so the reminder rides the prelude, the sanctioned host channel. *)
+        normalize env session [ settle ]
+    | None
+      when truncated_at_pressure env response state
+           && not (compacted_this_turn session turn_id) ->
+        (* One recovery per turn: a repeat length stop after a compaction
+           completes the turn with what the model produced. *)
         normalize env session [ settle ]
     | None ->
         let outcome = Mentat_session.Turn.Outcome.completed in

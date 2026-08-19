@@ -3680,6 +3680,91 @@ let context_pressure_compacts_without_provider_usage () =
                    (Session.Compaction.reason compaction)
                    Session.Compaction.Reason.Context_pressure)))
 
+let a_length_stop_at_pressure_compacts_and_retries () =
+  (* The first turn answer stops at the output limit with a reading past the
+     pressure threshold: the window ended it, not the model. The boundary
+     compacts under pressure and the retry completes over the reduced view. *)
+  let calls = ref 0 in
+  let script =
+    Ports.script @@ fun request ->
+    if request_contains request "Summarize this conversation" then
+      Ok (plain_response "Conversation summary.")
+    else begin
+      incr calls;
+      if !calls = 1 then
+        Ok
+          (Llm.Response.make ~model ~stop:Llm.Response.Stop.length
+             ~usage:(Llm.Usage.make ~input:400 ~output:200 ())
+             (Llm.Message.Assistant.text "truncated"))
+      else Ok (plain_response "Full answer.")
+    end
+  in
+  let config _ ~latest_model:_ =
+    Ok
+      (Agent.Config.make ~model ~continuation_turn_limit:None
+         ~compaction_pressure_tokens:500 ())
+  in
+  with_engine ~script ~config (fun ~sw:_ ~client ~store ~engine:_ ->
+      submit_ok client (prompt ~session:(sid "root") ~turn:(tid "t-1") "hi");
+      let pairs = drain_committed (follow_ok client (sid "root")) in
+      (match settled_outcome pairs with
+      | Some Session.Turn.Outcome.Completed -> ()
+      | Some other -> failf "the turn settled %a" Session.Turn.Outcome.pp other
+      | None -> fail "the turn never settled");
+      match Hashtbl.find_opt store.sessions "root" with
+      | None -> fail "the root session is missing from the store"
+      | Some session ->
+          (match
+             Session.State.latest_compaction (Session.state session)
+           with
+          | Some compaction ->
+              is_true ~msg:"the recovery compacts under pressure"
+                (Session.Compaction.Reason.equal
+                   (Session.Compaction.reason compaction)
+                   Session.Compaction.Reason.Context_pressure)
+          | None -> fail "the length stop installed no compaction");
+          equal int ~msg:"the retry is the second turn request" 2 !calls)
+
+let a_repeat_length_stop_completes_after_one_recovery () =
+  (* Every turn answer stops at the output limit with a reading past the
+     threshold. The single per-turn recovery compacts once; the retried answer
+     still stops at the limit, so the turn completes with it rather than
+     compacting again. *)
+  let script =
+    Ports.script @@ fun request ->
+    if request_contains request "Summarize this conversation" then
+      Ok (plain_response "Conversation summary.")
+    else
+      Ok
+        (Llm.Response.make ~model ~stop:Llm.Response.Stop.length
+           ~usage:(Llm.Usage.make ~input:400 ~output:200 ())
+           (Llm.Message.Assistant.text "truncated"))
+  in
+  let config _ ~latest_model:_ =
+    Ok
+      (Agent.Config.make ~model ~continuation_turn_limit:None
+         ~compaction_pressure_tokens:500 ())
+  in
+  with_engine ~script ~config (fun ~sw:_ ~client ~store ~engine:_ ->
+      submit_ok client (prompt ~session:(sid "root") ~turn:(tid "t-1") "hi");
+      let pairs = drain_committed (follow_ok client (sid "root")) in
+      (match settled_outcome pairs with
+      | Some Session.Turn.Outcome.Completed -> ()
+      | Some other -> failf "the turn settled %a" Session.Turn.Outcome.pp other
+      | None -> fail "the turn never settled");
+      match Hashtbl.find_opt store.sessions "root" with
+      | None -> fail "the root session is missing from the store"
+      | Some session ->
+          let compactions =
+            List.length
+              (List.filter
+                 (function
+                   | Session.Event.Compaction_installed _ -> true | _ -> false)
+                 (Session.events session))
+          in
+          equal int ~msg:"exactly one recovery compaction per turn" 1
+            compactions)
+
 (* Runtime: scheduler and subagents. *)
 
 (* A parent spawns exactly one child. A one-shot latch (the marker "PLEASE_SPAWN"
@@ -6128,6 +6213,10 @@ let () =
             context_pressure_compaction_records_the_before_projection;
           test "context pressure compacts without provider usage"
             context_pressure_compacts_without_provider_usage;
+          test "a length stop at pressure compacts and retries"
+            a_length_stop_at_pressure_compacts_and_retries;
+          test "a repeat length stop completes after one recovery"
+            a_repeat_length_stop_completes_after_one_recovery;
           test "a mid-turn workspace notice rides the next request"
             a_mid_turn_notice_rides_the_next_request;
           test "a turn states every observation it made"

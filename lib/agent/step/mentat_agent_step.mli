@@ -336,7 +336,14 @@ val accept_response :
   (Step.t, Error.t) result
 (** [accept_response env id response session] settles the provider claim [id] as
     responded and appends the assistant message; if it carries no tool calls,
-    also settles the turn [Completed]. *)
+    also settles the turn [Completed].
+
+    One exception: a response stopped at the output limit while the context
+    reading meets the pressure threshold keeps the turn active — the window,
+    not the model, ended the answer — so the next request boundary compacts
+    under pressure and re-issues over the reduced view. At most one such
+    recovery per turn; a repeat length stop after a compaction settles the turn
+    [Completed] with what the model produced. *)
 
 val install_summary :
   Env.t ->
