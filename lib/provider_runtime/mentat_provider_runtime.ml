@@ -150,6 +150,8 @@ let client t ~sw ~env ~now ?base_url ?auth_base_url ?(process = [])
                       | _ -> Ok client)))))
 
 let discover_accounts = Account_ops.load
+let refresh_listings = Account_ops.refresh_listings
+let listings = Account_ops.listings
 
 module Login = Login_flow
 

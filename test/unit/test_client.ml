@@ -186,7 +186,7 @@ let default_accounts : Driver.Accounts.t =
         failf "logout: not scripted for %s (revoke %b)"
           (Llm.Provider.id provider) revoke);
     account_readiness = (fun () -> fail "account_readiness: not scripted");
-    model_readiness = (fun () -> fail "model_readiness: not scripted");
+    model_readiness = (fun ?refresh:_ () -> fail "model_readiness: not scripted");
   }
 
 let default_settings : Driver.Settings.t =
@@ -1233,7 +1233,7 @@ let reads_group =
             {
               default_accounts with
               Driver.Accounts.model_readiness =
-                (fun () ->
+                (fun ?refresh:_ () ->
                   called := true;
                   Ok readiness);
             }
@@ -1494,7 +1494,7 @@ let reads_group =
                   ~accounts:
                     {
                       default_accounts with
-                      Driver.Accounts.model_readiness = (fun () -> Error swept);
+                      Driver.Accounts.model_readiness = (fun ?refresh:_ () -> Error swept);
                     }
                   ()));
           check "change_diff"
@@ -1571,7 +1571,7 @@ let reads_group =
                      {
                        default_accounts with
                        Driver.Accounts.model_readiness =
-                         (fun () -> raise_driver calls);
+                         (fun ?refresh:_ () -> raise_driver calls);
                      }
                    ()));
           check "change_diff" (fun calls ->

@@ -84,6 +84,7 @@ module Accounts = struct
       unit ->
       (Mentat_provider.Account.Discovery.t list, Mentat_protocol.Error.t) result;
     model_readiness :
+      ?refresh:bool ->
       unit ->
       (Mentat_provider.Model_readiness.t, Mentat_protocol.Error.t) result;
   }

@@ -1644,7 +1644,9 @@ let build_driver ctx : Mentat_client.Driver.t =
         (fun ?(revoke = false) provider ->
           call ctx Endpoint.logout { Codecs.logout_provider = provider; revoke });
       account_readiness = (fun () -> call ctx Endpoint.account_readiness ());
-      model_readiness = (fun () -> call ctx Endpoint.model_readiness ());
+      model_readiness =
+        (fun ?(refresh = false) () ->
+          call ctx Endpoint.model_readiness { Codecs.refresh });
     }
   in
   let settings : Mentat_client.Driver.Settings.t =

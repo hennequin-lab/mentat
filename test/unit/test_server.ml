@@ -215,7 +215,7 @@ let default_accounts : Driver.Accounts.t =
     save_api_key = (fun ~provider:_ ~key:_ -> unavailable ());
     logout = (fun ?revoke:_ _ -> unavailable ());
     account_readiness = (fun () -> Ok [ discovery ]);
-    model_readiness = (fun () -> unavailable ());
+    model_readiness = (fun ?refresh:_ () -> unavailable ());
   }
 
 let default_settings : Driver.Settings.t =

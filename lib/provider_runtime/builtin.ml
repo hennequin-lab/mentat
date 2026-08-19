@@ -9,6 +9,7 @@ module Env = Auth.Env
 module Login = Auth.Login
 module Protocol = Login.Protocol
 module Model = Provider.Model
+module Listing = Provider.Listing
 module Capability = Model.Capability
 module Date = Model.Date
 module Month = Model.Month
@@ -421,6 +422,118 @@ let ollama_declaration =
              ()))
     []
 
+(* OpenCode Go: a subscription gateway whose model set is server-owned. The
+   declaration curates the models mentat vouches for — pricing, family
+   naming, the default — and the server listing supplies every other model at
+   runtime through the listed-model rule below. Context windows and cutoffs
+   are filled from server metadata as it is verified, never invented. *)
+
+(* Context windows, output limits, and current prices come from the vendor's
+   published model catalog; reasoning efforts are declared only for models a
+   live probe confirmed accept [reasoning_effort] (the chat-completions codec
+   encodes low/medium/high). The DeepSeek pair is region-gated pending a
+   console opt-in, so its efforts stay undeclared and its rates are the
+   published peak — the spend row errs high, never low. *)
+let opencode_efforts = Options.Reasoning_effort.[ Low; Medium; High ]
+
+let opencode_models =
+  let llm = Mentat_llm_opencode.chat_model in
+  [
+    Model.make (llm "kimi-k2.7-code") ~display_name:"Kimi K2.7 Code"
+      ~family:"kimi-code" ~context_window:262_144 ~max_output_tokens:262_144
+      ~capabilities:tools_reasoning ~supported_reasoning:opencode_efforts
+      ~pricing:(pricing ~input:0.95 ~output:4. ~cache_read:0.19 ())
+      ();
+    Model.make (llm "kimi-k3") ~display_name:"Kimi K3" ~family:"kimi"
+      ~context_window:1_048_576 ~max_output_tokens:131_072
+      ~capabilities:tools_reasoning ~supported_reasoning:opencode_efforts
+      ~pricing:(pricing ~input:3. ~output:15. ~cache_read:0.3 ())
+      ();
+    Model.make (llm "glm-5.3") ~display_name:"GLM-5.3" ~family:"glm"
+      ~context_window:1_000_000 ~max_output_tokens:131_072
+      ~capabilities:tools_reasoning ~supported_reasoning:opencode_efforts
+      ~pricing:(pricing ~input:1.4 ~output:4.4 ~cache_read:0.26 ())
+      ();
+    Model.make (llm "deepseek-v4-pro") ~display_name:"DeepSeek V4 Pro"
+      ~family:"deepseek-pro" ~context_window:1_000_000
+      ~max_output_tokens:384_000 ~capabilities:tools_only
+      ~pricing:(pricing ~input:1.32 ~output:3.96 ~cache_read:0.044 ())
+      ();
+    Model.make (llm "deepseek-v4-flash") ~display_name:"DeepSeek V4 Flash"
+      ~family:"deepseek-flash" ~context_window:1_000_000
+      ~max_output_tokens:384_000 ~capabilities:tools_only
+      ~pricing:(pricing ~input:0.44 ~output:1.32 ~cache_read:0.014 ())
+      ();
+    Model.make (llm "mimo-v2.5-pro") ~display_name:"MiMo-V2.5-Pro"
+      ~family:"mimo-pro" ~context_window:1_048_576 ~max_output_tokens:128_000
+      ~capabilities:tools_reasoning ~supported_reasoning:opencode_efforts
+      ~pricing:(pricing ~input:0.435 ~output:0.87 ~cache_read:0.003625 ())
+      ();
+    Model.make (llm "mimo-v2.5") ~display_name:"MiMo-V2.5" ~family:"mimo"
+      ~context_window:1_000_000 ~max_output_tokens:128_000
+      ~capabilities:tools_reasoning ~supported_reasoning:opencode_efforts
+      ~pricing:(pricing ~input:0.14 ~output:0.28 ~cache_read:0.0028 ())
+      ();
+    Model.make (llm "hy3") ~display_name:"Hy3" ~family:"hy"
+      ~context_window:256_000 ~max_output_tokens:64_000
+      ~capabilities:tools_reasoning ~supported_reasoning:opencode_efforts
+      ~pricing:(pricing ~input:0.0175 ~output:0.0725 ~cache_read:0.004375 ())
+      ();
+  ]
+
+let opencode_auth =
+  Auth.make
+    ~env:[ Env.api_key "OPENCODE_API_KEY" ]
+    ~login:[ Login.api_key () ]
+    ()
+
+(* The gateway assigns each model one of several wire protocols — a
+   per-model, server-decided fact no pure function of the id can recover —
+   so the listed-model rule reads the protocol the check lowered into the
+   listing. The protocol families are the existing adapters' exported api
+   values, never re-minted spellings of them; only the truly unrecognized
+   case gets its own id. Models on protocols this provider does not serve
+   surface as [Unavailable] with the reason: inspectable, never a dead
+   pick. *)
+let opencode_unknown_api = Mentat_llm.Model.Api.make "unknown"
+
+let opencode_dynamic_listed listed =
+  let id = Listing.Model.id listed in
+  let unroutable api reason =
+    Model.make
+      (Mentat_llm.Model.make ~provider:Mentat_llm_opencode.provider ~api ~id)
+      ?display_name:(Listing.Model.display_name listed)
+      ?family:(Listing.Model.family listed)
+      ~status:(Model.Unavailable reason) ()
+  in
+  match Listing.Model.api listed with
+  | Some api
+    when Mentat_llm.Model.Api.equal api Mentat_llm_http.Chat_completions.api ->
+      Some
+        (Model.make
+           (Mentat_llm_opencode.chat_model id)
+           ?display_name:(Listing.Model.display_name listed)
+           ?family:(Listing.Model.family listed)
+           ?context_window:(Listing.Model.context_window listed)
+           ?max_output_tokens:(Listing.Model.max_output_tokens listed)
+           ?pricing:(Listing.Model.pricing listed)
+           ?input_modalities:(Listing.Model.input_modalities listed)
+           ~capabilities:
+             (Option.value ~default:tools_only
+                (Listing.Model.capabilities listed))
+           ?status:(Listing.Model.status listed) ())
+  | Some api when Mentat_llm.Model.Api.equal api Mentat_llm_anthropic.api ->
+      Some (unroutable api "the messages protocol is not yet supported")
+  | Some api ->
+      Some (unroutable api "this wire protocol is not served by this provider")
+  | None -> Some (unroutable opencode_unknown_api "unrecognized wire protocol")
+
+let opencode_declaration =
+  Provider.make Mentat_llm_opencode.provider ~display_name:"OpenCode Go"
+    ~default_model:
+      (default_model (Mentat_llm_opencode.chat_model "kimi-k2.7-code"))
+    ~auth:opencode_auth ~dynamic_listed:opencode_dynamic_listed opencode_models
+
 (* Live account checks. *)
 
 let drop_prefix ~prefix s =
@@ -475,11 +588,19 @@ module Check = struct
             | Some _ | None -> None))
 end
 
-let observation ?(problems = []) ?models () =
-  { Driver.problems; profile = None; org = None; models }
+let observation ?(problems = []) ?listing () =
+  { Driver.problems; profile = None; org = None; listing }
 
 let unsupported_route = observation ~problems:[ Problem.Unsupported ] ()
 let network_problem = observation ~problems:[ Problem.Network ] ()
+let unknown_response = Problem.other "unknown_provider_response"
+
+(* Server data is untrusted: a malformed id set lowers to a problem rather
+   than escaping the check as a fault. *)
+let listing_of_ids ids =
+  match Provider.Listing.of_ids ids with
+  | listing -> observation ~listing ()
+  | exception Invalid_argument _ -> observation ~problems:[ unknown_response ] ()
 
 let observe ~sw ~env ~headers url =
   match Tls_setup.get ~sw ~env ~headers url with
@@ -487,11 +608,8 @@ let observe ~sw ~env ~headers url =
   | Ok (status, body) ->
       if status >= 200 && status < 300 then
         match Check.models body with
-        | Some models -> observation ~models ()
-        | None ->
-            observation
-              ~problems:[ Problem.other "unknown_provider_response" ]
-              ()
+        | Some models -> listing_of_ids models
+        | None -> observation ~problems:[ unknown_response ] ()
       else observation ~problems:[ Check.problem ~status ~body ] ()
 
 let effective_base_url ~default = function
@@ -512,24 +630,27 @@ let chatgpt_account_headers = function
   | None -> []
   | Some account_id -> [ ("chatgpt-account-id", account_id) ]
 
-let openai_check ~sw ~env ?base_url credential =
-  let models ~default ~path ~headers =
-    observe ~sw ~env ~headers (effective_base_url ~default base_url ^ path)
-  in
-  let api_route token =
-    models ~default:"https://api.openai.com/v1" ~path:"/models"
-      ~headers:[ ("authorization", "Bearer " ^ token) ]
-  in
-  Secret.expose
-    (Credential.secret credential)
-    ~api_key:(fun ~key -> api_route key)
-    ~bearer:(fun ~token -> api_route token)
-    ~oauth:(fun ~access_token ~refresh_token:_ ~expires_at:_ ~account_id ->
-      models ~default:chatgpt_base_url
-        ~path:("/models?client_version=" ^ chatgpt_client_version)
-        ~headers:
-          (("authorization", "Bearer " ^ access_token)
-          :: chatgpt_account_headers account_id))
+let openai_check ~sw ~env ?base_url ?auth_base_url:_ credential =
+  match credential with
+  | None -> unsupported_route
+  | Some credential ->
+      let models ~default ~path ~headers =
+        observe ~sw ~env ~headers (effective_base_url ~default base_url ^ path)
+      in
+      let api_route token =
+        models ~default:"https://api.openai.com/v1" ~path:"/models"
+          ~headers:[ ("authorization", "Bearer " ^ token) ]
+      in
+      Secret.expose
+        (Credential.secret credential)
+        ~api_key:(fun ~key -> api_route key)
+        ~bearer:(fun ~token -> api_route token)
+        ~oauth:(fun ~access_token ~refresh_token:_ ~expires_at:_ ~account_id ->
+          models ~default:chatgpt_base_url
+            ~path:("/models?client_version=" ^ chatgpt_client_version)
+            ~headers:
+              (("authorization", "Bearer " ^ access_token)
+              :: chatgpt_account_headers account_id))
 
 let anthropic_headers secret =
   Secret.expose secret
@@ -544,14 +665,17 @@ let anthropic_headers secret =
     ~oauth:(fun ~access_token:_ ~refresh_token:_ ~expires_at:_ ~account_id:_ ->
       None)
 
-let anthropic_check ~sw ~env ?base_url credential =
-  match anthropic_headers (Credential.secret credential) with
+let anthropic_check ~sw ~env ?base_url ?auth_base_url:_ credential =
+  match Option.map Credential.secret credential with
   | None -> unsupported_route
-  | Some headers ->
-      let base_url =
-        effective_base_url ~default:"https://api.anthropic.com/v1" base_url
-      in
-      observe ~sw ~env ~headers (base_url ^ "/models")
+  | Some secret -> (
+      match anthropic_headers secret with
+      | None -> unsupported_route
+      | Some headers ->
+          let base_url =
+            effective_base_url ~default:"https://api.anthropic.com/v1" base_url
+          in
+          observe ~sw ~env ~headers (base_url ^ "/models"))
 
 let google_key secret =
   Secret.expose secret
@@ -560,8 +684,8 @@ let google_key secret =
     ~oauth:(fun ~access_token:_ ~refresh_token:_ ~expires_at:_ ~account_id:_ ->
       None)
 
-let google_check ~sw ~env ?base_url credential =
-  match google_key (Credential.secret credential) with
+let google_check ~sw ~env ?base_url ?auth_base_url:_ credential =
+  match Option.bind credential (fun c -> google_key (Credential.secret c)) with
   | None -> unsupported_route
   | Some key ->
       let base_url =
@@ -575,7 +699,206 @@ let google_check ~sw ~env ?base_url credential =
       in
       observe ~sw ~env ~headers:[] url
 
-(* OpenAI OAuth refresh, revoke, and device flow. *)
+(* Ollama's listing endpoint needs no credential; a resolved key still rides
+   as a bearer for proxied daemons. *)
+let ollama_check ~sw ~env ?base_url ?auth_base_url:_ credential =
+  let base_url =
+    effective_base_url ~default:"http://127.0.0.1:11434" base_url
+  in
+  let headers =
+    match Option.map Credential.secret credential with
+    | None -> []
+    | Some secret ->
+        Secret.expose secret
+          ~api_key:(fun ~key -> [ ("authorization", "Bearer " ^ key) ])
+          ~bearer:(fun ~token -> [ ("authorization", "Bearer " ^ token) ])
+          ~oauth:(fun
+              ~access_token:_ ~refresh_token:_ ~expires_at:_ ~account_id:_ ->
+            [])
+  in
+  observe ~sw ~env ~headers (base_url ^ "/api/tags")
+
+(* The OpenCode Go check reads the console's [/api/config] — the one endpoint
+   that publishes per-model metadata, including the wire-protocol package the
+   listed-model rule needs — and lowers it into a listing. The console is an
+   enrichment source, not the account authority: whenever it yields no
+   listing (down, rejecting the key, unrecognized shape), the check falls
+   back to the gateway's bare-ids [/v1/models], whose verdict on the
+   credential stands. Server data is untrusted throughout: an unusable entry
+   degrades to a bare id, never a fault. *)
+
+module Opencode_config = struct
+  let api_of_npm = function
+    | "@ai-sdk/openai-compatible" -> Some Mentat_llm_http.Chat_completions.api
+    | "@ai-sdk/anthropic" -> Some Mentat_llm_anthropic.api
+    | "@ai-sdk/openai" -> Some Mentat_llm_openai.api
+    | _ -> None
+
+  let json_number_field name json =
+    match Check.json_field name json with
+    | Some (Jsont.Number (value, _)) -> Some value
+    | Some _ | None -> None
+
+  let json_bool_field name json =
+    match Check.json_field name json with
+    | Some (Jsont.Bool (value, _)) -> Some value
+    | Some _ | None -> None
+
+  let non_empty = function Some "" -> None | value -> value
+
+  let positive_int_field name json =
+    match json_number_field name json with
+    | Some value
+      when Float.is_finite value && value >= 1. && value <= 1e9
+           && Float.is_integer value ->
+        Some (int_of_float value)
+    | Some _ | None -> None
+
+  let rate_lane name json =
+    match json_number_field name json with
+    | Some value when Float.is_finite value && value >= 0. -> Some value
+    | Some _ | None -> None
+
+  let rate_of json =
+    match (rate_lane "input" json, rate_lane "output" json) with
+    | Some input, Some output ->
+        Some
+          (rate
+             ?cache_read:(rate_lane "cache_read" json)
+             ?cache_write:(rate_lane "cache_write" json)
+             ~input ~output ())
+    | (Some _ | None), _ -> None
+
+  let pricing_of json =
+    Option.bind (Check.json_field "cost" json) (fun cost ->
+        rate_of cost
+        |> Option.map (fun default_rate ->
+            let tiers =
+              Option.bind (Check.json_field "context_over_200k" cost) rate_of
+              |> Option.map (fun tier_rate -> [ (200_000, tier_rate) ])
+              |> Option.value ~default:[]
+            in
+            Pricing.make ~context_over:tiers default_rate))
+
+  let status_of = function
+    | "active" -> Some Model.Stable
+    | "beta" -> Some Model.Preview
+    | "alpha" -> Some (Model.Unavailable "alpha")
+    | "deprecated" -> Some Model.Deprecated
+    | _ -> None
+
+  let input_modalities_of json =
+    Option.bind (Check.json_field "modalities" json) (fun modalities ->
+        match Check.json_field "input" modalities with
+        | Some (Jsont.Array (values, _)) ->
+            Some
+              (values
+              |> List.filter_map (function
+                | Jsont.String (value, _) -> Modality.of_string value
+                | Jsont.Null _ | Jsont.Bool _ | Jsont.Number _ | Jsont.Array _
+                | Jsont.Object _ ->
+                    None)
+              |> List.sort_uniq Modality.compare)
+        | Some _ | None -> None)
+
+  let listed_model ~item_npm (id, json) =
+    let npm =
+      match
+        Option.bind (Check.json_field "provider" json)
+          (Check.json_string_field "npm")
+      with
+      | Some _ as override -> override
+      | None -> item_npm
+    in
+    match
+      Listing.Model.make ~id
+        ?api:(Option.bind npm api_of_npm)
+        ?display_name:(non_empty (Check.json_string_field "name" json))
+        ?family:(non_empty (Check.json_string_field "family" json))
+        ?context_window:
+          (Option.bind (Check.json_field "limit" json)
+             (positive_int_field "context"))
+        ?max_output_tokens:
+          (Option.bind (Check.json_field "limit" json)
+             (positive_int_field "output"))
+        ?pricing:(pricing_of json)
+        ?input_modalities:(input_modalities_of json)
+        ?capabilities:
+          (Option.map
+             (fun tool_call -> if tool_call then tools_only else [])
+             (json_bool_field "tool_call" json))
+        ?status:
+          (Option.bind (Check.json_string_field "status" json) status_of)
+        ()
+    with
+    | listed -> Some listed
+    | exception Invalid_argument _ -> (
+        (* An unusable entry keeps its id in the listing rather than
+           vanishing into unavailability. *)
+        match Listing.Model.of_id id with
+        | listed -> Some listed
+        | exception Invalid_argument _ -> None)
+
+  let listing body =
+    match Jsont_bytesrw.decode_string Jsont.json body with
+    | Error _ -> None
+    | Ok json ->
+        Option.bind (Check.json_field "config" json) (fun config ->
+            Option.bind (Check.json_field "provider" config) (fun providers ->
+                Option.bind (Check.json_field "opencode-go" providers)
+                  (fun item ->
+                    let item_npm = Check.json_string_field "npm" item in
+                    match Check.json_field "models" item with
+                    | Some (Jsont.Object (members, _)) -> (
+                        let models =
+                          List.filter_map
+                            (fun ((id, _), value) ->
+                              listed_model ~item_npm (id, value))
+                            members
+                        in
+                        (* An empty parse is shape drift, not an empty
+                           catalog: it must not become the availability
+                           authority that empties the provider. *)
+                        match models with
+                        | [] -> None
+                        | models -> (
+                            match Listing.make models with
+                            | listing -> Some listing
+                            | exception Invalid_argument _ -> None))
+                    | Some _ | None -> None)))
+end
+
+let opencode_console_default = "https://console.opencode.ai"
+let opencode_gateway_default = "https://opencode.ai/zen/go"
+
+let opencode_check ~sw ~env ?base_url ?auth_base_url credential =
+  match Option.map Credential.secret credential with
+  | None -> unsupported_route
+  | Some secret ->
+      let token =
+        Secret.expose secret
+          ~api_key:(fun ~key -> key)
+          ~bearer:(fun ~token -> token)
+          ~oauth:(fun
+              ~access_token ~refresh_token:_ ~expires_at:_ ~account_id:_ ->
+            access_token)
+      in
+      let headers = [ ("authorization", "Bearer " ^ token) ] in
+      let console =
+        effective_base_url ~default:opencode_console_default auth_base_url
+      in
+      let gateway_models () =
+        let base_url =
+          effective_base_url ~default:opencode_gateway_default base_url
+        in
+        observe ~sw ~env ~headers (base_url ^ "/v1/models")
+      in
+      (match Tls_setup.get ~sw ~env ~headers (console ^ "/api/config") with
+      | Ok (status, body) when status >= 200 && status < 300 -> (
+          match Opencode_config.listing body with
+          | Some listing -> observation ~listing ()
+          | None -> gateway_models ())
+      | Ok _ | Error () -> gateway_models ())
 
 let openai_chatgpt_config auth_base_url =
   match auth_base_url with
@@ -741,6 +1064,27 @@ let ollama_build ~sw ~env ?base_url credential =
   | Ok config, Ok credential ->
       Ok (Mentat_llm_ollama.client ~env ~config ?credential ())
 
+let opencode_build ~sw ~env ?base_url credential =
+  Eio.Switch.check sw;
+  match credential with
+  | None -> missing Mentat_llm_opencode.provider
+  | Some credential ->
+      (* Every accepted credential kind rides one bearer header; kind drives
+         store and refresh semantics, not header spelling. *)
+      let route mk =
+        Result.map
+          (fun config ->
+            Mentat_llm_opencode.client ~env ~config ~credential:mk ())
+          (http_config ~provider:Mentat_llm_opencode.provider (fun () ->
+               Mentat_llm_opencode.Config.make ?base_url ()))
+      in
+      Secret.expose
+        (Credential.secret credential)
+        ~api_key:(fun ~key -> route (Mentat_llm_opencode.Credential.api_key key))
+        ~bearer:(fun ~token -> route (Mentat_llm_opencode.Credential.bearer token))
+        ~oauth:(fun ~access_token ~refresh_token:_ ~expires_at:_ ~account_id:_ ->
+          route (Mentat_llm_opencode.Credential.bearer access_token))
+
 (* Local model artifacts. *)
 
 let local_artifact =
@@ -868,7 +1212,19 @@ let registrations =
       driver =
         {
           Driver.build_client = ollama_build;
-          check = None;
+          check = Some ollama_check;
+          refresh = None;
+          revoke = None;
+          provider_defined = no_provider_defined;
+          artifact = None;
+        };
+    };
+    {
+      Driver.declaration = opencode_declaration;
+      driver =
+        {
+          Driver.build_client = opencode_build;
+          check = Some opencode_check;
           refresh = None;
           revoke = None;
           provider_defined = no_provider_defined;

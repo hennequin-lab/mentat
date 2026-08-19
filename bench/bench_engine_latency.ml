@@ -244,7 +244,7 @@ let stub_accounts : Client.Driver.Accounts.t =
     save_api_key = (fun ~provider:_ ~key:_ -> stub_unavailable ());
     logout = (fun ?revoke:_ _provider -> stub_unavailable ());
     account_readiness = (fun () -> stub_unavailable ());
-    model_readiness = (fun () -> stub_unavailable ());
+    model_readiness = (fun ?refresh:_ () -> stub_unavailable ());
   }
 
 let stub_settings : Client.Driver.Settings.t =

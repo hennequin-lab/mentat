@@ -249,9 +249,11 @@ type command =
           Settings owner. When Settings is retained beneath an open Model panel,
           only that retained return screen is updated: account readiness never
           settles or refreshes {!Model_panel.t}. *)
-  | Load_model_readiness of request
+  | Load_model_readiness of { request : request; refresh : bool }
       (** Query the provider-owned effective model-readiness snapshot and return
           it with {!model_readiness_loaded}, preserving [request] unchanged.
+          [refresh] re-observes server-owned model listings before projecting;
+          the panel's reload chord sets it, the opening load does not.
 
           Opening the Model panel issues this command in an independent
           correlation lane. A panel reload retains its exact state and return

@@ -17,10 +17,12 @@ type observation = {
   problems : Mentat_provider.Account.Problem.t list;
   profile : Mentat_provider.Account.Profile.t option;
   org : Mentat_provider.Account.Org.t option;
-  models : string list option;
+  listing : Mentat_provider.Listing.t option;
 }
-(** A live provider observation, lowered by [Account.check] into a [checked]
-    account fact. *)
+(** A live provider observation. [Account_ops.check] lowers it into a
+    [checked] account fact (its model ids are the listing's ids), and the
+    runtime retains [listing] as the provider's last-observed server model
+    list. *)
 
 type device_flow =
   http:Oauth_flow.Http.t ->
@@ -63,7 +65,8 @@ type driver = {
     (sw:Eio.Switch.t ->
     env:Eio_unix.Stdenv.base ->
     ?base_url:string ->
-    Mentat_provider.Credential.t ->
+    ?auth_base_url:string ->
+    Mentat_provider.Credential.t option ->
     observation)
     option;
   refresh :
@@ -89,9 +92,11 @@ type driver = {
 (** The effectful side of one provider. [check]/[refresh]/[revoke] are absent
     for providers that do not observe or refresh. A check lowers every ordinary
     provider or transport outcome into an {!observation}; fiber cancellation and
-    implementation faults escape. [provider_defined] is empty except for
-    OpenAI's ChatGPT device flow; [artifact] is present only for local
-    providers. *)
+    implementation faults escape. It receives the resolved credential — [None]
+    for a provider whose listing endpoint needs none — and [?auth_base_url]
+    when its observation targets the provider's console rather than the
+    gateway root. [provider_defined] is empty except for OpenAI's ChatGPT
+    device flow; [artifact] is present only for local providers. *)
 
 type registration = { declaration : Mentat_provider.t; driver : driver }
 (** A pure declaration paired with its driver. *)

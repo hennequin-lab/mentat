@@ -556,6 +556,7 @@ let api_error t ?(phase = Llm.Error.Startup) = function
         match response.Error.status with
         | 400 -> Llm.Error.Invalid_request
         | 401 | 403 -> Llm.Error.Auth
+        | 402 -> Llm.Error.Quota
         | 408 -> Llm.Error.Timeout
         | 413 -> Llm.Error.Context_overflow
         | 429 -> Llm.Error.Rate_limited

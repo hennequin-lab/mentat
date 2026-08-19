@@ -1,0 +1,3 @@
+(library
+ (name mentat_llm_opencode)
+ (libraries eio eio.unix mentat_llm mentat_llm_http))

@@ -37,15 +37,94 @@ let load t ?(process = []) ~environment () =
              discover_declaration declaration ~process ~environment ~store ())
            (Provider.Catalog.declarations (Runtime.catalog t)))
 
-let check registration ~sw ~env ?base_url credential =
+let credential_fingerprint credential =
+  Option.bind credential Credential.fingerprint
+
+let check t registration ~sw ~env ?base_url ?auth_base_url credential =
   match registration.Driver.driver.Driver.check with
   | None -> Account.present credential
   | Some check_route ->
-      let { Driver.problems; profile; org; models } =
-        check_route ~sw ~env ?base_url credential
+      let { Driver.problems; profile; org; listing } =
+        check_route ~sw ~env ?base_url ?auth_base_url (Some credential)
       in
+      Runtime.remember_listing t
+        ~provider:(Credential.provider credential)
+        ~fingerprint:(credential_fingerprint (Some credential))
+        ~base_url ~auth_base_url listing;
       Account.checked credential ~at:(timestamp env) ?profile ?org ~problems
-        ?models ()
+        ?models:(Option.map Provider.Listing.ids listing) ()
+
+let selected_declarations t providers =
+  Provider.Catalog.declarations (Runtime.catalog t)
+  |> List.filter (fun declaration ->
+      match providers with
+      | None -> true
+      | Some providers ->
+          List.exists
+            (Mentat_llm.Provider.equal (Provider.id declaration))
+            providers)
+
+(* One refresh job per checkable provider whose credential resolves — [None]
+   for a required-auth provider with no candidate (skipped, not failed) and
+   for a provider whose resolution errors (its account row already carries the
+   failure). *)
+let listing_job t ~sw ~env ~base_url ~auth_base_url ~process ~environment
+    ~store declaration =
+  let ( let*? ) = Option.bind in
+  let provider = Provider.id declaration in
+  let*? registration = Runtime.registration_for t provider in
+  let*? check_route = registration.Driver.driver.Driver.check in
+  let*? credential =
+    match
+      Provider.resolve_credential declaration ~process ~environment ~store ()
+    with
+    | Error _ -> None
+    | Ok None when Provider.Auth.required (Provider.auth declaration) -> None
+    | Ok credential -> Some credential
+  in
+  let base_url = base_url provider in
+  let auth_base_url = auth_base_url provider in
+  Some
+    (fun () ->
+      let observation =
+        check_route ~sw ~env ?base_url ?auth_base_url credential
+      in
+      Runtime.remember_listing t ~provider
+        ~fingerprint:(credential_fingerprint credential)
+        ~base_url ~auth_base_url observation.Driver.listing)
+
+let refresh_listings t ~sw ~env ?providers ?(base_url = fun _ -> None)
+    ?(auth_base_url = fun _ -> None) ?(process = []) ~environment () =
+  match Credential_store.load (Runtime.store t) with
+  | Error store_error -> Error store_error
+  | Ok store ->
+      selected_declarations t providers
+      |> List.filter_map
+           (listing_job t ~sw ~env ~base_url ~auth_base_url ~process
+              ~environment ~store)
+      |> Eio.Fiber.all;
+      Ok ()
+
+let listings t ?providers ?(process = []) ?(base_url = fun _ -> None)
+    ?(auth_base_url = fun _ -> None) ~environment () =
+  match Credential_store.load (Runtime.store t) with
+  | Error store_error -> Error store_error
+  | Ok store ->
+      Ok
+        (selected_declarations t providers
+        |> List.filter_map (fun declaration ->
+            let provider = Provider.id declaration in
+            match
+              Provider.resolve_credential declaration ~process ~environment
+                ~store ()
+            with
+            | Error _ -> None
+            | Ok credential ->
+                Runtime.listing_for t ~provider
+                  ~fingerprint:(credential_fingerprint credential)
+                  ~base_url:(base_url provider)
+                  ~auth_base_url:(auth_base_url provider)
+                |> Option.map (fun listing -> (provider, listing))))
 
 let refresh_window_s = 300L
 

@@ -66,6 +66,10 @@ let problem_t =
 
 (* {2 Helpers} *)
 
+(* A closed loopback port: ollama's listing check fails fast with a network
+   problem instead of observing whatever daemon the host happens to run. *)
+let dead_base_url = "http://127.0.0.1:9"
+
 let with_runtime name f =
   Eio_main.run @@ fun env ->
   let raw = temp_dir ~prefix:("mentat-provider-runtime-" ^ name) () in
@@ -138,6 +142,243 @@ let with_early_close_peer env f =
       `Stop_daemon);
   f ~sw port
 
+(* A loopback HTTP peer answering every request with one canned JSON body —
+   what a provider's listing endpoint looks like to a check. *)
+let with_http_peer env ~body f =
+  Eio.Switch.run @@ fun sw ->
+  let socket =
+    Eio.Net.listen (Eio.Stdenv.net env) ~sw ~backlog:4 ~reuse_addr:true
+      (`Tcp (Eio.Net.Ipaddr.V4.loopback, 0))
+  in
+  let port =
+    match Eio.Net.listening_addr socket with
+    | `Tcp (_, port) -> port
+    | `Unix path -> failf "expected TCP listening socket, got Unix path %S" path
+  in
+  Eio.Fiber.fork_daemon ~sw (fun () ->
+      let rec serve () =
+        (Eio.Switch.run @@ fun connection_sw ->
+         let flow, _ = Eio.Net.accept ~sw:connection_sw socket in
+         let reader = Eio.Buf_read.of_flow ~max_size:65536 flow in
+         let _request_line = Eio.Buf_read.line reader in
+         Eio.Flow.copy_string
+           (Printf.sprintf
+              "HTTP/1.1 200 OK\r\n\
+               content-type: application/json\r\n\
+               content-length: %d\r\n\
+               connection: close\r\n\
+               \r\n\
+               %s"
+              (String.length body) body)
+           flow;
+         Eio.Flow.close flow);
+        serve ()
+      in
+      serve ());
+  f ~sw port
+
+let store_ok msg = function
+  | Ok value -> value
+  | Error error -> failf "%s: %s" msg (Runtime.Store_error.message error)
+
+(* {2 Server listings} *)
+
+let ollama_listing_round () =
+  with_runtime "listings-ollama" @@ fun env _raw t ->
+  with_http_peer env
+    ~body:{|{"models":[{"name":"llama3:latest"},{"name":"qwen3:8b"}]}|}
+  @@ fun ~sw port ->
+  let base_url provider =
+    if Llm.Provider.equal provider Mentat_llm_ollama.provider then
+      Some (Printf.sprintf "http://127.0.0.1:%d" port)
+    else None
+  in
+  store_ok "refresh"
+    (Runtime.refresh_listings t ~sw ~env
+       ~providers:[ Mentat_llm_ollama.provider ]
+       ~base_url ~environment:[] ());
+  (match store_ok "listings" (Runtime.listings t ~base_url ~environment:[] ())
+   with
+  | [ (provider, listing) ] ->
+      equal provider_t ~msg:"the ollama listing is retained"
+        Mentat_llm_ollama.provider provider;
+      equal (list string) ~msg:"server order"
+        [ "llama3:latest"; "qwen3:8b" ]
+        (Provider.Listing.ids listing)
+  | listings -> failf "expected exactly the ollama listing, got %d" (List.length listings));
+  (* The listing feeds picker rows through the any-id rule. *)
+  let discoveries =
+    store_ok "discover" (Runtime.discover_accounts t ~environment:[] ())
+  in
+  let listings =
+    store_ok "listings" (Runtime.listings t ~base_url ~environment:[] ())
+  in
+  let readiness =
+    Provider.Model_readiness.of_catalog ~listings (Runtime.catalog t)
+      ~discoveries
+  in
+  let route =
+    List.find
+      (fun route ->
+        Llm.Provider.equal Mentat_llm_ollama.provider
+          (Provider.Model_readiness.Route.provider route))
+      (Provider.Model_readiness.routes readiness)
+  in
+  equal (list string) ~msg:"listed models become rows"
+    [ "llama3:latest"; "qwen3:8b" ]
+    (List.map
+       (fun entry ->
+         Provider.Model.id (Provider.Model_readiness.Entry.model entry))
+       (Provider.Model_readiness.Route.models route));
+  (* A different base URL is a different scope: the slot answers nothing. *)
+  equal int ~msg:"a moved endpoint drops the retained listing" 0
+    (List.length (store_ok "listings" (Runtime.listings t ~environment:[] ())))
+
+let opencode_config_listing () =
+  with_runtime "listings-opencode" @@ fun env _raw t ->
+  let body =
+    {|{"config":{"provider":{"opencode-go":{"npm":"@ai-sdk/openai-compatible","models":{"kimi-k3":{"name":"Kimi K3","cost":{"input":3.0,"output":15.0,"cache_read":0.3},"limit":{"context":262144,"output":8192},"tool_call":true,"status":"active"},"minimax-m3":{"provider":{"npm":"@ai-sdk/anthropic"},"name":"MiniMax M3"},"grok-4.5":{"provider":{"npm":"@ai-sdk/openai"}},"new-chat":{"name":"New Chat","status":"beta"}}}}}}|}
+  in
+  with_http_peer env ~body @@ fun ~sw port ->
+  let auth_base_url provider =
+    if Llm.Provider.equal provider Mentat_llm_opencode.provider then
+      Some (Printf.sprintf "http://127.0.0.1:%d" port)
+    else None
+  in
+  let credential =
+    Credential.make ~provider:Mentat_llm_opencode.provider
+      ~source:Credential.Source.process
+      (Credential.Secret.api_key "opencode-key-xxxx")
+  in
+  store_ok "refresh"
+    (Runtime.refresh_listings t ~sw ~env
+       ~providers:[ Mentat_llm_opencode.provider ]
+       ~auth_base_url ~process:[ credential ] ~environment:[] ());
+  let listings =
+    store_ok "listings"
+      (Runtime.listings t ~auth_base_url ~process:[ credential ]
+         ~environment:[] ())
+  in
+  let discoveries =
+    store_ok "discover"
+      (Runtime.discover_accounts t ~process:[ credential ] ~environment:[] ())
+  in
+  let readiness =
+    Provider.Model_readiness.of_catalog ~listings (Runtime.catalog t)
+      ~discoveries
+  in
+  let route =
+    List.find
+      (fun route ->
+        Llm.Provider.equal Mentat_llm_opencode.provider
+          (Provider.Model_readiness.Route.provider route))
+      (Provider.Model_readiness.routes readiness)
+  in
+  let entries = Provider.Model_readiness.Route.models route in
+  let entry_for id =
+    List.find
+      (fun entry ->
+        String.equal id
+          (Provider.Model.id (Provider.Model_readiness.Entry.model entry)))
+      entries
+  in
+  let availability_of id =
+    Provider.Model_readiness.Entry.availability (entry_for id)
+  in
+  (match availability_of "kimi-k3" with
+  | Provider.Model_readiness.Availability.Available -> ()
+  | Provider.Model_readiness.Availability.Unavailable
+  | Provider.Model_readiness.Availability.Unknown ->
+      fail "a listed declared model is available");
+  (match availability_of "glm-5.3" with
+  | Provider.Model_readiness.Availability.Unavailable -> ()
+  | Provider.Model_readiness.Availability.Available
+  | Provider.Model_readiness.Availability.Unknown ->
+      fail "a declared model the server dropped is unavailable");
+  (* Listed rows follow the declared models in server order. *)
+  equal (list string) ~msg:"undeclared server models append in order"
+    [ "minimax-m3"; "grok-4.5"; "new-chat" ]
+    (List.filteri (fun i _ -> i >= 8) entries
+    |> List.map (fun entry ->
+        Provider.Model.id (Provider.Model_readiness.Entry.model entry)));
+  (* Protocols without a codec surface hidden, with a reason — not as dead
+     picks. The chat-protocol row is a real, visible, adapter-accepted row. *)
+  let model_of id = Provider.Model_readiness.Entry.model (entry_for id) in
+  is_false ~msg:"a messages-protocol model is not yet visible"
+    (Provider.Model.visible (model_of "minimax-m3"));
+  is_false ~msg:"a responses-protocol model is not visible"
+    (Provider.Model.visible (model_of "grok-4.5"));
+  is_true ~msg:"a chat-protocol server model is visible"
+    (Provider.Model.visible (model_of "new-chat"));
+  equal (option string) ~msg:"server display name rides the row"
+    (Some "New Chat")
+    (Provider.Model.display_name (model_of "new-chat"));
+  let client =
+    Mentat_llm_opencode.client ~env
+      ~credential:(Mentat_llm_opencode.Credential.api_key "opencode-key-xxxx")
+      ()
+  in
+  List.iter
+    (fun entry ->
+      let model = Provider.Model_readiness.Entry.model entry in
+      if Provider.Model.visible model then
+        is_true
+          ~msg:(Provider.Model.id model ^ " is accepted by the built client")
+          (Llm.Client.accepts client (Provider.Model.llm model)))
+    entries;
+  (* The listing is scoped to the credential that observed it. *)
+  equal int ~msg:"a rotated credential drops the retained listing" 0
+    (List.length
+       (store_ok "listings"
+          (Runtime.listings t ~auth_base_url ~environment:[] ())))
+
+let opencode_declaration_pin () =
+  with_runtime "opencode-pin" @@ fun _env _raw t ->
+  let declaration =
+    match
+      Provider.Catalog.declaration (Runtime.catalog t)
+        Mentat_llm_opencode.provider
+    with
+    | Some declaration -> declaration
+    | None -> fail "opencode-go is declared"
+  in
+  equal (option string) ~msg:"display name" (Some "OpenCode Go")
+    (Provider.display_name declaration);
+  let models = Provider.models declaration in
+  equal (list string) ~msg:"curated models in order"
+    [
+      "kimi-k2.7-code";
+      "kimi-k3";
+      "glm-5.3";
+      "deepseek-v4-pro";
+      "deepseek-v4-flash";
+      "mimo-v2.5-pro";
+      "mimo-v2.5";
+      "hy3";
+    ]
+    (List.map Provider.Model.id models);
+  (* One model per family, every family named, every model priced. *)
+  let families = List.filter_map Provider.Model.family models in
+  equal int ~msg:"every model carries a family" (List.length models)
+    (List.length families);
+  equal int ~msg:"families are unique" (List.length families)
+    (List.length (List.sort_uniq String.compare families));
+  List.iter
+    (fun model ->
+      is_true
+        ~msg:(Provider.Model.id model ^ " is priced")
+        (Option.is_some (Provider.Model.pricing model)))
+    models;
+  (match Provider.default_model declaration with
+  | Some default ->
+      equal string ~msg:"default model" "kimi-k2.7-code"
+        (Provider.Model.id default)
+  | None -> fail "a default model is declared");
+  equal (list string) ~msg:"env credential"
+    [ "OPENCODE_API_KEY" ]
+    (List.map Provider.Auth.Env.name
+       (Provider.Auth.env (Provider.auth declaration)))
+
 (* {2 create, declarations, coverage} *)
 
 let create_declarations () =
@@ -151,6 +392,7 @@ let create_declarations () =
         Mentat_llm_google.provider;
         Mentat_llm_local.provider;
         Mentat_llm_ollama.provider;
+        Mentat_llm_opencode.provider;
       ]
   in
   equal (list string) (provider_ids decls) expected
@@ -248,7 +490,7 @@ let load_env_over_store () =
   Eio.Switch.run @@ fun sw ->
   ignore
     (save_ok
-       (Runtime.Login.save_api_key t ~sw ~env
+       (Runtime.Login.save_api_key t ~sw ~env ~base_url:dead_base_url
           ~provider:Mentat_llm_ollama.provider ~key:"stored-key-xxxx" ()));
   let accounts =
     load_accounts "load"
@@ -427,11 +669,13 @@ let login_save_and_load () =
   Eio.Switch.run @@ fun sw ->
   let account =
     save_ok
-      (Runtime.Login.save_api_key t ~sw ~env
+      (Runtime.Login.save_api_key t ~sw ~env ~base_url:dead_base_url
          ~provider:Mentat_llm_ollama.provider ~key:"ollama-secret" ())
   in
   is_true (Account.connected account);
-  equal string (Account.Phase.to_string (Account.phase account)) "unchecked";
+  (* The save observes the route: the dead port lowers to a transient network
+     problem, so the account is checked and degraded, never blocked. *)
+  equal string (Account.Phase.to_string (Account.phase account)) "degraded";
   (* The store file is written 0o600. *)
   let stat = Unix.stat (Filename.concat raw "auth.json") in
   equal int (stat.Unix.st_perm land 0o777) 0o600;
@@ -449,7 +693,7 @@ let login_save_replaces () =
   let save suffix =
     ignore
       (save_ok
-         (Runtime.Login.save_api_key t ~sw ~env
+         (Runtime.Login.save_api_key t ~sw ~env ~base_url:dead_base_url
             ~provider:Mentat_llm_ollama.provider
             ~key:("ollama-secret-" ^ suffix)
             ()))
@@ -514,7 +758,8 @@ let login_save_rejects_before_store_mutation () =
     ~msg:"invalid applicable API base URL left the store untouched";
   let invalid_key label key =
     match
-      Runtime.Login.save_api_key t ~sw ~env ~provider:Mentat_llm_ollama.provider
+      Runtime.Login.save_api_key t ~sw ~env ~base_url:dead_base_url
+      ~provider:Mentat_llm_ollama.provider
         ~key ()
     with
     | Error (Runtime.Error.Login { diagnostic; _ }) ->
@@ -559,7 +804,7 @@ let login_logout_removes () =
   Eio.Switch.run @@ fun sw ->
   ignore
     (save_ok
-       (Runtime.Login.save_api_key t ~sw ~env
+       (Runtime.Login.save_api_key t ~sw ~env ~base_url:dead_base_url
           ~provider:Mentat_llm_ollama.provider ~key:"ollama-secret" ()));
   let logout =
     ok_error "logout"
@@ -593,7 +838,7 @@ let load_observes_save_and_logout_live () =
   is_false (connected ()) ~msg:"initially missing";
   ignore
     (save_ok
-       (Runtime.Login.save_api_key t ~sw ~env
+       (Runtime.Login.save_api_key t ~sw ~env ~base_url:dead_base_url
           ~provider:Mentat_llm_ollama.provider ~key:"ollama-live-secret" ()));
   is_true (connected ()) ~msg:"the next load observes save";
   ignore
@@ -624,7 +869,7 @@ let login_logout_absent_slot_does_not_rewrite () =
   Eio.Switch.run @@ fun sw ->
   ignore
     (save_ok
-       (Runtime.Login.save_api_key t ~sw ~env
+       (Runtime.Login.save_api_key t ~sw ~env ~base_url:dead_base_url
           ~provider:Mentat_llm_ollama.provider ~key:"stored-credential" ()));
   let path = Filename.concat raw "auth.json" in
   let before = Unix.stat path in
@@ -644,7 +889,7 @@ let login_logout_current_prefers_process () =
   Eio.Switch.run @@ fun sw ->
   ignore
     (save_ok
-       (Runtime.Login.save_api_key t ~sw ~env
+       (Runtime.Login.save_api_key t ~sw ~env ~base_url:dead_base_url
           ~provider:Mentat_llm_ollama.provider ~key:"stored-credential" ()));
   let process =
     [
@@ -673,7 +918,7 @@ let login_logout_revoke_no_route () =
   Eio.Switch.run @@ fun sw ->
   ignore
     (save_ok
-       (Runtime.Login.save_api_key t ~sw ~env
+       (Runtime.Login.save_api_key t ~sw ~env ~base_url:dead_base_url
           ~provider:Mentat_llm_ollama.provider ~key:"ollama-secret" ()));
   let logout =
     ok_error "logout"
@@ -1062,7 +1307,7 @@ let secret_confinement_io_path () =
   let key = secret_body ^ "-tail" in
   let account =
     save_ok
-      (Runtime.Login.save_api_key t ~sw ~env
+      (Runtime.Login.save_api_key t ~sw ~env ~base_url:dead_base_url
          ~provider:Mentat_llm_ollama.provider ~key ())
   in
   let outcome_text = Format.asprintf "%a" Account.pp account in
@@ -1113,7 +1358,7 @@ let store_perm_across_rewrite () =
   let save suffix =
     ignore
       (save_ok
-         (Runtime.Login.save_api_key t ~sw ~env
+         (Runtime.Login.save_api_key t ~sw ~env ~base_url:dead_base_url
             ~provider:Mentat_llm_ollama.provider
             ~key:("ollama-secret-" ^ suffix)
             ()))
@@ -1138,7 +1383,7 @@ let store_concurrent_saves_converge () =
   let save name suffix =
     ignore
       (save_ok
-         (Runtime.Login.save_api_key t ~sw ~env
+         (Runtime.Login.save_api_key t ~sw ~env ~base_url:dead_base_url
             ~provider:Mentat_llm_ollama.provider ~name
             ~key:("ollama-secret-" ^ suffix)
             ()))
@@ -1164,7 +1409,8 @@ let concurrent_same_slot_saves_return_exact_accounts () =
   with_runtime "save-exact" @@ fun env _raw t ->
   Eio.Switch.run @@ fun sw ->
   let save suffix =
-    Runtime.Login.save_api_key t ~sw ~env ~provider:Mentat_llm_ollama.provider
+    Runtime.Login.save_api_key t ~sw ~env ~base_url:dead_base_url
+      ~provider:Mentat_llm_ollama.provider
       ~key:("same-slot-secret-" ^ suffix)
       ()
     |> save_ok
@@ -1197,6 +1443,9 @@ let media_support_matches_adapters () =
     ~tool_result:false;
   check "local chat-completions" Mentat_llm_local.api ~user:true
     ~tool_result:false;
+  check "opencode chat-completions"
+    (Llm.Model.api (Mentat_llm_opencode.chat_model "kimi-k3"))
+    ~user:true ~tool_result:false;
   let unknown = Llm.Model.Api.make "unknown-vision-api" in
   is_false ~msg:"unknown api carries no user media"
     (M.encodable unknown M.User_content);
@@ -1211,6 +1460,13 @@ let () =
       (* create / coverage *)
       test "declarations are the six providers in order" create_declarations;
       test "create coverage sweeps all six declarations" create_coverage_sweep;
+      (* Server listings *)
+      test "an ollama listing is retained, projected, and endpoint-scoped"
+        ollama_listing_round;
+      test "the opencode console config lowers to a routable listing"
+        opencode_config_listing;
+      test "the opencode declaration pins the curated overlay"
+        opencode_declaration_pin;
       test "create performs no I/O" create_performs_no_io;
       (* Credential resolution *)
       test "load resolves an environment credential" load_resolves_env;

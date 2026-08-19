@@ -109,7 +109,7 @@ type command =
   | Load_pending_decision of { request : request; session : Session.Id.t }
   | Load_configuration of request
   | Load_account_readiness of request
-  | Load_model_readiness of request
+  | Load_model_readiness of { request : request; refresh : bool }
   | Load_review_state of { request : request; scope : Mentat_review.Scope.t }
   | Load_review_diff of { request : request; path : Lpath.Rel.t }
   | Load_review_crs of request
@@ -1173,10 +1173,12 @@ let issue_account_readiness t =
   ( { t with account_readiness_request = Some request },
     Load_account_readiness request )
 
-let issue_model_readiness t =
+(* [refresh] re-observes server-owned model listings before projecting; the
+   reload chord uses it, the opening load serves the retained snapshot. *)
+let issue_model_readiness ?(refresh = false) t =
   let request, t = fresh_request t in
   ( { t with model_readiness_request = Some request },
-    Load_model_readiness request )
+    Load_model_readiness { request; refresh } )
 
 let issue_configuration t =
   let request, t = fresh_request t in
@@ -3272,7 +3274,7 @@ let update_model_panel message model t =
   match event with
   | Model_panel.Stay -> (keep, [])
   | Model_panel.Reload ->
-      let t, command = issue_model_readiness keep in
+      let t, command = issue_model_readiness ~refresh:true keep in
       (t, [ command ])
   | Model_panel.Close -> (
       match model.return with

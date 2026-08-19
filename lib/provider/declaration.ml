@@ -29,9 +29,11 @@ type t = {
   models : Model.t list;
   default_model : Model.t option;
   dynamic : (string -> Model.t option) option;
+  dynamic_listed : (Listing.Model.t -> Model.t option) option;
 }
 
-let make id ?display_name ?(auth = Auth.none) ?default_model ?dynamic models =
+let make id ?display_name ?(auth = Auth.none) ?default_model ?dynamic
+    ?dynamic_listed models =
   check_optional_non_empty "make" "display_name" display_name;
   List.iter
     (fun model ->
@@ -58,7 +60,7 @@ let make id ?display_name ?(auth = Auth.none) ?default_model ?dynamic models =
             Some declared
         | None -> invalid "make" "default_model is not declared")
   in
-  { id; display_name; auth; models; default_model; dynamic }
+  { id; display_name; auth; models; default_model; dynamic; dynamic_listed }
 
 let id t = t.id
 let display_name t = t.display_name
@@ -93,6 +95,40 @@ let resolve_dynamic t requested =
                  "dynamic model resolved id %S but %S was requested"
                  (Model.id model) requested);
           Some model)
+
+(* The listed rule shares the dynamic rule's author contract: synthesis must
+   agree with the declaration's provider and the listed id, and disagreement
+   raises. *)
+let check_synthesis fn t ~requested model =
+  let actual = Model.provider model in
+  if not (Mentat_llm.Provider.equal t.id actual) then
+    invalid fn
+      (Printf.sprintf "listed model resolved to provider %S but declaration is %S"
+         (Mentat_llm.Provider.id actual)
+         (Mentat_llm.Provider.id t.id));
+  if not (String.equal requested (Model.id model)) then
+    invalid fn
+      (Printf.sprintf "listed model resolved id %S but %S was requested"
+         (Model.id model) requested)
+
+let interprets_listings t =
+  Option.is_some t.dynamic_listed || Option.is_some t.dynamic
+
+let resolve_listed t listed =
+  let requested = Listing.Model.id listed in
+  let synthesized =
+    match t.dynamic_listed with
+    | Some synthesize -> synthesize listed
+    | None -> (
+        match t.dynamic with
+        | Some synthesize -> synthesize requested
+        | None -> None)
+  in
+  match synthesized with
+  | None -> None
+  | Some model ->
+      check_synthesis "resolve_listed" t ~requested model;
+      Some model
 
 let decode_environment_secret env ~source value =
   let kind = Auth.Env.kind env in

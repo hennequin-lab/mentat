@@ -23,6 +23,13 @@ type session_only = { session : Mentat_session.Id.t }
 
 val session_only : session_only Jsont.t
 
+type model_readiness = { refresh : bool }
+
+val model_readiness : model_readiness Jsont.t
+(** The model-readiness request. An absent [refresh] member decodes to
+    [false] and a [false] value encodes as the empty object, so the default
+    request crosses as [{}]. *)
+
 type answer_unattended = {
   au_session : Mentat_session.Id.t;
   au_decision : Mentat_session.Decision.Id.t;

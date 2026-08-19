@@ -257,6 +257,20 @@ val tui_capabilities :
     {!client_with_tui_capabilities} applies: project the narrow operations you
     need and never pass either capability into a frontend model. *)
 
+val find_model :
+  t -> Mentat_provider.Selector.t -> (Mentat_provider.Model.t, string) result
+(** [find_model t selector] resolves [selector] against the catalog and, for a
+    provider whose model set is server-owned, against the provider's retained
+    server listing through the declaration's listed-model rule — the same
+    synthesis readiness rows use, so a pickable row cannot die at resolution
+    time. A miss on a checkable provider refreshes the listing once and
+    retries; a path whose retained listing already answers never reaches the
+    network. *)
+
+val resolve_model : t -> string -> (Mentat_provider.Model.t, string) result
+(** [resolve_model t input] is {!find_model} for CLI selector text, sharing
+    [Mentat_provider.Catalog.resolve]'s parse and candidate diagnostics. *)
+
 val default_model : t -> (Mentat_llm.Model.t, string) result
 (** [default_model t] is the resolved main model for [t]. A configured [model]
     selector is resolved through the catalog and then passed to

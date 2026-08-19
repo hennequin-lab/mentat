@@ -45,12 +45,11 @@ module Artifact = Artifact
 (** {1 The assembled runtime} *)
 
 type t
-(** The registration list, the five built drivers, and the credential store
-    bound to its file. Constructed once at startup, after the sandbox is sealed.
-*)
+(** The registration list, its built drivers, and the credential store bound
+    to its file. Constructed once at startup, after the sandbox is sealed. *)
 
 val create : config_dir:Eio.Fs.dir_ty Eio.Path.t -> t
-(** [create ~config_dir] assembles the five built-in providers exactly once and
+(** [create ~config_dir] assembles the built-in providers exactly once and
     binds the credential store to [config_dir/auth.json]. The executable
     resolves [config_dir] and hands in the capability; the runtime owns the
     filename, never path policy. Performs no I/O — the store file is read
@@ -123,6 +122,54 @@ val discover_accounts :
     healthy discoveries. A shared store failure is the outer [Store_error.t].
     [process] defaults to [[]]. Network-free. *)
 
+(** {1 Server listings}
+
+    Providers whose model sets are server-owned publish them through the
+    driver check. The runtime retains each provider's last good listing in
+    memory for the process lifetime, scoped by the credential fingerprint and
+    base URL it was observed under; nothing is persisted, and a rotated
+    credential or moved endpoint drops its stale listing. *)
+
+val refresh_listings :
+  t ->
+  sw:Eio.Switch.t ->
+  env:Eio_unix.Stdenv.base ->
+  ?providers:Mentat_llm.Provider.t list ->
+  ?base_url:(Mentat_llm.Provider.t -> string option) ->
+  ?auth_base_url:(Mentat_llm.Provider.t -> string option) ->
+  ?process:Mentat_provider.Credential.t list ->
+  environment:(string * string) list ->
+  unit ->
+  (unit, Store_error.t) result
+(** [refresh_listings t ~sw ~env ?providers ?base_url ?auth_base_url ?process
+     ~environment ()] observes every selected provider once, in parallel
+    fibers, and retains the resulting listings. Credentials resolve from the
+    supplied snapshots exactly as {!discover_accounts} does; a required-auth
+    provider with no resolved credential, a provider whose resolution fails,
+    and a provider without a check are skipped, not failed. [providers]
+    defaults to every catalog provider. A shared store failure is the outer
+    error; per-provider observation problems surface through account checks,
+    not here. *)
+
+val listings :
+  t ->
+  ?providers:Mentat_llm.Provider.t list ->
+  ?process:Mentat_provider.Credential.t list ->
+  ?base_url:(Mentat_llm.Provider.t -> string option) ->
+  ?auth_base_url:(Mentat_llm.Provider.t -> string option) ->
+  environment:(string * string) list ->
+  unit ->
+  ( (Mentat_llm.Provider.t * Mentat_provider.Listing.t) list,
+    Store_error.t )
+  result
+(** [listings t ?providers ?process ?base_url ?auth_base_url ~environment ()]
+    is the retained listing of every selected provider whose slot still
+    matches the provider's currently resolving credential fingerprint and
+    endpoint overrides, in catalog order. [providers] defaults to the whole
+    catalog. Feed the result to
+    [Mentat_provider.Model_readiness.of_catalog]'s [listings]. Network-free.
+*)
+
 (** {1 The interactive login flow} *)
 
 module Login : sig
@@ -174,6 +221,7 @@ module Login : sig
     provider:Mentat_llm.Provider.t ->
     ?name:Mentat_provider.Credential.Name.t ->
     ?base_url:string ->
+    ?auth_base_url:string ->
     key:string ->
     unit ->
     (Mentat_provider.Account.t, Error.t) result
@@ -182,7 +230,9 @@ module Login : sig
       under the provider/name credential lock. Empty or invalid UTF-8 key text
       is a structured error. The sole store edit is cancellation-protected and
       the returned account is the observation of the exact committed secret.
-      [name] defaults to [Mentat_provider.Credential.Name.default]. *)
+      [auth_base_url] reroots a check that observes the provider's console
+      rather than its gateway root. [name] defaults to
+      [Mentat_provider.Credential.Name.default]. *)
 
   val logout :
     t ->

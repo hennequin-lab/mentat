@@ -734,11 +734,11 @@ let run ~stdenv ~client ~(startup : Startup.t) ~(local : Local.t)
               deliver
                 (App.account_readiness_loaded ~request
                    (Client.account_readiness client)))
-      | App.Load_model_readiness request ->
+      | App.Load_model_readiness { request; refresh } ->
           perform (fun _ ->
               deliver
                 (App.model_readiness_loaded ~request
-                   (Client.model_readiness client)))
+                   (Client.model_readiness ~refresh client)))
       | App.Load_review_state { request; scope } ->
           perform (fun _ ->
               deliver

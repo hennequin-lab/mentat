@@ -34,10 +34,11 @@ val make :
   ?auth:Auth.t ->
   ?default_model:Model.t ->
   ?dynamic:(string -> Model.t option) ->
+  ?dynamic_listed:(Listing.Model.t -> Model.t option) ->
   Model.t list ->
   t
-(** [make id ?display_name ?auth ?default_model ?dynamic models] is provider
-    declaration [id].
+(** [make id ?display_name ?auth ?default_model ?dynamic ?dynamic_listed
+     models] is provider declaration [id].
 
     [auth] defaults to {!Auth.none}. [models] is preserved in declaration order.
     [default_model] is matched by its {!Mentat_llm.Model.t} identity and the
@@ -51,6 +52,14 @@ val make :
     synthesize a model with the declaration's own provider and the requested id
     — {!resolve_dynamic} checks this; whether an id resolves to real weights is
     the driver's runtime concern.
+
+    [dynamic_listed], when present, interprets server-listed models not
+    declared in [models]: it receives the {!Listing.Model.t} a driver lowered
+    from the server — including the server-assigned wire-protocol family a
+    pure function of the id could not know — and synthesizes a {!Model.t} for
+    entries it will interpret. The function must be pure and must synthesize a
+    model with the declaration's own provider and the listed id —
+    {!resolve_listed} checks this.
 
     Raises [Invalid_argument] if [display_name] is empty, if a model's provider
     is not [id], if two models share the same provider-local id or canonical
@@ -87,6 +96,29 @@ val resolve_dynamic : t -> string -> Model.t option
     Raises [Invalid_argument] if the rule synthesizes a model whose provider is
     not [id t] or whose id is not [id] — the rule is trusted provider-author
     code, and an inconsistent synthesis is a bug in it, not a lookup failure. *)
+
+val interprets_listings : t -> bool
+(** [interprets_listings t] is [true] iff [t] declares a listed-model or
+    dynamic rule — the providers for which a server listing can add models
+    beyond {!models}. Callers use it to skip listing refreshes that could
+    never resolve anything. *)
+
+val resolve_listed : t -> Listing.Model.t -> Model.t option
+(** [resolve_listed t listed] runs [t]'s listed-model rule on server-listed
+    model [listed].
+
+    It is [None] when no rule accepts [listed]. When [t] declares no
+    [dynamic_listed] rule, the plain [dynamic] rule applied to
+    [Listing.Model.id listed] is the fallback, so a provider whose ids alone
+    determine interpretation needs only one rule. [listed] is not checked
+    against {!models}; {!Model_readiness.of_catalog} and selector resolution
+    consult declared models first and reach this rule only for undeclared ids.
+    Performs no I/O.
+
+    Raises [Invalid_argument] if the rule synthesizes a model whose provider is
+    not [id t] or whose id is not [Listing.Model.id listed] — the rule is
+    trusted provider-author code, and an inconsistent synthesis is a bug in it,
+    not a lookup failure. *)
 
 val resolve_credential :
   t ->

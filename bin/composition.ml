@@ -90,6 +90,9 @@ type t = {
      resolution in {!config_callback} consults this, re-staging when a durable
      [set_default_model] or an offline [config set] advances the file's mtime. *)
   mutable staged_default : (float * Cfg.Resolved.t) option;
+  (* Miss-path listing refreshes are rate-limited per provider: a selector
+     that keeps missing must not probe the network on every resolution. *)
+  listing_refresh_at : (string, float) Hashtbl.t;
   mutable engine : Engine.t option;
   mutable assembled :
     (Client.Driver.t * Mentat_workspace_io.t * Mentat_tool.t) option;
@@ -283,6 +286,7 @@ let make_instance ~shared ~sw ~root ~trusted ~config ~overrides ~review_base : t
     review_overlay = Hashtbl.create 8;
     overrides;
     staged_default = None;
+    listing_refresh_at = Hashtbl.create 4;
     engine = None;
     assembled = None;
   }
@@ -369,6 +373,139 @@ let discover_accounts t =
   Runtime.discover_accounts t.shared.runtime ~environment:t.shared.environment
     ()
 
+(* Base-URL and issuer overrides are per-provider, read from config and env. *)
+let base_url_for t provider =
+  Cfg.Resolved.find (Cfg.Field.provider_base_url provider) t.config
+
+let auth_base_url_for t provider =
+  let var =
+    "MENTAT_"
+    ^ String.uppercase_ascii
+        (String.map
+           (fun c ->
+             if (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') then c else '_')
+           (Mentat_llm.Provider.id provider))
+    ^ "_AUTH_BASE_URL"
+  in
+  match getenv t var with
+  | Some v when String.length v > 0 -> Some v
+  | _ -> None
+
+(* Server-listed models. A provider whose model set is server-owned publishes
+   it through its driver check; the runtime retains the last good listing per
+   provider. Selector resolution and the readiness picker share one synthesis
+   — the declaration's listed-model rule — so a pickable row cannot die at
+   resolution time. *)
+
+let provider_listings ?providers t =
+  match
+    Runtime.listings t.shared.runtime ?providers ~base_url:(base_url_for t)
+      ~auth_base_url:(auth_base_url_for t)
+      ~environment:t.shared.environment ()
+  with
+  | Ok listings -> listings
+  | Error _ -> []
+
+(* Only providers with a listed-model (or dynamic) rule can gain models from
+   a listing; every other provider skips the fallback and its refresh. *)
+let listing_capable t provider =
+  match Catalog.declaration (catalog t) provider with
+  | Some declaration -> Mentat_provider.interprets_listings declaration
+  | None -> false
+
+let listing_capable_providers t =
+  Catalog.declarations (catalog t)
+  |> List.filter Mentat_provider.interprets_listings
+  |> List.map Mentat_provider.id
+
+let listed_model t selector =
+  let ( let*? ) = Option.bind in
+  let provider = Mentat_provider.Selector.provider selector in
+  let*? declaration = Catalog.declaration (catalog t) provider in
+  let*? listing =
+    Option.map snd
+      (List.find_opt
+         (fun (p, _) -> Mentat_llm.Provider.equal p provider)
+         (provider_listings ~providers:[ provider ] t))
+  in
+  let*? listed =
+    Mentat_provider.Listing.find listing (Mentat_provider.Selector.id selector)
+  in
+  Mentat_provider.resolve_listed declaration listed
+
+let refresh_listings t ?providers () =
+  match
+    Runtime.refresh_listings t.shared.runtime ~sw:t.switch ~env:t.shared.stdenv
+      ?providers ~base_url:(base_url_for t)
+      ~auth_base_url:(auth_base_url_for t)
+      ~environment:t.shared.environment ()
+  with
+  | Ok () -> ()
+  | Error _ ->
+      (* A store failure already surfaces through account discovery; here it
+         only means no fresher listing. *)
+      ()
+
+(* Miss-path refreshes are rate-limited per provider: a selector that keeps
+   missing must not probe the network on every resolution. *)
+let listing_refresh_cooldown_s = 60.
+
+let refresh_listing_once t provider =
+  let key = Mentat_llm.Provider.id provider in
+  let now = Unix.gettimeofday () in
+  let due =
+    match Hashtbl.find_opt t.listing_refresh_at key with
+    | Some at -> now -. at >= listing_refresh_cooldown_s
+    | None -> true
+  in
+  if due then begin
+    Hashtbl.replace t.listing_refresh_at key now;
+    refresh_listings t ~providers:[ provider ] ()
+  end
+
+(* [find_model_cached] resolves against the catalog and the retained listings
+   without any network; [find_model] additionally refreshes the provider's
+   listing once on a miss and retries — so a configured server-listed model
+   survives a process restart, while a path whose slot already answers never
+   reaches the network. *)
+let find_model_cached t selector =
+  match Catalog.find (catalog t) selector with
+  | Ok model -> Ok model
+  | Error (Catalog.Error.Unknown_model _ as error) -> (
+      match listed_model t selector with
+      | Some model -> Ok model
+      | None -> Error (Catalog.Error.message error))
+  | Error error -> Error (Catalog.Error.message error)
+
+let listed_fallback t selector error =
+  let provider = Mentat_provider.Selector.provider selector in
+  if not (listing_capable t provider) then Error (Catalog.Error.message error)
+  else
+    match listed_model t selector with
+    | Some model -> Ok model
+    | None -> (
+        refresh_listing_once t provider;
+        match listed_model t selector with
+        | Some model -> Ok model
+        | None -> Error (Catalog.Error.message error))
+
+let find_model t selector =
+  match Catalog.find (catalog t) selector with
+  | Ok model -> Ok model
+  | Error (Catalog.Error.Unknown_model _ as error) ->
+      listed_fallback t selector error
+  | Error error -> Error (Catalog.Error.message error)
+
+(* The string-entry twin of [find_model], for CLI input. *)
+let resolve_model t input =
+  match Catalog.resolve (catalog t) input with
+  | Ok model -> Ok model
+  | Error (Catalog.Error.Unknown_model _ as error) -> (
+      match Mentat_provider.Selector.of_string input with
+      | Error _ -> Error (Catalog.Error.message error)
+      | Ok selector -> listed_fallback t selector error)
+  | Error error -> Error (Catalog.Error.message error)
+
 let accounts discoveries =
   List.filter_map
     (function
@@ -407,12 +544,11 @@ let select_preferred ~catalog ~requirements model =
        ~provider_preferred:(fun _ -> false)
        ~preferred:model ~requirements ())
 
-let resolve_preferred_catalog_model ~catalog ~selector ~reasoning_effort =
+let resolve_preferred_catalog_model ~catalog ~find ~selector ~reasoning_effort
+    =
   let ( let* ) = Result.bind in
   let requirements = selection_requirements ?reasoning_effort () in
-  let* model =
-    Result.map_error Catalog.Error.message (Catalog.find catalog selector)
-  in
+  let* model = find selector in
   select_preferred ~catalog ~requirements model
 
 (* Auto-default (no model configured) must not pick an auth-free provider merely
@@ -422,7 +558,7 @@ let resolve_preferred_catalog_model ~catalog ~selector ~reasoning_effort =
    through to the flagship provider (openai), whose credential gate then reports
    honestly instead of hanging. A local provider is chosen explicitly via `config
    set model` — the [Some] branch, which keeps the auth-free shortcut. *)
-let resolve_default_catalog_model ~catalog ~load_discoveries ~config =
+let resolve_default_catalog_model ~catalog ~find ~load_discoveries ~config =
   let ( let* ) = Result.bind in
   let requirements =
     selection_requirements
@@ -431,9 +567,7 @@ let resolve_default_catalog_model ~catalog ~load_discoveries ~config =
   in
   match Cfg.Resolved.find Cfg.Field.model config with
   | Some selector ->
-      let* model =
-        Result.map_error Catalog.Error.message (Catalog.find catalog selector)
-      in
+      let* model = find selector in
       select_preferred ~catalog ~requirements model
   | None ->
       let* discoveries = load_discoveries () in
@@ -448,12 +582,14 @@ let resolve_default_catalog_model ~catalog ~load_discoveries ~config =
 
 let default_model t =
   Result.map Provider_model.llm
-    (resolve_default_catalog_model ~catalog:(catalog t) ~config:t.config
+    (resolve_default_catalog_model ~catalog:(catalog t) ~find:(find_model t)
+       ~config:t.config
        ~load_discoveries:(fun () ->
          Result.map_error Runtime.Store_error.message (discover_accounts t)))
 
 let default_catalog_model t =
-  resolve_default_catalog_model ~catalog:(catalog t) ~config:t.config
+  resolve_default_catalog_model ~catalog:(catalog t) ~find:(find_model t)
+    ~config:t.config
     ~load_discoveries:(fun () ->
       Result.map_error Runtime.Store_error.message (discover_accounts t))
 
@@ -463,21 +599,22 @@ let default_catalog_model t =
    configured value, an unresolvable selector, an unavailable model — falls back
    to the main model. The small role therefore never blocks a run that the main
    model itself can start. *)
-let resolve_small_catalog_model ~catalog ~load_discoveries ~config =
+let resolve_small_catalog_model ~catalog ~find ~load_discoveries ~config =
   let ( let* ) = Result.bind in
   let* main =
-    resolve_default_catalog_model ~catalog ~load_discoveries ~config
+    resolve_default_catalog_model ~catalog ~find ~load_discoveries ~config
   in
   match Cfg.Resolved.find Cfg.Field.small_model config with
   | None -> Ok (Selection.small ~main ())
   | Some selector -> (
-      match Catalog.find catalog selector with
+      match find selector with
       | Error _ -> Ok (Selection.small ~main ())
       | Ok preferred -> Ok (Selection.small ~main ~preferred ()))
 
 let small_model t =
   Result.map Provider_model.llm
-    (resolve_small_catalog_model ~catalog:(catalog t) ~config:t.config
+    (resolve_small_catalog_model ~catalog:(catalog t) ~find:(find_model t)
+       ~config:t.config
        ~load_discoveries:(fun () ->
          Result.map_error Runtime.Store_error.message (discover_accounts t)))
 
@@ -633,7 +770,11 @@ let probe ~stdenv ~sw ~cwd : Probe.t =
         | Error message -> Error message
         | Ok config ->
             Result.map Provider_model.llm
-              (resolve_default_catalog_model ~catalog ~config
+              (resolve_default_catalog_model ~catalog
+                 ~find:(fun selector ->
+                   Result.map_error Catalog.Error.message
+                     (Catalog.find catalog selector))
+                 ~config
                  ~load_discoveries:(fun () -> accounts))
       in
       {
@@ -662,24 +803,6 @@ let runtime_error_to_protocol (e : Runtime.Error.t) : Protocol_error.t =
    offline [cli_session] twin share. *)
 
 (* The exe-filled driver cones. *)
-
-(* Base-URL and issuer overrides are per-provider, read from config and env. *)
-let base_url_for t provider =
-  Cfg.Resolved.find (Cfg.Field.provider_base_url provider) t.config
-
-let auth_base_url_for t provider =
-  let var =
-    "MENTAT_"
-    ^ String.uppercase_ascii
-        (String.map
-           (fun c ->
-             if (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') then c else '_')
-           (Mentat_llm.Provider.id provider))
-    ^ "_AUTH_BASE_URL"
-  in
-  match getenv t var with
-  | Some v when String.length v > 0 -> Some v
-  | _ -> None
 
 let make_provider_call t =
   Provider_adapter.make ~sw:t.switch ~env:t.shared.stdenv
@@ -750,6 +873,7 @@ let accounts_cone t : Client.Driver.Accounts.t =
         match
           Runtime.Login.save_api_key t.shared.runtime ~sw:t.switch
             ~env:t.shared.stdenv ~provider ?base_url:(base_url_for t provider)
+            ?auth_base_url:(auth_base_url_for t provider)
             ~key ()
         with
         | Error error -> Error (runtime_error_to_protocol error)
@@ -771,14 +895,16 @@ let accounts_cone t : Client.Driver.Accounts.t =
             Error (runtime_error_to_protocol (Runtime.Error.Store error))
         | Ok discoveries -> Ok discoveries);
     model_readiness =
-      (fun () ->
+      (fun ?(refresh = false) () ->
+        if refresh then
+          refresh_listings t ~providers:(listing_capable_providers t) ();
         match discover_accounts t with
         | Error error ->
             Error (runtime_error_to_protocol (Runtime.Error.Store error))
         | Ok discoveries ->
             Ok
-              (Mentat_provider.Model_readiness.of_catalog (catalog t)
-                 ~discoveries));
+              (Mentat_provider.Model_readiness.of_catalog
+                 ~listings:(provider_listings t) (catalog t) ~discoveries));
   }
 
 let overlay_key session = Mentat_session.Id.to_string session
@@ -818,8 +944,8 @@ let settings_cone t : Client.Driver.Settings.t =
         | Error error -> Error error
         | Ok () -> (
             match
-              resolve_preferred_catalog_model ~catalog:(catalog t) ~selector
-                ~reasoning_effort
+              resolve_preferred_catalog_model ~catalog:(catalog t)
+                ~find:(find_model t) ~selector ~reasoning_effort
             with
             | Error message -> unavailable message
             | Ok _ ->
@@ -849,8 +975,8 @@ let settings_cone t : Client.Driver.Settings.t =
     set_default_model =
       (fun ?reasoning_effort selector ->
         match
-          resolve_preferred_catalog_model ~catalog:(catalog t) ~selector
-            ~reasoning_effort
+          resolve_preferred_catalog_model ~catalog:(catalog t)
+            ~find:(find_model t) ~selector ~reasoning_effort
         with
         | Error message -> unavailable message
         | Ok _ -> (
@@ -1476,8 +1602,8 @@ let config_callback t ~product_rules :
     | Some model -> (
         let selector = Mentat_provider.Selector.of_model model in
         match
-          resolve_preferred_catalog_model ~catalog:provider_catalog ~selector
-            ~reasoning_effort:None
+          resolve_preferred_catalog_model ~catalog:provider_catalog
+            ~find:(find_model t) ~selector ~reasoning_effort:None
         with
         | Ok _ as ok -> Some ok
         | Error _ -> None)
@@ -1487,8 +1613,8 @@ let config_callback t ~product_rules :
       Hashtbl.find_opt t.model_overlay (Mentat_session.Id.to_string session)
     with
     | Some { selector; reasoning_effort } ->
-        ( resolve_preferred_catalog_model ~catalog:provider_catalog ~selector
-            ~reasoning_effort,
+        ( resolve_preferred_catalog_model ~catalog:provider_catalog
+            ~find:(find_model t) ~selector ~reasoning_effort,
           reasoning_effort )
     | None -> (
         match seeded_model_result with
@@ -1501,7 +1627,8 @@ let config_callback t ~product_rules :
                at this turn boundary. *)
             let staged = staged_default_config t in
             ( resolve_default_catalog_model ~catalog:provider_catalog
-                ~config:staged ~load_discoveries:(fun () ->
+                ~find:(find_model t) ~config:staged
+                ~load_discoveries:(fun () ->
                   Result.map_error Runtime.Store_error.message
                     (discover_accounts t)),
               Cfg.Resolved.find Cfg.Field.reasoning staged ))
@@ -1936,7 +2063,7 @@ let build_execution_layer t : (execution_layer, Exit_status.t) result =
   let editor_family_for model =
     let catalog_model =
       Result.to_option
-        (Catalog.find (catalog t) (Mentat_provider.Selector.of_model model))
+        (find_model_cached t (Mentat_provider.Selector.of_model model))
     in
     editor_family t catalog_model |> Editor_family.family
   in
@@ -2126,9 +2253,7 @@ let build_execution_layer t : (execution_layer, Exit_status.t) result =
     in
     let model_label, model_cutoff =
       let id = Mentat_llm.Model.id model in
-      match
-        Catalog.find (catalog t) (Mentat_provider.Selector.of_model model)
-      with
+      match find_model_cached t (Mentat_provider.Selector.of_model model) with
       | Ok catalog_model ->
           let label =
             match Provider_model.display_name catalog_model with

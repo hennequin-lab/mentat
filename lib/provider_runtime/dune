@@ -26,6 +26,7 @@
   mentat_llm_openai
   mentat_llm_google
   mentat_llm_ollama
+  mentat_llm_opencode
   mentat_llm_local
   ;; effect content — the reason this is firewall B
   eio

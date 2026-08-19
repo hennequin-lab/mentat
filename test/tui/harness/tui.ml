@@ -3069,7 +3069,7 @@ let client (fixture : fixture) =
           | None -> unavailable "unsupported effect auth_logout"
           | Some logout -> hold_logout fixture (logout provider));
       account_readiness = (fun () -> query_readiness fixture);
-      model_readiness = (fun () -> query_model_readiness fixture);
+      model_readiness = (fun ?refresh:_ () -> query_model_readiness fixture);
     }
   in
   let settings : Driver.Settings.t =

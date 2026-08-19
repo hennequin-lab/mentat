@@ -117,6 +117,7 @@ module Route = struct
     display_name : string option;
     auth_required : bool;
     discovery : Account.Discovery.t;
+    listed : string list option;
     models : Entry.t list;
   }
 
@@ -124,6 +125,7 @@ module Route = struct
   let display_name t = t.display_name
   let auth_required t = t.auth_required
   let discovery t = t.discovery
+  let listed t = t.listed
   let models t = t.models
 
   let equal a b =
@@ -131,6 +133,7 @@ module Route = struct
     && Option.equal String.equal a.display_name b.display_name
     && Bool.equal a.auth_required b.auth_required
     && Account.Discovery.equal a.discovery b.discovery
+    && Option.equal (List.equal String.equal) a.listed b.listed
     && List.equal Entry.equal a.models b.models
 
   let pp ppf t =
@@ -160,14 +163,20 @@ let eligibility model =
   if Model.selectable model then Eligibility.Eligible
   else Eligibility.Ineligible (Model.status model)
 
-let availability discovery model =
-  match discovery with
-  | Account.Discovery.Resolution_failed _ -> Availability.Unknown
-  | Account.Discovery.Known account -> (
-      match Account.model_available account (Model.id model) with
-      | `Available -> Availability.Available
-      | `Unavailable -> Availability.Unavailable
-      | `Unknown -> Availability.Unknown)
+let availability ~listed discovery model =
+  match listed with
+  | Some ids ->
+      if List.exists (String.equal (Model.id model)) ids then
+        Availability.Available
+      else Availability.Unavailable
+  | None -> (
+      match discovery with
+      | Account.Discovery.Resolution_failed _ -> Availability.Unknown
+      | Account.Discovery.Known account -> (
+          match Account.model_available account (Model.id model) with
+          | `Available -> Availability.Available
+          | `Unavailable -> Availability.Unavailable
+          | `Unknown -> Availability.Unknown))
 
 let actionability ~auth_required discovery availability =
   match discovery with
@@ -198,6 +207,25 @@ let discovery_for provider discoveries =
       provider_equal provider (Account.Discovery.provider discovery))
     discoveries
 
+let check_listings declarations listings =
+  let declared provider =
+    List.exists
+      (fun declaration -> provider_equal provider (Declaration.id declaration))
+      declarations
+  in
+  let rec check_unique seen = function
+    | [] -> ()
+    | (provider, _) :: rest ->
+        if not (declared provider) then
+          invalid "of_catalog"
+            ("listing has unknown provider " ^ Mentat_llm.Provider.id provider);
+        if List.exists (provider_equal provider) seen then
+          invalid "of_catalog"
+            ("duplicate listing for provider " ^ Mentat_llm.Provider.id provider);
+        check_unique (provider :: seen) rest
+  in
+  check_unique [] listings
+
 let check_discoveries declarations discoveries =
   let declared provider =
     List.exists
@@ -226,6 +254,10 @@ let check_discoveries declarations discoveries =
           ("missing discovery for provider " ^ Mentat_llm.Provider.id provider))
     declarations
 
+let undeclared declaration =
+  let declared_ids = List.map Model.id (Declaration.models declaration) in
+  fun id -> not (List.exists (String.equal id) declared_ids)
+
 let dynamic_models declaration discovery =
   match discovery with
   | Account.Discovery.Resolution_failed _ -> []
@@ -233,23 +265,30 @@ let dynamic_models declaration discovery =
       match Account.models account with
       | None -> []
       | Some checked_ids ->
-          let declared_ids =
-            List.map Model.id (Declaration.models declaration)
-          in
           checked_ids
-          |> List.filter (fun id ->
-              not (List.exists (String.equal id) declared_ids))
+          |> List.filter (undeclared declaration)
           |> List.filter_map (Declaration.resolve_dynamic declaration))
 
-let route_of_declaration declaration discovery =
+let listed_models declaration listing =
+  Listing.models listing
+  |> List.filter (fun listed -> undeclared declaration (Listing.Model.id listed))
+  |> List.filter_map (Declaration.resolve_listed declaration)
+
+let route_of_declaration declaration discovery listing =
   let provider = Declaration.id declaration in
   if not (provider_equal provider (Account.Discovery.provider discovery)) then
     invalid "of_catalog" "discovery provider contradicts declaration";
   let auth_required = Auth.required (Declaration.auth declaration) in
+  let listed = Option.map Listing.ids listing in
+  let dynamic =
+    match listing with
+    | Some listing -> listed_models declaration listing
+    | None -> dynamic_models declaration discovery
+  in
   let models =
-    Declaration.models declaration @ dynamic_models declaration discovery
+    Declaration.models declaration @ dynamic
     |> List.map (fun model ->
-        let availability = availability discovery model in
+        let availability = availability ~listed discovery model in
         make_entry ~auth_required ~discovery model availability)
   in
   {
@@ -257,18 +296,25 @@ let route_of_declaration declaration discovery =
     display_name = Declaration.display_name declaration;
     auth_required;
     discovery;
+    listed;
     models;
   }
 
-let of_catalog catalog ~discoveries =
+let of_catalog ?(listings = []) catalog ~discoveries =
   let declarations = Catalog.declarations catalog in
   check_discoveries declarations discoveries;
+  check_listings declarations listings;
+  let listing_for provider =
+    Option.map snd
+      (List.find_opt (fun (p, _) -> provider_equal provider p) listings)
+  in
   let routes =
     List.map
       (fun declaration ->
         let provider = Declaration.id declaration in
         match discovery_for provider discoveries with
-        | Some discovery -> route_of_declaration declaration discovery
+        | Some discovery ->
+            route_of_declaration declaration discovery (listing_for provider)
         | None -> assert false)
       declarations
   in
@@ -292,7 +338,7 @@ let check_route_models provider models =
   in
   loop [] models
 
-let route_of_wire provider display_name auth_required discovery models =
+let route_of_wire provider display_name auth_required discovery listed models =
   check_optional_display_name display_name;
   if not (provider_equal provider (Account.Discovery.provider discovery)) then
     invalid "jsont" "discovery provider contradicts readiness route";
@@ -300,22 +346,24 @@ let route_of_wire provider display_name auth_required discovery models =
   let models =
     List.map
       (fun model ->
-        let availability = availability discovery model in
+        let availability = availability ~listed discovery model in
         make_entry ~auth_required ~discovery model availability)
       models
   in
-  { Route.provider; display_name; auth_required; discovery; models }
+  { Route.provider; display_name; auth_required; discovery; listed; models }
 
 let route_jsont =
-  let dec provider display_name auth_required discovery models =
+  let dec provider display_name auth_required discovery listed models =
     decode_invalid_arg (fun () ->
-        route_of_wire provider display_name auth_required discovery models)
+        route_of_wire provider display_name auth_required discovery listed
+          models)
   in
   Jsont.Object.map ~kind:"model readiness provider" dec
   |> Jsont.Object.mem "provider" Mentat_llm.Provider.jsont ~enc:Route.provider
   |> Jsont.Object.opt_mem "display_name" Jsont.string ~enc:Route.display_name
   |> Jsont.Object.mem "auth_required" Jsont.bool ~enc:Route.auth_required
   |> Jsont.Object.mem "discovery" Account.Discovery.jsont ~enc:Route.discovery
+  |> Jsont.Object.opt_mem "listed" (Jsont.list Jsont.string) ~enc:Route.listed
   |> Jsont.Object.mem "models" (Jsont.list Model.jsont) ~enc:(fun route ->
       List.map Entry.model (Route.models route))
   |> Jsont.Object.error_unknown |> Jsont.Object.finish

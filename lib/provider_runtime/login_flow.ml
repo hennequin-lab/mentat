@@ -92,7 +92,8 @@ let reroot protocol = function
 
 (* Settling. *)
 
-let settle registration t ~sw ~env ?base_url ~provider ~name secret =
+let settle registration t ~sw ~env ?base_url ?auth_base_url ~provider ~name
+    secret =
   let store = Runtime.store t in
   Credential_store.with_credential_lock store ~env ~provider ~name (fun () ->
       let credential =
@@ -101,7 +102,8 @@ let settle registration t ~sw ~env ?base_url ~provider ~name secret =
           secret
       in
       let account =
-        Account_ops.check registration ~sw ~env ?base_url credential
+        Account_ops.check t registration ~sw ~env ?base_url ?auth_base_url
+          credential
       in
       let* () =
         Eio.Cancel.protect (fun () ->
@@ -113,7 +115,7 @@ let settle registration t ~sw ~env ?base_url ~provider ~name secret =
   |> Result.map_error (fun error -> Error.Store error)
 
 let save_api_key t ~sw ~env ~provider ?(name = Credential.Name.default)
-    ?base_url ~key () =
+    ?base_url ?auth_base_url ~key () =
   match Runtime.registration_for t provider with
   | None -> Error (Error.Unknown_provider provider)
   | Some registration ->
@@ -144,7 +146,8 @@ let save_api_key t ~sw ~env ~provider ?(name = Credential.Name.default)
                    "API key must be non-empty valid UTF-8 text")
         in
         let* () = validate_check_base_url registration ~provider base_url in
-        settle registration t ~sw ~env ?base_url ~provider ~name secret
+        settle registration t ~sw ~env ?base_url ?auth_base_url ~provider ~name
+          secret
       end
 
 (* [race ?cancel body] runs [body], preempted by [cancel]: the first to settle
@@ -161,9 +164,9 @@ let race ?cancel body =
 
 (* Browser flow. *)
 
-let browser registration t ~sw ~env ~provider ~name ?base_url ?cancel ~progress
-    ~client ~authorization_endpoint ~token_endpoint ~redirect_uri ~scope ~extra
-    ~pkce () =
+let browser registration t ~sw ~env ~provider ~name ?base_url ?auth_base_url
+    ?cancel ~progress ~client ~authorization_endpoint ~token_endpoint
+    ~redirect_uri ~scope ~extra ~pkce () =
   Mirage_crypto_rng_unix.use_default ();
   let random n = Mirage_crypto_rng.generate n in
   match
@@ -215,14 +218,15 @@ let browser registration t ~sw ~env ~provider ~name ?base_url ?cancel ~progress
       | `Failed error -> Error (flow_error ~provider error)
       | `Authorized secret ->
           let* saved =
-            settle registration t ~sw ~env ?base_url ~provider ~name secret
+            settle registration t ~sw ~env ?base_url ?auth_base_url ~provider
+              ~name secret
           in
           Ok (Saved saved))
 
 (* Device flows. *)
 
-let drive_device registration t ~sw ~env ~provider ~name ?base_url ?cancel
-    ~progress ~http started =
+let drive_device registration t ~sw ~env ~provider ~name ?base_url
+    ?auth_base_url ?cancel ~progress ~http started =
   let challenge = Flow.Device_code.challenge started in
   progress
     (Progress.Device_challenge
@@ -258,12 +262,13 @@ let drive_device registration t ~sw ~env ~provider ~name ?base_url ?cancel
       Error (login_error ~provider "device code expired — run the login again")
   | `Authorized secret ->
       let* saved =
-        settle registration t ~sw ~env ?base_url ~provider ~name secret
+        settle registration t ~sw ~env ?base_url ?auth_base_url ~provider ~name
+          secret
       in
       Ok (Saved saved)
 
-let run_device registration t ~env ~provider ~name ?base_url ?cancel ~progress
-    ~start () =
+let run_device registration t ~env ~provider ~name ?base_url ?auth_base_url
+    ?cancel ~progress ~start () =
   Eio.Switch.run @@ fun sw ->
   let* http =
     Flow.Http.tls_client ~stdenv:env |> Result.map_error (flow_error ~provider)
@@ -272,8 +277,8 @@ let run_device registration t ~env ~provider ~name ?base_url ?cancel ~progress
     start ~http ~sw ~now:(timestamp env)
     |> Result.map_error (flow_error ~provider)
   in
-  drive_device registration t ~sw ~env ~provider ~name ?base_url ?cancel
-    ~progress ~http started
+  drive_device registration t ~sw ~env ~provider ~name ?base_url
+    ?auth_base_url ?cancel ~progress ~http started
 
 (* Run. *)
 
@@ -324,12 +329,13 @@ let run t ~sw ~env ~provider ~method_id ?(name = Credential.Name.default)
                     pkce;
                   } ->
                   browser registration t ~sw ~env ~provider ~name ?base_url
-                    ?cancel ~progress ~client ~authorization_endpoint
-                    ~token_endpoint ~redirect_uri ~scope ~extra ~pkce ()
+                    ?auth_base_url ?cancel ~progress ~client
+                    ~authorization_endpoint ~token_endpoint ~redirect_uri
+                    ~scope ~extra ~pkce ()
               | Protocol.OAuth2_device_code
                   { client; device_endpoint; token_endpoint; scope; extra } ->
                   run_device registration t ~env ~provider ~name ?base_url
-                    ?cancel ~progress
+                    ?auth_base_url ?cancel ~progress
                     ~start:(fun ~http ~sw ~now ->
                       Flow.Device_code.start_oauth2 ~http ~sw ~now ~client
                         ~device_endpoint ~token_endpoint ~scope ~extra)
@@ -344,7 +350,7 @@ let run t ~sw ~env ~provider ~method_id ?(name = Credential.Name.default)
                     | None -> assert false
                   in
                   run_device registration t ~env ~provider ~name ?base_url
-                    ?cancel ~progress
+                    ?auth_base_url ?cancel ~progress
                     ~start:(fun ~http ~sw ~now ->
                       device_flow ~http ~sw ~now ~auth_base_url)
                     ()

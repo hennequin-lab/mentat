@@ -49,7 +49,7 @@ let accounts : Driver.Accounts.t =
     save_api_key = (fun ~provider:_ ~key:_ -> unavailable "api key is unused");
     logout = (fun ?revoke:_ _ -> unavailable "logout is unused");
     account_readiness = (fun () -> Ok []);
-    model_readiness = (fun () -> unavailable "model readiness is unused");
+    model_readiness = (fun ?refresh:_ () -> unavailable "model readiness is unused");
   }
 
 let settings : Driver.Settings.t =

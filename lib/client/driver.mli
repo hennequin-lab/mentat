@@ -196,11 +196,14 @@ module Accounts : sig
             the declared providers in catalog order. Resolution failures remain
             provider-local values rather than erasing healthy routes. *)
     model_readiness :
+      ?refresh:bool ->
       unit ->
       (Mentat_provider.Model_readiness.t, Mentat_protocol.Error.t) result;
-        (** [model_readiness ()] is the exact provider-owned readiness snapshot
-            {!Mentat_client.model_readiness} returns. Provider and model order,
-            owner-defined facts, and resolution failures are preserved. *)
+        (** [model_readiness ?refresh ()] is the exact provider-owned readiness
+            snapshot {!Mentat_client.model_readiness} returns. Provider and
+            model order, owner-defined facts, and resolution failures are
+            preserved. [refresh] (default [false]) re-observes server-owned
+            model listings before projecting. *)
   }
 end
 

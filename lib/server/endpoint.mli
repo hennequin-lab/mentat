@@ -52,7 +52,8 @@ val export : (Codecs.session_only, string) t
 val save_api_key : (Codecs.save_api_key, Mentat_provider.Account.t) t
 val logout : (Codecs.logout, Mentat_provider.Account.Logout.t) t
 val account_readiness : (unit, Mentat_provider.Account.Discovery.t list) t
-val model_readiness : (unit, Mentat_provider.Model_readiness.t) t
+val model_readiness :
+  (Codecs.model_readiness, Mentat_provider.Model_readiness.t) t
 
 (** {1:settings Settings cone} *)
 

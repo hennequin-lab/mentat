@@ -195,12 +195,16 @@ val account_readiness :
     routes. *)
 
 val model_readiness :
-  t -> (Mentat_provider.Model_readiness.t, Mentat_protocol.Error.t) result
+  ?refresh:bool ->
+  t ->
+  (Mentat_provider.Model_readiness.t, Mentat_protocol.Error.t) result
 (** [model_readiness t] is the effective, credential-free model catalog in the
     provider owner's {!Mentat_provider.Model_readiness.t}. Provider routes and
     models retain catalog declaration order; static selection eligibility,
     checked availability, authentication requirements, and exact provider-local
-    discovery failures cross without mirrors. *)
+    discovery failures cross without mirrors. [refresh] (default [false])
+    re-observes server-owned model listings before projecting, bounded by the
+    per-provider observation deadline. *)
 
 val configuration :
   t -> (Mentat_config.Resolved.View.t, Mentat_protocol.Error.t) result

@@ -165,7 +165,7 @@ let list json provider all cwd =
       match Composition.client t with
       | Error status -> status
       | Ok client -> (
-          match Client.model_readiness client with
+          match Client.model_readiness ~refresh:true client with
           | Error error -> Exit_status.of_protocol_error error
           | Ok readiness ->
               let catalog = Composition.catalog t in
@@ -250,10 +250,10 @@ let list_cmd =
 
 let show json selector cwd =
   Composition.with_base ~cwd ~overrides:[] (fun t ->
-      match Catalog.resolve (Composition.catalog t) selector with
+      match Composition.resolve_model t selector with
       (* An unknown provider/model is invalid input — a usage error
          (exit 2), uniform with [models select]. *)
-      | Error e -> Exit_status.usage (Catalog.Error.message e)
+      | Error message -> Exit_status.usage message
       | Ok m ->
           if json then
             Output.stdout_printf "%s\n"
@@ -393,8 +393,8 @@ let current_cmd =
    [(Selector.t, optional)] fields, so one write path serves both roles. *)
 let select small selector cwd =
   Composition.with_base ~cwd ~overrides:[] (fun t ->
-      match Catalog.resolve (Composition.catalog t) selector with
-      | Error e -> Exit_status.usage (Catalog.Error.message e)
+      match Composition.resolve_model t selector with
+      | Error message -> Exit_status.usage message
       | Ok _ -> (
           let field =
             if small then Mentat_config.Field.small_model

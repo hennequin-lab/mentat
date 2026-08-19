@@ -276,6 +276,7 @@ let login provider_str method_opt api_key_stdin name_opt cwd =
                     ~sw:(Composition.sw t) ~env:(Composition.stdenv t) ~provider
                     ?name
                     ?base_url:(Composition.base_url_for t provider)
+                    ?auth_base_url:(Composition.auth_base_url_for t provider)
                     ~key ()
                 in
                 match saved with
@@ -359,6 +360,7 @@ let save provider_str api_key_stdin name_opt cwd =
               ~sw:(Composition.sw t) ~env:(Composition.stdenv t) ~provider
               ?name:(name_of name_opt)
               ?base_url:(Composition.base_url_for t provider)
+              ?auth_base_url:(Composition.auth_base_url_for t provider)
               ~key ()
           in
           match saved with

@@ -86,6 +86,15 @@ let session_only : session_only Jsont.t =
 let empty : unit Jsont.t =
   Jsont.Object.map ~kind:"empty request" () |> Jsont.Object.finish
 
+type model_readiness = { refresh : bool }
+
+let model_readiness : model_readiness Jsont.t =
+  Jsont.Object.map ~kind:"model_readiness request" (fun refresh -> { refresh })
+  |> Jsont.Object.mem "refresh" Jsont.bool ~dec_absent:false
+       ~enc_omit:(fun refresh -> not refresh)
+       ~enc:(fun r -> r.refresh)
+  |> Jsont.Object.finish
+
 type answer_unattended = {
   au_session : Mentat_session.Id.t;
   au_decision : Mentat_session.Decision.Id.t;

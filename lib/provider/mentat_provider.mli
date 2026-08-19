@@ -62,6 +62,10 @@ module Selector = Selector
 module Model = Model
 (** Catalog metadata annotating a [mentat.llm] model identity. *)
 
+module Listing = Listing
+(** Server-owned model listings — the pure value of one driver observation of
+    the models a server currently serves, with the server's own metadata. *)
+
 module Media_support = Media_support
 (** Per-API, per-channel image-media encodability — the channel/API half of the
     vision gate. *)

@@ -5,6 +5,7 @@
 
 module Selector = Selector
 module Model = Model
+module Listing = Listing
 module Media_support = Media_support
 module Credential = Credential
 module Account = Account

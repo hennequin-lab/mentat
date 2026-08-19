@@ -856,7 +856,7 @@ let default_accounts : Driver.Accounts.t =
     save_api_key = (fun ~provider:_ ~key:_ -> fail "save_api_key: not scripted");
     logout = (fun ?revoke:_ _ -> fail "logout: not scripted");
     account_readiness = (fun () -> fail "account_readiness: not scripted");
-    model_readiness = (fun () -> fail "model_readiness: not scripted");
+    model_readiness = (fun ?refresh:_ () -> fail "model_readiness: not scripted");
   }
 
 let default_settings : Driver.Settings.t =

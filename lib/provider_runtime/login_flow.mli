@@ -46,13 +46,16 @@ val save_api_key :
   provider:Mentat_llm.Provider.t ->
   ?name:Mentat_provider.Credential.Name.t ->
   ?base_url:string ->
+  ?auth_base_url:string ->
   key:string ->
   unit ->
   (Mentat_provider.Account.t, Error.t) result
 (** [save_api_key t … ~key ()] validates the provider, API-key capability, key
     text, and applicable API base URL before mutation. It observes the candidate
     under the provider/name lock, then cancellation-protects the sole durable
-    edit. Empty or invalid UTF-8 key text is a structured [Error]. *)
+    edit. [auth_base_url] reroots a check that observes the provider's console
+    rather than its gateway root. Empty or invalid UTF-8 key text is a
+    structured [Error]. *)
 
 val logout :
   Runtime.t ->

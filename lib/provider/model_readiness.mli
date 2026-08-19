@@ -29,11 +29,15 @@ module Availability : sig
       the readiness projection. *)
 
   type t = private
-    | Available  (** The checked account listed the model id. *)
-    | Unavailable  (** The checked account did not list the model id. *)
+    | Available
+        (** The route's listing or checked account listed the model id. *)
+    | Unavailable
+        (** The route's listing or checked account did not list the model id.
+        *)
     | Unknown
-        (** No checked model list exists, including after credential resolution
-            failure. This is absence of evidence, not unavailability. *)
+        (** No listing or checked model list exists, including after credential
+            resolution failure. This is absence of evidence, not
+            unavailability. *)
 
   val equal : t -> t -> bool
   (** [equal a b] is [true] iff [a] and [b] are the same availability. *)
@@ -135,14 +139,21 @@ module Route : sig
   val discovery : t -> Account.Discovery.t
   (** [discovery t] is the exact credential-free discovery for [provider t]. *)
 
+  val listed : t -> string list option
+  (** [listed t] is the ids of the server listing this route was projected
+      with, in server order, or [None] when no listing was supplied. When
+      present it is the route's availability authority. *)
+
   val models : t -> Entry.t list
   (** [models t] is [t]'s effective model entries.
 
       Every declared model is retained, including statically hidden or
-      ineligible models. Checked ids not declared statically follow those models
-      only when the declaration's pure {!Declaration.resolve_dynamic} resolver
-      accepts them. A declined checked id is absent rather than synthesized by
-      this module. *)
+      ineligible models. When the route has a listing, listed models not
+      declared statically follow the declared models in server order, each
+      synthesized by the declaration's pure {!Declaration.resolve_listed}
+      resolver; otherwise checked ids from the account follow them through
+      {!Declaration.resolve_dynamic}. A declined id is absent rather than
+      synthesized by this module. *)
 
   val equal : t -> t -> bool
   (** [equal a b] is [true] iff [a] and [b] have the same declaration facts,
@@ -158,22 +169,32 @@ type t
 (** The type for one effective model-readiness snapshot. Routes are unique and
     retain catalog declaration order. *)
 
-val of_catalog : Catalog.t -> discoveries:Account.Discovery.t list -> t
-(** [of_catalog catalog ~discoveries] projects [catalog] and its account
-    discovery batch into effective readiness.
+val of_catalog :
+  ?listings:(Mentat_llm.Provider.t * Listing.t) list ->
+  Catalog.t ->
+  discoveries:Account.Discovery.t list ->
+  t
+(** [of_catalog ?listings catalog ~discoveries] projects [catalog], its account
+    discovery batch, and the last-observed server listings into effective
+    readiness.
 
     Output routes follow catalog declaration order regardless of discovery input
-    order. Declared models retain declaration order. For a known account with a
-    checked model list, undeclared ids are offered to that declaration's pure
-    dynamic resolver in {!Account.models} order and accepted models follow the
-    declared models. Static ids never reach the dynamic resolver.
+    order. Declared models retain declaration order. [listings] defaults to
+    [[]]; a route with a listing takes it as the availability authority for
+    declared models, and its listed-but-undeclared entries are offered to the
+    declaration's pure {!Declaration.resolve_listed} resolver in server order,
+    accepted models following the declared models. A route without a listing
+    takes the account path: for a known account with a checked model list,
+    undeclared ids are offered to the declaration's pure dynamic resolver in
+    {!Account.models} order. Declared ids never reach either resolver.
 
     Raises [Invalid_argument] if [discoveries] does not contain exactly one
     discovery for every catalog provider, contains an unknown or duplicate
-    provider, or otherwise contradicts its provider route. This denotes a
-    composition bug: [mentat.provider_runtime]'s full discovery operation
-    guarantees catalog coverage and cardinality. A dynamic resolver may also
-    raise under its documented provider-author invariant. *)
+    provider, or otherwise contradicts its provider route, or if [listings]
+    contains an unknown or duplicate provider. This denotes a composition bug:
+    [mentat.provider_runtime]'s full discovery operation guarantees catalog
+    coverage and cardinality. A dynamic resolver may also raise under its
+    documented provider-author invariant. *)
 
 val routes : t -> Route.t list
 (** [routes t] is [t]'s provider routes in catalog declaration order. *)
@@ -190,8 +211,9 @@ val jsont : t Jsont.t
     ["providers"] array.
 
     The encoding retains exact model metadata, display names, authentication
-    requirements, and discoveries. Availability, eligibility, and actionability
-    are derived from those owner facts when decoded, preventing redundant wire
-    fields from drifting. Dynamic resolver closures and credential material
-    cannot appear in the encoding. Decoding rejects unknown members, duplicate
-    providers or model ids, and provider inconsistencies. *)
+    requirements, discoveries, and each route's listing ids. Availability,
+    eligibility, and actionability are derived from those owner facts when
+    decoded, preventing redundant wire fields from drifting. Dynamic resolver
+    closures and credential material cannot appear in the encoding. Decoding
+    rejects unknown members, duplicate providers or model ids, and provider
+    inconsistencies. *)

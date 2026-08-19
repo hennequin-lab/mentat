@@ -237,16 +237,17 @@ let account_readiness : (unit, Mentat_provider.Account.Discovery.t list) t =
           .Mentat_client.Driver.Accounts.account_readiness ());
   }
 
-let model_readiness : (unit, Mentat_provider.Model_readiness.t) t =
+let model_readiness : (Codecs.model_readiness, Mentat_provider.Model_readiness.t) t
+    =
   {
     name = "accounts.model_readiness";
     idempotency = By_value;
-    request = Codecs.empty;
+    request = Codecs.model_readiness;
     response = Mentat_provider.Model_readiness.jsont;
     invoke =
-      (fun d () ->
+      (fun d { Codecs.refresh } ->
         d.Mentat_client.Driver.accounts
-          .Mentat_client.Driver.Accounts.model_readiness ());
+          .Mentat_client.Driver.Accounts.model_readiness ~refresh ());
   }
 
 (* Settings cone. *)

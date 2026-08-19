@@ -30,6 +30,7 @@ module Credential_error = Provider.Credential_error
 module Catalog = Provider.Catalog
 module Selection = Provider.Selection
 module Requirement = Selection.Requirement
+module Listing = Provider.Listing
 module Model_readiness = Provider.Model_readiness
 module Readiness_route = Model_readiness.Route
 module Readiness_entry = Model_readiness.Entry
@@ -1804,6 +1805,52 @@ let declaration_group =
                    ~dynamic:(fun _ -> Some (Model.make (llm "other") ()))
                    [])
                 "requested"));
+      test "resolve_listed prefers the listed rule, falling back to dynamic"
+        (fun () ->
+          let plain = Provider.make openai [ Model.make (llm "gpt-5") () ] in
+          equal (option llm_model_value) ~msg:"no rule is None" None
+            (Option.map Model.llm
+               (Provider.resolve_listed plain (Listing.Model.of_id "srv")));
+          let via_dynamic =
+            Provider.make openai
+              ~dynamic:(fun id -> Some (Model.make (llm id) ()))
+              []
+          in
+          equal (option llm_model_value)
+            ~msg:"the plain dynamic rule serves listed entries"
+            (Some (llm "srv"))
+            (Option.map Model.llm
+               (Provider.resolve_listed via_dynamic (Listing.Model.of_id "srv")));
+          let via_listed =
+            Provider.make openai
+              ~dynamic:(fun id -> Some (Model.make (llm id) ()))
+              ~dynamic_listed:(fun listed ->
+                match Listing.Model.api listed with
+                | Some api ->
+                    Some
+                      (Model.make
+                         (Llm_model.make ~provider:openai ~api
+                            ~id:(Listing.Model.id listed))
+                         ())
+                | None -> None)
+              []
+          in
+          equal (option llm_model_value)
+            ~msg:"the listed rule reads the server-assigned protocol"
+            (Some (llm ~api:messages "m1"))
+            (Option.map Model.llm
+               (Provider.resolve_listed via_listed
+                  (Listing.Model.make ~id:"m1" ~api:messages ())));
+          equal (option llm_model_value)
+            ~msg:"a declared listed rule is authoritative, not layered" None
+            (Option.map Model.llm
+               (Provider.resolve_listed via_listed (Listing.Model.of_id "m2")));
+          expect_invalid_arg "inconsistent listed synthesis raises" (fun () ->
+              Provider.resolve_listed
+                (Provider.make openai
+                   ~dynamic_listed:(fun _ -> Some (Model.make (llm "other") ()))
+                   [])
+                (Listing.Model.of_id "requested")));
     ]
 
 (* resolve_credential — the precedence ladder. *)
@@ -2484,6 +2531,137 @@ let model_readiness_group =
             "model readiness rejects an unknown member" Model_readiness.jsont
             (json_object
                [ ("providers", json_array []); ("extra", Json.bool true) ]));
+      test "listings preserve server order and reject duplicate ids" (fun () ->
+          let listing = Listing.of_ids [ "b"; "a" ] in
+          equal (list string) ~msg:"server order" [ "b"; "a" ]
+            (Listing.ids listing);
+          is_true ~msg:"member" (Listing.mem listing "a");
+          is_false ~msg:"non-member" (Listing.mem listing "c");
+          equal (option string) ~msg:"find" (Some "b")
+            (Option.map Listing.Model.id (Listing.find listing "b"));
+          expect_invalid_arg "duplicate ids raise" (fun () ->
+              Listing.of_ids [ "a"; "a" ]);
+          expect_invalid_arg "an empty id raises" (fun () ->
+              Listing.Model.of_id ""));
+      test
+        "a listing is the availability authority and appends listed rows in \
+         server order" (fun () ->
+          let declared_listed = Model.make (llm "gpt-5") () in
+          let declared_dropped = Model.make (llm "gpt-4") () in
+          let hook_calls = ref [] in
+          let declaration =
+            Provider.make openai
+              ~auth:(Auth.make ~env:[ Env.api_key "OPENAI_API_KEY" ] ())
+              ~dynamic_listed:(fun listed ->
+                hook_calls := Listing.Model.id listed :: !hook_calls;
+                match Listing.Model.api listed with
+                | Some api ->
+                    Some
+                      (Model.make
+                         (Llm_model.make ~provider:openai ~api
+                            ~id:(Listing.Model.id listed))
+                         ?display_name:(Listing.Model.display_name listed)
+                         ())
+                | None ->
+                    Some
+                      (Model.make
+                         (llm (Listing.Model.id listed))
+                         ~status:(Model.Unavailable "unrecognized protocol")
+                         ()))
+              [ declared_listed; declared_dropped ]
+          in
+          let catalog = Catalog.make [ declaration ] in
+          let credential =
+            Credential.make ~provider:openai ~source:Source.process
+              (Secret.api_key "openai-secret")
+          in
+          (* The checked account lists nothing: the listing overrules it. *)
+          let discovery =
+            Account.Discovery.Known (Account.checked credential ~models:[] ())
+          in
+          let listing =
+            Listing.make
+              [
+                Listing.Model.make ~id:"srv-2" ~api:responses
+                  ~display_name:"Srv 2" ();
+                Listing.Model.of_id "srv-1";
+                Listing.Model.make ~id:"gpt-5" ~api:responses ();
+              ]
+          in
+          let readiness =
+            Model_readiness.of_catalog
+              ~listings:[ (openai, listing) ]
+              catalog ~discoveries:[ discovery ]
+          in
+          let route = List.hd (Model_readiness.routes readiness) in
+          equal (option (list string)) ~msg:"route retains listing ids"
+            (Some [ "srv-2"; "srv-1"; "gpt-5" ])
+            (Readiness_route.listed route);
+          let entries = Readiness_route.models route in
+          equal (list string)
+            ~msg:"declared first, then listed rows in server order"
+            [ "gpt-5"; "gpt-4"; "srv-2"; "srv-1" ]
+            (List.map
+               (fun entry -> Model.id (Readiness_entry.model entry))
+               entries);
+          equal (list string) ~msg:"only undeclared listed models reach the rule"
+            [ "srv-2"; "srv-1" ]
+            (List.rev !hook_calls);
+          equal (option string) ~msg:"listed metadata comes from the rule"
+            (Some "Srv 2")
+            (Model.display_name (Readiness_entry.model (List.nth entries 2)));
+          (match Readiness_entry.availability (List.hd entries) with
+          | Availability.Available -> ()
+          | Availability.Unavailable | Availability.Unknown ->
+              fail "a listed declared model is available");
+          (match Readiness_entry.availability (List.nth entries 1) with
+          | Availability.Unavailable -> ()
+          | Availability.Available | Availability.Unknown ->
+              fail "a dropped declared model is unavailable");
+          (match Readiness_entry.actionability (List.nth entries 1) with
+          | Actionability.Model_unavailable -> ()
+          | Actionability.Actionable | Actionability.Provider_blocked _ ->
+              fail "a dropped declared model blocks only itself");
+          (match Readiness_entry.eligibility (List.nth entries 1) with
+          | Eligibility.Eligible -> ()
+          | Eligibility.Ineligible _ ->
+              fail "availability never mutates eligibility");
+          is_false ~msg:"an unroutable synthesized row is not visible"
+            (Model.visible (Readiness_entry.model (List.nth entries 3)));
+          expect_invalid_arg "an unknown listing provider raises" (fun () ->
+              Model_readiness.of_catalog
+                ~listings:[ (anthropic, listing) ]
+                catalog ~discoveries:[ discovery ]);
+          expect_invalid_arg "a duplicate listing provider raises" (fun () ->
+              Model_readiness.of_catalog
+                ~listings:[ (openai, listing); (openai, listing) ]
+                catalog ~discoveries:[ discovery ]));
+      test "readiness with a listing round-trips its availability facts"
+        (fun () ->
+          let declaration =
+            Provider.make openai ~display_name:"OpenAI"
+              ~auth:(Auth.make ~env:[ Env.api_key "OPENAI_API_KEY" ] ())
+              ~dynamic_listed:(fun listed ->
+                Some (Model.make (llm (Listing.Model.id listed)) ()))
+              [ Model.make (llm "gpt-5") () ]
+          in
+          let catalog = Catalog.make [ declaration ] in
+          let credential =
+            Credential.make ~provider:openai ~source:Source.process
+              (Secret.api_key "LEAKMARKER-listing-secret")
+          in
+          let readiness =
+            Model_readiness.of_catalog
+              ~listings:[ (openai, Listing.of_ids [ "gpt-5"; "srv-1" ]) ]
+              catalog
+              ~discoveries:
+                [ Account.Discovery.Known (Account.present credential) ]
+          in
+          assert_round_trip ~equal:Model_readiness.equal
+            "listing readiness round-trip" Model_readiness.jsont readiness;
+          let json = encode Model_readiness.jsont readiness in
+          is_false ~msg:"readiness JSON cannot contain credential material"
+            (json_contains_string "LEAKMARKER" json));
       test "projection rejects incomplete or duplicate discovery coverage"
         (fun () ->
           let catalog =

@@ -7,7 +7,7 @@ type observation = {
   problems : Mentat_provider.Account.Problem.t list;
   profile : Mentat_provider.Account.Profile.t option;
   org : Mentat_provider.Account.Org.t option;
-  models : string list option;
+  listing : Mentat_provider.Listing.t option;
 }
 
 type device_flow =
@@ -46,7 +46,8 @@ type driver = {
     (sw:Eio.Switch.t ->
     env:Eio_unix.Stdenv.base ->
     ?base_url:string ->
-    Mentat_provider.Credential.t ->
+    ?auth_base_url:string ->
+    Mentat_provider.Credential.t option ->
     observation)
     option;
   refresh :

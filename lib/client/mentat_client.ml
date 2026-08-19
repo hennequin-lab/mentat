@@ -95,9 +95,9 @@ let account_readiness t =
   protect "account_readiness" (fun () ->
       (accounts_cone t).Driver.Accounts.account_readiness ())
 
-let model_readiness t =
+let model_readiness ?refresh t =
   protect "model_readiness" (fun () ->
-      (accounts_cone t).Driver.Accounts.model_readiness ())
+      (accounts_cone t).Driver.Accounts.model_readiness ?refresh ())
 
 let configuration t =
   protect "configuration" (fun () ->

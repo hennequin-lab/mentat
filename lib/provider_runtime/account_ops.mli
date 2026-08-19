@@ -23,17 +23,61 @@ val load :
     [Error]. [process] defaults to [[]]. Network-free. *)
 
 val check :
+  Runtime.t ->
   Driver.registration ->
   sw:Eio.Switch.t ->
   env:Eio_unix.Stdenv.base ->
   ?base_url:string ->
+  ?auth_base_url:string ->
   Mentat_provider.Credential.t ->
   Mentat_provider.Account.t
-(** [check registration ~sw ~env ?base_url credential] observes [credential]
-    once. It returns a checked account for a configured route and a passive
-    present account otherwise. Ordinary provider and transport outcomes inhabit
-    the account's problem facts; cancellation and implementation faults escape.
-    A checked timestamp is sampled when the observation completes. *)
+(** [check t registration ~sw ~env ?base_url ?auth_base_url credential]
+    observes [credential] once. It returns a checked account for a configured
+    route and a passive present account otherwise, and retains the
+    observation's server listing in [t] under the credential's fingerprint and
+    [base_url]. Ordinary provider and transport outcomes inhabit the account's
+    problem facts; cancellation and implementation faults escape. A checked
+    timestamp is sampled when the observation completes. *)
+
+val refresh_listings :
+  Runtime.t ->
+  sw:Eio.Switch.t ->
+  env:Eio_unix.Stdenv.base ->
+  ?providers:Mentat_llm.Provider.t list ->
+  ?base_url:(Mentat_llm.Provider.t -> string option) ->
+  ?auth_base_url:(Mentat_llm.Provider.t -> string option) ->
+  ?process:Mentat_provider.Credential.t list ->
+  environment:(string * string) list ->
+  unit ->
+  (unit, Store_error.t) result
+(** [refresh_listings t ~sw ~env ?providers ?base_url ?auth_base_url ?process
+     ~environment ()] runs every selected provider's driver check in parallel
+    fibers and retains the observed listings in [t]. Credentials resolve from
+    the supplied snapshots exactly as discovery does; a required-auth provider
+    with no resolved credential and a provider whose resolution fails are
+    skipped, not failed, and a provider without a check is skipped. [providers]
+    defaults to every catalog provider; [base_url] and [auth_base_url] default
+    to no overrides; [process] to [[]]. The store is read once; a shared store
+    failure is the outer error. *)
+
+val listings :
+  Runtime.t ->
+  ?providers:Mentat_llm.Provider.t list ->
+  ?process:Mentat_provider.Credential.t list ->
+  ?base_url:(Mentat_llm.Provider.t -> string option) ->
+  ?auth_base_url:(Mentat_llm.Provider.t -> string option) ->
+  environment:(string * string) list ->
+  unit ->
+  ( (Mentat_llm.Provider.t * Mentat_provider.Listing.t) list,
+    Store_error.t )
+  result
+(** [listings t ?providers ?process ?base_url ?auth_base_url ~environment ()]
+    is the retained listing of every selected provider whose slot still
+    matches the provider's currently resolving credential fingerprint and
+    endpoint overrides — so a rotated credential or moved endpoint silently
+    drops its stale listing. [providers] defaults to the whole catalog.
+    Catalog order; providers with no retained listing are absent.
+    Network-free. *)
 
 val refresh :
   Runtime.t ->

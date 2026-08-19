@@ -207,6 +207,22 @@
   unix))
 
 (test
+ (name test_llm_opencode)
+ (modules test_llm_opencode)
+ (libraries
+  windtrap
+  test_support
+  llm_test_server
+  jsont
+  jsont.bytesrw
+  mentat_llm
+  mentat_llm_opencode
+  eio
+  eio.unix
+  eio_main
+  unix))
+
+(test
  (name test_review)
  (modules test_review)
  (libraries
@@ -410,6 +426,7 @@
   mentat_llm_google
   mentat_llm_local
   mentat_llm_ollama
+  mentat_llm_opencode
   mentat_provider
   mentat_provider_runtime
   eio
