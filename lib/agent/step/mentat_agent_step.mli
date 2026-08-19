@@ -291,7 +291,9 @@ val compact :
 (** [compact env contract ~id session] is the manual boundary mark: it admits a
     compaction-only turn (host-minted [id], [Origin.Compaction],
     [Input.Continue]) whose single body is one billable summary provider claim
-    over the current model view. Its response feeds {!install_summary}, which —
+    over the model view up to the summary boundary — the most recent turns that
+    fit the tail budget stay verbatim behind the summary rather than in it (see
+    {!install_summary}). Its response feeds {!install_summary}, which —
     seeing the [Compaction] origin — installs the fact and settles the turn
     [Completed] in one suffix; a failed or ambiguous summary settles the turn
     without a fact, exactly like any provider claim. The summary reason is
@@ -359,6 +361,13 @@ val install_summary :
     CLOSES it — "summarized-but-not-installed" is unrepresentable; a duplicate
     [(request digest, reason)] key is refused at replay. [usage] is the
     summarizer response's provider-reported usage, folded into session metrics.
+
+    The fact's boundary keeps a verbatim tail: the most recent turns that fit
+    the tail budget — a tenth of the pressure threshold — survive the boundary
+    as-is, and the summary replaces only the messages before them, always
+    strictly more than any prior summary replaced. When no whole turn fits the
+    budget, or automatic compaction is disabled, the summary replaces the whole
+    transcript and the resume notice trails it instead.
 
     The active turn's origin routes what follows the install: an
     [Origin.Compaction] turn (a manual {!compact}) also settles [Completed] in

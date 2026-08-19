@@ -33,7 +33,10 @@ type t = private {
       (** The context reading above which a request boundary compacts with
           reason [Context_pressure]: provider-reported replay usage when a
           response supplied it, byte-estimated from the model view otherwise.
-          [None] disables automatic compaction. *)
+          A tenth of the threshold also budgets the verbatim tail a summary
+          leaves in place: the most recent turns that fit it stay behind the
+          summary rather than in it. [None] disables automatic compaction, and
+          with it the tail. *)
   continuation_turn_limit : int option;
       (** Maximum goal-continuation turns per goal; [None] is unlimited. *)
   max_spawn_depth : int;

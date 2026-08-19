@@ -865,26 +865,6 @@ let summary_prelude =
   | Ok prelude -> prelude
   | Error _ -> Mentat_llm.Request.Prelude.empty
 
-(* The one summary request: the current model view under the summarizer
-   prelude, followed by the summary prompt — shared by the pressure trigger,
-   the manual flow, and the overflow recovery below. An awaiting model view
-   (unreachable at a request boundary) falls back so [Request.make] stays the
-   single error surface. *)
-let summary_request session state contract =
-  let transcript = Mentat_session.State.model_transcript state in
-  let transcript =
-    match
-      Mentat_llm.Transcript.add
-        (Mentat_llm.Message.user_text compaction_summary_prompt)
-        transcript
-    with
-    | Ok transcript -> transcript
-    | Error _ -> transcript
-  in
-  Mentat_llm.Request.make
-    ~model:(Mentat_session.Contract.model contract)
-    ~prelude:summary_prelude ~cache_key:(cache_key session) transcript
-
 (* The context reading behind the pressure checks: the latest provider-reported
    usage plus a byte-derived estimate — about four bytes per token — of the
    messages that usage does not yet cover, or the estimate of the whole model
@@ -942,10 +922,88 @@ let context_tokens state =
         (Mentat_llm.Transcript.messages
            (Mentat_session.State.model_transcript state))
 
+(* The summary boundary. A summary need not replace the whole transcript:
+   recent turns stay verbatim behind it, so exact recent tool output and error
+   text survive the boundary while the summary reclaims the bulk of the
+   window. The cut is the earliest turn start — a [User] message — whose
+   suffix fits the tail budget, a tenth of the pressure threshold: enough for
+   the last few exchanges, small enough that compaction still reclaims nearly
+   everything. The cut always advances strictly past the previous summary
+   boundary, so a fresh summary always covers something new; when no turn
+   start both fits and advances — the recent turns alone exceed the budget,
+   or automatic compaction is disabled — the summary replaces the whole
+   transcript, and the walk never runs past the budget it can spend. *)
+let summary_cut env state =
+  let full = Mentat_session.State.full_transcript state in
+  let full_length = Mentat_llm.Transcript.length full in
+  let budget =
+    match env.Env.compaction_pressure_tokens with
+    | None -> 0
+    | Some threshold -> threshold / 10
+  in
+  if budget = 0 then full_length
+  else
+    let floor =
+      match Mentat_session.State.latest_compaction state with
+      | Some compaction -> Mentat_session.Compaction.summarized_upto compaction
+      | None -> 0
+    in
+    let messages = Array.of_list (Mentat_llm.Transcript.messages full) in
+    let rec walk i tokens cut =
+      if i <= floor then cut
+      else
+        let tokens = tokens + estimated_tokens [ messages.(i) ] in
+        if tokens > budget then cut
+        else
+          let cut =
+            match messages.(i) with
+            | Mentat_llm.Message.User _ -> i
+            | _ -> cut
+          in
+          walk (i - 1) tokens cut
+    in
+    walk (full_length - 1) 0 full_length
+
+(* The one summary request: the model view up to the summary cut, under the
+   summarizer prelude, followed by the summary prompt — shared by the pressure
+   trigger, the manual flow, and the overflow recovery below. The verbatim
+   tail beyond the cut is excluded: it survives the boundary as-is, and
+   summarizing it too would duplicate it in the reduced view. The defensive
+   fallbacks keep [Request.make] the single error surface. *)
+let summary_request env session state contract =
+  let view = Mentat_session.State.model_transcript state in
+  let tail_length =
+    Mentat_llm.Transcript.length (Mentat_session.State.full_transcript state)
+    - summary_cut env state
+  in
+  let head =
+    let messages = Mentat_llm.Transcript.messages view in
+    let head_length = List.length messages - tail_length in
+    if tail_length = 0 || head_length <= 0 then view
+    else
+      match Mentat_llm.Transcript.of_list (List.take head_length messages) with
+      | Ok head -> head
+      | Error _ -> view
+  in
+  let transcript =
+    match
+      Mentat_llm.Transcript.add
+        (Mentat_llm.Message.user_text compaction_summary_prompt)
+        head
+    with
+    | Ok transcript -> transcript
+    | Error _ -> head
+  in
+  Mentat_llm.Request.make
+    ~model:(Mentat_session.Contract.model contract)
+    ~prelude:summary_prelude ~cache_key:(cache_key session) transcript
+
 (* Nothing to summarize: the model view is empty, or a prior summary already
    covers the whole transcript and a fresh one would only summarize the
    summary. Guards both the manual admission and the pressure trigger — the
-   trigger would otherwise loop on a reading a fresh summary cannot lower. *)
+   trigger would otherwise loop on a reading a fresh summary cannot lower.
+   {!summary_cut} otherwise advances strictly, so a summary that installs
+   always covers new messages. *)
 let nothing_to_compact state =
   Mentat_llm.Transcript.length (Mentat_session.State.model_transcript state) = 0
   ||
@@ -962,7 +1020,7 @@ let compaction_request env session state contract =
   | Some threshold -> (
       if context_tokens state < threshold || nothing_to_compact state then None
       else
-        match summary_request session state contract with
+        match summary_request env session state contract with
         | Ok request ->
             Some (request, Mentat_session.Compaction.Reason.Context_pressure)
         | Error _ -> None)
@@ -1163,7 +1221,7 @@ let model_boundary env session state turn_id turn =
   then
     (* The turn's model request overflowed and the turn has not yet spent its one
        overflow compaction: compact ([Context_overflow]) before re-issuing. *)
-    match summary_request session state contract with
+    match summary_request env session state contract with
     | Ok request ->
         Ok
           (compaction_effect request
@@ -1361,7 +1419,7 @@ let compact env contract ~id session =
             ~input:Mentat_session.Turn.Input.continue
             ~max_steps:env.Env.max_steps ~contract ()
         in
-        match summary_request session state contract with
+        match summary_request env session state contract with
         | Error e -> Error (Error.Request e)
         | Ok request ->
             let claim =
@@ -1465,23 +1523,27 @@ let install_summary env id ~summary ~reason ?usage session =
               ())
           (Mentat_session.State.replay_usage state)
       in
-      (* The summary re-enters the next request as the model-view prefix. Frame
-         it with the resume notice so the model continues the work rather than
-         acknowledging the summary. The notice trails the verbatim summary, so
-         the reduced view ends on a user message that prompts continuation. *)
+      (* The summary re-enters the next request as the model-view prefix. With
+         a verbatim tail the live conversation follows it directly; with none,
+         the resume notice trails the summary so the reduced view ends on a
+         user message that prompts continuation rather than acknowledgement. *)
+      let summarized_upto = summary_cut env state in
+      let tail_retained =
+        summarized_upto
+        < Mentat_llm.Transcript.length
+            (Mentat_session.State.full_transcript state)
+      in
       let summary_messages =
-        summary
-        @ [ Mentat_llm.Message.user_text Mentat_prompts.Compaction.resume ]
+        if tail_retained then summary
+        else
+          summary
+          @ [ Mentat_llm.Message.user_text Mentat_prompts.Compaction.resume ]
       in
       let compaction =
         Mentat_session.Compaction.make ~reason ~provider_claim:id
           ~request_digest:
             (Mentat_session.Provider_request.Started.request_digest started)
-          ~summary_messages
-          ~summarized_upto:
-            (Mentat_llm.Transcript.length
-               (Mentat_session.State.full_transcript state))
-          ?usage ?context ()
+          ~summary_messages ~summarized_upto ?usage ?context ()
       in
       let installed = Mentat_session.Event.compaction_installed compaction in
       match Mentat_session.Turn.origin turn with

@@ -3799,6 +3799,181 @@ let a_summary_request_carries_the_summarizer_prelude () =
       is_false ~msg:"turn requests never state the summarizer role"
         !saw_marker_on_turn)
 
+let resume_marker = "Continue the work from where it left off"
+
+let a_pressure_summary_keeps_a_verbatim_tail () =
+  (* A pressure compaction cuts at the start of the most recent turn that fits
+     the tail budget: the summarizer sees only the head, the tail survives the
+     boundary verbatim, and the reduced view needs no resume notice — it ends
+     on the live conversation. *)
+  let long_reply = String.make 2_000 'x' in
+  let summary_saw_head = ref false in
+  let summary_saw_tail = ref false in
+  let reduced = ref None in
+  let script =
+    Ports.script @@ fun request ->
+    if request_contains request "Summarize this conversation" then begin
+      summary_saw_head := request_contains request "xxxx";
+      summary_saw_tail := request_contains request "TAIL-INPUT";
+      Ok (plain_response "SUMMARY-BYTES.")
+    end
+    else if request_contains request "SUMMARY-BYTES." then begin
+      reduced :=
+        Some
+          ( request_contains request "TAIL-INPUT",
+            request_contains request "xxxx",
+            request_contains request resume_marker );
+      Ok (plain_response "Done.")
+    end
+    else Ok (plain_response long_reply)
+  in
+  let config _ ~latest_model:_ =
+    Ok
+      (Agent.Config.make ~model ~continuation_turn_limit:None
+         ~compaction_pressure_tokens:100 ())
+  in
+  with_engine ~script ~config (fun ~sw:_ ~client ~store ~engine:_ ->
+      submit_ok client (prompt ~session:(sid "root") ~turn:(tid "t-1") "hi");
+      let _ = drain_committed (follow_ok client (sid "root")) in
+      let feed = follow_ok ~from:`Now client (sid "root") in
+      submit_ok client
+        (prompt ~session:(sid "root") ~turn:(tid "t-2") "TAIL-INPUT");
+      let _ = drain_committed feed in
+      is_true ~msg:"the summarizer sees the head" !summary_saw_head;
+      is_false ~msg:"the summarizer never sees the tail" !summary_saw_tail;
+      (match !reduced with
+      | None -> fail "no request was issued over the reduced view"
+      | Some (tail, head, resume) ->
+          is_true ~msg:"the reduced view carries the tail verbatim" tail;
+          is_false ~msg:"the reduced view drops the summarized head" head;
+          is_false ~msg:"a retained tail needs no resume notice" resume);
+      match Hashtbl.find_opt store.sessions "root" with
+      | None -> fail "the root session is missing from the store"
+      | Some session -> (
+          let state = Session.state session in
+          match Session.State.latest_compaction state with
+          | None -> fail "context pressure did not install a compaction"
+          | Some compaction -> (
+              let upto = Session.Compaction.summarized_upto compaction in
+              let full =
+                Llm.Transcript.messages (Session.State.full_transcript state)
+              in
+              is_true ~msg:"the summary replaces a strict prefix"
+                (upto < List.length full);
+              match List.nth_opt full upto with
+              | Some (Llm.Message.User _) -> ()
+              | Some _ | None -> fail "the cut is not a turn start")))
+
+let an_oversized_tail_falls_back_to_a_full_summary () =
+  (* When the most recent turn alone exceeds the tail budget, no cut both fits
+     and advances: the summary replaces the whole transcript and the resume
+     notice trails it, exactly as when no tail is configured. *)
+  let long_reply = String.make 2_000 'x' in
+  let big_input = "BIG-INPUT-" ^ String.make 600 'y' in
+  let reduced = ref None in
+  let script =
+    Ports.script @@ fun request ->
+    if request_contains request "Summarize this conversation" then
+      Ok (plain_response "SUMMARY-BYTES.")
+    else if request_contains request "SUMMARY-BYTES." then begin
+      reduced :=
+        Some
+          ( request_contains request "BIG-INPUT-",
+            request_contains request resume_marker );
+      Ok (plain_response "Done.")
+    end
+    else Ok (plain_response long_reply)
+  in
+  let config _ ~latest_model:_ =
+    Ok
+      (Agent.Config.make ~model ~continuation_turn_limit:None
+         ~compaction_pressure_tokens:100 ())
+  in
+  with_engine ~script ~config (fun ~sw:_ ~client ~store ~engine:_ ->
+      submit_ok client (prompt ~session:(sid "root") ~turn:(tid "t-1") "hi");
+      let _ = drain_committed (follow_ok client (sid "root")) in
+      let feed = follow_ok ~from:`Now client (sid "root") in
+      submit_ok client (prompt ~session:(sid "root") ~turn:(tid "t-2") big_input);
+      let _ = drain_committed feed in
+      (match !reduced with
+      | None -> fail "no request was issued over the reduced view"
+      | Some (tail, resume) ->
+          is_false ~msg:"nothing stays verbatim behind a full summary" tail;
+          is_true ~msg:"a full summary keeps the resume notice" resume);
+      match Hashtbl.find_opt store.sessions "root" with
+      | None -> fail "the root session is missing from the store"
+      | Some session -> (
+          let state = Session.state session in
+          match Session.State.latest_compaction state with
+          | None -> fail "context pressure did not install a compaction"
+          | Some compaction ->
+              (* The transcript held three messages at the boundary — the first
+                 input, its long answer, and the oversized second input; the
+                 reduced-view answer lands after the cut. *)
+              equal int ~msg:"the summary replaces the whole transcript" 3
+                (Session.Compaction.summarized_upto compaction)))
+
+let a_second_compaction_advances_the_boundary_behind_the_tail () =
+  (* Re-compaction over a view that already ends in a tail: the second summary
+     covers the first summary plus the aged tail, cuts strictly later, and
+     keeps a fresh tail — the boundary only ever advances, so pressure
+     compaction cannot loop. *)
+  let long_reply = String.make 2_000 'x' in
+  let summaries = ref 0 in
+  let second_summary = ref None in
+  let script =
+    Ports.script @@ fun request ->
+    if request_contains request "Summarize this conversation" then begin
+      incr summaries;
+      if !summaries = 2 then
+        second_summary :=
+          Some
+            ( request_contains request "T2-MARK",
+              request_contains request "T3-MARK" );
+      Ok (plain_response (Printf.sprintf "SUMMARY-%d." !summaries))
+    end
+    else Ok (plain_response long_reply)
+  in
+  let config _ ~latest_model:_ =
+    Ok
+      (Agent.Config.make ~model ~continuation_turn_limit:None
+         ~compaction_pressure_tokens:100 ())
+  in
+  with_engine ~script ~config (fun ~sw:_ ~client ~store ~engine:_ ->
+      submit_ok client (prompt ~session:(sid "root") ~turn:(tid "t-1") "hi");
+      let _ = drain_committed (follow_ok client (sid "root")) in
+      let feed = follow_ok ~from:`Now client (sid "root") in
+      submit_ok client
+        (prompt ~session:(sid "root") ~turn:(tid "t-2") "T2-MARK");
+      let _ = drain_committed feed in
+      let feed = follow_ok ~from:`Now client (sid "root") in
+      submit_ok client
+        (prompt ~session:(sid "root") ~turn:(tid "t-3") "T3-MARK");
+      let _ = drain_committed feed in
+      (match !second_summary with
+      | None -> fail "pressure never compacted a second time"
+      | Some (aged_tail, fresh_tail) ->
+          is_true ~msg:"the second summary covers the aged tail" aged_tail;
+          is_false ~msg:"the second summary never sees the fresh tail"
+            fresh_tail);
+      match Hashtbl.find_opt store.sessions "root" with
+      | None -> fail "the root session is missing from the store"
+      | Some session -> (
+          let cuts =
+            List.filter_map
+              (function
+                | Session.Event.Compaction_installed compaction ->
+                    Some (Session.Compaction.summarized_upto compaction)
+                | _ -> None)
+              (Session.events session)
+          in
+          match cuts with
+          | [ first; second ] ->
+              is_true ~msg:"the boundary advances strictly" (second > first)
+          | cuts ->
+              failf "expected exactly two compactions, saw %d"
+                (List.length cuts)))
+
 (* Runtime: scheduler and subagents. *)
 
 (* A parent spawns exactly one child. A one-shot latch (the marker "PLEASE_SPAWN"
@@ -6300,6 +6475,12 @@ let () =
             a_repeat_length_stop_completes_after_one_recovery;
           test "a summary request carries the summarizer prelude"
             a_summary_request_carries_the_summarizer_prelude;
+          test "a pressure summary keeps a verbatim tail"
+            a_pressure_summary_keeps_a_verbatim_tail;
+          test "an oversized tail falls back to a full summary"
+            an_oversized_tail_falls_back_to_a_full_summary;
+          test "a second compaction advances the boundary behind the tail"
+            a_second_compaction_advances_the_boundary_behind_the_tail;
           test "a mid-turn workspace notice rides the next request"
             a_mid_turn_notice_rides_the_next_request;
           test "a turn states every observation it made"
