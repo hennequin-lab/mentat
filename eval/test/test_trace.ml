@@ -79,7 +79,7 @@ let respond ?usage claim text =
 
 let settle_interrupted claim text =
   Event.provider_settled
-    (Session.Provider_request.Settled.interrupted ~id:(claim_id claim) ~text)
+    (Session.Provider_request.Settled.interrupted ~id:(claim_id claim) ~text ())
 
 let tool_claim ~turn_id call =
   Session.Tool_claim.Started.make ~turn:turn_id ~stage:Tool.Stage.Direct ~call
