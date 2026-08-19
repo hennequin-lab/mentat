@@ -42,14 +42,27 @@ let retry_reason status =
   else if status = 408 then "provider timed out"
   else "provider error"
 
+(* An explicit [x-should-retry] header is the server ruling on whether an
+   identical request can succeed: [false] fails fast even on a status the table
+   would retry, [true] retries a status it would not. Absent or unrecognized,
+   the status table and the caller's [terminal] classifier decide. *)
+let response_retryable ~terminal response =
+  match
+    Option.map String.lowercase_ascii
+      (Transport.header_value response.Transport.headers "x-should-retry")
+  with
+  | Some "true" -> true
+  | Some "false" -> false
+  | Some _ | None ->
+      retryable_status response.Transport.status && not (terminal response)
+
 let pre_stream ~clock ~max_retries ?(terminal = fun _ -> false)
     ?(body_delay = fun _ -> None) ~on_retry attempt_post =
   let rec loop attempt delay =
     match attempt_post ~attempt with
     | Error (Transport.Response response)
-      when retryable_status response.Transport.status
-           && attempt < retry_budget ~max_retries response.Transport.status
-           && not (terminal response) ->
+      when response_retryable ~terminal response
+           && attempt < retry_budget ~max_retries response.Transport.status -> (
         let server_delay =
           match
             Transport.Retry_after.delay ~now:(Eio.Time.now clock)
@@ -58,21 +71,32 @@ let pre_stream ~clock ~max_retries ?(terminal = fun _ -> false)
           | Some _ as delay -> delay
           | None -> body_delay response
         in
-        (* Server-provided delays are honored but bounded: an absurd Retry-After
-           must not park a turn for hours. *)
-        let sleep =
-          Float.min max_honored_retry_delay
-            (Float.max (jitter delay) (Option.value server_delay ~default:0.))
-        in
-        Log.warn (fun m ->
-            m "retrying after status=%d attempt=%d delay=%.1fs"
-              response.Transport.status attempt sleep);
-        on_retry ~attempt:(attempt + 1)
-          ~limit:(retry_budget ~max_retries response.Transport.status)
-          ~delay:sleep
-          ~reason:(retry_reason response.Transport.status);
-        Eio.Time.sleep clock sleep;
-        loop (attempt + 1) (delay *. 1.5)
+        (* A server-provided delay is honored exactly, but only up to the bound:
+           a server pushing the retry beyond it is saying the condition will
+           outlast this loop, and re-issuing earlier than asked would only burn
+           the budget against a promised refusal. Such a failure surfaces at
+           once. *)
+        match server_delay with
+        | Some requested when requested > max_honored_retry_delay ->
+            Log.warn (fun m ->
+                m "not retrying status=%d: server requested %.0fs delay"
+                  response.Transport.status requested);
+            Error (Transport.Response response)
+        | _ ->
+            let sleep =
+              Float.min max_honored_retry_delay
+                (Float.max (jitter delay)
+                   (Option.value server_delay ~default:0.))
+            in
+            Log.warn (fun m ->
+                m "retrying after status=%d attempt=%d delay=%.1fs"
+                  response.Transport.status attempt sleep);
+            on_retry ~attempt:(attempt + 1)
+              ~limit:(retry_budget ~max_retries response.Transport.status)
+              ~delay:sleep
+              ~reason:(retry_reason response.Transport.status);
+            Eio.Time.sleep clock sleep;
+            loop (attempt + 1) (delay *. 1.5))
     | Error (Transport.Transport _) when attempt < max_retries ->
         let sleep = jitter delay in
         Log.warn (fun m ->

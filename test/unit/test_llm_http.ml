@@ -6,10 +6,9 @@
 open Windtrap
 module Http = Mentat_llm_http
 
+let float_value = Testable.make ~pp:Format.pp_print_float ~equal:Float.equal
+
 let retry_guidance () =
-  let float_value =
-    Testable.make ~pp:Format.pp_print_float ~equal:Float.equal
-  in
   let after headers = Http.Retry_after.delay ~now:784_111_777. headers in
   equal (option float_value) ~msg:"retry-after-ms wins" (Some 1.5)
     (after [ ("Retry-After-Ms", "1500"); ("retry-after", "9") ]);
@@ -249,6 +248,61 @@ let unresolved_host_fails_fast () =
   equal int ~msg:"an unresolved host is attempted once" 1 !calls;
   equal int ~msg:"an unresolved host announces no retry" 0 !retries
 
+(* Server guidance outranks the status table. An explicit [x-should-retry]
+   header rules in both directions — [false] fails fast on a retryable status,
+   [true] retries a status the table would surface — and a [Retry-After] beyond
+   the sixty-second bound fails at once rather than re-issuing early into a
+   promised refusal, while one within the bound floors the announced delay
+   exactly. *)
+let retry_follows_server_guidance () =
+  Eio_mock.Backend.run_full @@ fun env ->
+  let clock = env#clock in
+  let exhaust ?headers status ~max_retries =
+    let calls = ref 0 and retries = ref 0 in
+    let result =
+      Http.Retry.pre_stream ~clock ~max_retries
+        ~on_retry:(fun ~attempt:_ ~limit:_ ~delay:_ ~reason:_ -> incr retries)
+        (fun ~attempt:_ ->
+          incr calls;
+          http_failure ?headers status)
+    in
+    (result, !calls, !retries)
+  in
+  let _, calls, retries =
+    exhaust 500 ~max_retries:2
+      ~headers:[ ("X-Should-Retry", "FALSE") ]
+  in
+  equal int ~msg:"explicit false is attempted once" 1 calls;
+  equal int ~msg:"explicit false announces no retry" 0 retries;
+  let _, calls, retries =
+    exhaust 400 ~max_retries:1 ~headers:[ ("x-should-retry", "true") ]
+  in
+  equal int ~msg:"explicit true retries a terminal status" 2 calls;
+  equal int ~msg:"explicit true announces the retry" 1 retries;
+  let result, calls, retries =
+    exhaust 429 ~max_retries:1 ~headers:[ ("retry-after", "300") ]
+  in
+  (match result with
+  | Error (Http.Response response) ->
+      equal int ~msg:"the over-bound response surfaces" 429 response.Http.status
+  | _ -> fail "expected the over-bound response to surface");
+  equal int ~msg:"an over-bound delay is attempted once" 1 calls;
+  equal int ~msg:"an over-bound delay announces no retry" 0 retries;
+  let delays = ref [] in
+  let result =
+    Http.Retry.pre_stream ~clock ~max_retries:1
+      ~on_retry:(fun ~attempt:_ ~limit:_ ~delay ~reason:_ ->
+        delays := delay :: !delays)
+      (fun ~attempt ->
+        if attempt = 0 then http_failure 429 ~headers:[ ("retry-after", "30") ]
+        else Ok ())
+  in
+  (match result with
+  | Ok () -> ()
+  | Error _ -> fail "expected the in-bound retry to succeed");
+  equal (list float_value) ~msg:"an in-bound delay floors the backoff exactly"
+    [ 30. ] !delays
+
 (* A stream re-run is safe only before any assistant output reaches the caller:
    replaying over already-streamed text would double it. A retryable stream fault
    before output re-runs up to the budget; the same fault after a delta surfaces
@@ -307,5 +361,6 @@ let () =
       test "retry transport errors" retry_transport_errors;
       test "classify resolution failures" resolution_failures_are_classified;
       test "unresolved host fails fast" unresolved_host_fails_fast;
+      test "retry follows server guidance" retry_follows_server_guidance;
       test "stream re-runs only before output" stream_reruns_only_before_output;
     ]

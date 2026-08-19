@@ -26,6 +26,10 @@ type error =
           a retry reaches the same answer: the resolver rejected the name
           itself, rather than failing in a way a later attempt could survive. *)
 
+val header_value : (string * string) list -> string -> string option
+(** [header_value headers name] is the value of the first header matching
+    [name], compared case-insensitively. *)
+
 val transport_message : exn -> string
 (** [transport_message exn] renders a transport-layer exception as a concise,
     human-readable message. The common Eio network failures (connection refused,

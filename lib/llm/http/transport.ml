@@ -117,13 +117,15 @@ let post_stream ~sw ~env ~url ~headers ~body =
   | Eio.Cancel.Cancelled _ as exn -> raise exn
   | exn -> Error (error_of_exn exn)
 
+let header_value headers name =
+  let name = String.lowercase_ascii name in
+  List.find_map
+    (fun (key, value) ->
+      if String.equal (String.lowercase_ascii key) name then Some value
+      else None)
+    headers
+
 module Retry_after = struct
-  let header_value headers name =
-    List.find_map
-      (fun (key, value) ->
-        if String.equal (String.lowercase_ascii key) name then Some value
-        else None)
-      headers
 
   let month_number = function
     | "Jan" -> Some 1

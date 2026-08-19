@@ -11,9 +11,15 @@
     minimum of ten attempts and plain server faults ([500], [502], [504], …) to
     a minimum of eight; backoff starts at half a second, grows by a factor of
     1.5, and is spread by a tenth either way so that callers failing together do
-    not re-issue in lockstep. A server-provided delay is honored exactly, as a
-    floor under the backoff, bounded to sixty seconds. Authentication, endpoint
-    discovery, and response interpretation remain in the transports.
+    not re-issue in lockstep. A server-provided delay up to sixty seconds is
+    honored exactly, as a floor under the backoff; a longer one fails the
+    request at once, since a server pushing the retry that far out is saying the
+    condition will outlast this loop, and re-issuing earlier than asked would
+    only burn the budget against a promised refusal. An explicit
+    [x-should-retry] response header overrides the status table in both
+    directions: [false] fails fast on a status the table would retry, [true]
+    retries one it would not. Authentication, endpoint discovery, and response
+    interpretation remain in the transports.
 
     A transport must wire both combinators to retry the way the others do.
     {!pre_stream} retries the request up to the first token, where re-issuing a
@@ -42,7 +48,8 @@ val pre_stream :
 
     [terminal] classifies a response that cannot recover within a request and so
     must fail fast rather than exhaust the budget; it defaults to never
-    terminal. [body_delay] supplies a retry delay parsed from the response body
+    terminal. An explicit [x-should-retry] header outranks it: the server has
+    ruled where [terminal] infers. [body_delay] supplies a retry delay parsed from the response body
     when no [Retry-After] header is present; it defaults to none.
 
     A {!Transport.Unresolved_host} failure surfaces on its first attempt: the

@@ -759,18 +759,10 @@ let error_kind_of_google_status = function
   | "ABORTED" | "UNAVAILABLE" -> Some Llm.Error.Transport
   | _ -> None
 
-let header_value headers name =
-  let name = String.lowercase_ascii name in
-  List.find_map
-    (fun (key, value) ->
-      if String.equal (String.lowercase_ascii key) name then Some value
-      else None)
-    headers
-
 let request_id headers =
-  match header_value headers "x-goog-request-id" with
+  match Mentat_llm_http.header_value headers "x-goog-request-id" with
   | Some _ as value -> value
-  | None -> header_value headers "x-request-id"
+  | None -> Mentat_llm_http.header_value headers "x-request-id"
 
 let redacted_body body =
   if String.is_empty body then None
