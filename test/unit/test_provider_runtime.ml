@@ -297,14 +297,15 @@ let opencode_config_listing () =
       fail "a declared model the server dropped is unavailable");
   (* Listed rows follow the declared models in server order. *)
   equal (list string) ~msg:"undeclared server models append in order"
-    [ "minimax-m3"; "grok-4.5"; "new-chat" ]
-    (List.filteri (fun i _ -> i >= 8) entries
+    [ "grok-4.5"; "new-chat" ]
+    (List.filteri (fun i _ -> i >= 11) entries
     |> List.map (fun entry ->
         Provider.Model.id (Provider.Model_readiness.Entry.model entry)));
-  (* Protocols without a codec surface hidden, with a reason — not as dead
-     picks. The chat-protocol row is a real, visible, adapter-accepted row. *)
+  (* Protocols without a routable arm surface hidden, with a reason — not as
+     dead picks. Chat- and messages-protocol rows are real, visible,
+     adapter-accepted rows. *)
   let model_of id = Provider.Model_readiness.Entry.model (entry_for id) in
-  is_false ~msg:"a messages-protocol model is not yet visible"
+  is_true ~msg:"a declared messages-protocol model is visible"
     (Provider.Model.visible (model_of "minimax-m3"));
   is_false ~msg:"a responses-protocol model is not visible"
     (Provider.Model.visible (model_of "grok-4.5"));
@@ -355,6 +356,9 @@ let opencode_declaration_pin () =
       "mimo-v2.5-pro";
       "mimo-v2.5";
       "hy3";
+      "minimax-m3";
+      "qwen3.8-max";
+      "qwen3.7-plus";
     ]
     (List.map Provider.Model.id models);
   (* One model per family, every family named, every model priced. *)

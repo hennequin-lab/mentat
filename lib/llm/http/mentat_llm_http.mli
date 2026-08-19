@@ -15,5 +15,8 @@ include module type of Transport
 module Chat_completions = Chat_completions
 (** The OpenAI-compatible Chat Completions protocol. *)
 
+module Messages = Messages
+(** The Anthropic-compatible Messages protocol. *)
+
 module Retry = Retry
 (** Shared retry loops for HTTP-backed provider transports. *)

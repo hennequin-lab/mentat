@@ -1,12 +1,3 @@
 (library
  (name mentat_llm_anthropic)
- (private_modules api)
- (libraries
-  eio
-  eio.unix
-  jsont
-  jsont.bytesrw
-  logs
-  mentat_llm
-  mentat_llm_http
-  uri))
+ (libraries eio eio.unix mentat_llm mentat_llm_http))

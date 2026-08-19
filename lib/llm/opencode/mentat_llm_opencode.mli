@@ -6,24 +6,30 @@
 (** OpenCode Go provider adapter.
 
     This library interprets {!Mentat_llm.Request.t} values against the OpenCode
-    Go gateway over its OpenAI-compatible chat-completions endpoint. The gateway
-    owns the model set: ids are whatever it serves (e.g. ["kimi-k3"]), spelled
-    exactly as OpenCode publishes them, and the adapter constrains only the
-    protocol family. Mentat's provider-neutral request, event, and response
-    types remain the public boundary.
+    Go gateway. The gateway assigns each model one of several wire protocols:
+    most ride its OpenAI-compatible chat-completions endpoint, some its
+    Anthropic-compatible messages endpoint, and a model's protocol family is
+    part of its identity — construct it with the matching constructor. The
+    gateway owns the model set: ids are whatever it serves (e.g. ["kimi-k3"]),
+    spelled exactly as OpenCode publishes them. Mentat's provider-neutral
+    request, event, and response types remain the public boundary.
 
     The client connects to {!Config.make}'s [base_url]
     ([https://opencode.ai/zen/go] by default) — the bare gateway root, under
-    whose [/v1] path the chat-completions endpoint lives. Every request
-    authenticates with a {!Credential.t} sent as a bearer authorization header.
-    A request for a model the gateway does not serve fails at request time with
-    the gateway's own error. *)
+    whose [/v1] path both endpoints live. Every request authenticates with a
+    {!Credential.t}; the chat-completions route reads it as a bearer
+    authorization header and the messages route as the dialect's [x-api-key].
+    A request for a model the gateway does not serve fails at request time
+    with the gateway's own error. *)
 
 val provider : Mentat_llm.Provider.t
 (** [provider] is the [opencode-go] provider namespace. *)
 
 val chat_model : string -> Mentat_llm.Model.t
 (** [chat_model id] is chat-completions model [id] under {!provider}. *)
+
+val messages_model : string -> Mentat_llm.Model.t
+(** [messages_model id] is messages-protocol model [id] under {!provider}. *)
 
 module Config : sig
   type t
@@ -73,8 +79,9 @@ module Credential : sig
   type t
   (** Authentication material for the gateway.
 
-      Credential values are inert; the client sends them as a bearer
-      authorization header on every request. *)
+      Credential values are inert; the client sends them on every request,
+      spelled per route — a bearer authorization header on chat-completions,
+      [x-api-key] on messages. *)
 
   val api_key : string -> t
   (** [api_key key] is API-key material.
@@ -93,9 +100,9 @@ val client :
   credential:Credential.t ->
   unit ->
   Mentat_llm.Client.t
-(** [client ~env ~credential ()] is an OpenCode Go client streaming over the
-    gateway's chat-completions endpoint. Requests carry [credential] as a bearer
-    authorization header. The client accepts models built with {!chat_model}; a
-    model from another provider or protocol family is refused before any
+(** [client ~env ~credential ()] is an OpenCode Go client. Each request
+    streams over the endpoint of its model's protocol family. The client
+    accepts models built with {!chat_model} or {!messages_model}; a model from
+    another provider or an unserved protocol family is refused before any
     transport is opened. Each response closes its gateway connection before
     returning. *)

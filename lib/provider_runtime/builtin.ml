@@ -479,6 +479,42 @@ let opencode_models =
       ~capabilities:tools_reasoning ~supported_reasoning:opencode_efforts
       ~pricing:(pricing ~input:0.0175 ~output:0.0725 ~cache_read:0.004375 ())
       ();
+    (* The messages-protocol lines. Their thinking dialect is unverified on
+       the gateway, so no reasoning efforts are declared. *)
+    Model.make
+      (Mentat_llm_opencode.messages_model "minimax-m3")
+      ~display_name:"MiniMax M3" ~family:"minimax" ~context_window:1_000_000
+      ~max_output_tokens:131_072 ~capabilities:tools_only
+      ~pricing:
+        (pricing ~input:0.3 ~output:1.2 ~cache_read:0.06
+           ~tiers:
+             [
+               tier ~context_over:512_000 ~input:0.6 ~output:2.4 ~cache_read:0.12
+                 ();
+             ]
+           ())
+      ();
+    Model.make
+      (Mentat_llm_opencode.messages_model "qwen3.8-max")
+      ~display_name:"Qwen3.8 Max" ~family:"qwen-max" ~context_window:1_000_000
+      ~max_output_tokens:131_072 ~capabilities:tools_only
+      ~pricing:
+        (pricing ~input:2. ~output:6. ~cache_read:0.25 ~cache_write:2.5 ())
+      ();
+    Model.make
+      (Mentat_llm_opencode.messages_model "qwen3.7-plus")
+      ~display_name:"Qwen3.7 Plus" ~family:"qwen-plus"
+      ~context_window:1_000_000 ~max_output_tokens:65_536
+      ~capabilities:tools_only
+      ~pricing:
+        (pricing ~input:0.4 ~output:1.6 ~cache_read:0.04 ~cache_write:0.5
+           ~tiers:
+             [
+               tier ~context_over:256_000 ~input:1.2 ~output:4.8 ~cache_read:0.12
+                 ~cache_write:1.5 ();
+             ]
+           ())
+      ();
   ]
 
 let opencode_auth =
@@ -522,8 +558,20 @@ let opencode_dynamic_listed listed =
              (Option.value ~default:tools_only
                 (Listing.Model.capabilities listed))
            ?status:(Listing.Model.status listed) ())
-  | Some api when Mentat_llm.Model.Api.equal api Mentat_llm_anthropic.api ->
-      Some (unroutable api "the messages protocol is not yet supported")
+  | Some api when Mentat_llm.Model.Api.equal api Mentat_llm_http.Messages.api ->
+      Some
+        (Model.make
+           (Mentat_llm_opencode.messages_model id)
+           ?display_name:(Listing.Model.display_name listed)
+           ?family:(Listing.Model.family listed)
+           ?context_window:(Listing.Model.context_window listed)
+           ?max_output_tokens:(Listing.Model.max_output_tokens listed)
+           ?pricing:(Listing.Model.pricing listed)
+           ?input_modalities:(Listing.Model.input_modalities listed)
+           ~capabilities:
+             (Option.value ~default:tools_only
+                (Listing.Model.capabilities listed))
+           ?status:(Listing.Model.status listed) ())
   | Some api ->
       Some (unroutable api "this wire protocol is not served by this provider")
   | None -> Some (unroutable opencode_unknown_api "unrecognized wire protocol")
@@ -730,7 +778,7 @@ let ollama_check ~sw ~env ?base_url ?auth_base_url:_ credential =
 module Opencode_config = struct
   let api_of_npm = function
     | "@ai-sdk/openai-compatible" -> Some Mentat_llm_http.Chat_completions.api
-    | "@ai-sdk/anthropic" -> Some Mentat_llm_anthropic.api
+    | "@ai-sdk/anthropic" -> Some Mentat_llm_http.Messages.api
     | "@ai-sdk/openai" -> Some Mentat_llm_openai.api
     | _ -> None
 

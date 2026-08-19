@@ -208,11 +208,84 @@ let refused_without_transport name model =
   equal_error_kind name Llm.Error.Invalid_request error;
   equal int ~msg:(name ^ " requests") 0 (List.length requests)
 
+let messages_chunk fields = json_object fields
+
+let messages_stream () =
+  sse_response
+    (String.concat ""
+       (List.map
+          (fun chunk -> "data: " ^ json_string chunk ^ "\n\n")
+          [
+            messages_chunk
+              [
+                ("type", Json.string "message_start");
+                ( "message",
+                  json_object
+                    [
+                      ("id", Json.string "msg-1");
+                      ("model", Json.string "minimax-m3");
+                    ] );
+              ];
+            messages_chunk
+              [
+                ("type", Json.string "content_block_start");
+                ("index", Json.number 0.);
+                ( "content_block",
+                  json_object
+                    [ ("type", Json.string "text"); ("text", Json.string "") ]
+                );
+              ];
+            messages_chunk
+              [
+                ("type", Json.string "content_block_delta");
+                ("index", Json.number 0.);
+                ( "delta",
+                  json_object
+                    [
+                      ("type", Json.string "text_delta");
+                      ("text", Json.string "Pong");
+                    ] );
+              ];
+            messages_chunk
+              [
+                ("type", Json.string "content_block_stop");
+                ("index", Json.number 0.);
+              ];
+            messages_chunk
+              [
+                ("type", Json.string "message_delta");
+                ( "delta",
+                  json_object [ ("stop_reason", Json.string "end_turn") ] );
+              ];
+            messages_chunk [ ("type", Json.string "message_stop") ];
+          ]))
+
+let messages_models_route_to_the_messages_endpoint () =
+  let result, requests =
+    Llm_test_server.with_server ~name:"opencode-messages-stream"
+      (fun _index _request -> Llm_test_server.Reply (messages_stream ()))
+      (fun port ->
+        run_stream port
+          (request ~model:(Opencode.messages_model "minimax-m3") ()))
+  in
+  let events, response = expect_stream_ok "opencode-messages-stream" result in
+  let recorded = only_request requests in
+  equal string ~msg:"request line" "POST /v1/messages HTTP/1.1"
+    (request_line recorded);
+  equal (option string) ~msg:"x-api-key header" (Some "opencode-key")
+    (Llm_test_server.header recorded "x-api-key");
+  equal (option string) ~msg:"no bearer header on the messages route" None
+    (Llm_test_server.header recorded "authorization");
+  equal string ~msg:"model sent verbatim" "minimax-m3"
+    (string_field "body" "model" (request_body recorded));
+  equal (list string) ~msg:"text deltas" [ "Pong" ] (text_deltas events);
+  equal string ~msg:"response text" "Pong" (Llm.Response.text response)
+
 let foreign_api_models_are_refused () =
   refused_without_transport "opencode-foreign-api"
     (Llm.Model.make ~provider:Opencode.provider
-       ~api:(Llm.Model.Api.make "messages")
-       ~id:"minimax-m3")
+       ~api:(Llm.Model.Api.make "responses")
+       ~id:"gpt-5.6-luna")
 
 let foreign_provider_models_are_refused () =
   refused_without_transport "opencode-foreign-provider"
@@ -302,6 +375,8 @@ let () =
       test "model, config, and credentials" model_config_and_credentials;
       test "completed stream decodes events and response"
         completed_stream_decodes_events_and_response;
+      test "messages models route to the messages endpoint"
+        messages_models_route_to_the_messages_endpoint;
       test "foreign-api models are refused" foreign_api_models_are_refused;
       test "foreign-provider models are refused"
         foreign_provider_models_are_refused;
