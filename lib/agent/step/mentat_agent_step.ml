@@ -871,23 +871,87 @@ let summary_request env session state contract =
     ~model:(Mentat_session.Contract.model contract)
     ~prelude:env.Env.prelude ~cache_key:(cache_key session) transcript
 
+(* The context reading behind the pressure checks: the latest provider-reported
+   usage plus a byte-derived estimate — about four bytes per token — of the
+   messages that usage does not yet cover, or the estimate of the whole model
+   view when no response reported usage. A provider that never reports usage
+   still gets a reading, so pressure compaction is never starved. Media sources
+   are not counted. The reading is a trigger, never an accounting fact:
+   installed compactions record provider-reported usage only. *)
+let estimated_tokens messages =
+  let option_length acc text =
+    match text with Some text -> acc + String.length text | None -> acc
+  in
+  let contents acc parts =
+    List.fold_left
+      (fun acc content ->
+        match (content : Mentat_llm.Content.t) with
+        | Mentat_llm.Content.Text text -> acc + String.length text
+        | Mentat_llm.Content.Media _ -> acc)
+      acc parts
+  in
+  let part acc part =
+    match (part : Mentat_llm.Message.Assistant.part) with
+    | Mentat_llm.Message.Assistant.Text text -> acc + String.length text
+    | Mentat_llm.Message.Assistant.Tool_call call ->
+        acc
+        + String.length
+            (Format.asprintf "%a" Jsont.Json.pp (Mentat_llm.Tool.Call.input call))
+    | Mentat_llm.Message.Assistant.Reasoning reasoning ->
+        List.fold_left option_length acc
+          [
+            Mentat_llm.Message.Assistant.Reasoning.summary reasoning;
+            Mentat_llm.Message.Assistant.Reasoning.text reasoning;
+            Mentat_llm.Message.Assistant.Reasoning.encrypted reasoning;
+          ]
+  in
+  let message acc m =
+    match (m : Mentat_llm.Message.t) with
+    | Mentat_llm.Message.System text | Mentat_llm.Message.Developer text ->
+        acc + String.length text
+    | Mentat_llm.Message.User parts -> contents acc parts
+    | Mentat_llm.Message.Assistant assistant ->
+        List.fold_left part acc (Mentat_llm.Message.Assistant.parts assistant)
+    | Mentat_llm.Message.Tool_result result ->
+        contents acc (Mentat_llm.Tool.Result.content result)
+  in
+  List.fold_left message 0 messages / 4
+
+let context_tokens state =
+  match Mentat_session.State.replay_usage state with
+  | Some (usage, uncovered) ->
+      Mentat_llm.Usage.input_total usage
+      + Mentat_llm.Usage.output_total usage
+      + estimated_tokens uncovered
+  | None ->
+      estimated_tokens
+        (Mentat_llm.Transcript.messages
+           (Mentat_session.State.model_transcript state))
+
+(* Nothing to summarize: the model view is empty, or a prior summary already
+   covers the whole transcript and a fresh one would only summarize the
+   summary. Guards both the manual admission and the pressure trigger — the
+   trigger would otherwise loop on a reading a fresh summary cannot lower. *)
+let nothing_to_compact state =
+  Mentat_llm.Transcript.length (Mentat_session.State.model_transcript state) = 0
+  ||
+  match Mentat_session.State.latest_compaction state with
+  | Some compaction ->
+      Mentat_session.Compaction.summarized_upto compaction
+      >= Mentat_llm.Transcript.length
+           (Mentat_session.State.full_transcript state)
+  | None -> false
+
 let compaction_request env session state contract =
   match env.Env.compaction_pressure_tokens with
   | None -> None
   | Some threshold -> (
-      match Mentat_session.State.replay_usage state with
-      | None -> None
-      | Some (usage, _uncovered) -> (
-          let projected =
-            Mentat_llm.Usage.input_total usage
-            + Mentat_llm.Usage.output_total usage
-          in
-          if projected < threshold then None
-          else
-            match summary_request env session state contract with
-            | Ok request ->
-                Some (request, Mentat_session.Compaction.Reason.Context_pressure)
-            | Error _ -> None))
+      if context_tokens state < threshold || nothing_to_compact state then None
+      else
+        match summary_request env session state contract with
+        | Ok request ->
+            Some (request, Mentat_session.Compaction.Reason.Context_pressure)
+        | Error _ -> None)
 
 (* Context overflow recovery.
 
@@ -1269,23 +1333,7 @@ let compact env contract ~id session =
                  (Mentat_session.State.Error.Turn.Active
                     (Mentat_session.Turn.id active)))))
   | None -> (
-      let full_length =
-        Mentat_llm.Transcript.length
-          (Mentat_session.State.full_transcript state)
-      in
-      let model_length =
-        Mentat_llm.Transcript.length
-          (Mentat_session.State.model_transcript state)
-      in
-      (* Skipped: nothing to summarize, or the model view is already a prior
-         summary with no new transcript since — re-summarizing would only
-         summarize the summary. *)
-      let already_summarized =
-        match Mentat_session.State.latest_compaction state with
-        | Some c -> Mentat_session.Compaction.summarized_upto c >= full_length
-        | None -> false
-      in
-      if model_length = 0 || already_summarized then Ok Nothing_to_compact
+      if nothing_to_compact state then Ok Nothing_to_compact
       else
         let turn =
           Mentat_session.Turn.make ~id

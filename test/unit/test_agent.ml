@@ -3645,6 +3645,41 @@ let context_pressure_compaction_records_the_before_projection () =
                   equal (option int) ~msg:"after stays unpopulated" None
                     (Session.Compaction.Context_tokens.after ctx))))
 
+let context_pressure_compacts_without_provider_usage () =
+  (* No response in this script ever reports usage: the pressure reading falls
+     back to the byte estimate of the model view, so a usage-silent provider
+     still compacts instead of growing without bound. *)
+  let long_reply = String.make 2_000 'x' in
+  let script =
+    Ports.script @@ fun request ->
+    if request_contains request "Summarize this conversation" then
+      Ok (plain_response "Conversation summary.")
+    else Ok (plain_response long_reply)
+  in
+  let config _ ~latest_model:_ =
+    Ok
+      (Agent.Config.make ~model ~continuation_turn_limit:None
+         ~compaction_pressure_tokens:100 ())
+  in
+  with_engine ~script ~config (fun ~sw:_ ~client ~store ~engine:_ ->
+      (* The first turn grows the view past the threshold; the second turn's
+         request boundary reads the estimate and compacts before issuing. *)
+      submit_ok client (prompt ~session:(sid "root") ~turn:(tid "t-1") "hi");
+      let _ = drain_committed (follow_ok client (sid "root")) in
+      let feed = follow_ok ~from:`Now client (sid "root") in
+      submit_ok client (prompt ~session:(sid "root") ~turn:(tid "t-2") "again");
+      let _ = drain_committed feed in
+      match Hashtbl.find_opt store.sessions "root" with
+      | None -> fail "the root session is missing from the store"
+      | Some session -> (
+          match Session.State.latest_compaction (Session.state session) with
+          | None -> fail "the estimate reading never triggered compaction"
+          | Some compaction ->
+              is_true ~msg:"the compaction is a pressure compaction"
+                (Session.Compaction.Reason.equal
+                   (Session.Compaction.reason compaction)
+                   Session.Compaction.Reason.Context_pressure)))
+
 (* Runtime: scheduler and subagents. *)
 
 (* A parent spawns exactly one child. A one-shot latch (the marker "PLEASE_SPAWN"
@@ -6091,6 +6126,8 @@ let () =
             overflow_recovery_is_bounded_per_turn;
           test "context pressure compaction records the before projection"
             context_pressure_compaction_records_the_before_projection;
+          test "context pressure compacts without provider usage"
+            context_pressure_compacts_without_provider_usage;
           test "a mid-turn workspace notice rides the next request"
             a_mid_turn_notice_rides_the_next_request;
           test "a turn states every observation it made"

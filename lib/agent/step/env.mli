@@ -30,8 +30,10 @@ type t = private {
       (** Renders the model-visible text of a policy denial. Deterministic,
           total, non-empty: the result becomes durable transcript state. *)
   compaction_pressure_tokens : int option;
-      (** Projected replay tokens above which a request boundary compacts with
-          reason [Context_pressure]. [None] disables automatic compaction. *)
+      (** The context reading above which a request boundary compacts with
+          reason [Context_pressure]: provider-reported replay usage when a
+          response supplied it, byte-estimated from the model view otherwise.
+          [None] disables automatic compaction. *)
   continuation_turn_limit : int option;
       (** Maximum goal-continuation turns per goal; [None] is unlimited. *)
   max_spawn_depth : int;
