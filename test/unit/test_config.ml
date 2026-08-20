@@ -855,8 +855,8 @@ let precedence =
           in
           (* Both floors sit well below their ~60% / ~40% deliberate means, so
              they guard that each region is exercised without hugging a boundary. *)
-          cover ~label:"configured" ~at_least:30.0 (Option.is_some expected);
-          cover ~label:"unconfigured" ~at_least:15.0 (Option.is_none expected);
+          cover "configured" (Option.is_some expected);
+          cover "unconfigured" (Option.is_none expected);
           equal (option string) ~msg:"configured spelling" expected
             (C.Resolved.text C.Field.model r);
           equal bool ~msg:"configured presence" (Option.is_some expected)

@@ -1807,8 +1807,7 @@ let digest_contracts =
             (Request.digest (decode Request.jsont (encode Request.jsont r))));
       prop "digest is byte-sensitive over NUL-bearing content"
         (Gen.pair nul_text nul_text) (fun (a, b) ->
-          cover ~label:"a contains NUL" ~at_least:10.0
-            (String.contains a '\000');
+          cover "a contains NUL" (String.contains a '\000');
           let da = Request.digest (user_request a) in
           let db = Request.digest (user_request b) in
           if String.equal a b then equal digest_t da db

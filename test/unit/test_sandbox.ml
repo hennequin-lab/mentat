@@ -274,9 +274,10 @@ let policy_keeps_every_clause () =
     require_some ~msg:"the nested carveout is emitted"
       (position "/private/tmp/ws/.mentat")
   in
-  greater int
-    ~msg:"a nested carveout is emitted after the root that contains it"
-    ~than:root nested
+  satisfies int
+    ~claim:"a nested carveout is emitted after the root that contains it"
+    (fun nested -> nested > root)
+    nested
 
 let policy_folds_writable_into_reads () =
   let policy =

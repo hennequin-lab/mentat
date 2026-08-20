@@ -885,7 +885,7 @@ let login_logout_absent_slot_does_not_rewrite () =
   let after = Unix.stat path in
   equal int ~msg:"absent slot keeps the store inode" before.Unix.st_ino
     after.Unix.st_ino;
-  equal (Windtrap.float 0.) ~msg:"absent slot keeps the store mtime"
+  equal Windtrap.float_exact ~msg:"absent slot keeps the store mtime"
     before.Unix.st_mtime after.Unix.st_mtime
 
 let login_logout_current_prefers_process () =

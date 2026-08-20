@@ -41,10 +41,10 @@
    (run %{bin:windtrap} mutate))))
 
 ; The admission alias is the only one that runs rather than merges:
-; WINDTRAP_MUTATE=audit is `admit` with universal designation -- every test
-; the run executes is judged -- so it asks "can every test in this suite
-; fail?" with no filter to keep in sync. An admission run persists nothing,
-; so its rulings are the whole product and it never perturbs @mutate.
+; WINDTRAP_MUTATE=admit with no selection judges every test the run
+; executes, so it asks "can every test in this suite fail?" with no filter
+; to keep in sync. An admission run persists nothing, so its rulings are the
+; whole product and it never perturbs @mutate.
 ;
 ; Named suites only. One omission is structural, from SKILL 3: a suite that
 ; tests its subject through a process it spawns has nothing to admit, because
@@ -68,7 +68,7 @@
 ; row exercises it: the missing test is an answer whose version is not 1, not
 ; a weak assertion in the rows that exist. Audit them with
 ;
-;   WINDTRAP_MUTATE=audit dune exec --instrument-with ppx_windtrap.mutate \
+;   WINDTRAP_MUTATE=admit dune exec --instrument-with ppx_windtrap.mutate \
 ;     test/unit/test_permission.exe
 
 (rule
@@ -77,5 +77,5 @@
  (action
   (setenv
    WINDTRAP_MUTATE
-   audit
+   admit
    (run %{exe:unit/test_config.exe}))))

@@ -475,13 +475,13 @@ let assert_states_equal ~msg a b =
     (State.interrupt_requested a)
     (State.interrupt_requested b);
   equal
-    (option (of_equal Session.Plan.Approval.equal))
+    (option (Testable.of_equal Session.Plan.Approval.equal))
     ~msg:(m "approved plan") (State.approved_plan a) (State.approved_plan b);
   equal
     (list
        (pair
-          (of_equal Session.Tool_claim.Started.equal)
-          (option (of_equal Session.Tool_claim.Settled.equal))))
+          (Testable.of_equal Session.Tool_claim.Started.equal)
+          (option (Testable.of_equal Session.Tool_claim.Settled.equal))))
     ~msg:(m "tool claims") (State.tool_claims a) (State.tool_claims b);
   is_true ~msg:(m "grants")
     (Permission.Policy.Grants.equal (State.grants a) (State.grants b));
@@ -1739,7 +1739,7 @@ let plan_build_group =
       test "approved_plan retains the exact D8 value through its lifecycle"
         (fun () ->
           equal
-            (option (of_equal Session.Plan.Approval.equal))
+            (option (Testable.of_equal Session.Plan.Approval.equal))
             ~msg:"no approval on the empty state" None
             (State.approved_plan State.empty);
           let approval, prefix =
@@ -1747,7 +1747,7 @@ let plan_build_group =
           in
           let approved = state prefix in
           equal
-            (option (of_equal Session.Plan.Approval.equal))
+            (option (Testable.of_equal Session.Plan.Approval.equal))
             ~msg:"settlement retains the exact approval" (Some approval)
             (State.approved_plan approved);
           let build =
@@ -1757,7 +1757,7 @@ let plan_build_group =
           in
           let consumed = state (prefix @ [ Event.turn_started build ]) in
           equal
-            (option (of_equal Session.Plan.Approval.equal))
+            (option (Testable.of_equal Session.Plan.Approval.equal))
             ~msg:"the plan-build turn start consumes the approval" None
             (State.approved_plan consumed));
       test "approval settlement makes edited body and feedback model-visible"
@@ -4784,8 +4784,8 @@ let journal_machine_group =
             (Option.is_some (State.suspension sut.proj));
           (* Both rare states have to be reached, or the commands that depend
              on them never ran and the suite is quietly weaker than it reads. *)
-          cover ~label:"a turn forced interrupt-only" ~at_least:65. m.forced;
-          cover ~label:"an open provider claim" ~at_least:35. (m.pending <> None))
+          cover "a turn forced interrupt-only" m.forced;
+          cover "an open provider claim" (m.pending <> None))
         journal_commands;
     ]
 

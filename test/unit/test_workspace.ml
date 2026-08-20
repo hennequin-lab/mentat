@@ -415,8 +415,8 @@ let addresses =
       prop "is_within agrees with relativize (decision ii)" path_pair_gen
         (fun (root, p) ->
           let within = Option.is_some (Workspace.Path.relativize ~root p) in
-          cover ~label:"within" ~at_least:25.0 within;
-          cover ~label:"disjoint" ~at_least:10.0 (not within);
+          cover "within" within;
+          cover "disjoint" (not within);
           equal bool ~msg:"is_within = is_some relativize" within
             (Workspace.Path.is_within ~root p));
     ]

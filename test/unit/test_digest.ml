@@ -283,8 +283,8 @@ let of_hex_codec =
             (Mentat_digest.of_hex abc_hex));
       prop "round-trips to_hex over arbitrary bytes" content_gen (fun s ->
           (* Prove the interesting regions are actually exercised. *)
-          cover ~label:"contains NUL" ~at_least:20.0 (String.contains s '\000');
-          cover ~label:"contains a high byte (invalid UTF-8)" ~at_least:20.0
+          cover "contains NUL" (String.contains s '\000');
+          cover "contains a high byte (invalid UTF-8)"
             (String.exists (fun c -> Char.code c >= 128) s);
           let d = Mentat_digest.string s in
           equal (result digest pass) (Ok d)
@@ -344,8 +344,8 @@ let incremental_hashing =
     [
       prop "folding chunks equals hashing their concatenation" chunks_gen
         (fun chunks ->
-          cover ~label:"multiple chunks" ~at_least:20.0 (List.length chunks > 1);
-          cover ~label:"contains NUL" ~at_least:20.0
+          cover "multiple chunks" (List.length chunks > 1);
+          cover "contains NUL"
             (List.exists (fun s -> String.contains s '\000') chunks);
           equal digest
             (Mentat_digest.string (String.concat "" chunks))

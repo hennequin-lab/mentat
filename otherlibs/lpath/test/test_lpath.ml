@@ -345,8 +345,8 @@ let component_grammar =
               ("C:", false);
             ]);
       prop "l4_is_component_matches_grammar" grammar_string_gen (fun c ->
-          cover ~label:"valid" ~at_least:15.0 (ref_is_component c);
-          cover ~label:"invalid" ~at_least:15.0 (not (ref_is_component c));
+          cover "valid" (ref_is_component c);
+          cover "invalid" (not (ref_is_component c));
           equal bool ~msg:(String.escaped c) (ref_is_component c)
             (Lpath.Rel.is_component c));
       prop "l5_rel_add_component" (Gen.pair rel_gen grammar_string_gen)
@@ -410,10 +410,8 @@ let drive_prefix_boundary =
       prop "drive_prefix_only_ascii_letter_colon" drive_case_gen
         (fun (f, tail) ->
           let c = Printf.sprintf "%c:%s" f tail in
-          cover ~label:"letter (drive, invalid)" ~at_least:20.0
-            (is_ascii_letter f);
-          cover ~label:"non-letter (valid)" ~at_least:20.0
-            (not (is_ascii_letter f));
+          cover "letter (drive, invalid)" (is_ascii_letter f);
+          cover "non-letter (valid)" (not (is_ascii_letter f));
           equal bool ~msg:(String.escaped c)
             (not (is_ascii_letter f))
             (Lpath.Rel.is_component c));
@@ -679,8 +677,8 @@ let containment =
       prop "l10_rel_is_within_iff_relativize" rel_containment_pair
         (fun (root, p) ->
           let within = Option.is_some (Lpath.Rel.relativize ~root p) in
-          cover ~label:"within" ~at_least:30.0 within;
-          cover ~label:"disjoint" ~at_least:10.0 (not within);
+          cover "within" within;
+          cover "disjoint" (not within);
           equal bool ~msg:"is_within = is_some relativize" within
             (Lpath.Rel.is_within ~root p));
       prop "l10_abs_is_within_iff_relativize" abs_containment_pair
@@ -906,7 +904,7 @@ let error_classification =
                 (rel_string s))
             [ "/a"; "\\a"; "C:a" ]);
       prop "l26_rel_absolute_looking_iff" raw_path_input_gen (fun s ->
-          cover ~label:"absolute-looking" ~at_least:15.0 (starts_absolute s);
+          cover "absolute-looking" (starts_absolute s);
           equal bool ~msg:(String.escaped s) (starts_absolute s)
             (match Lpath.Rel.of_string s with
             | Error Lpath.Error.Absolute -> true
@@ -924,7 +922,7 @@ let error_classification =
             ]);
       prop "l27_abs_relative_iff" raw_path_input_gen (fun s ->
           let relative = s <> "" && not (String.starts_with ~prefix:"/" s) in
-          cover ~label:"relative" ~at_least:15.0 relative;
+          cover "relative" relative;
           equal bool ~msg:(String.escaped s) relative
             (match Lpath.Abs.of_string s with
             | Error Lpath.Error.Relative -> true
