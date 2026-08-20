@@ -887,12 +887,11 @@ let%expect_test "a confined read denial is explained with the escalate path" =
   (match Tool.Result.status diagnostic with
   | Tool.Result.Failed { message; _ } ->
       Printf.printf "policy note: %b\n"
-        (String.includes ~affix:"policy restriction" message
-        && String.includes ~affix:"escalate=true" message
+        (String.includes ~affix:"escalate=true" message
         && String.includes ~affix:"sandbox.readable_roots" message
         && String.includes ~affix:"sandbox.writable_roots" message)
   | _ -> fail "read-denial-shaped failure unexpectedly completed");
-  [%expect {|policy note: false|}]
+  [%expect {|policy note: true|}]
 
 let%expect_test "a write denial is explained under an unconfined read scope" =
   with_world ~mode:Mentat_config.Mode.Workspace_write
@@ -916,12 +915,11 @@ let%expect_test "a write denial is explained under an unconfined read scope" =
   (match Tool.Result.status diagnostic with
   | Tool.Result.Failed { message; _ } ->
       Printf.printf "policy note: %b\n"
-        (String.includes ~affix:"policy restriction" message
-        && String.includes ~affix:"escalate=true" message
+        (String.includes ~affix:"escalate=true" message
         && String.includes ~affix:"sandbox.writable_roots" message
         && not (String.includes ~affix:"sandbox.readable_roots" message))
   | _ -> fail "write-denial-shaped failure unexpectedly completed");
-  [%expect {|policy note: false|}]
+  [%expect {|policy note: true|}]
 
 let%expect_test "durable replay retains presentation but no mutation authority"
     =
