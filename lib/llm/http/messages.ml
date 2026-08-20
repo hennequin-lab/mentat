@@ -22,6 +22,8 @@ type t = {
   timeout_s : float option;
   max_retries : int option;
   max_stream_retries : int option;
+  terminal : (Http.response -> bool) option;
+  classify : (status:int -> body:string -> Llm.Error.kind option) option;
   cache : bool;
   sampling : bool;
   endpoint : string;
@@ -34,7 +36,7 @@ type t = {
 let label_of provider = String.capitalize_ascii (Llm.Provider.id provider)
 
 let make ~provider ?(headers = []) ?timeout_s ?max_retries ?max_stream_retries
-    ~cache ~sampling ~endpoint ~sw ~env () =
+    ?terminal ?classify ~cache ~sampling ~endpoint ~sw ~env () =
   {
     provider;
     label = label_of provider;
@@ -42,6 +44,8 @@ let make ~provider ?(headers = []) ?timeout_s ?max_retries ?max_stream_retries
     timeout_s;
     max_retries;
     max_stream_retries;
+    terminal;
+    classify;
     cache;
     sampling;
     endpoint;
@@ -75,7 +79,8 @@ let stream_post t ~on_retry ~body =
   let max_retries =
     Option.value t.max_retries ~default:default_max_retries
   in
-  Retry.pre_stream ~clock:t.env#clock ~max_retries ~on_retry (fun ~attempt ->
+  Retry.pre_stream ~clock:t.env#clock ~max_retries ?terminal:t.terminal
+    ~on_retry (fun ~attempt ->
       Http.post_stream ~sw:t.sw ~env:t.env ~url:t.endpoint
         ~headers:(wire_headers t attempt) ~body)
   |> Result.map_error error_of_http
@@ -723,13 +728,22 @@ let redacted_body ~label body =
       ^ string_of_int (String.length body)
       ^ " bytes>")
 
-let api_error ~provider ~label ?(phase = Llm.Error.Startup) = function
+let api_error ~provider ~label ?classify ?(phase = Llm.Error.Startup) =
+  function
   | Wire_error.Transport message ->
       llm_error ~provider ~phase Llm.Error.Transport message
   | Wire_error.Decode message ->
       llm_error ~provider ~phase Llm.Error.Decode message
   | Wire_error.Response response ->
-      let kind = error_kind_of_status response.Http.status in
+      let classified =
+        Option.bind classify (fun classify ->
+            classify ~status:response.Http.status ~body:response.Http.body)
+      in
+      let kind =
+        match classified with
+        | Some kind -> kind
+        | None -> error_kind_of_status response.Http.status
+      in
       let request_id = request_id response.Http.headers in
       let message =
         match Jsont_bytesrw.decode_string Jsont.json response.Http.body with
@@ -811,7 +825,7 @@ let tool_call_of_partial ~provider ~label partial =
       | exception Invalid_argument message ->
           decode_error ~provider (label ^ " tool_use is malformed: " ^ message))
 
-let consume_events ~provider ~label ~cancelled ~elapsed ~on_event
+let consume_events ~provider ~label ?classify ~cancelled ~elapsed ~on_event
     requested_model api_stream =
   let partials = Hashtbl.create 8 in
   let reasonings = Hashtbl.create 8 in
@@ -937,7 +951,7 @@ let consume_events ~provider ~label ~cancelled ~elapsed ~on_event
     if Option.is_none !result then
       match event with
       | Error error ->
-          fail (api_error ~provider ~label ~phase:Llm.Error.Stream error)
+          fail (api_error ~provider ~label ?classify ~phase:Llm.Error.Stream error)
       | Ok ({ Wire.name; data = json } : Wire.event) -> (
           match name with
           | "message_start" ->
@@ -1148,13 +1162,14 @@ let perform_request t ~phase ~cancelled ~on_event request =
         Retry.stream ~clock ~cancelled ~max_retries ~on_event
           ~open_stream:(fun ~on_retry ->
             match Wire.create_stream ~on_retry t api_request with
-            | Error error -> Error (api_error ~provider ~label error)
+            | Error error ->
+                Error (api_error ~provider ~label ?classify:t.classify error)
             | Ok api_stream ->
                 phase := Llm.Error.Stream;
                 Ok api_stream)
           ~consume:(fun ~on_event api_stream ->
-            consume_events ~provider ~label ~cancelled ~elapsed ~on_event model
-              api_stream)
+            consume_events ~provider ~label ?classify:t.classify ~cancelled
+              ~elapsed ~on_event model api_stream)
 
 let run t ~cancelled ~on_event request =
   let phase = ref Llm.Error.Startup in

@@ -474,10 +474,14 @@ let opencode_models =
       ~capabilities:tools_reasoning ~supported_reasoning:opencode_efforts
       ~pricing:(pricing ~input:0.14 ~output:0.28 ~cache_read:0.0028 ())
       ();
+    (* The vendor's public catalog lists hy3 at exactly an eighth of the
+       published plan rates; until a live bill settles which is real, the
+       declared rate is the published one — the spend row errs high, never
+       low. *)
     Model.make (llm "hy3") ~display_name:"Hy3" ~family:"hy"
       ~context_window:256_000 ~max_output_tokens:64_000
       ~capabilities:tools_reasoning ~supported_reasoning:opencode_efforts
-      ~pricing:(pricing ~input:0.0175 ~output:0.0725 ~cache_read:0.004375 ())
+      ~pricing:(pricing ~input:0.14 ~output:0.58 ~cache_read:0.035 ())
       ();
     (* The messages-protocol lines. Their thinking dialect is unverified on
        the gateway, so no reasoning efforts are declared. *)
@@ -591,11 +595,18 @@ let drop_prefix ~prefix s =
 
 module Check = struct
   let problem ~status ~body =
-    if status = 401 || status = 403 then Problem.Invalid_credential
+    if status = 401 || status = 403 then
+      (* The OpenCode gateway answers account problems with 401s whose bodies
+         alone disambiguate them; a typed usage-limit condition is quota, not
+         a bad credential. *)
+      if Mentat_llm_opencode.quota_exhausted ~body then Problem.Quota_exceeded
+      else Problem.Invalid_credential
     else if status = 402 then Problem.Quota_exceeded
     else if status = 429 then
-      if String.includes ~affix:"quota" (String.lowercase_ascii body) then
-        Problem.Quota_exceeded
+      if
+        Mentat_llm_opencode.quota_exhausted ~body
+        || String.includes ~affix:"quota" (String.lowercase_ascii body)
+      then Problem.Quota_exceeded
       else Problem.Rate_limited
     else if status >= 500 then Problem.Network
     else Problem.other "unknown_provider_response"

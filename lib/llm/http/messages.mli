@@ -45,6 +45,8 @@ val make :
   ?timeout_s:float ->
   ?max_retries:int ->
   ?max_stream_retries:int ->
+  ?terminal:(Transport.response -> bool) ->
+  ?classify:(status:int -> body:string -> Mentat_llm.Error.kind option) ->
   cache:bool ->
   sampling:bool ->
   endpoint:string ->
@@ -67,7 +69,13 @@ val make :
     headers, and streamed response consumption. [max_retries] (default [2])
     bounds the pre-first-token retry and [max_stream_retries] (default [5])
     the stream re-run, both under the shared {!Retry} policy.
-    [max_retries = 0] silences the stream re-run as well. *)
+    [max_retries = 0] silences the stream re-run as well.
+
+    [terminal] recognizes responses whose retryable status hides an
+    unrecoverable condition and short-circuits the retry ladder; the server's
+    own retry header still outranks it. [classify], consulted before the
+    status table, lets a provider whose gateway disambiguates failures only in
+    the error body assign the error kind from it. Both default to absent. *)
 
 val check_request :
   provider:Mentat_llm.Provider.t ->

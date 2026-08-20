@@ -80,6 +80,44 @@ module Credential = struct
     | Api_key value | Bearer value -> ("x-api-key", value)
 end
 
+(* The gateway disambiguates failures only in [error.type]: usage limits
+   arrive as 429 and account problems — a lapsed subscription, an unknown
+   model — as 401, so the status alone misclassifies both. The classifier
+   reads the one token that tells them apart, and the terminal predicate stops
+   the retry ladder on a limit no retry can outwait. *)
+
+let error_type body =
+  match Jsont_bytesrw.decode_string Jsont.json body with
+  | Error _ -> None
+  | Ok (Jsont.Object (fields, _)) -> (
+      match Jsont.Json.find_mem "error" fields with
+      | Some (_, Jsont.Object (error_fields, _)) -> (
+          match Jsont.Json.find_mem "type" error_fields with
+          | Some (_, Jsont.String (value, _)) -> Some value
+          | Some _ | None -> None)
+      | Some _ | None -> None)
+  | Ok _ -> None
+
+let quota_type = function
+  | "GoUsageLimitError" | "FreeUsageLimitError" | "BlackUsageLimitError"
+  | "CreditsError" | "MonthlyLimitError" | "UserLimitError" ->
+      true
+  | _ -> false
+
+let quota_exhausted ~body =
+  match error_type body with
+  | Some type_ -> quota_type type_
+  | None -> false
+
+let classify_error ~status:_ ~body =
+  match error_type body with
+  | Some type_ when quota_type type_ -> Some Llm.Error.Quota
+  | Some "ModelError" -> Some Llm.Error.Invalid_request
+  | Some _ | None -> None
+
+let terminal (response : Mentat_llm_http.response) =
+  quota_exhausted ~body:response.Mentat_llm_http.body
+
 let run_chat config credential ~env ~cancelled ~on_event request =
   Eio.Switch.run ~name:"opencode.request" @@ fun sw ->
   let endpoint =
@@ -88,6 +126,7 @@ let run_chat config credential ~env ~cancelled ~on_event request =
       ~timeout_s:(Config.timeout_s config)
       ?max_retries:(Config.max_retries config)
       ?max_stream_retries:(Config.max_stream_retries config)
+      ~terminal ~classify:classify_error
       ~base_url:(Config.base_url config) ~sw ~env ()
   in
   Chat_completions.run endpoint ~cancelled ~on_event request
@@ -102,7 +141,7 @@ let run_messages config credential ~env ~cancelled ~on_event request =
       ~timeout_s:(Config.timeout_s config)
       ?max_retries:(Config.max_retries config)
       ?max_stream_retries:(Config.max_stream_retries config)
-      ~cache:true ~sampling:true
+      ~terminal ~classify:classify_error ~cache:true ~sampling:true
       ~endpoint:(Config.base_url config ^ "/v1/messages")
       ~sw ~env ()
   in

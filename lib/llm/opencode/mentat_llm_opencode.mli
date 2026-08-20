@@ -31,6 +31,14 @@ val chat_model : string -> Mentat_llm.Model.t
 val messages_model : string -> Mentat_llm.Model.t
 (** [messages_model id] is messages-protocol model [id] under {!provider}. *)
 
+val quota_exhausted : body:string -> bool
+(** [quota_exhausted ~body] is [true] iff [body] is a gateway error whose
+    [error.type] names a usage-limit or balance condition no retry can
+    outwait. The gateway answers those with retryable statuses, so this one
+    predicate is both the client's retry-terminal rule and the account
+    check's quota lowering — one definition, so the two readings cannot
+    drift. *)
+
 module Config : sig
   type t
   (** Connection configuration.

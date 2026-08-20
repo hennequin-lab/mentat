@@ -294,6 +294,86 @@ let foreign_provider_models_are_refused () =
        ~api:(Llm.Model.api (Opencode.chat_model "kimi-k3"))
        ~id:"qwen3-coder:30b")
 
+(* The gateway's own error vocabulary: usage limits ride retryable statuses
+   and account problems ride 401, both disambiguated only by [error.type]. *)
+let usage_limit_exhaustion_is_terminal_quota () =
+  let body =
+    {|{"type":"error","error":{"type":"GoUsageLimitError","message":"5 hour usage limit reached"}}|}
+  in
+  let result, requests =
+    Llm_test_server.with_server ~name:"opencode-usage-limit"
+      (fun _index _request ->
+        Llm_test_server.Reply
+          (http_response ~headers:[ ("retry-after", "0") ] 429 body))
+      (fun port ->
+        let config =
+          Opencode.Config.make
+            ~base_url:("http://127.0.0.1:" ^ string_of_int port)
+            ~max_retries:3 ()
+        in
+        run_stream ~config port (request ()))
+  in
+  let events, error = expect_stream_error "usage limit" result in
+  equal_error_kind "usage limit kind" Llm.Error.Quota error;
+  equal int ~msg:"no retry against an exhausted budget" 1
+    (List.length requests);
+  equal int ~msg:"no retry announcements" 0 (List.length (retry_events events));
+  contains ~msg:"gateway guidance rides the message"
+    ~sub:"usage limit reached" (Llm.Error.message error)
+
+let unknown_model_is_invalid_request () =
+  let body =
+    {|{"type":"error","error":{"type":"ModelError","message":"unknown model"}}|}
+  in
+  let result, _requests =
+    Llm_test_server.with_server ~name:"opencode-model-error"
+      (fun _index _request ->
+        Llm_test_server.Reply (http_response 401 body))
+      (fun port -> run_stream port (request ()))
+  in
+  let _events, error = expect_stream_error "model error" result in
+  equal_error_kind "model error kind" Llm.Error.Invalid_request error
+
+let reasoning_replays_as_reasoning_content () =
+  let assistant =
+    Llm.Message.assistant
+      (Llm.Message.Assistant.make
+         [
+           Llm.Message.Assistant.reasoning_part
+             (Llm.Message.Assistant.Reasoning.make ~text:"prior thoughts" ());
+           Llm.Message.Assistant.text_part "earlier answer";
+         ])
+  in
+  let transcript =
+    Llm.Transcript.of_list_exn
+      [ Llm.Message.user_text "hello"; assistant; Llm.Message.user_text "go on" ]
+  in
+  let request =
+    Llm.Request.make_exn ~model:(Opencode.chat_model "kimi-k3") transcript
+  in
+  let result, requests =
+    Llm_test_server.with_server ~name:"opencode-reasoning-replay"
+      (fun _index _request -> Llm_test_server.Reply (text_stream "ok"))
+      (fun port -> run_stream port request)
+  in
+  ignore (expect_stream_ok "reasoning replay" result);
+  let recorded = only_request requests in
+  let messages =
+    match field "body" "messages" (request_body recorded) with
+    | Jsont.Array (messages, _) -> messages
+    | _ -> fail "messages is not an array"
+  in
+  let replayed =
+    List.find_opt
+      (fun message ->
+        match object_field "reasoning_content" message with
+        | Some (Jsont.String (value, _)) -> String.equal value "prior thoughts"
+        | Some _ | None -> false)
+      messages
+  in
+  is_true ~msg:"assistant reasoning replays as reasoning_content"
+    (Option.is_some replayed)
+
 let transient_http_failures_are_retried () =
   let result, requests =
     Llm_test_server.with_server ~name:"opencode-transient-retry"
@@ -380,6 +460,12 @@ let () =
       test "foreign-api models are refused" foreign_api_models_are_refused;
       test "foreign-provider models are refused"
         foreign_provider_models_are_refused;
+      test "usage-limit exhaustion is terminal quota"
+        usage_limit_exhaustion_is_terminal_quota;
+      test "an unknown model is an invalid request"
+        unknown_model_is_invalid_request;
+      test "assistant reasoning replays as reasoning_content"
+        reasoning_replays_as_reasoning_content;
       test "transient HTTP failures are retried"
         transient_http_failures_are_retried;
       test "stream faults are retried" stream_faults_are_retried;

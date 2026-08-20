@@ -23,6 +23,8 @@ val make :
   ?timeout_s:float ->
   ?max_retries:int ->
   ?max_stream_retries:int ->
+  ?terminal:(Transport.response -> bool) ->
+  ?classify:(status:int -> body:string -> Mentat_llm.Error.kind option) ->
   base_url:string ->
   sw:Eio.Switch.t ->
   env:Eio_unix.Stdenv.base ->
@@ -36,7 +38,15 @@ val make :
     [max_retries] (default [2]) bounds the pre-first-token retry and
     [max_stream_retries] (default [5]) the stream re-run, both under the shared
     {!Retry} policy. [max_retries = 0] silences the stream re-run as well, so a
-    caller that wants exactly one attempt needs only the one argument. *)
+    caller that wants exactly one attempt needs only the one argument.
+
+    [terminal] recognizes responses whose retryable status hides an
+    unrecoverable condition — a dollar-budget exhaustion answering with a
+    rate-limit status — and short-circuits the retry ladder; the server's own
+    retry header still outranks it. [classify], consulted before the status
+    table, lets a provider whose gateway disambiguates failures only in the
+    error body assign the error kind from it. Both default to absent: the
+    shared status policy alone. *)
 
 val check_request :
   provider:Mentat_llm.Provider.t ->

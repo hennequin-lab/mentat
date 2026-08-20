@@ -30,13 +30,15 @@ type t = {
   timeout_s : float option;
   max_retries : int;
   max_stream_retries : int;
+  terminal : (Http.response -> bool) option;
+  classify : (status:int -> body:string -> Llm.Error.kind option) option;
   sw : Eio.Switch.t;
   env : Eio_unix.Stdenv.base;
 }
 
 let make ~provider ?(headers = []) ?timeout_s
-    ?(max_retries = default_max_retries) ?max_stream_retries ~base_url ~sw ~env
-    () =
+    ?(max_retries = default_max_retries) ?max_stream_retries ?terminal
+    ?classify ~base_url ~sw ~env () =
   (* [max_retries = 0] is the caller's blanket "no retries" and silences the
      stream re-run too, the way the Responses and Messages transports read it. *)
   let max_stream_retries =
@@ -52,6 +54,8 @@ let make ~provider ?(headers = []) ?timeout_s
     timeout_s;
     max_retries;
     max_stream_retries;
+    terminal;
+    classify;
     sw;
     env;
   }
@@ -155,7 +159,8 @@ module Chat = struct
         in
         match
           Retry.pre_stream ~clock:client.env#clock
-            ~max_retries:client.max_retries ~on_retry (fun ~attempt ->
+            ~max_retries:client.max_retries ?terminal:client.terminal ~on_retry
+            (fun ~attempt ->
               Http.post_stream ~sw:client.sw ~env:client.env
                 ~url:(client.base_url ^ "/v1/chat/completions")
                 ~headers:(headers attempt) ~body)
@@ -340,19 +345,34 @@ let encode_user_part t = function
                      (Jsont.Json.object' [ string_member "url" url ]);
                  ]))
 
+(* Reasoning replays as [reasoning_content] beside the assistant content —
+   the field interleaved-thinking chat models emit and read back; a part with
+   neither text nor summary has nothing this dialect can carry. *)
 let encode_assistant assistant =
-  let texts, calls =
+  let texts, reasonings, calls =
     List.fold_left
-      (fun (texts, calls) part ->
+      (fun (texts, reasonings, calls) part ->
         match part with
-        | Llm.Message.Assistant.Text text -> (text :: texts, calls)
-        | Llm.Message.Assistant.Tool_call call -> (texts, call :: calls)
-        | Llm.Message.Assistant.Reasoning _ -> (texts, calls))
-      ([], [])
+        | Llm.Message.Assistant.Text text -> (text :: texts, reasonings, calls)
+        | Llm.Message.Assistant.Tool_call call ->
+            (texts, reasonings, call :: calls)
+        | Llm.Message.Assistant.Reasoning reasoning -> (
+            match
+              match Llm.Message.Assistant.Reasoning.text reasoning with
+              | Some _ as text -> text
+              | None -> Llm.Message.Assistant.Reasoning.summary reasoning
+            with
+            | Some text when not (String.is_empty text) ->
+                (texts, text :: reasonings, calls)
+            | Some _ | None -> (texts, reasonings, calls)))
+      ([], [], [])
       (Llm.Message.Assistant.parts assistant)
   in
-  let texts = List.rev texts and calls = List.rev calls in
-  if List.is_empty texts && List.is_empty calls then []
+  let texts = List.rev texts
+  and reasonings = List.rev reasonings
+  and calls = List.rev calls in
+  if List.is_empty texts && List.is_empty reasonings && List.is_empty calls
+  then []
   else
     let encode_call call =
       Jsont.Json.object'
@@ -373,6 +393,13 @@ let encode_assistant assistant =
       match texts with
       | [] -> fields
       | texts -> string_member "content" (String.concat "\n" texts) :: fields
+    in
+    let fields =
+      match reasonings with
+      | [] -> fields
+      | reasonings ->
+          string_member "reasoning_content" (String.concat "\n" reasonings)
+          :: fields
     in
     let fields =
       match calls with
@@ -552,23 +579,35 @@ let api_error t ?(phase = Llm.Error.Startup) = function
          a provider failure. [Rate_limited] in particular is what tells the
          stream re-run that a mid-stream capacity fault is worth another
          attempt. Anything else is the provider failing opaquely. *)
+      let classified =
+        Option.bind t.classify (fun classify ->
+            classify ~status:response.Error.status ~body:response.Error.body)
+      in
       let kind =
-        match response.Error.status with
-        | 400 -> Llm.Error.Invalid_request
-        | 401 | 403 -> Llm.Error.Auth
-        | 402 -> Llm.Error.Quota
-        | 408 -> Llm.Error.Timeout
-        | 413 -> Llm.Error.Context_overflow
-        | 429 -> Llm.Error.Rate_limited
-        | _ -> Llm.Error.Provider
+        match classified with
+        | Some kind -> kind
+        | None -> (
+            match response.Error.status with
+            | 400 -> Llm.Error.Invalid_request
+            | 401 | 403 -> Llm.Error.Auth
+            | 402 -> Llm.Error.Quota
+            | 408 -> Llm.Error.Timeout
+            | 413 -> Llm.Error.Context_overflow
+            | 429 -> Llm.Error.Rate_limited
+            | _ -> Llm.Error.Provider)
       in
       let default = provider_id t ^ " request failed" in
       let message =
         match Jsont_bytesrw.decode_string Jsont.json response.Error.body with
         | Ok json -> (
             match object_field "error" json with
-            | Some error_json ->
-                Option.value (string_field "message" error_json) ~default
+            | Some error_json -> (
+                let message =
+                  Option.value (string_field "message" error_json) ~default
+                in
+                match string_field "type" error_json with
+                | Some type_ -> type_ ^ ": " ^ message
+                | None -> message)
             | None -> Option.value (string_field "message" json) ~default)
         | Error _ -> default
       in
