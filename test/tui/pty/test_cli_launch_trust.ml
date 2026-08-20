@@ -489,7 +489,7 @@ let%expect_test "failed activation rolls back visibly and permits retry" =
     05 |  Selection: 1 — continue restricted
     06 |
     07 |  Repository activation failed: unknown provider "missing"; known providers:
-    08 |  openai, anthropic, google, local, ollama
+    08 |  openai, anthropic, google, local, ollama, opencode-go
     09 |  The repository was returned to restricted mode.
     10 |
     11 |  This repository can control config, instructions, skills, Dune rules, local

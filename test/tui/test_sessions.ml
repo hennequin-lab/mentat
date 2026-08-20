@@ -569,10 +569,9 @@ let%expect_test "browser normalizes the shared hostile inline family" =
   let hostile =
     "A\tB\r\nC\u{2028}D\u{2029}E\000F\u{0085}G\255H e\u{0301}\u{2003}I"
   in
-  (* The Matrix screen stores the base glyph rather than its zero-width
-     combining cell. The surrounding em space makes that renderer behavior
-     visible in the complete frame without reaching around the public TUI
-     route. *)
+  (* The combining acute stays attached to its base and renders as one
+     cell; the em space around it makes that visible in the complete frame
+     without reaching around the public TUI route. *)
   Tui.run ~name:"sessions-hostile-inline" ~sessions:(fun project ->
       [ session ~id:"session-hostile" ~title:hostile ~updated_at:1_000 project ])
   @@ fun t ->
@@ -583,7 +582,7 @@ let%expect_test "browser normalizes the shared hostile inline family" =
     01 |  sessions ──────────────────────────────────────────────────────────── 1 session
     02 |
     03 |    session                              lifecycle phase   turns updated  recency
-    04 | ❯  A B  C D E�F�G�H e I                 active    idle  0 turns just now today
+    04 | ❯  A B  C D E�F�G�H é I                 active    idle  0 turns just now today
     05 |
     06 |
     07 |
