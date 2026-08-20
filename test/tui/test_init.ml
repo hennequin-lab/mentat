@@ -52,7 +52,7 @@ let%expect_test "the slash palette lists /init" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-init6a9b57a1
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-init442ce149
     04 |
     05 | ❯ say hello
     06 |
@@ -87,7 +87,7 @@ let%expect_test "/init is unavailable while a turn is in flight" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-initaadf9b7c
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-inita2b9dca1
     04 |
     05 | ❯ keep working
     06 |
@@ -122,7 +122,7 @@ let%expect_test "/init submits its built-in prompt as an ordinary turn" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-ini57895def
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-ini2e62b9a9
     04 |
     05 | ❯ say hello
     06 |

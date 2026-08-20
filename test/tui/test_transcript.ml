@@ -85,7 +85,7 @@ let%expect_test "Mosaic pages the complete transcript and returns to its tail" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-d56d5b5c
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-33fa0b81
     04 |
     05 | ❯ overflow the viewport
     06 |
@@ -255,7 +255,7 @@ let%expect_test "Markdown blocks remain spaced inside the complete transcript" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-d56d5b5c
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-33fa0b81
     04 |
     05 | ❯ show the retry design
     06 |

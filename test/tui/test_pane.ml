@@ -66,7 +66,7 @@ let%expect_test "empty activity keeps the transcript full width across resize" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-pane-empty-br841c98f5
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-pane-empty-brc3a3f5c5
     04 |
     05 | ❯ keep this transcript stable while the viewport changes
     06 |
@@ -87,7 +87,7 @@ let%expect_test "empty activity keeps the transcript full width across resize" =
     21 | ─────────────────────────────────────────────────────────────────────────────────────────────────────────────
     22 | ❯ message mentat
     23 | ─────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    24 |   ! not logged in · /login · ~/mentat-tui-pane-empty-br841c… · openai/gpt-5… · ! full access ? for shortcu…
+    24 |   ! not logged in · /login · ~/mentat-tui-pane-empty-brc3a3… · openai/gpt-5… · ! full access ? for shortcu…
     |}];
   (* At the inclusive breakpoint no orphan activity column or divider appears;
      the durable transcript expands into the complete region. *)
@@ -98,7 +98,7 @@ let%expect_test "empty activity keeps the transcript full width across resize" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-pane-empty-br841c98f5
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-pane-empty-brc3a3f5c5
     04 |
     05 | ❯ keep this transcript stable while the viewport changes
     06 |
@@ -119,7 +119,7 @@ let%expect_test "empty activity keeps the transcript full width across resize" =
     21 | ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
     22 | ❯ message mentat
     23 | ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    24 |   ! not logged in · /login · ~/mentat-tui-pane-empty-br841c… · openai/gpt-5.5 · ! full access ? for shortcu…
+    24 |   ! not logged in · /login · ~/mentat-tui-pane-empty-brc3a3… · openai/gpt-5.5 · ! full access ? for shortcu…
     |}];
   (* Immediately above the breakpoint Mosaic gives the extra cell to the same
      full-width transcript. *)
@@ -130,7 +130,7 @@ let%expect_test "empty activity keeps the transcript full width across resize" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-pane-empty-br841c98f5
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-pane-empty-brc3a3f5c5
     04 |
     05 | ❯ keep this transcript stable while the viewport changes
     06 |
@@ -151,7 +151,7 @@ let%expect_test "empty activity keeps the transcript full width across resize" =
     21 | ───────────────────────────────────────────────────────────────────────────────────────────────────────────────
     22 | ❯ message mentat
     23 | ───────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    24 |   ! not logged in · /login · ~/mentat-tui-pane-empty-br841c9… · openai/gpt-5.5 · ! full access ? for shortcu…
+    24 |   ! not logged in · /login · ~/mentat-tui-pane-empty-brc3a3f… · openai/gpt-5.5 · ! full access ? for shortcu…
     |}]
 
 let%expect_test
@@ -171,7 +171,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-pane-task-brd69b8c70
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-pane-task-br2676d3b6
     04 |
     05 | ❯ show the responsive task activity
     06 |
@@ -192,7 +192,7 @@ let%expect_test
     21 | ─────────────────────────────────────────────────────────────────────────────────────────────────────────────
     22 | ❯ queue a message — sends after this turn
     23 | ─────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    24 |   ! not logged in · /login · ~/mentat-tui-pane-task-brd69b… · openai/gpt-5.5 · ! full access ? for shortcu…
+    24 |   ! not logged in · /login · ~/mentat-tui-pane-task-br2676… · openai/gpt-5.5 · ! full access ? for shortcu…
     |}];
   (* At exactly 110 cells, the same complete board moves beside the transcript
      under the tasks heading. It must not remain duplicated below it. *)
@@ -203,7 +203,7 @@ let%expect_test
     {|
     01 |                                                                                 │ tasks · 2 done · 1 running
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium                     │   ◼ scaffold the module
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-pane-task-brd69b8c70               │   ◻ write the public
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-pane-task-br2676d3b6               │   ◻ write the public
     04 |                                                                                 │     interface
     05 | ❯ show the responsive task activity                                             │   ◻ wire the application
     06 |                                                                                 │     shell
@@ -224,7 +224,7 @@ let%expect_test
     21 | ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
     22 | ❯ queue a message — sends after this turn
     23 | ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    24 |   ! not logged in · /login · ~/mentat-tui-pane-task-brd69b8… · openai/gpt-5.5 · ! full access ? for shortcu…
+    24 |   ! not logged in · /login · ~/mentat-tui-pane-task-br2676d… · openai/gpt-5.5 · ! full access ? for shortcu…
     |}];
   (* A comfortably wide frame makes the transcript/activity split directly
      inspectable, including intrinsic task wrapping and the pane viewport. *)
@@ -235,7 +235,7 @@ let%expect_test
     {|
     01 |                                                                                 │ tasks · 2 done · 1 running
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium                     │   ◼ scaffold the module
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-pane-task-brd69b8c70               │   ◻ write the public interface
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-pane-task-br2676d3b6               │   ◻ write the public interface
     04 |                                                                                 │   ◻ wire the application shell
     05 | ❯ show the responsive task activity                                             │   ◻ add complete-screen tests
     06 |                                                                                 │   ◻ review the visual diff
@@ -256,7 +256,7 @@ let%expect_test
     21 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     22 | ❯ queue a message — sends after this turn
     23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    24 |   ! not logged in · /login · ~/mentat-tui-pane-task-brd69b8c70 · openai/gpt-5.5 · ! full access        ? for shortcuts
+    24 |   ! not logged in · /login · ~/mentat-tui-pane-task-br2676d3b6 · openai/gpt-5.5 · ! full access        ? for shortcuts
     |}];
   (* Crossing back proves that the stable keyed transcript survives branch
      replacement and that the task board returns to exactly one narrow site. *)
@@ -267,7 +267,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-pane-task-brd69b8c70
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-pane-task-br2676d3b6
     04 |
     05 | ❯ show the responsive task activity
     06 |
@@ -288,7 +288,7 @@ let%expect_test
     21 | ─────────────────────────────────────────────────────────────────────────────────────────────────────────────
     22 | ❯ queue a message — sends after this turn
     23 | ─────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    24 |   ! not logged in · /login · ~/mentat-tui-pane-task-brd69b… · openai/gpt-5.5 · ! full access ? for shortcu…
+    24 |   ! not logged in · /login · ~/mentat-tui-pane-task-br2676… · openai/gpt-5.5 · ! full access ? for shortcu…
     |}];
   Tui.finish_turn t;
   Tui.settle t
@@ -386,7 +386,7 @@ let%expect_test "workspace and context sections report the live pane facts" =
     {|
     01 |                                                                                 │ workspace
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium                     │   session · 2 files · +4 −1
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-pane-w89f7a894                     │
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-pane-w1e475aa7                     │
     04 |                                                                                 │ context
     05 | ❯ apply the workspace edits                                                     │   9,400 tokens
     06 |                                                                                 │   7% used
@@ -407,7 +407,7 @@ let%expect_test "workspace and context sections report the live pane facts" =
     21 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     22 | ❯ message mentat
     23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    24 |   ! not logged in · /login · ~/mentat-tui-pane-w89f7a894 · openai/gpt-5.5 · ! full access · 9.4K (7%)  ? for shortcuts
+    24 |   ! not logged in · /login · ~/mentat-tui-pane-w1e475aa7 · openai/gpt-5.5 · ! full access · 9.4K (7%)  ? for shortcuts
     |}]
 
 (* The workspace section also carries the ambient git-worktree summary and the
@@ -471,7 +471,7 @@ let%expect_test "workspace section shows the worktree diff and dune verdict" =
     {|
     01 |                                                                                 │ workspace
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium                     │   worktree · 5 files · +40 −8
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-pane-68a64058                      │   session · 1 file · +2 −0
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-pane-a62e47f3                      │   session · 1 file · +2 −0
     04 |                                                                                 │   dune · 2 errors
     05 | ❯ touch a file                                                                  │
     06 |                                                                                 │ context
@@ -492,7 +492,7 @@ let%expect_test "workspace section shows the worktree diff and dune verdict" =
     21 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     22 | ❯ message mentat
     23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    24 |   ! not logged in · /login · ~/mentat-tui-pane-68a64058 · openai/gpt-5.5 · ! full access · 6.4K (5%)   ? for shortcuts
+    24 |   ! not logged in · /login · ~/mentat-tui-pane-a62e47f3 · openai/gpt-5.5 · ! full access · 6.4K (5%)   ? for shortcuts
     |}]
 
 (* Two OpenAI models whose only pane-visible difference is their context window:
@@ -536,7 +536,7 @@ let%expect_test "a model switch re-denominates the context percentage" =
     {|
     01 |                                                                                 │ context
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium                     │   25,600 tokens
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-pane-modeec9a8ec0                  │   20% used
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-pane-mode7436aad1                  │   20% used
     04 |                                                                                 │
     05 | ❯ first prompt on the launch model                                              │
     06 |                                                                                 │
@@ -557,7 +557,7 @@ let%expect_test "a model switch re-denominates the context percentage" =
     21 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     22 | ❯ message mentat
     23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    24 |   ! not logged in · /login · ~/mentat-tui-pane-modeec9a8… · openai/gpt-5.5 · ! full access · 25.6K (20… ? for shortcu…
+    24 |   ! not logged in · /login · ~/mentat-tui-pane-mode7436a… · openai/gpt-5.5 · ! full access · 25.6K (20… ? for shortcu…
     |}];
   submit t "second prompt after switching models";
   Tui.finish_turn t;
@@ -567,7 +567,7 @@ let%expect_test "a model switch re-denominates the context percentage" =
     {|
     01 |                                                                                 │ context
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium                     │   25,600 tokens
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-pane-modeec9a8ec0                  │   10% used
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-pane-mode7436aad1                  │   10% used
     04 |                                                                                 │
     05 | ❯ first prompt on the launch model                                              │
     06 |                                                                                 │
@@ -588,7 +588,7 @@ let%expect_test "a model switch re-denominates the context percentage" =
     21 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     22 | ❯ message mentat
     23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    24 |   ! not logged in · /login · ~/mentat-tui-pane-modeec9a8e… · openai/gpt-6 · ! full access · 25.6K (10… ? for shortcuts
+    24 |   ! not logged in · /login · ~/mentat-tui-pane-mode7436aa… · openai/gpt-6 · ! full access · 25.6K (10… ? for shortcuts
     |}]
 
 (* The pane's third ambient section surfaces this session's live background
@@ -625,7 +625,7 @@ let%expect_test
     {|
     01 |                                                                                 │ running
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium                     │   bg-1 · npm run dev · running · 5s
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-pane3b131277                       │
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-pane9c992d04                       │
     04 |                                                                                 │
     05 | ❯ run the dev server in the background                                          │
     06 |                                                                                 │
@@ -646,7 +646,7 @@ let%expect_test
     21 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     22 | ❯ message mentat
     23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    24 |   ! not logged in · /login · ~/mentat-tui-pane3b131277 · openai/gpt-5.5 · ! full access                ? for shortcuts
+    24 |   ! not logged in · /login · ~/mentat-tui-pane9c992d04 · openai/gpt-5.5 · ! full access                ? for shortcuts
     |}];
   (* The process exits before the next turn; that turn's settle poll returns the
      empty view and the section — heading and all — disappears. *)
@@ -659,7 +659,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-pane3b131277
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-pane9c992d04
     04 |
     05 | ❯ run the dev server in the background
     06 |
@@ -680,7 +680,7 @@ let%expect_test
     21 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     22 | ❯ message mentat
     23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    24 |   ! not logged in · /login · ~/mentat-tui-pane3b131277 · openai/gpt-5.5 · ! full access                ? for shortcuts
+    24 |   ! not logged in · /login · ~/mentat-tui-pane9c992d04 · openai/gpt-5.5 · ! full access                ? for shortcuts
     |}]
 
 (* The declared session goal is ambient: it heads the wide pane as its own
@@ -707,7 +707,7 @@ let%expect_test "the declared goal heads the pane and the narrow strip" =
     {|
     01 |                                                                                 │ goal · 200K left
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium                     │   Ship the parser rewrite without
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-p4fa85722                          │   regressions
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-p10251be4                          │   regressions
     04 |                                                                                 │
     05 | ❯ start the parser rewrite                                                      │ tasks · 2 done · 1 running
     06 |                                                                                 │   ◼ scaffold the module
@@ -728,7 +728,7 @@ let%expect_test "the declared goal heads the pane and the narrow strip" =
     21 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     22 | ❯ message mentat
     23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    24 |   ! not logged in · /login · ~/mentat-tui-p4fa85722 · openai/gpt-5.5 · ! full access                   ? for shortcuts
+    24 |   ! not logged in · /login · ~/mentat-tui-p10251be4 · openai/gpt-5.5 · ! full access                   ? for shortcuts
     |}];
   Tui.resize t ~width:100 ~height:24;
   Tui.settle t;
@@ -737,7 +737,7 @@ let%expect_test "the declared goal heads the pane and the narrow strip" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-p4fa85722
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-p10251be4
     04 |
     05 | ❯ start the parser rewrite
     06 |
@@ -758,7 +758,7 @@ let%expect_test "the declared goal heads the pane and the narrow strip" =
     21 | ────────────────────────────────────────────────────────────────────────────────────────────────────
     22 | ❯ message mentat
     23 | ────────────────────────────────────────────────────────────────────────────────────────────────────
-    24 |   ! not logged in · /login · ~/mentat-tui-p4fa857… · openai/gpt-5.5 · ! full access ? for shortcu…
+    24 |   ! not logged in · /login · ~/mentat-tui-p10251b… · openai/gpt-5.5 · ! full access ? for shortcu…
     |}]
 
 (* A fixed viewport keeps the activity column static. A long assistant line
@@ -793,7 +793,7 @@ let%expect_test "a long transcript line never moves the fixed activity column" =
     {|
     01 |                                                                                                                                                                                │ workspace
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium                                                                                                                    │   worktree · 116 files · +2154 −88
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-pad6b29a40                                                                                                                        │   dune · clean
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-pa9e6e3b9b                                                                                                                        │   dune · clean
     04 |                                                                                                                                                                                │
     05 | ❯ review the modules                                                                                                                                                           │
     06 |                                                                                                                                                                                │
@@ -814,5 +814,5 @@ let%expect_test "a long transcript line never moves the fixed activity column" =
     21 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     22 | ❯ message mentat
     23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    24 |   ! not logged in · /login · ~/mentat-tui-pad6b29a40 · openai/gpt-5.5 · ! full access                                                                                                                      ? for shortcuts
+    24 |   ! not logged in · /login · ~/mentat-tui-pa9e6e3b9b · openai/gpt-5.5 · ! full access                                                                                                                      ? for shortcuts
     |}]

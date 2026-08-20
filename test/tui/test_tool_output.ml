@@ -111,7 +111,7 @@ let%expect_test "known built-ins never expand undecodable text as a summary" =
     27 | ────────────────────────────────────────────────────────────────────────────────────────────
     28 | ❯ message mentat
     29 | ────────────────────────────────────────────────────────────────────────────────────────────
-    30 |   ! not logged in · /login · /tmp/mentat-tui-82c3f… · openai/gpt-… · ! full access ? for …
+    30 |   ! not logged in · /login · /tmp/mentat-tui-6edb5… · openai/gpt-… · ! full access ? for …
     |}]
 
 let%expect_test "read preview clamps rows while typed facts own counts" =
@@ -165,7 +165,7 @@ let%expect_test "read preview clamps rows while typed facts own counts" =
     25 | ────────────────────────────────────────────────────────────────────────────────────────────
     26 | ❯ message mentat
     27 | ────────────────────────────────────────────────────────────────────────────────────────────
-    28 |   ! not logged in · /login · /tmp/mentat-tui-82c3f… · openai/gpt-… · ! full access ? for …
+    28 |   ! not logged in · /login · /tmp/mentat-tui-6edb5… · openai/gpt-… · ! full access ? for …
     |}]
 
 let%expect_test "extension preview clamps rows and truncates wide lines" =
@@ -216,7 +216,7 @@ let%expect_test "extension preview clamps rows and truncates wide lines" =
     29 | ────────────────────────────────────────────────────────────────────────────────────────────
     30 | ❯ message mentat
     31 | ────────────────────────────────────────────────────────────────────────────────────────────
-    32 |   ! not logged in · /login · /tmp/mentat-tui-82c3f… · openai/gpt-… · ! full access ? for …
+    32 |   ! not logged in · /login · /tmp/mentat-tui-6edb5… · openai/gpt-… · ! full access ? for …
     |}]
 
 let%expect_test "compact built-in facts retain summaries and Process output" =
@@ -288,7 +288,7 @@ let%expect_test "compact built-in facts retain summaries and Process output" =
     31 | ────────────────────────────────────────────────────────────────────────────────────────────
     32 | ❯ message mentat
     33 | ────────────────────────────────────────────────────────────────────────────────────────────
-    34 |   ! not logged in · /login · /tmp/mentat-tui-82c3f… · openai/gpt-… · ! full access ? for …
+    34 |   ! not logged in · /login · /tmp/mentat-tui-6edb5… · openai/gpt-… · ! full access ? for …
     |}]
 
 (* The shell and eval transcripts a real run stores in {!Mentat_tool.Output}:
@@ -367,7 +367,7 @@ let%expect_test "shell preview shows captured output without envelope or labels"
     27 | ────────────────────────────────────────────────────────────────────────────────────────────
     28 | ❯ message mentat
     29 | ────────────────────────────────────────────────────────────────────────────────────────────
-    30 |   ! not logged in · /login · /tmp/mentat-tui-82c3f… · openai/gpt-… · ! full access ? for …
+    30 |   ! not logged in · /login · /tmp/mentat-tui-6edb5… · openai/gpt-… · ! full access ? for …
     |}]
 
 let%expect_test
@@ -407,7 +407,7 @@ let%expect_test
     19 | ────────────────────────────────────────────────────────────────────────────────────────────
     20 | ❯ message mentat
     21 | ────────────────────────────────────────────────────────────────────────────────────────────
-    22 |   ! not logged in · /login · /tmp/mentat-tui-82c3f… · openai/gpt-… · ! full access ? for …
+    22 |   ! not logged in · /login · /tmp/mentat-tui-6edb5… · openai/gpt-… · ! full access ? for …
     |}]
 
 let%expect_test "failed and interrupted partial results settle and wrap" =
@@ -448,7 +448,7 @@ let%expect_test "failed and interrupted partial results settle and wrap" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-82c3f290.home/mentat-t…
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-6edb5cbc.home/mentat-t…
     04 |
     05 | ❯ inspect partial tool outcomes
     06 |

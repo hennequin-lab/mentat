@@ -213,14 +213,22 @@ let invalid_fixture_name name =
 let fresh_container name =
   if invalid_fixture_name name then
     invalid_arg (Printf.sprintf "Project.with_temp: invalid name %S" name);
-  let executable = Filename.basename Sys.executable_name in
-  let identity = executable ^ "\000" ^ name in
+  let executable = Sys.executable_name in
+  let runner =
+    Filename.concat
+      (Filename.basename (Filename.dirname executable))
+      (Filename.basename executable)
+  in
+  let identity = runner ^ "\000" ^ name in
   let digest = Digest.to_hex (Digest.string identity) in
   let width = String.length name in
-  (* Qualify names by their stable executable identity so independently-run
-     visual suites cannot claim the same deterministic root. Keep long fixture
-     paths at their existing readable width, but give short names enough digest
-     space to avoid collapsing them into a one-character bucket. *)
+  (* Qualify names by their stable runner identity so independently-run visual
+     suites cannot claim the same deterministic root. The identity is the
+     runner's enclosing directory with its basename: every inline-test runner
+     is spelled [inline-test-runner.exe], and only its [.<library>.inline-tests]
+     directory tells the suites apart. Keep long fixture paths at their
+     existing readable width, but give short names enough digest space to
+     avoid collapsing them into a one-character bucket. *)
   let prefix_width = max 0 (width - 8) in
   let token = String.sub name 0 prefix_width ^ String.sub digest 0 8 in
   let container = Filename.concat "/tmp" ("mentat-tui-" ^ token ^ ".home") in

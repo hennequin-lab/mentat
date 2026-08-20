@@ -231,7 +231,7 @@ let%expect_test "status scroll box owns measured page keys" =
     05 | Runtime                                                                        █
     06 |   version         dev                                                          █
     07 |   current model   openai/gpt-5.5 medium                                        █
-    08 |   workspace       ~/mentat-tui-settings-sta6da2473b
+    08 |   workspace       ~/mentat-tui-settings-sta0b408d23
     09 |   context window  128,000 tokens
     10 |   launch sandbox  danger-full-access
     11 |
@@ -246,7 +246,7 @@ let%expect_test "status scroll box owns measured page keys" =
     02 |
     03 | config  status  usage
     04 |
-    05 |   workspace       ~/mentat-tui-settings-sta6da2473b
+    05 |   workspace       ~/mentat-tui-settings-sta0b408d23
     06 |   context window  128,000 tokens                                               ▄
     07 |   launch sandbox  danger-full-access                                           █
     08 |                                                                                █
@@ -267,7 +267,7 @@ let%expect_test "status scroll box owns measured page keys" =
     05 | Runtime                                                                        █
     06 |   version         dev                                                          █
     07 |   current model   openai/gpt-5.5 medium                                        █
-    08 |   workspace       ~/mentat-tui-settings-sta6da2473b
+    08 |   workspace       ~/mentat-tui-settings-sta0b408d23
     09 |   context window  128,000 tokens
     10 |   launch sandbox  danger-full-access
     11 |
@@ -382,7 +382,7 @@ let%expect_test "settings queries survive a model panel overlay" =
     05 | Runtime
     06 |   version         dev
     07 |   current model   openai/gpt-5.5
-    08 |   workspace       ~/mentat-tui-settings-model-127e7e54
+    08 |   workspace       ~/mentat-tui-settings-model-23cbcc98
     09 |   context window  128,000 tokens
     10 |   launch sandbox  danger-full-access
     11 |
@@ -428,7 +428,7 @@ let%expect_test "a readiness refresh failure retains the footer fact" =
     05 | Runtime
     06 |   version         dev
     07 |   current model   openai/gpt-5.5 medium
-    08 |   workspace       ~/mentat-tui-settings-readiness-532d1d82
+    08 |   workspace       ~/mentat-tui-settings-readiness-cd2dfc79
     09 |   context window  128,000 tokens
     10 |   launch sandbox  danger-full-access
     11 |
@@ -514,7 +514,7 @@ let%expect_test "Tab cycles pages and the arrow keys never leave a page" =
     05 | Runtime                                                                        █
     06 |   version         dev                                                          █
     07 |   current model   openai/gpt-5.5 medium                                        █
-    08 |   workspace       ~/mentat-tui-settings-key-se3c54ffa
+    08 |   workspace       ~/mentat-tui-settings-key-se1088c88
     09 |   context window  128,000 tokens
     10 |   launch sandbox  danger-full-access
     11 |

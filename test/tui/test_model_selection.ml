@@ -573,7 +573,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-model-filter-15329cde
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-model-filter-f88650f8
     04 |
     05 | ❯ start model selection
     06 |
@@ -617,7 +617,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-model-filter-15329cde
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-model-filter-f88650f8
     04 |
     05 | ❯ start model selection
     06 |
@@ -677,7 +677,7 @@ let%expect_test "effort control walks the selected model's reasoning levels" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-mode562a1257
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-mode8aaca19c
     04 |
     05 | ❯ start model selection
     06 |
@@ -714,7 +714,7 @@ let%expect_test "effort control walks the selected model's reasoning levels" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-mode562a1257
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-mode8aaca19c
     04 |
     05 | ❯ start model selection
     06 |
@@ -751,7 +751,7 @@ let%expect_test "effort control walks the selected model's reasoning levels" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-mode562a1257
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-mode8aaca19c
     04 |
     05 | ❯ start model selection
     06 |
@@ -788,7 +788,7 @@ let%expect_test "effort control walks the selected model's reasoning levels" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-mode562a1257
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-mode8aaca19c
     04 |
     05 | ❯ start model selection
     06 |
@@ -815,7 +815,7 @@ let%expect_test "effort control walks the selected model's reasoning levels" =
     27 | ────────────────────────────────────────────────────────────────────────────────────────────────────
     28 | ❯ message mentat
     29 | ────────────────────────────────────────────────────────────────────────────────────────────────────
-    30 |   ! not logged in · /login · ~/mentat-tui-mode562a… · openai/gpt-5.5 · ! full access ? for shortc…
+    30 |   ! not logged in · /login · ~/mentat-tui-mode8aac… · openai/gpt-5.5 · ! full access ? for shortc…
     |}]
 
 let%expect_test "refresh keeps rows visible and retains a structured failure" =
@@ -1018,7 +1018,7 @@ let%expect_test "escape from a settings-opened model panel restores settings" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-model-setting87055c84
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-model-settinge405678e
     04 |
     05 | ❯ start settings
     06 |
@@ -1089,7 +1089,7 @@ let%expect_test "model panel preserves a short transcript when it closes" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-model-short-trdfc4b587
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-model-short-tr3bd90666
     04 |
     05 | ❯ show the model panel
     06 |
@@ -1119,7 +1119,7 @@ let%expect_test "model panel preserves a short transcript when it closes" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-model-short-trdfc4b587
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-model-short-tr3bd90666
     04 |
     05 | ❯ show the model panel
     06 |
@@ -1140,7 +1140,7 @@ let%expect_test "model panel preserves a short transcript when it closes" =
     21 | ────────────────────────────────────────────────────────────────────────────────
     22 | ❯ message mentat
     23 | ────────────────────────────────────────────────────────────────────────────────
-    24 |   ~/mentat-tui-model-short-trdf… · openai/gpt-5… · ! full access ? for shortc…
+    24 |   ~/mentat-tui-model-short-tr3b… · openai/gpt-5… · ! full access ? for shortc…
     |}]
 
 let overflowing_answer =
@@ -1233,7 +1233,7 @@ let%expect_test "wide model panel preserves the overflowing transcript tail" =
     29 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     30 | ❯ message mentat
     31 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    32 |   ~/mentat-tui-model-wide-tr413c4364 · openai/gpt-5.5 · ! full access                                  ? for shortcuts
+    32 |   ~/mentat-tui-model-wide-tr6fbb2444 · openai/gpt-5.5 · ! full access                                  ? for shortcuts
     |}]
 
 (* Correlation laws are asserted through complete terminal frames. Inactive
@@ -1270,7 +1270,7 @@ let%expect_test
     05 | Runtime
     06 |   version         dev
     07 |   current model   openai/gpt-5.5 medium
-    08 |   workspace       ~/mentat-tui-model-sec766f65
+    08 |   workspace       ~/mentat-tui-model-s4f5ea70e
     09 |   context window  128,000 tokens
     10 |   launch sandbox  danger-full-access
     11 |
@@ -1297,7 +1297,7 @@ let%expect_test
     {|
     01 |                                                                                 │ context
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium                     │   1,300 tokens
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-model-sec766f65                    │   1% used
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-model-s4f5ea70e                    │   1% used
     04 |                                                                                 │
     05 | ❯ start session                                                                 │
     06 |                                                                                 │
@@ -1318,7 +1318,7 @@ let%expect_test
     21 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     22 | ❯ message mentat
     23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    24 |   ! not logged in · /login · ~/mentat-tui-model-sec76… · openai/gpt-5.5 medium · ! full access · 1.3K … ? for shortcu…
+    24 |   ! not logged in · /login · ~/mentat-tui-model-s4f5e… · openai/gpt-5.5 medium · ! full access · 1.3K … ? for shortcu…
     |}];
 
   select_model t "openai/gpt-6";
@@ -1327,7 +1327,7 @@ let%expect_test
     {|
     01 |                                                                                 │ context
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium                     │   1,300 tokens
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-model-sec766f65                    │   1% used
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-model-s4f5ea70e                    │   1% used
     04 |                                                                                 │
     05 | ❯ start session                                                                 │
     06 |                                                                                 │
@@ -1360,7 +1360,7 @@ let%expect_test
     {|
     01 |                                                                                 │ context
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium                     │   1,300 tokens
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-model-sec766f65                    │
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-model-s4f5ea70e                    │
     04 |                                                                                 │
     05 | ❯ start session                                                                 │
     06 |                                                                                 │
@@ -1381,7 +1381,7 @@ let%expect_test
     21 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     22 | ❯ message mentat
     23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    24 |   ! not logged in · /login · ~/mentat-tui-model-sec7… · anthropic/claude-sonnet-4… · ! full access · 1.… ? for shortc…
+    24 |   ! not logged in · /login · ~/mentat-tui-model-s4f5… · anthropic/claude-sonnet-4… · ! full access · 1.… ? for shortc…
     |}];
 
   submit t "use the selected model";
@@ -1390,7 +1390,7 @@ let%expect_test
     {|
     01 |                                                                                 │ context
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium                     │   1,300 tokens
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-model-sec766f65                    │
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-model-s4f5ea70e                    │
     04 |                                                                                 │
     05 | ❯ start session                                                                 │
     06 |                                                                                 │
@@ -1411,7 +1411,7 @@ let%expect_test
     21 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     22 | ❯ queue a message — sends after this turn
     23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    24 |   ! not logged in · /login · ~/mentat-tui-model-se… · anthropic/claude-sonnet-4-5 h… · ! full access · 1… ? for short…
+    24 |   ! not logged in · /login · ~/mentat-tui-model-s4… · anthropic/claude-sonnet-4-5 h… · ! full access · 1… ? for short…
     |}];
   submit t "/status";
   Tui.print t;
@@ -1424,7 +1424,7 @@ let%expect_test
     05 | Runtime
     06 |   version         dev
     07 |   current model   anthropic/claude-sonnet-4-5 high
-    08 |   workspace       ~/mentat-tui-model-sec766f65
+    08 |   workspace       ~/mentat-tui-model-s4f5ea70e
     09 |   context window  —
     10 |   launch sandbox  danger-full-access
     11 |
@@ -1516,7 +1516,7 @@ let%expect_test "model completions render only for their exact active session" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-model-cora3da6179
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-model-cor1bc7a7cb
     04 |
     05 | ❯ start
     06 |
@@ -1549,7 +1549,7 @@ let%expect_test "model completions render only for their exact active session" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-model-cora3da6179
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-model-cor1bc7a7cb
     04 |
     05 | ❯ start
     06 |
@@ -1582,7 +1582,7 @@ let%expect_test "model completions render only for their exact active session" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-model-cora3da6179
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-model-cor1bc7a7cb
     04 |
     05 | ❯ newer saved session
     06 |
@@ -1619,7 +1619,7 @@ let%expect_test "model completions render only for their exact active session" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-model-cora3da6179
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-model-cor1bc7a7cb
     04 |
     05 | ❯ newer saved session
     06 |
@@ -1651,7 +1651,7 @@ let%expect_test "model completions render only for their exact active session" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-model-cora3da6179
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-model-cor1bc7a7cb
     04 |
     05 | ❯ older saved session
     06 |
@@ -1685,7 +1685,7 @@ let%expect_test "model completions render only for their exact active session" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-model-cora3da6179
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-model-cor1bc7a7cb
     04 |
     05 | ❯ older saved session
     06 |
@@ -1706,7 +1706,7 @@ let%expect_test "model completions render only for their exact active session" =
     21 | ────────────────────────────────────────────────────────────────────────────────────────────────────
     22 | ❯ message mentat
     23 | ────────────────────────────────────────────────────────────────────────────────────────────────────
-    24 |   ! not logged in · /login · ~/mentat-tui-model-cora… · openai/gpt-5… · ! full access ? for short…
+    24 |   ! not logged in · /login · ~/mentat-tui-model-cor1… · openai/gpt-5… · ! full access ? for short…
     |}]
 
 let session_with_child project =
@@ -1764,7 +1764,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-child-corac2b3aaf
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-child-cor4d723afe
     04 |
     05 | ❯ delegate
     06 |
@@ -1811,7 +1811,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-model-next-turb4b381a2
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-model-next-tur92d87a16
     04 |
     05 | ❯ start session
     06 |
@@ -1832,7 +1832,7 @@ let%expect_test
     21 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     22 | ❯ message mentat
     23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    24 |   ! not logged in · /login · ~/mentat-tui-model-next-turb4… · anthropic/claude-sonnet-4… · ! full access ? for shortc…
+    24 |   ! not logged in · /login · ~/mentat-tui-model-next-tur92… · anthropic/claude-sonnet-4… · ! full access ? for shortc…
     |}]
 
 (* The opening record banner keeps the model the transcript began with, while
@@ -1867,7 +1867,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-model-banner-v56abd910
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-model-banner-v3ae9b52d
     04 |
     05 | ❯ start session
     06 |
@@ -1957,7 +1957,7 @@ let%expect_test "a staged pre-session selection seals the first turn" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · anthropic/claude-sonnet-4-5
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-model-staged-fi8106001b
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-model-staged-fi501470c4
     04 |
     05 | ❯ start on the staged model
     06 |

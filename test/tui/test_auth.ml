@@ -1088,7 +1088,7 @@ let%expect_test
     37 |
     38 |
     39 |
-    40 |   ~/mentat-tui-auth4c7ab92a · openai/gpt-5.5 medium · ! full access                ? for shortcuts
+    40 |   ~/mentat-tui-authd0c14aa2 · openai/gpt-5.5 medium · ! full access                ? for shortcuts
     |}]
 
 (* The post-login model handoff is uniform across entry paths: a first browser
@@ -1695,7 +1695,7 @@ let%expect_test "mixed account discovery retains healthy and failed rows" =
     05 | Runtime
     06 |   version         dev
     07 |   current model   openai/gpt-5.5 medium
-    08 |   workspace       ~/mentat-tui-auth-rbe72fedf
+    08 |   workspace       ~/mentat-tui-auth-reead2752
     09 |   context window  128,000 tokens
     10 |   launch sandbox  danger-full-access
     11 |

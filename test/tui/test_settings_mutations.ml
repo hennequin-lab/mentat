@@ -168,7 +168,7 @@ let%expect_test
     05 | Runtime
     06 |   version         dev
     07 |   current model   openai/gpt-5.5
-    08 |   workspace       ~/mentat-tui-settings-review-144d487f
+    08 |   workspace       ~/mentat-tui-settings-review-8c5171f8
     09 |   context window  128,000 tokens
     10 |   launch sandbox  danger-full-access
     11 |
@@ -195,7 +195,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-settings-review-144d487f
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-settings-review-8c5171f8
     04 |
     05 | ❯ establish review owner
     06 |
@@ -225,7 +225,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-settings-review-144d487f
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-settings-review-8c5171f8
     04 |
     05 | ❯ establish review owner
     06 |
@@ -341,7 +341,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-settings-review-ae81276f
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-settings-review-db675122
     04 |
     05 | ❯ establish enforced review
     06 |
@@ -371,7 +371,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-settings-review-ae81276f
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-settings-review-db675122
     04 |
     05 | ❯ establish enforced review
     06 |

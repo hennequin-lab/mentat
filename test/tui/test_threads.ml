@@ -220,7 +220,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-l033df4cc
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-lf93ea13c
     04 |
     05 | ❯ Coordinate the delegated work.
     06 |
@@ -250,7 +250,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-l033df4cc
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-lf93ea13c
     04 |
     05 | ❯ Coordinate the delegated work.
     06 |
@@ -280,7 +280,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-l033df4cc
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-lf93ea13c
     04 |
     05 | ❯ Coordinate the delegated work.
     06 |
@@ -319,7 +319,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-l033df4cc
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-lf93ea13c
     04 |
     05 | ❯ Coordinate the delegated work.
     06 |
@@ -358,7 +358,7 @@ let%expect_test "a child decision is visibly blocked rather than working" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads60aab187
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads709d6cae
     04 |
     05 | ❯ Coordinate the delegated work.
     06 |
@@ -401,7 +401,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threa824bf51e
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threa6f8d4c15
     04 |
     05 | ❯ Coordinate the delegated work.
     06 |
@@ -433,7 +433,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threa824bf51e
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threa6f8d4c15
     04 |
     05 | ❯ Coordinate the delegated work.
     06 |
@@ -541,7 +541,7 @@ let%expect_test "a running child can be drilled and escape restores the parent"
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-runnic734a093
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-runnif9282e82
     04 |
     05 | ❯ Coordinate the delegated work.
     06 |
@@ -739,7 +739,7 @@ let%expect_test "the drilled child keeps the switcher in its wide pane" =
     21 | ───────────────────────────────────────────────────────────────────────────────────────────────────────────── @subagent
     22 | ❯ message @subagent
     23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    24 |   ! not logged in · /login · ~/mentat-tui-threads-drb3169c5f · openai/gpt-5.5 · ! full access         esc back to main
+    24 |   ! not logged in · /login · ~/mentat-tui-threads-drebec51f3 · openai/gpt-5.5 · ! full access         esc back to main
     |}]
 
 let long_task_child =
@@ -774,7 +774,7 @@ let%expect_test
     {|
     01 |                                                                                 │ agents · 1 running · 1 blocked
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium                     │   ◯ main
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-ree435f35c                 │   ○ trace the complete de... delegated
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-re735b7f7b                 │   ○ trace the complete de... delegated
     04 |                                                                                 │   ◉ verify the wide activ... working
     05 | ❯ Coordinate the delegated work.                                                │   ⋯ request approval befo... blocked
     06 |                                                                                 │
@@ -795,7 +795,7 @@ let%expect_test
     21 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     22 | ❯ message mentat
     23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    24 |   ! not logged in · /login · ~/mentat-tui-threads-ree435f35c · openai/gpt-5.5 · ! full access          ? for shortcuts
+    24 |   ! not logged in · /login · ~/mentat-tui-threads-re735b7f7b · openai/gpt-5.5 · ! full access          ? for shortcuts
     |}];
   (* Crossing below the breakpoint returns the same semantic rows to the
      narrow flow. No child is sliced or reformatted by the application. *)
@@ -806,7 +806,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-ree435f35c
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-re735b7f7b
     04 |
     05 | ❯ Coordinate the delegated work.
     06 |
@@ -827,7 +827,7 @@ let%expect_test
     21 |   ◉ subagent verify the wide activity pane                                                          working
     22 |   ⋯ subagent request approval before changing the layout contract                                   blocked
     23 |
-    24 |   ! not logged in · /login · ~/mentat-tui-threads-ree435f3… · openai/gpt-5.5 · ! full access ? for shortcu…
+    24 |   ! not logged in · /login · ~/mentat-tui-threads-re735b7f… · openai/gpt-5.5 · ! full access ? for shortcu…
     |}]
 
 let many_children =
@@ -918,7 +918,7 @@ let%expect_test "a feed-unavailable child offers retry and re-follows in place"
     {|
     01 |                                                                                 │ agents
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium                     │   ◯ main
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-una7d29ba39                │   ! inspect the un... feed unavailable
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-una73d2e2bf                │   ! inspect the un... feed unavailable
     04 |                                                                                 │
     05 | ❯ Coordinate the delegated work.                                                │
     06 |                                                                                 │
@@ -951,7 +951,7 @@ let%expect_test "a feed-unavailable child offers retry and re-follows in place"
     {|
     01 |                                                                                 │ agents
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium                     │   ◯ main
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-una7d29ba39                │ ❯ ! inspect the unre... enter to retry
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-una73d2e2bf                │ ❯ ! inspect the unre... enter to retry
     04 |                                                                                 │
     05 | ❯ Coordinate the delegated work.                                                │
     06 |                                                                                 │
@@ -983,7 +983,7 @@ let%expect_test "a feed-unavailable child offers retry and re-follows in place"
     {|
     01 |                                                                                 │ agents
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium                     │   ◯ main
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-una7d29ba39                │ ❯ ! inspect the unre... enter to retry
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-una73d2e2bf                │ ❯ ! inspect the unre... enter to retry
     04 |                                                                                 │
     05 | ❯ Coordinate the delegated work.                                                │
     06 |                                                                                 │
@@ -1062,7 +1062,7 @@ let%expect_test "a drilled child shows its own task board in the wide pane" =
     21 | ───────────────────────────────────────────────────────────────────────────────────────────────────────────── @subagent
     22 | ❯ message @subagent
     23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    24 |   ! not logged in · /login · ~/mentat-tui-threads-dri15f8c52d · openai/gpt-5.5 · ! full access        esc back to main
+    24 |   ! not logged in · /login · ~/mentat-tui-threads-dria050d9ea · openai/gpt-5.5 · ! full access        esc back to main
     |}]
 
 (* Opening the switcher from a drill lands on the child currently in view, not
@@ -1198,7 +1198,7 @@ let%expect_test "the drill composer recalls shared prompt history" =
     21 | ───────────────────────────────────────────────────────────────────────────────────────────────────────────── @subagent
     22 | ❯ recall me in the drill
     23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    24 |   ! not logged in · /login · ~/mentat-tui-threads-drill85d35b01 · openai/gpt-5.5 · ! full access      esc back to main
+    24 |   ! not logged in · /login · ~/mentat-tui-threads-drillfcfe91bc · openai/gpt-5.5 · ! full access      esc back to main
     |}]
 
 (* A leading slash opens the command palette over the drill composer, the same
@@ -1244,7 +1244,7 @@ let%expect_test "the drill composer opens the slash-command palette" =
     21 | ───────────────────────────────────────────────────────────────────────────────────────────────────────────── @subagent
     22 | ❯ /
     23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    24 |   ! not logged in · /login · ~/mentat-tui-threads-drilla72c9277 · openai/gpt-5.5 · ! full access      esc back to main
+    24 |   ! not logged in · /login · ~/mentat-tui-threads-drill50e12bfa · openai/gpt-5.5 · ! full access      esc back to main
     |}]
 
 (* A conversation-lifecycle command targets a specific session through main-owned
@@ -1402,7 +1402,7 @@ let%expect_test "a subagent's subagent nests under it in the agents tree" =
     {|
     01 |                                                                                 │ agents
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium                     │   ◯ main
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-thread53189af9                     │   ✓ map the config subsystem completed
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threadf36183dd                     │   ✓ map the config subsystem completed
     04 |                                                                                 │   ✓ └ audit the loader units completed
     05 | ❯ Coordinate nested work.                                                       │
     06 |                                                                                 │
@@ -1423,7 +1423,7 @@ let%expect_test "a subagent's subagent nests under it in the agents tree" =
     21 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     22 | ❯ message mentat
     23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    24 |   ! not logged in · /login · ~/mentat-tui-thread53189af9 · openai/gpt-5.5 · ! full access              ? for shortcuts
+    24 |   ! not logged in · /login · ~/mentat-tui-threadf36183dd · openai/gpt-5.5 · ! full access              ? for shortcuts
     |}];
   (* The grandchild is a real observed session, so the switcher can drill into
      it exactly as it drills a direct child. *)
@@ -1461,7 +1461,7 @@ let%expect_test "a subagent's subagent nests under it in the agents tree" =
     21 | ───────────────────────────────────────────────────────────────────────────────────────────────────────────── @subagent
     22 | ❯ message @subagent
     23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    24 |   ! not logged in · /login · ~/mentat-tui-thread53189af9 · openai/gpt-5.5 · ! full access             esc back to main
+    24 |   ! not logged in · /login · ~/mentat-tui-threadf36183dd · openai/gpt-5.5 · ! full access             esc back to main
     |}]
 
 (* A short-labelled failing child proves the label is shown in full — not
@@ -1486,7 +1486,7 @@ let%expect_test "a failure row keeps its full label in the agents pane" =
     {|
     01 |                                                                                 │ agents
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium                     │   ◯ main
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-sh0adb0265                 │   ! port loader       feed unavailable
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-sh0a903f34                 │   ! port loader       feed unavailable
     04 |                                                                                 │
     05 | ❯ Coordinate the delegated work.                                                │
     06 |                                                                                 │
@@ -1517,7 +1517,7 @@ let%expect_test "a failure row keeps its full label in the agents pane" =
     {|
     01 |                                                                                 │ agents
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium                     │   ◯ main
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-sh0adb0265                 │ ❯ ! port loader         enter to retry
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-sh0a903f34                 │ ❯ ! port loader         enter to retry
     04 |                                                                                 │
     05 | ❯ Coordinate the delegated work.                                                │
     06 |                                                                                 │
@@ -1646,7 +1646,7 @@ let%expect_test
     {|
     01 |                                                                                 │ agents · 1 blocked
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium                     │   ◯ main
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-revif7699ac6               │ ❯ ⋯ run the migration  enter to answer
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-revi269f249c               │ ❯ ⋯ run the migration  enter to answer
     04 |                                                                                 │
     05 | ❯ Coordinate the delegated work.                                                │
     06 |                                                                                 │
@@ -1667,7 +1667,7 @@ let%expect_test
     21 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     22 | ❯ message mentat
     23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    24 |   ! not logged in · /login · ~/mentat-tui-threads-revif7699ac6 · openai/gpt-5.5 · ! full access        ? for shortcuts
+    24 |   ! not logged in · /login · ~/mentat-tui-threads-revi269f249c · openai/gpt-5.5 · ! full access        ? for shortcuts
     |}];
   (* Drilling in raises the real permission dialog wired to answer the child,
      not a read-only glance of the "blocked" state. *)
@@ -1680,7 +1680,7 @@ let%expect_test
     {|
     01 |                                                                                 │ agents · 1 blocked
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium                     │   ◯ main
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-revif7699ac6               │   ⋯ run the migration          blocked
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-threads-revi269f249c               │   ⋯ run the migration          blocked
     04 |                                                                                 │
     05 | ❯ Coordinate the delegated work.                                                │
     06 |                                                                                 │

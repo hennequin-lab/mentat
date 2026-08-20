@@ -222,7 +222,7 @@ let%expect_test
     27 | ────────────────────────────────────────────────────────────────────────────────────────────
     28 | ❯ message mentat
     29 | ────────────────────────────────────────────────────────────────────────────────────────────
-    30 |   ! not logged in · /login · /tmp/mentat-tui-36e36… · openai/gpt-… · ! full access ? for …
+    30 |   ! not logged in · /login · /tmp/mentat-tui-5a63e… · openai/gpt-… · ! full access ? for …
     |}]
 
 let%expect_test
@@ -268,5 +268,5 @@ let%expect_test
     27 | ────────────────────────────────────────────────────────────────────────────────────────────
     28 | ❯ message mentat
     29 | ────────────────────────────────────────────────────────────────────────────────────────────
-    30 |   ! not logged in · /login · /tmp/mentat-tui-36e36… · openai/gpt-… · ! full access ? for …
+    30 |   ! not logged in · /login · /tmp/mentat-tui-5a63e… · openai/gpt-… · ! full access ? for …
     |}]

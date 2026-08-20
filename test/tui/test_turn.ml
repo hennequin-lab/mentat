@@ -27,7 +27,7 @@ let%expect_test "a held turn ticks, then settles into durable transcript" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-82c3f290
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-553b9dad
     04 |
     05 | ❯ say hello
     06 |
@@ -56,7 +56,7 @@ let%expect_test "a held turn ticks, then settles into durable transcript" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-82c3f290
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-553b9dad
     04 |
     05 | ❯ say hello
     06 |
@@ -86,7 +86,7 @@ let%expect_test "a held turn ticks, then settles into durable transcript" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-82c3f290
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-553b9dad
     04 |
     05 | ❯ say hello
     06 |
@@ -131,7 +131,7 @@ let%expect_test "a retrying turn shows the announced wait in the working line" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-db3bb3c9
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-e9d634ba
     04 |
     05 | ❯ say hello
     06 |
@@ -161,7 +161,7 @@ let%expect_test "a retrying turn shows the announced wait in the working line" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-db3bb3c9
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-e9d634ba
     04 |
     05 | ❯ say hello
     06 |
@@ -191,7 +191,7 @@ let%expect_test "a retrying turn shows the announced wait in the working line" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-db3bb3c9
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-e9d634ba
     04 |
     05 | ❯ say hello
     06 |
@@ -241,7 +241,7 @@ let%expect_test "a downloading turn shows artifact progress in the working line"
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-330da242
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-dcc50273
     04 |
     05 | ❯ say hello
     06 |
@@ -271,7 +271,7 @@ let%expect_test "a downloading turn shows artifact progress in the working line"
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-330da242
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-dcc50273
     04 |
     05 | ❯ say hello
     06 |
@@ -321,7 +321,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-82c3f290
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-553b9dad
     04 |
     05 | ❯ inspect workspace health
     06 |
@@ -354,7 +354,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-82c3f290
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-553b9dad
     04 |
     05 | ❯ inspect workspace health
     06 |
@@ -384,7 +384,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-82c3f290
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-553b9dad
     04 |
     05 | ❯ inspect workspace health
     06 |
@@ -438,7 +438,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-82c3f290
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-553b9dad
     04 |
     05 | ❯ trigger the build check
     06 |
@@ -471,7 +471,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-82c3f290
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-553b9dad
     04 |
     05 | ❯ trigger the build check
     06 |
@@ -524,7 +524,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-82c3f290
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-553b9dad
     04 |
     05 | ❯ check the build
     06 |
@@ -575,7 +575,7 @@ let%expect_test "streaming and settlement wrap in a narrow complete screen" =
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
     03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
     04 |  dev · openai/gpt-5.5 medium
-    05 |  ~/mentat-tui-82c3f290
+    05 |  ~/mentat-tui-553b9dad
     06 |
     07 | ❯ Explain why this deliberately long prompt
     08 |   must wrap without Mentat choosing
@@ -603,7 +603,7 @@ let%expect_test "streaming and settlement wrap in a narrow complete screen" =
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
     03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
     04 |  dev · openai/gpt-5.5 medium
-    05 |  ~/mentat-tui-82c3f290
+    05 |  ~/mentat-tui-553b9dad
     06 |
     07 | ❯ Explain why this deliberately long prompt
     08 |   must wrap without Mentat choosing
@@ -647,7 +647,7 @@ let%expect_test "reasoning has collapsed and expanded whole-screen views" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-82c3f290
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-553b9dad
     04 |
     05 | ❯ think through the layout
     06 |
@@ -672,7 +672,7 @@ let%expect_test "reasoning has collapsed and expanded whole-screen views" =
     25 | ────────────────────────────────────────────────────────────────────────────────────────────
     26 | ❯ queue a message — sends after this turn
     27 | ────────────────────────────────────────────────────────────────────────────────────────────
-    28 |   ! not logged in · /login · ~/mentat-tui-82… · openai/gpt-5… · ! full access ? for short…
+    28 |   ! not logged in · /login · ~/mentat-tui-55… · openai/gpt-5… · ! full access ? for short…
     |}];
   Tui.keys t Key.ctrl_o;
   Tui.settle t;
@@ -681,7 +681,7 @@ let%expect_test "reasoning has collapsed and expanded whole-screen views" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-82c3f290
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-553b9dad
     04 |
     05 | ❯ think through the layout
     06 |
@@ -706,7 +706,7 @@ let%expect_test "reasoning has collapsed and expanded whole-screen views" =
     25 | ────────────────────────────────────────────────────────────────────────────────────────────
     26 | ❯ queue a message — sends after this turn
     27 | ────────────────────────────────────────────────────────────────────────────────────────────
-    28 |   ! not logged in · /login · ~/mentat-tui-82… · openai/gpt-5… · ! full access ? for short…
+    28 |   ! not logged in · /login · ~/mentat-tui-55… · openai/gpt-5… · ! full access ? for short…
     |}];
   Tui.finish_turn t;
   Tui.settle t
@@ -728,7 +728,7 @@ let%expect_test "an authentication failure settles as repairable UI" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-82c3f290
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-553b9dad
     04 |
     05 | ❯ authenticate this request
     06 |
@@ -768,7 +768,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-turn-c236678e1
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-turn-cb327da91
     04 |
     05 | ❯ keep this turn running
     06 |
@@ -797,7 +797,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-turn-c236678e1
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-turn-cb327da91
     04 |
     05 | ❯ keep this turn running
     06 |
@@ -827,7 +827,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-turn-c236678e1
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-turn-cb327da91
     04 |
     05 | ❯ keep this turn running
     06 |
@@ -876,7 +876,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-turn-interrupt82c87a3c
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-turn-interruptfcc069e0
     04 |
     05 | ❯ start a careful explanation
     06 |
@@ -907,7 +907,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-turn-interrupt82c87a3c
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-turn-interruptfcc069e0
     04 |
     05 | ❯ start a careful explanation
     06 |
@@ -952,7 +952,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-turn-thinking-vi5eb9d776
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-turn-thinking-vi82da262e
     04 |
     05 | ❯ reason without hiding the answer
     06 |
@@ -981,7 +981,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-turn-thinking-vi5eb9d776
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-turn-thinking-vi82da262e
     04 |
     05 | ❯ reason without hiding the answer
     06 |
@@ -1010,7 +1010,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-turn-thinking-vi5eb9d776
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-turn-thinking-vi82da262e
     04 |
     05 | ❯ reason without hiding the answer
     06 |
@@ -1040,7 +1040,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-turn-thinking-vi5eb9d776
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-turn-thinking-vi82da262e
     04 |
     05 | ❯ reason without hiding the answer
     06 |
@@ -1092,7 +1092,7 @@ let%expect_test "a goal transition between turns does not fault the transcript"
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-82c3f290
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-553b9dad
     04 |
     05 | ❯ start the budgeted work
     06 |
@@ -1140,7 +1140,7 @@ let%expect_test "a failed turn leaves the session usable for the next prompt" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-82c3f290
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-553b9dad
     04 |
     05 | ❯ first request
     06 |

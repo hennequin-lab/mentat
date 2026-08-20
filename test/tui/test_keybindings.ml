@@ -60,7 +60,7 @@ let%expect_test "the former default no longer opens history search" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-keybindings013eb6b0
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-keybindingsfe2c786c
     04 |
     05 | ❯ say hello
     06 |
@@ -97,7 +97,7 @@ let%expect_test "the remapped chord opens history search" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-keybindings05eb9c65
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-keybindingsdc1b177a
     04 |
     05 | ❯ say hello
     06 |

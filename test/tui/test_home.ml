@@ -139,7 +139,7 @@ let%expect_test "snapshot normalizes all external display facts" =
     05 | Runtime
     06 |   version         v�� 2
     07 |   current model   [model unavailable]
-    08 |   workspace       ~/mentat-tui-snapshot-5dd2a348
+    08 |   workspace       ~/mentat-tui-snapshot-1d2d2f92
     09 |   context window  —
     10 |   launch sandbox  �danger full
     11 |
@@ -390,7 +390,7 @@ let%expect_test "enter on an empty home draft resumes the newest session" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-hom5f72e9d6
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-homa2cd4116
     04 |
     05 | ❯ spike it
     06 |
@@ -464,7 +464,7 @@ let%expect_test
     21 |
     22 |
     23 |
-    24 |   ! not logged in · /login · ~/mentat-tui-home-partial-fdb72c… · openai/gpt-5.5 medium · ! full access ? for shortcuts
+    24 |   ! not logged in · /login · ~/mentat-tui-home-partial-4d1d1a… · openai/gpt-5.5 medium · ! full access ? for shortcuts
     |}];
 
   Tui.keys t "/sessions";
@@ -506,7 +506,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-home-partial-fdb72c6e
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-home-partial-4d1d1a3d
     04 |
     05 | ❯ healthy transcript
     06 |
@@ -527,7 +527,7 @@ let%expect_test
     21 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     22 | ❯ message mentat
     23 | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    24 |   ! not logged in · /login · ~/mentat-tui-home-partial-fdb72c6e · openai/gpt-5.5 · ! full access       ? for shortcuts
+    24 |   ! not logged in · /login · ~/mentat-tui-home-partial-4d1d1a3d · openai/gpt-5.5 · ! full access       ? for shortcuts
     |}]
 
 let rec advance_until t ~marker remaining =
@@ -821,7 +821,7 @@ let%expect_test "path spelling follows the injected home boundary" =
     21 |
     22 |
     23 |
-    24 |   ! not logged in · /login · /tmp/mentat-tui-home-injected32a48f18.hom… · openai/gpt-5.5 me… · ! full access ? for sh…
+    24 |   ! not logged in · /login · /tmp/mentat-tui-home-injectedcd880cdc.hom… · openai/gpt-5.5 me… · ! full access ? for sh…
     |}]
 
 let%expect_test "the absolute root is a valid injected home ancestor" =
@@ -937,5 +937,5 @@ let%expect_test "a wrapping draft grows the home composer without overlap" =
     21 |
     22 |
     23 |
-    24 |   ! not logged in · /login · ~/mentat-tui-home-grown-01bb285a · openai/gpt-5.5 medium · ! full access                      ? for shortcuts
+    24 |   ! not logged in · /login · ~/mentat-tui-home-grown-3073938c · openai/gpt-5.5 medium · ! full access                      ? for shortcuts
     |}]

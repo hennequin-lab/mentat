@@ -18,7 +18,7 @@ let%expect_test "unknown workspace shows the complete trust gate" =
     01 |
     02 |  Mentat repository activation
     03 |
-    04 |  Repository root: ~/mentat-tui-cli-trusad658e9d
+    04 |  Repository root: ~/mentat-tui-cli-trus237b7cb0
     05 |  Selection: 1 — continue restricted
     06 |
     07 |  This repository can control config, instructions, skills, Dune rules, local
@@ -130,7 +130,7 @@ let%expect_test
     01 |
     02 |  Mentat repository activation
     03 |
-    04 |  Repository root: ~/mentat-tui-cli-trust-enter40afd874
+    04 |  Repository root: ~/mentat-tui-cli-trust-enter9ae4ae20
     05 |  Selection: 1 — continue restricted
     06 |
     07 |  This repository can control config, instructions, skills, Dune rules, local
@@ -212,7 +212,7 @@ let%expect_test "trusted selection is coherent and starts no project process" =
     01 |
     02 |  Mentat repository activation
     03 |
-    04 |  Repository root: ~/mentat-tui-cli-trust-31a23c93
+    04 |  Repository root: ~/mentat-tui-cli-trust-7ddbe1f1
     05 |  Selection: 2 — trust and activate this repository
     06 |
     07 |  This repository can control config, instructions, skills, Dune rules, local
@@ -289,7 +289,7 @@ let%expect_test "Escape and EOF show the complete prompt before exiting" =
     01 |
     02 |  Mentat repository activation
     03 |
-    04 |  Repository root: ~/mentat-tui-cli-trus8e21c6be
+    04 |  Repository root: ~/mentat-tui-cli-trus214cdf7f
     05 |  Selection: 1 — continue restricted
     06 |
     07 |  This repository can control config, instructions, skills, Dune rules, local
@@ -341,7 +341,7 @@ let%expect_test "Escape and EOF show the complete prompt before exiting" =
     01 |
     02 |  Mentat repository activation
     03 |
-    04 |  Repository root: ~/mentat-tui-cli-t029989ac
+    04 |  Repository root: ~/mentat-tui-cli-tdcdec4d6
     05 |  Selection: 1 — continue restricted
     06 |
     07 |  This repository can control config, instructions, skills, Dune rules, local
@@ -407,12 +407,12 @@ let%expect_test "a trust-store failure stays visible and permits retry" =
     01 |
     02 |  Mentat repository activation
     03 |
-    04 |  Repository root: ~/mentat-tui-cli-trust-sab9b540ba
+    04 |  Repository root: ~/mentat-tui-cli-trust-sa2524971f
     05 |  Selection: 2 — trust and activate this repository
     06 |
-    07 |  Could not save the decision: /tmp/mentat-tui-cli-trust-sab9b540ba.home/mentat-
-    08 |  tui-cli-trust-sab9b540ba.xdg/config/mentat/trust.json: /tmp/mentat-tui-cli-
-    09 |  trust-sab9b540ba.home/mentat-tui-cli-trust-sab9b540ba.xdg/config/mentat/
+    07 |  Could not save the decision: /tmp/mentat-tui-cli-trust-sa2524971f.home/mentat-
+    08 |  tui-cli-trust-sa2524971f.xdg/config/mentat/trust.json: /tmp/mentat-tui-cli-
+    09 |  trust-sa2524971f.home/mentat-tui-cli-trust-sa2524971f.xdg/config/mentat/
     10 |  trust.json.lock: Is a directory
     11 |
     12 |  This repository can control config, instructions, skills, Dune rules, local
@@ -485,7 +485,7 @@ let%expect_test "failed activation rolls back visibly and permits retry" =
     01 |
     02 |  Mentat repository activation
     03 |
-    04 |  Repository root: ~/mentat-tui-cli-trust-activatib766510f
+    04 |  Repository root: ~/mentat-tui-cli-trust-activatifb9ad62b
     05 |  Selection: 1 — continue restricted
     06 |
     07 |  Repository activation failed: unknown provider "missing"; known providers:

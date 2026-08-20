@@ -80,7 +80,7 @@ let%expect_test "invoking a custom command expands and submits it" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-a3f879cb
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-3ca44d63
     04 |
     05 | ❯ Say hello to World warmly.
     06 |
@@ -116,7 +116,7 @@ let%expect_test "an unknown slash command is a literal prompt" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-2f957122
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-de74070a
     04 |
     05 | ❯ /nope keep it literal
     06 |

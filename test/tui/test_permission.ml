@@ -115,7 +115,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permission1ba14efa.home/mentat…
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permissiona5a4a9be.home/mentat…
     04 |
     05 | ❯ inspect the workspace
     06 |
@@ -145,7 +145,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permission1ba14efa.home/mentat…
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permissiona5a4a9be.home/mentat…
     04 |
     05 | ❯ inspect the workspace
     06 |
@@ -175,7 +175,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permission1ba14efa.home/mentat…
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permissiona5a4a9be.home/mentat…
     04 |
     05 | ❯ inspect the workspace
     06 |
@@ -227,7 +227,7 @@ let%expect_test "decision failure re-enables the exact open dialog" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permission-retry-re4d16f242.ho…
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permission-retry-re4f14ac43.ho…
     04 |
     05 | ❯ retry exact answer
     06 |
@@ -260,7 +260,7 @@ let%expect_test "decision failure re-enables the exact open dialog" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permission-retry-re4d16f242.ho…
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permission-retry-re4f14ac43.ho…
     04 |
     05 | ❯ retry exact answer
     06 |
@@ -314,7 +314,7 @@ let%expect_test "decision acknowledgement waits for durable resolution" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permission-held-re1dcc9889.hom…
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permission-held-re0b12317a.hom…
     04 |
     05 | ❯ inspect before settling
     06 |
@@ -344,7 +344,7 @@ let%expect_test "decision acknowledgement waits for durable resolution" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permission-held-re1dcc9889.hom…
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permission-held-re0b12317a.hom…
     04 |
     05 | ❯ inspect before settling
     06 |
@@ -415,7 +415,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permissfcde6fc4.home/mentat-tu…
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permiss3e025ad0.home/mentat-tu…
     04 |
     05 | ❯ apply the parser patch
     06 |
@@ -445,7 +445,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permissfcde6fc4.home/mentat-tu…
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permiss3e025ad0.home/mentat-tu…
     04 |
     05 | ❯ apply the parser patch
     06 |
@@ -475,7 +475,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permissfcde6fc4.home/mentat-tu…
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permiss3e025ad0.home/mentat-tu…
     04 |
     05 | ❯ apply the parser patch
     06 |
@@ -505,7 +505,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permissfcde6fc4.home/mentat-tu…
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-permiss3e025ad0.home/mentat-tu…
     04 |
     05 | ❯ apply the parser patch
     06 |
@@ -572,7 +572,7 @@ let%expect_test
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
     03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
     04 |  dev · openai/gpt-5.5 medium
-    05 |  /tmp/mentat-tui-permission-networde8d…
+    05 |  /tmp/mentat-tui-permission-networf42b…
     06 |
     07 | ❯ contact deployment services
     08 |
@@ -600,7 +600,7 @@ let%expect_test
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
     03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
     04 |  dev · openai/gpt-5.5 medium
-    05 |  /tmp/mentat-tui-permission-networde8d…
+    05 |  /tmp/mentat-tui-permission-networf42b…
     06 |
     07 | ❯ contact deployment services
     08 |

@@ -97,7 +97,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-mutati2d6750f0.home/mentat-tui…
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-mutati6802be37.home/mentat-tui…
     04 |
     05 | ❯ update the release notes
     06 |
@@ -159,7 +159,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-mutati2d6750f0.home/mentat-tui…
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-mutati6802be37.home/mentat-tui…
     04 |
     05 | ❯ update the release notes
     06 |
@@ -208,7 +208,7 @@ let%expect_test "ambiguous observed-only mutation evidence stays explicit" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-mutation-6f7c2d2a.home/mentat-…
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-mutation-7e1b31fe.home/mentat-…
     04 |
     05 | ❯ refresh the generated index
     06 |
@@ -256,7 +256,7 @@ let%expect_test "a resumed possibly-mutating session shows the recovery warning"
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-mutation-54ee6697.home/mentat-…
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-mutation-72b46fe1.home/mentat-…
     04 |
     05 |
     06 |

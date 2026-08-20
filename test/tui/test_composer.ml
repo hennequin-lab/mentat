@@ -111,7 +111,7 @@ let%expect_test "unicode input and cursor motion edit the complete composer" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-unic654e12f8
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-unic2538b567
     04 |
     05 | ❯ say hello
     06 |
@@ -146,7 +146,7 @@ let%expect_test "a multiline draft clears guardedly and recalls exactly" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-m8d250cd9
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mff10bb77
     04 |
     05 | ❯ say hello
     06 |
@@ -176,7 +176,7 @@ let%expect_test "a multiline draft clears guardedly and recalls exactly" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-m8d250cd9
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mff10bb77
     04 |
     05 | ❯ say hello
     06 |
@@ -206,7 +206,7 @@ let%expect_test "a multiline draft clears guardedly and recalls exactly" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-m8d250cd9
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mff10bb77
     04 |
     05 | ❯ say hello
     06 |
@@ -236,7 +236,7 @@ let%expect_test "a multiline draft clears guardedly and recalls exactly" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-m8d250cd9
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mff10bb77
     04 |
     05 | ❯ say hello
     06 |
@@ -283,7 +283,7 @@ let%expect_test "the textarea keeps the cursor row visible at its height cap" =
     01 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
     02 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
     03 |  dev · openai/gpt-5.5 medium
-    04 |  ~/mentat-tui-composer-curso581c850d
+    04 |  ~/mentat-tui-composer-cursoa67cc96b
     05 |
     06 | ❯ say hello
     07 |
@@ -309,7 +309,7 @@ let%expect_test "pastes stay inline or become one deletable visual atom" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composc232fc4a
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-compos1d5b26fb
     04 |
     05 | ❯ say hello
     06 |
@@ -343,7 +343,7 @@ let%expect_test "pastes stay inline or become one deletable visual atom" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composc232fc4a
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-compos1d5b26fb
     04 |
     05 | ❯ say hello
     06 |
@@ -373,7 +373,7 @@ let%expect_test "pastes stay inline or become one deletable visual atom" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composc232fc4a
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-compos1d5b26fb
     04 |
     05 | ❯ say hello
     06 |
@@ -407,7 +407,7 @@ let%expect_test "question mark opens and escape closes the full shortcuts sheet"
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-compod36aedf6
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-compofcb00cf7
     04 |
     05 | ❯ say hello
     06 |
@@ -437,7 +437,7 @@ let%expect_test "question mark opens and escape closes the full shortcuts sheet"
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-compod36aedf6
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-compofcb00cf7
     04 |
     05 | ❯ say hello
     06 |
@@ -470,7 +470,7 @@ let%expect_test "slash completion shows the catalog and filtered result" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-5802f0a8
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-27aaa224
     04 |
     05 | ❯ say hello
     06 |
@@ -500,7 +500,7 @@ let%expect_test "slash completion shows the catalog and filtered result" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-5802f0a8
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-27aaa224
     04 |
     05 | ❯ say hello
     06 |
@@ -542,7 +542,7 @@ let%expect_test "enter submits an unmatched slash draft as an ordinary prompt" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-command-mise0dc5b5f
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-command-mis9f0a54fa
     04 |
     05 | ❯ say hello
     06 |
@@ -575,7 +575,7 @@ let%expect_test "an unmatched slash filter closes without losing the draft" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-comm10b12af0
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-comm3437c277
     04 |
     05 | ❯ say hello
     06 |
@@ -605,7 +605,7 @@ let%expect_test "an unmatched slash filter closes without losing the draft" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-comm10b12af0
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-comm3437c277
     04 |
     05 | ❯ say hello
     06 |
@@ -635,7 +635,7 @@ let%expect_test "an unmatched slash filter closes without losing the draft" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-comm10b12af0
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-comm3437c277
     04 |
     05 | ❯ say hello
     06 |
@@ -665,7 +665,7 @@ let%expect_test "an unmatched slash filter closes without losing the draft" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-comm10b12af0
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-comm3437c277
     04 |
     05 | ❯ say hello
     06 |
@@ -695,7 +695,7 @@ let%expect_test "an unmatched slash filter closes without losing the draft" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-comm10b12af0
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-comm3437c277
     04 |
     05 | ❯ say hello
     06 |
@@ -728,7 +728,7 @@ let%expect_test "control-c on an empty draft arms quit and visibly expires" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-quifd9dcc23
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-quic94c2f49
     04 |
     05 | ❯ say hello
     06 |
@@ -757,7 +757,7 @@ let%expect_test "control-c on an empty draft arms quit and visibly expires" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-quifd9dcc23
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-quic94c2f49
     04 |
     05 | ❯ say hello
     06 |
@@ -789,7 +789,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-bla20058acc
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-bla4d3082b1
     04 |
     05 | ❯ say hello
     06 |
@@ -819,7 +819,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-bla20058acc
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-bla4d3082b1
     04 |
     05 | ❯ say hello
     06 |
@@ -850,7 +850,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-bla20058acc
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-bla4d3082b1
     04 |
     05 | ❯ say hello
     06 |
@@ -885,7 +885,7 @@ let%expect_test "control-c discards a draft once and up recalls it" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-c790ecf49
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-c39d693d7
     04 |
     05 | ❯ say hello
     06 |
@@ -915,7 +915,7 @@ let%expect_test "control-c discards a draft once and up recalls it" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-c790ecf49
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-c39d693d7
     04 |
     05 | ❯ say hello
     06 |
@@ -951,7 +951,7 @@ let%expect_test "history walk reaches loaded prompts and restores the draft" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-histor48184033
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-histor951d660f
     04 |
     05 | ❯ say hello
     06 |
@@ -981,7 +981,7 @@ let%expect_test "history walk reaches loaded prompts and restores the draft" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-histor48184033
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-histor951d660f
     04 |
     05 | ❯ say hello
     06 |
@@ -1011,7 +1011,7 @@ let%expect_test "history walk reaches loaded prompts and restores the draft" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-histor48184033
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-histor951d660f
     04 |
     05 | ❯ say hello
     06 |
@@ -1041,7 +1041,7 @@ let%expect_test "history walk reaches loaded prompts and restores the draft" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-histor48184033
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-histor951d660f
     04 |
     05 | ❯ say hello
     06 |
@@ -1075,7 +1075,7 @@ let%expect_test "reverse search renders and inserts its selected prompt" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-historc55ec91e
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-histor17340341
     04 |
     05 | ❯ say hello
     06 |
@@ -1105,7 +1105,7 @@ let%expect_test "reverse search renders and inserts its selected prompt" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-historc55ec91e
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-histor17340341
     04 |
     05 | ❯ say hello
     06 |
@@ -1135,7 +1135,7 @@ let%expect_test "reverse search renders and inserts its selected prompt" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-historc55ec91e
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-histor17340341
     04 |
     05 | ❯ say hello
     06 |
@@ -1175,7 +1175,7 @@ let%expect_test "reverse search reaches a record older than 200 entries" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-historc55ec91e
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-histor17340341
     04 |
     05 | ❯ say hello
     06 |
@@ -1211,7 +1211,7 @@ let%expect_test "escape from reverse search restores the borrowed draft" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-histor9283bcbd
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-historfe819e48
     04 |
     05 | ❯ say hello
     06 |
@@ -1241,7 +1241,7 @@ let%expect_test "escape from reverse search restores the borrowed draft" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-histor9283bcbd
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-historfe819e48
     04 |
     05 | ❯ say hello
     06 |
@@ -1277,7 +1277,7 @@ let%expect_test "reverse search renders its no-match state" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-hist9deb5159
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-histd708d5ed
     04 |
     05 | ❯ say hello
     06 |
@@ -1307,7 +1307,7 @@ let%expect_test "reverse search renders its no-match state" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-hist9deb5159
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-histd708d5ed
     04 |
     05 | ❯ say hello
     06 |
@@ -1349,7 +1349,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mentiod5fefcb7
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mentio30255bee
     04 |
     05 | ❯ say hello
     06 |
@@ -1379,7 +1379,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mentiod5fefcb7
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mentio30255bee
     04 |
     05 | ❯ say hello
     06 |
@@ -1409,7 +1409,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mentiod5fefcb7
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mentio30255bee
     04 |
     05 | ❯ say hello
     06 |
@@ -1439,7 +1439,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mentiod5fefcb7
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mentio30255bee
     04 |
     05 | ❯ say hello
     06 |
@@ -1469,7 +1469,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mentiod5fefcb7
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mentio30255bee
     04 |
     05 | ❯ say hello
     06 |
@@ -1499,7 +1499,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mentiod5fefcb7
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mentio30255bee
     04 |
     05 | ❯ say hello
     06 |
@@ -1529,7 +1529,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mentiod5fefcb7
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mentio30255bee
     04 |
     05 | ❯ say hello
     06 |
@@ -1561,7 +1561,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mentiod5fefcb7
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mentio30255bee
     04 |
     05 | ❯ say hello
     06 |
@@ -1596,7 +1596,7 @@ let%expect_test "file completion inserts an atomic reference and closes" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mentiodd10235a
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mentio87cca229
     04 |
     05 | ❯ say hello
     06 |
@@ -1626,7 +1626,7 @@ let%expect_test "file completion inserts an atomic reference and closes" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mentiodd10235a
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mentio87cca229
     04 |
     05 | ❯ say hello
     06 |
@@ -1659,7 +1659,7 @@ let%expect_test "without enumeration capability an at-sign remains free text" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mention-c07c5022
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-mention-a0749f71
     04 |
     05 | ❯ say hello
     06 |
@@ -1692,7 +1692,7 @@ let%expect_test "without shell capability an exclamation remains prompt text" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-shell-5f60f992
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-shell-1a0a87ff
     04 |
     05 | ❯ say hello
     06 |
@@ -1725,7 +1725,7 @@ let%expect_test "shell mode keeps one editor through discard and recall" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-shel986d2ba0
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-sheld768ec9f
     04 |
     05 | ❯ say hello
     06 |
@@ -1755,7 +1755,7 @@ let%expect_test "shell mode keeps one editor through discard and recall" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-shel986d2ba0
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-sheld768ec9f
     04 |
     05 | ❯ say hello
     06 |
@@ -1785,7 +1785,7 @@ let%expect_test "shell mode keeps one editor through discard and recall" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-shel986d2ba0
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-sheld768ec9f
     04 |
     05 | ❯ say hello
     06 |
@@ -1815,7 +1815,7 @@ let%expect_test "shell mode keeps one editor through discard and recall" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-shel986d2ba0
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-sheld768ec9f
     04 |
     05 | ❯ say hello
     06 |
@@ -1845,7 +1845,7 @@ let%expect_test "shell mode keeps one editor through discard and recall" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-shel986d2ba0
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-sheld768ec9f
     04 |
     05 | ❯ say hello
     06 |
@@ -1875,7 +1875,7 @@ let%expect_test "shell mode keeps one editor through discard and recall" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-shel986d2ba0
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-sheld768ec9f
     04 |
     05 | ❯ say hello
     06 |
@@ -1910,7 +1910,7 @@ let%expect_test "shift-tab dresses plan mode and returns to build mode" =
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
     03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
     04 |  dev · openai/gpt-5.5 medium
-    05 |  ~/mentat-tui-compoc5cb222d
+    05 |  ~/mentat-tui-compo0bbb5b3f
     06 |
     07 | ❯ say hello
     08 |
@@ -1934,7 +1934,7 @@ let%expect_test "shift-tab dresses plan mode and returns to build mode" =
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
     03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
     04 |  dev · openai/gpt-5.5 medium
-    05 |  ~/mentat-tui-compoc5cb222d
+    05 |  ~/mentat-tui-compo0bbb5b3f
     06 |
     07 | ❯ say hello
     08 |
@@ -1963,7 +1963,7 @@ let%expect_test "a local shell interrupt requires two escape gestures" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-shell-core95689e5
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-shell-corbb624c29
     04 |
     05 | ❯ say hello
     06 |
@@ -2009,7 +2009,7 @@ let%expect_test "a local shell completion is stale after local clear" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-shell-sta37f67801
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-shell-sta7703c373
     04 |
     05 |   conversation cleared · session session-visual-00001 remains saved
     06 |
@@ -2055,7 +2055,7 @@ let%expect_test "a local shell completion is stale after session replacement" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-shell-staleae627b79
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-composer-shell-staleaec4f87d
     04 |
     05 | ❯ say hello
     06 |

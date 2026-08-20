@@ -97,7 +97,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.6-sol medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-sessio5e226d5a
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-sessioef863f3a
     04 |
     05 | ❯ the older prompt
     06 |
@@ -121,7 +121,7 @@ let%expect_test
     24 |   ! not logged in · /login · ~/men… · openai/gpt-5.6-sol… · ! full access ? f…
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.6-sol medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-resumc1ce3ff4
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-resumbead9ce8
     04 |
     05 | ❯ the older prompt
     06 |
@@ -145,7 +145,7 @@ let%expect_test
     24 |   ! not logged in · /login · ~/me… · openai/gpt-5.6-sol … · ! full access ? f…
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.6-sol medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-res1bbad255
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-res45768df7
     04 |
     05 | ❯ the newer prompt
     06 |
@@ -233,7 +233,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.6-sol medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-launc75ea3897
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-launc7ecbe27e
     04 |
     05 | ❯ explain the fresh launch path
     06 |
@@ -295,7 +295,7 @@ let%expect_test "manual compaction shows a live indicator while it summarizes" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.6-sol medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-compact-i9824a6c7
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-compact-i7268688b
     04 |
     05 | ❯ summarize the parser investigation
     06 |
@@ -338,7 +338,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.6-sol medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-mai48c1dd3f
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-mai276759e1
     04 |
     05 | ❯ This resumed transcript must reflow after a real PTY resize.
     06 |
@@ -364,7 +364,7 @@ let%expect_test
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
     03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
     04 |  dev · openai/gpt-5.6-sol medium
-    05 |  ~/mentat-tui-cli-mai48c1dd3f
+    05 |  ~/mentat-tui-cli-mai276759e1
     06 |
     07 | ❯ This resumed transcript must reflow after
     08 |   a real PTY resize.
@@ -395,7 +395,7 @@ let%expect_test "an explicit local shell command settles in the complete UI" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.6-sol medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-loce0564a90
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-locddb866f4
     04 |
     05 | ⏺ Shell(printf 'local shell from tui\n')
     06 |   ⎿  Completed in $TIME ms
@@ -438,7 +438,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.6-sol medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-resum1c8cb68c
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-resumf362f85c
     04 |
     05 | ❯ saved conversation
     06 |
@@ -485,7 +485,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.6-sol medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-resume-fir7050a468
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-resume-firb4500e7b
     04 |
     05 | ❯ resumed first frame
     06 |
@@ -530,7 +530,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.6-sol medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-activeae73e616
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-cli-activef8153293
     04 |
     05 | ❯ keep this conversation
     06 |
@@ -601,7 +601,7 @@ let%expect_test
     03 |
     04 |  Repository root: ~/mentat-tui-cli-trust-
     05 |  narrow-workspace-root-with-a-deliberately-
-    06 |  l9c9d8e52
+    06 |  l7b94a0c3
     07 |  Selection: 1 — continue restricted
     08 |
     09 |  This repository can control config,
@@ -647,7 +647,7 @@ let%expect_test "the live trust gate relayouts after a real terminal resize" =
     01 |
     02 |  Mentat repository activation
     03 |
-    04 |  Repository root: ~/mentat-tui-cli-trust-livcca687f9
+    04 |  Repository root: ~/mentat-tui-cli-trust-liv07414bc0
     05 |  Selection: 1 — continue restricted
     06 |
     07 |  This repository can control config, instructions, skills, Dune rules, local
@@ -679,7 +679,7 @@ let%expect_test "the live trust gate relayouts after a real terminal resize" =
     02 |  Mentat repository activation
     03 |
     04 |  Repository root: ~/mentat-tui-cli-trust-
-    05 |  livcca687f9
+    05 |  liv07414bc0
     06 |  Selection: 1 — continue restricted
     07 |
     08 |  This repository can control config,
@@ -722,7 +722,7 @@ let%expect_test "the live trust gate relayouts after a real terminal resize" =
     02 |  Mentat repository activation
     03 |
     04 |  Repository root: ~/mentat-tui-cli-trust-
-    05 |  livcca687f9
+    05 |  liv07414bc0
     06 |  Selection: 2 — trust and activate this
     07 |  repository
     08 |

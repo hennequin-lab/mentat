@@ -114,7 +114,7 @@ let%expect_test "current-context approval preserves the restored draft visibly"
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plan-approve5fd960a1.home/ment…
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plan-approve2f023c27.home/ment…
     04 |
     05 | ❯ draft a plan for the parser
     06 |
@@ -144,7 +144,7 @@ let%expect_test "current-context approval preserves the restored draft visibly"
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plan-approve5fd960a1.home/ment…
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plan-approve2f023c27.home/ment…
     04 |
     05 | ❯ draft a plan for the parser
     06 |
@@ -176,7 +176,7 @@ let%expect_test "current-context approval preserves the restored draft visibly"
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plan-approve5fd960a1.home/ment…
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plan-approve2f023c27.home/ment…
     04 |
     05 | ❯ draft a plan for the parser
     06 |
@@ -222,7 +222,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-pladc188cb3.home/mentat-tui-pl…
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plad5f3de42.home/mentat-tui-pl…
     04 |
     05 | ❯ plan history prompt
     06 |
@@ -252,7 +252,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-pladc188cb3.home/mentat-tui-pl…
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plad5f3de42.home/mentat-tui-pl…
     04 |
     05 | ❯ plan history prompt
     06 |
@@ -282,7 +282,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-pladc188cb3.home/mentat-tui-pl…
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plad5f3de42.home/mentat-tui-pl…
     04 |
     05 | ❯ plan history prompt
     06 |
@@ -312,7 +312,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-pladc188cb3.home/mentat-tui-pl…
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plad5f3de42.home/mentat-tui-pl…
     04 |
     05 | ❯ plan history prompt
     06 |
@@ -342,7 +342,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-pladc188cb3.home/mentat-tui-pl…
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plad5f3de42.home/mentat-tui-pl…
     04 |
     05 | ❯ plan history prompt
     06 |
@@ -372,7 +372,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-pladc188cb3.home/mentat-tui-pl…
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plad5f3de42.home/mentat-tui-pl…
     04 |
     05 | ❯ plan history prompt
     06 |
@@ -404,7 +404,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-pladc188cb3.home/mentat-tui-pl…
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plad5f3de42.home/mentat-tui-pl…
     04 |
     05 | ❯ plan history prompt
     06 |
@@ -434,7 +434,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-pladc188cb3.home/mentat-tui-pl…
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plad5f3de42.home/mentat-tui-pl…
     04 |
     05 | ❯ plan history prompt
     06 |
@@ -464,7 +464,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-pladc188cb3.home/mentat-tui-pl…
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plad5f3de42.home/mentat-tui-pl…
     04 |
     05 | ❯ plan history prompt
     06 |
@@ -525,7 +525,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plan-di3b7b6944.home/mentat-tu…
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plan-dib97e3a77.home/mentat-tu…
     04 |
     05 | ❯ show the complete migration plan
     06 |
@@ -579,7 +579,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plan-di3b7b6944.home/mentat-tu…
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plan-dib97e3a77.home/mentat-tu…
     04 |
     05 | ❯ show the complete migration plan
     06 |
@@ -633,7 +633,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plan-di3b7b6944.home/mentat-tu…
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plan-dib97e3a77.home/mentat-tu…
     04 |
     05 | ❯ show the complete migration plan
     06 |
@@ -687,7 +687,7 @@ let%expect_test
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plan-di3b7b6944.home/mentat-tu…
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  /tmp/mentat-tui-plan-dib97e3a77.home/mentat-tu…
     04 |
     05 | ❯ show the complete migration plan
     06 |
@@ -762,7 +762,7 @@ let%expect_test
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
     03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
     04 |  dev · openai/gpt-5.5 medium
-    05 |  /tmp/mentat-tui-plan-narr93b7cd1a.home/ment…
+    05 |  /tmp/mentat-tui-plan-narrb4f70b54.home/ment…
     06 |
     07 | ❯ choose a fresh build context
     08 |
@@ -788,7 +788,7 @@ let%expect_test
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
     03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
     04 |  dev · openai/gpt-5.5 medium
-    05 |  /tmp/mentat-tui-plan-narr93b7cd1a.home/ment…
+    05 |  /tmp/mentat-tui-plan-narrb4f70b54.home/ment…
     06 |
     07 | ❯ choose a fresh build context
     08 |
@@ -817,7 +817,7 @@ let%expect_test
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
     03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
     04 |  dev · openai/gpt-5.5 medium
-    05 |  /tmp/mentat-tui-plan-narr93b7cd1a.home/ment…
+    05 |  /tmp/mentat-tui-plan-narrb4f70b54.home/ment…
     06 |
     07 | ❯ choose a fresh build context
     08 |
@@ -850,7 +850,7 @@ let%expect_test
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
     03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
     04 |  dev · openai/gpt-5.5 medium
-    05 |  /tmp/mentat-tui-plan-narr93b7cd1a.home/ment…
+    05 |  /tmp/mentat-tui-plan-narrb4f70b54.home/ment…
     06 |
     07 | ❯ choose a fresh build context
     08 |
@@ -874,7 +874,7 @@ let%expect_test
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·
     03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂
     04 |  dev · openai/gpt-5.5 medium
-    05 |  /tmp/mentat-tui-plan-narr93b7cd1a.home/ment…
+    05 |  /tmp/mentat-tui-plan-narrb4f70b54.home/ment…
     06 |
     07 | ❯ choose a fresh build context
     08 |

@@ -248,7 +248,7 @@ let%expect_test "a replacement retires a stale initial start" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-sessions-stale-initi49b8631a
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-sessions-stale-initi89e3c983
     04 |
     05 |
     06 |
@@ -283,7 +283,7 @@ let%expect_test "a replacement retires a stale initial start" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-sessions-stale-initi49b8631a
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-sessions-stale-initi89e3c983
     04 |
     05 | ❯ use admitted session
     06 |
@@ -323,7 +323,7 @@ let%expect_test "failed resume preserves the admitted projection" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-sessions-failebd85c4be
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-sessions-faile5739ac3d
     04 |
     05 | ❯ remember this
     06 |
@@ -356,7 +356,7 @@ let%expect_test "failed resume preserves the admitted projection" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-sessions-failebd85c4be
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-sessions-faile5739ac3d
     04 |
     05 | ❯ remember this
     06 |
@@ -397,7 +397,7 @@ let%expect_test "terminal feed loss disables submit until explicit resume" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-sessions-ffa51e691
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-sessions-f5e21db81
     04 |
     05 | ❯ before loss
     06 |
@@ -428,7 +428,7 @@ let%expect_test "terminal feed loss disables submit until explicit resume" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-sessions-ffa51e691
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-sessions-f5e21db81
     04 |
     05 | ❯ before loss
     06 |
@@ -466,7 +466,7 @@ let%expect_test "terminal feed loss disables submit until explicit resume" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-sessions-ffa51e691
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-sessions-f5e21db81
     04 |
     05 | ❯ before loss
     06 |
@@ -510,7 +510,7 @@ let%expect_test "retired feed messages cannot detach the replacement" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-sessions-st0237a4b5
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-sessions-stc66ac443
     04 |
     05 |
     06 |
@@ -541,7 +541,7 @@ let%expect_test "retired feed messages cannot detach the replacement" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-sessions-st0237a4b5
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-sessions-stc66ac443
     04 |
     05 | ❯ use replacement
     06 |
@@ -592,7 +592,7 @@ let%expect_test "browser normalizes the shared hostile inline family" =
     11 |
     12 |
     13 |
-    14 |   cwd ~/mentat-tui-sessions-hostil6bf78577
+    14 |   cwd ~/mentat-tui-sessions-hostil2ad2fa47
     15 |
     16 |
     17 |
@@ -633,7 +633,7 @@ let%expect_test "browser keeps partial listing diagnostics while filtering" =
     11 |
     12 |
     13 |
-    14 |   cwd ~/mentat-tui-sessionacd22caf
+    14 |   cwd ~/mentat-tui-session60a53ed4
     15 |
     16 |
     17 |
@@ -664,7 +664,7 @@ let%expect_test "browser keeps partial listing diagnostics while filtering" =
     12 |
     13 |
     14 |
-    15 |   cwd ~/mentat-tui-sessionacd22caf
+    15 |   cwd ~/mentat-tui-session60a53ed4
     16 |
     17 |
     18 |
@@ -790,7 +790,7 @@ let%expect_test "quick switcher pages and promotes the complete result" =
     11 |    Measured table row 08                active    idle  0 turns just now today
     12 |    Measured table row 09                active    idle  0 turns just now today
     13 |
-    14 |   cwd ~/mentat-tui-sessions-quiec3b152f
+    14 |   cwd ~/mentat-tui-sessions-quice6f32cf
     15 |
     16 |
     17 |
@@ -817,7 +817,7 @@ let%expect_test "quick switcher digit nine resumes the ninth result" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-sessions-qui48debcf3
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-sessions-qui4a360d5c
     04 |
     05 | ❯ The ninth quick-switch session is active.
     06 |
@@ -866,7 +866,7 @@ let%expect_test "browser pages by the measured Mosaic table viewport" =
     11 |    Measured table row 13                active    idle  0 turns just now today
     12 |    Measured table row 14                active    idle  0 turns just now today
     13 |
-    14 |   cwd ~/mentat-tui-sessiod259e2f5
+    14 |   cwd ~/mentat-tui-sessiocaa646f6
     15 |
     16 |
     17 |
@@ -896,7 +896,7 @@ let%expect_test "browser pages by the measured Mosaic table viewport" =
     11 |    Measured table row 08                active    idle  0 turns just now today
     12 |    Measured table row 09                active    idle  0 turns just now today
     13 |
-    14 |   cwd ~/mentat-tui-sessiod259e2f5
+    14 |   cwd ~/mentat-tui-sessiocaa646f6
     15 |
     16 |
     17 |

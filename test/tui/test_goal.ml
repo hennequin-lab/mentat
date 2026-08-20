@@ -939,7 +939,7 @@ let%expect_test "an objective staged with /goal rides the next turn and clears"
     goal declared on prompt: Ship the parser without regressions
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-go5917f9de
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-go0dfeb266
     04 |
     05 | ❯ begin
     06 |
@@ -1054,7 +1054,7 @@ let%expect_test "declaring an objective is refused while a goal is live" =
     {|
     01 |
     02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5 medium
-    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-goal-livccbdaeaf
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~/mentat-tui-goal-liv3cddcbe8
     04 |
     05 | ❯ start
     06 |
