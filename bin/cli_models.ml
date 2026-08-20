@@ -139,24 +139,18 @@ let current_small_source config =
   | Some origin -> config_source_string (Mentat_config.Origin.source origin)
   | None -> "default"
 
-(* A server-listed row on a route that also declares models is on demand: the
-   default listing stays the curated set and [--all] carries the server's
-   long tail. A route with no declared models — a purely server-owned set —
-   shows every row. *)
-let on_demand route entry =
+(* A server-listed row someone could actually pick shows by default; a
+   server-listed row that is only history — the server marks it deprecated —
+   rides [--all]. Declared rows keep the estate-wide rule: visible even when
+   deprecated, for diagnostics. *)
+let on_demand entry =
   match Entry.origin entry with
   | Entry.Declared -> false
-  | Entry.Listed ->
-      List.exists
-        (fun entry ->
-          match Entry.origin entry with
-          | Entry.Declared -> true
-          | Entry.Listed -> false)
-        (Route.models route)
+  | Entry.Listed -> not (Model.selectable (Entry.model entry))
 
 (* The flat model rows the readiness owner value carries, in provider/model
    declaration order: every route's entries, narrowed by an optional provider
-   and dropped to visible, curated-or-server-owned models unless [all]. *)
+   and dropped to visible, pickable models unless [all]. *)
 let readiness_rows ~all ~provider readiness =
   let want = Option.map Provider.make provider in
   Readiness.routes readiness
@@ -167,8 +161,7 @@ let readiness_rows ~all ~provider readiness =
   |> List.concat_map (fun route ->
       Route.models route
       |> List.filter (fun entry ->
-          all
-          || (Model.visible (Entry.model entry) && not (on_demand route entry)))
+          all || (Model.visible (Entry.model entry) && not (on_demand entry)))
       |> List.map (fun entry -> (route, entry)))
 
 (* list. *)
