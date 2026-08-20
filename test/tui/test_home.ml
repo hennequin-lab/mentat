@@ -680,7 +680,7 @@ let%expect_test "Mosaic truncates the full model line in a narrow terminal" =
     02 |
     03 |        dev · openai/gpt-5.5 medium
     04 |
-    05 | ▎ welcome — and thanks for trying mentat
+    05 |
     06 |
     07 | ────────────────────────────────────────
     08 | ❯ message mentat

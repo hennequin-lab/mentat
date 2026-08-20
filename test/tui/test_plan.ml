@@ -860,7 +860,7 @@ let%expect_test
     12 |
     13 |   Unicode 👩🏽‍💻 plan
     14 |
-    15 |   Keep the exact owner plan while Mosaic
+    15 |
     16 | ❯ 2. approve and start fresh
     17 |
     18 |   1-4 select · ↵ choose · ^O more · esc keep
