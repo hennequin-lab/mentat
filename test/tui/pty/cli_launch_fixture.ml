@@ -24,12 +24,16 @@ let time seconds =
   seconds |> Int64.of_int |> Int64.mul 1_000L |> Session.Time.of_unix_ms
 
 (* Persist owner-encoded next sessions as launch fixtures. The executable still
-   performs the real store scan, selection, client attach, replay, and render. *)
+   performs the real store scan, selection, client attach, replay, and render.
+   The recorded cwd is the canonical root: the executable canonicalizes its
+   working directory before it records a session or scopes a listing to the
+   workspace, so a document spelled any other way is one the executable would
+   never have written and [--last] would rightly not find. *)
 let seed_session project ~id ~prompt ~updated_at =
   let session_id = Session.Id.of_string id in
   let metadata =
     Session.Metadata.make
-      ~cwd:(Lpath.Abs.of_string_exn (Project.root project))
+      ~cwd:(Lpath.Abs.of_string_exn (Project.canonical_root project))
       ~created_at:(time 1) ~updated_at:(time updated_at) ()
   in
   let turn =
