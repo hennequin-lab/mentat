@@ -777,14 +777,14 @@ let ollama_check ~sw ~env ?base_url ?auth_base_url:_ credential =
   in
   observe ~sw ~env ~headers (base_url ^ "/api/tags")
 
-(* The OpenCode Go check reads the console's [/api/config] — the one endpoint
-   that publishes per-model metadata, including the wire-protocol package the
-   listed-model rule needs — and lowers it into a listing. The console is an
-   enrichment source, not the account authority: whenever it yields no
-   listing (down, rejecting the key, unrecognized shape), the check falls
-   back to the gateway's bare-ids [/v1/models], whose verdict on the
-   credential stands. Server data is untrusted throughout: an unusable entry
-   degrades to a bare id, never a fault. *)
+(* The OpenCode Go check joins two public sources: the gateway's bare-ids
+   [/v1/models] is the served-id truth and the check's verdict, and the
+   vendor's public model catalog supplies each served id's metadata —
+   including the wire-protocol package the listed-model rule needs. (The
+   console's [/api/config] would be richer still, but it accepts only
+   console-account OAuth, never service keys; it returns with the slice-3
+   login.) A catalog failure degrades to bare ids, never to a check failure,
+   and an unusable catalog entry degrades to its bare id, never a fault. *)
 
 module Opencode_config = struct
   let api_of_npm = function
@@ -898,37 +898,38 @@ module Opencode_config = struct
         | listed -> Some listed
         | exception Invalid_argument _ -> None)
 
-  let listing body =
+  (* The public catalog maps provider ids to items whose [models] members are
+     keyed by model id; the lookup enriches a served id and falls back to the
+     bare id for anything the catalog does not know. *)
+  let catalog body =
     match Jsont_bytesrw.decode_string Jsont.json body with
     | Error _ -> None
     | Ok json ->
-        Option.bind (Check.json_field "config" json) (fun config ->
-            Option.bind (Check.json_field "provider" config) (fun providers ->
-                Option.bind (Check.json_field "opencode-go" providers)
-                  (fun item ->
-                    let item_npm = Check.json_string_field "npm" item in
-                    match Check.json_field "models" item with
-                    | Some (Jsont.Object (members, _)) -> (
-                        let models =
-                          List.filter_map
-                            (fun ((id, _), value) ->
-                              listed_model ~item_npm (id, value))
-                            members
-                        in
-                        (* An empty parse is shape drift, not an empty
-                           catalog: it must not become the availability
-                           authority that empties the provider. *)
-                        match models with
-                        | [] -> None
-                        | models -> (
-                            match Listing.make models with
-                            | listing -> Some listing
-                            | exception Invalid_argument _ -> None))
-                    | Some _ | None -> None)))
+        Option.bind (Check.json_field "opencode-go" json) (fun item ->
+            let item_npm = Check.json_string_field "npm" item in
+            match Check.json_field "models" item with
+            | Some (Jsont.Object (members, _)) ->
+                Some
+                  (fun id ->
+                    match
+                      List.find_opt
+                        (fun ((name, _), _) -> String.equal name id)
+                        members
+                    with
+                    | Some (_, value) -> (
+                        match listed_model ~item_npm (id, value) with
+                        | Some listed -> listed
+                        | None -> Listing.Model.of_id id)
+                    | None -> Listing.Model.of_id id)
+            | Some _ | None -> None)
 end
 
-let opencode_console_default = "https://console.opencode.ai"
+let opencode_catalog_default = "https://models.opencode.ai"
 let opencode_gateway_default = "https://opencode.ai/zen/go"
+
+(* The vendor catalog spans every provider it documents; the check reads it
+   whole. *)
+let opencode_catalog_max_body = 16 * 1024 * 1024
 
 let opencode_check ~sw ~env ?base_url ?auth_base_url credential =
   match Option.map Credential.secret credential with
@@ -943,21 +944,39 @@ let opencode_check ~sw ~env ?base_url ?auth_base_url credential =
             access_token)
       in
       let headers = [ ("authorization", "Bearer " ^ token) ] in
-      let console =
-        effective_base_url ~default:opencode_console_default auth_base_url
+      let base_url =
+        effective_base_url ~default:opencode_gateway_default base_url
       in
-      let gateway_models () =
-        let base_url =
-          effective_base_url ~default:opencode_gateway_default base_url
-        in
-        observe ~sw ~env ~headers (base_url ^ "/v1/models")
-      in
-      (match Tls_setup.get ~sw ~env ~headers (console ^ "/api/config") with
+      (match Tls_setup.get ~sw ~env ~headers (base_url ^ "/v1/models") with
+      | Error () -> network_problem
       | Ok (status, body) when status >= 200 && status < 300 -> (
-          match Opencode_config.listing body with
-          | Some listing -> observation ~listing ()
-          | None -> gateway_models ())
-      | Ok _ | Error () -> gateway_models ())
+          match Check.models body with
+          | None -> observation ~problems:[ unknown_response ] ()
+          | Some served -> (
+              let enrich =
+                let catalog_root =
+                  effective_base_url ~default:opencode_catalog_default
+                    auth_base_url
+                in
+                match
+                  Tls_setup.get ~max_body:opencode_catalog_max_body ~sw ~env
+                    ~headers:[] (catalog_root ^ "/api.json")
+                with
+                | Ok (status, body) when status >= 200 && status < 300 ->
+                    Opencode_config.catalog body
+                | Ok _ | Error () -> None
+              in
+              let listed =
+                match enrich with
+                | Some lookup -> lookup
+                | None -> Listing.Model.of_id
+              in
+              match Listing.make (List.map listed served) with
+              | listing -> observation ~listing ()
+              | exception Invalid_argument _ ->
+                  observation ~problems:[ unknown_response ] ()))
+      | Ok (status, body) ->
+          observation ~problems:[ Check.problem ~status ~body ] ())
 
 let openai_chatgpt_config auth_base_url =
   match auth_base_url with

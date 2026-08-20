@@ -142,9 +142,10 @@ let with_early_close_peer env f =
       `Stop_daemon);
   f ~sw port
 
-(* A loopback HTTP peer answering every request with one canned JSON body —
-   what a provider's listing endpoint looks like to a check. *)
-let with_http_peer env ~body f =
+(* A loopback HTTP peer answering each request with a canned JSON body chosen
+   by its request line — what a provider's listing endpoints look like to a
+   check. *)
+let with_http_peer env ~respond f =
   Eio.Switch.run @@ fun sw ->
   let socket =
     Eio.Net.listen (Eio.Stdenv.net env) ~sw ~backlog:4 ~reuse_addr:true
@@ -160,7 +161,8 @@ let with_http_peer env ~body f =
         (Eio.Switch.run @@ fun connection_sw ->
          let flow, _ = Eio.Net.accept ~sw:connection_sw socket in
          let reader = Eio.Buf_read.of_flow ~max_size:65536 flow in
-         let _request_line = Eio.Buf_read.line reader in
+         let request_line = Eio.Buf_read.line reader in
+         let body = respond request_line in
          Eio.Flow.copy_string
            (Printf.sprintf
               "HTTP/1.1 200 OK\r\n\
@@ -186,7 +188,7 @@ let store_ok msg = function
 let ollama_listing_round () =
   with_runtime "listings-ollama" @@ fun env _raw t ->
   with_http_peer env
-    ~body:{|{"models":[{"name":"llama3:latest"},{"name":"qwen3:8b"}]}|}
+    ~respond:(fun _ -> {|{"models":[{"name":"llama3:latest"},{"name":"qwen3:8b"}]}|})
   @@ fun ~sw port ->
   let base_url provider =
     if Llm.Provider.equal provider Mentat_llm_ollama.provider then
@@ -236,15 +238,23 @@ let ollama_listing_round () =
 
 let opencode_config_listing () =
   with_runtime "listings-opencode" @@ fun env _raw t ->
-  let body =
-    {|{"config":{"provider":{"opencode-go":{"npm":"@ai-sdk/openai-compatible","models":{"kimi-k3":{"name":"Kimi K3","cost":{"input":3.0,"output":15.0,"cache_read":0.3},"limit":{"context":262144,"output":8192},"tool_call":true,"status":"active"},"minimax-m3":{"provider":{"npm":"@ai-sdk/anthropic"},"name":"MiniMax M3"},"grok-4.5":{"provider":{"npm":"@ai-sdk/openai"}},"new-chat":{"name":"New Chat","status":"beta"}}}}}}|}
+  let gateway =
+    {|{"object":"list","data":[{"id":"kimi-k3"},{"id":"minimax-m3"},{"id":"grok-4.5"},{"id":"new-chat"}]}|}
   in
-  with_http_peer env ~body @@ fun ~sw port ->
-  let auth_base_url provider =
+  let catalog =
+    {|{"opencode-go":{"npm":"@ai-sdk/openai-compatible","models":{"kimi-k3":{"name":"Kimi K3","cost":{"input":3.0,"output":15.0,"cache_read":0.3},"limit":{"context":262144,"output":8192},"tool_call":true},"minimax-m3":{"provider":{"npm":"@ai-sdk/anthropic"},"name":"MiniMax M3"},"grok-4.5":{"provider":{"npm":"@ai-sdk/openai"}},"new-chat":{"name":"New Chat","status":"beta"}}}}|}
+  in
+  let respond request_line =
+    if String.includes ~affix:"/api.json" request_line then catalog
+    else gateway
+  in
+  with_http_peer env ~respond @@ fun ~sw port ->
+  let peer provider =
     if Llm.Provider.equal provider Mentat_llm_opencode.provider then
       Some (Printf.sprintf "http://127.0.0.1:%d" port)
     else None
   in
+  let base_url = peer and auth_base_url = peer in
   let credential =
     Credential.make ~provider:Mentat_llm_opencode.provider
       ~source:Credential.Source.process
@@ -253,10 +263,10 @@ let opencode_config_listing () =
   store_ok "refresh"
     (Runtime.refresh_listings t ~sw ~env
        ~providers:[ Mentat_llm_opencode.provider ]
-       ~auth_base_url ~process:[ credential ] ~environment:[] ());
+       ~base_url ~auth_base_url ~process:[ credential ] ~environment:[] ());
   let listings =
     store_ok "listings"
-      (Runtime.listings t ~auth_base_url ~process:[ credential ]
+      (Runtime.listings t ~base_url ~auth_base_url ~process:[ credential ]
          ~environment:[] ())
   in
   let discoveries =
@@ -311,6 +321,17 @@ let opencode_config_listing () =
     (Provider.Model.visible (model_of "grok-4.5"));
   is_true ~msg:"a chat-protocol server model is visible"
     (Provider.Model.visible (model_of "new-chat"));
+  equal (list string) ~msg:"the route names its server-synthesized rows"
+    [ "grok-4.5"; "new-chat" ]
+    (Provider.Model_readiness.Route.dynamic route);
+  (match Provider.Model_readiness.Entry.origin (entry_for "new-chat") with
+  | Provider.Model_readiness.Entry.Listed -> ()
+  | Provider.Model_readiness.Entry.Declared ->
+      fail "a server-synthesized row is listed-origin");
+  (match Provider.Model_readiness.Entry.origin (entry_for "kimi-k3") with
+  | Provider.Model_readiness.Entry.Declared -> ()
+  | Provider.Model_readiness.Entry.Listed ->
+      fail "a curated row is declared-origin");
   equal (option string) ~msg:"server display name rides the row"
     (Some "New Chat")
     (Provider.Model.display_name (model_of "new-chat"));
@@ -331,7 +352,7 @@ let opencode_config_listing () =
   equal int ~msg:"a rotated credential drops the retained listing" 0
     (List.length
        (store_ok "listings"
-          (Runtime.listings t ~auth_base_url ~environment:[] ())))
+          (Runtime.listings t ~base_url ~auth_base_url ~environment:[] ())))
 
 let opencode_declaration_pin () =
   with_runtime "opencode-pin" @@ fun _env _raw t ->

@@ -244,8 +244,27 @@ let entry_matches ~input (route, entry) =
       contains ~needle (normalize_inline field |> String.lowercase_ascii))
     fields
 
+(* A server-listed row on a route that also declares models is on demand: it
+   joins the table only when the filter names it, so the default view stays
+   the curated set. A route with no declared models — a purely server-owned
+   set, like a local daemon's — shows every row. *)
+let on_demand route entry =
+  match Entry.origin entry with
+  | Entry.Declared -> false
+  | Entry.Listed ->
+      List.exists
+        (fun entry ->
+          match Entry.origin entry with
+          | Entry.Declared -> true
+          | Entry.Listed -> false)
+        (Route.models route)
+
 let matching_entries input readiness =
-  entries readiness |> List.filter (entry_matches ~input)
+  let blank = String.is_empty (String.trim input) in
+  entries readiness
+  |> List.filter (fun (route, entry) ->
+      entry_matches ~input (route, entry)
+      && ((not blank) || not (on_demand route entry)))
 
 let visible_rows t =
   match t.readiness with

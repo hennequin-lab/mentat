@@ -94,6 +94,16 @@ end
 module Entry : sig
   (** Effective readiness for one catalog model. *)
 
+  (** The provenance of one entry's model. Frontends use it to keep default
+      views curated: a route that declares models shows its [Listed] rows only
+      on demand, while a route with no declared models — a purely server-owned
+      set — shows every row. *)
+  type origin =
+    | Declared  (** The declaration's reviewed catalog carries the model. *)
+    | Listed
+        (** The model was synthesized from the provider's server listing and
+            carries the server's metadata, not reviewed enrichment. *)
+
   type t
   (** The type for one model entry. Values retain the exact static {!Model.t};
       the remaining facts are derived from the containing route's declaration
@@ -101,6 +111,9 @@ module Entry : sig
 
   val model : t -> Model.t
   (** [model t] is [t]'s exact static or dynamically resolved model metadata. *)
+
+  val origin : t -> origin
+  (** [origin t] is the provenance of [t]'s model. *)
 
   val availability : t -> Availability.t
   (** [availability t] is the checked entitlement observation for
@@ -143,6 +156,11 @@ module Route : sig
   (** [listed t] is the ids of the server listing this route was projected
       with, in server order, or [None] when no listing was supplied. When
       present it is the route's availability authority. *)
+
+  val dynamic : t -> string list
+  (** [dynamic t] is the ids of [t]'s {!Entry.Listed} entries, in entry
+      order — the rows synthesized from the server listing rather than
+      declared. *)
 
   val models : t -> Entry.t list
   (** [models t] is [t]'s effective model entries.
@@ -211,9 +229,12 @@ val jsont : t Jsont.t
     ["providers"] array.
 
     The encoding retains exact model metadata, display names, authentication
-    requirements, discoveries, and each route's listing ids. Availability,
+    requirements, discoveries, each route's listing ids, and its synthesized
+    (listed-origin) ids. Availability, entry origin,
     eligibility, and actionability are derived from those owner facts when
-    decoded, preventing redundant wire fields from drifting. Dynamic resolver
+    decoded, preventing redundant wire fields from drifting. Entry origins
+    re-derive from the synthesized-id member (absent means every entry is
+    declared, so pre-existing snapshots keep their meaning). Dynamic resolver
     closures and credential material cannot appear in the encoding. Decoding
     rejects unknown members, duplicate providers or model ids, and provider
     inconsistencies. *)

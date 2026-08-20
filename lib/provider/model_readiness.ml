@@ -86,29 +86,44 @@ module Actionability = struct
 end
 
 module Entry = struct
+  type origin = Declared | Listed
+
+  let equal_origin a b =
+    match (a, b) with
+    | Declared, Declared | Listed, Listed -> true
+    | (Declared | Listed), _ -> false
+
+  let pp_origin ppf = function
+    | Declared -> Format.pp_print_string ppf "declared"
+    | Listed -> Format.pp_print_string ppf "listed"
+
   type t = {
     model : Model.t;
+    origin : origin;
     availability : Availability.t;
     eligibility : Eligibility.t;
     actionability : Actionability.t;
   }
 
   let model t = t.model
+  let origin t = t.origin
   let availability t = t.availability
   let eligibility t = t.eligibility
   let actionability t = t.actionability
 
   let equal a b =
     Model.equal a.model b.model
+    && equal_origin a.origin b.origin
     && Availability.equal a.availability b.availability
     && Eligibility.equal a.eligibility b.eligibility
     && Actionability.equal a.actionability b.actionability
 
   let pp ppf t =
     Format.fprintf ppf
-      "@[<2>{model=%a; availability=%a; eligibility=%a; actionability=%a}@]"
-      Model.pp t.model Availability.pp t.availability Eligibility.pp
-      t.eligibility Actionability.pp t.actionability
+      "@[<2>{model=%a; origin=%a; availability=%a; eligibility=%a; \
+       actionability=%a}@]"
+      Model.pp t.model pp_origin t.origin Availability.pp t.availability
+      Eligibility.pp t.eligibility Actionability.pp t.actionability
 end
 
 module Route = struct
@@ -118,6 +133,7 @@ module Route = struct
     auth_required : bool;
     discovery : Account.Discovery.t;
     listed : string list option;
+    dynamic : string list;
     models : Entry.t list;
   }
 
@@ -126,6 +142,7 @@ module Route = struct
   let auth_required t = t.auth_required
   let discovery t = t.discovery
   let listed t = t.listed
+  let dynamic t = t.dynamic
   let models t = t.models
 
   let equal a b =
@@ -134,6 +151,7 @@ module Route = struct
     && Bool.equal a.auth_required b.auth_required
     && Account.Discovery.equal a.discovery b.discovery
     && Option.equal (List.equal String.equal) a.listed b.listed
+    && List.equal String.equal a.dynamic b.dynamic
     && List.equal Entry.equal a.models b.models
 
   let pp ppf t =
@@ -191,9 +209,10 @@ let actionability ~auth_required discovery availability =
       | Availability.Available | Availability.Unknown ->
           Actionability.Actionable)
 
-let make_entry ~auth_required ~discovery model availability =
+let make_entry ~auth_required ~discovery ~origin model availability =
   {
     Entry.model;
+    origin;
     availability;
     eligibility = eligibility model;
     actionability = actionability ~auth_required discovery availability;
@@ -285,11 +304,13 @@ let route_of_declaration declaration discovery listing =
     | Some listing -> listed_models declaration listing
     | None -> dynamic_models declaration discovery
   in
+  let entry ~origin model =
+    let availability = availability ~listed discovery model in
+    make_entry ~auth_required ~discovery ~origin model availability
+  in
   let models =
-    Declaration.models declaration @ dynamic
-    |> List.map (fun model ->
-        let availability = availability ~listed discovery model in
-        make_entry ~auth_required ~discovery model availability)
+    List.map (entry ~origin:Entry.Declared) (Declaration.models declaration)
+    @ List.map (entry ~origin:Entry.Listed) dynamic
   in
   {
     Route.provider;
@@ -297,6 +318,7 @@ let route_of_declaration declaration discovery listing =
     auth_required;
     discovery;
     listed;
+    dynamic = List.map Model.id dynamic;
     models;
   }
 
@@ -338,7 +360,8 @@ let check_route_models provider models =
   in
   loop [] models
 
-let route_of_wire provider display_name auth_required discovery listed models =
+let route_of_wire provider display_name auth_required discovery listed dynamic
+    models =
   check_optional_display_name display_name;
   if not (provider_equal provider (Account.Discovery.provider discovery)) then
     invalid "jsont" "discovery provider contradicts readiness route";
@@ -346,17 +369,30 @@ let route_of_wire provider display_name auth_required discovery listed models =
   let models =
     List.map
       (fun model ->
+        let origin =
+          if List.exists (String.equal (Model.id model)) dynamic then
+            Entry.Listed
+          else Entry.Declared
+        in
         let availability = availability ~listed discovery model in
-        make_entry ~auth_required ~discovery model availability)
+        make_entry ~auth_required ~discovery ~origin model availability)
       models
   in
-  { Route.provider; display_name; auth_required; discovery; listed; models }
+  {
+    Route.provider;
+    display_name;
+    auth_required;
+    discovery;
+    listed;
+    dynamic;
+    models;
+  }
 
 let route_jsont =
-  let dec provider display_name auth_required discovery listed models =
+  let dec provider display_name auth_required discovery listed dynamic models =
     decode_invalid_arg (fun () ->
         route_of_wire provider display_name auth_required discovery listed
-          models)
+          dynamic models)
   in
   Jsont.Object.map ~kind:"model readiness provider" dec
   |> Jsont.Object.mem "provider" Mentat_llm.Provider.jsont ~enc:Route.provider
@@ -364,6 +400,9 @@ let route_jsont =
   |> Jsont.Object.mem "auth_required" Jsont.bool ~enc:Route.auth_required
   |> Jsont.Object.mem "discovery" Account.Discovery.jsont ~enc:Route.discovery
   |> Jsont.Object.opt_mem "listed" (Jsont.list Jsont.string) ~enc:Route.listed
+  |> Jsont.Object.mem "dynamic" (Jsont.list Jsont.string) ~dec_absent:[]
+       ~enc_omit:(fun dynamic -> dynamic = [])
+       ~enc:Route.dynamic
   |> Jsont.Object.mem "models" (Jsont.list Model.jsont) ~enc:(fun route ->
       List.map Entry.model (Route.models route))
   |> Jsont.Object.error_unknown |> Jsont.Object.finish

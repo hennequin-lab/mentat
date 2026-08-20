@@ -25,12 +25,15 @@ val web_http_client : Eio_unix.Stdenv.base -> Cohttp_eio.Client.t
     connector must lower that categorical failure at their own boundary. *)
 
 val get :
+  ?max_body:int ->
   sw:Eio.Switch.t ->
   env:Eio_unix.Stdenv.base ->
   headers:(string * string) list ->
   string ->
   (int * string, unit) result
 (** [get ~sw ~env ~headers url] performs one deadline-bound HTTPS GET and
-    returns the response status and a body bounded to 1 MiB. URI parsing, system
-    TLS setup, endpoint identity, DNS resolution, transport, and timeout
-    failures are [Error ()]. Cancellation and unrelated exceptions escape. *)
+    returns the response status and a body bounded to [max_body] bytes
+    (default 1 MiB — a vendor model catalog is the one larger body a check
+    reads). URI parsing, system TLS setup, endpoint identity, DNS resolution,
+    transport, and timeout failures are [Error ()]. Cancellation and unrelated
+    exceptions escape. *)

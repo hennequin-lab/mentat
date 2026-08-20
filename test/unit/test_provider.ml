@@ -2610,6 +2610,16 @@ let model_readiness_group =
           equal (option string) ~msg:"listed metadata comes from the rule"
             (Some "Srv 2")
             (Model.display_name (Readiness_entry.model (List.nth entries 2)));
+          equal (list string) ~msg:"the route names its synthesized rows"
+            [ "srv-2"; "srv-1" ]
+            (Readiness_route.dynamic route);
+          (match Readiness_entry.origin (List.hd entries) with
+          | Readiness_entry.Declared -> ()
+          | Readiness_entry.Listed -> fail "a declared row is declared-origin");
+          (match Readiness_entry.origin (List.nth entries 2) with
+          | Readiness_entry.Listed -> ()
+          | Readiness_entry.Declared ->
+              fail "a synthesized row is listed-origin");
           (match Readiness_entry.availability (List.hd entries) with
           | Availability.Available -> ()
           | Availability.Unavailable | Availability.Unknown ->

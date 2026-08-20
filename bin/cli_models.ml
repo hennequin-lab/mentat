@@ -139,9 +139,24 @@ let current_small_source config =
   | Some origin -> config_source_string (Mentat_config.Origin.source origin)
   | None -> "default"
 
+(* A server-listed row on a route that also declares models is on demand: the
+   default listing stays the curated set and [--all] carries the server's
+   long tail. A route with no declared models — a purely server-owned set —
+   shows every row. *)
+let on_demand route entry =
+  match Entry.origin entry with
+  | Entry.Declared -> false
+  | Entry.Listed ->
+      List.exists
+        (fun entry ->
+          match Entry.origin entry with
+          | Entry.Declared -> true
+          | Entry.Listed -> false)
+        (Route.models route)
+
 (* The flat model rows the readiness owner value carries, in provider/model
-   declaration order: every route's entries, narrowed by an optional provider and
-   dropped to visible models unless [all]. *)
+   declaration order: every route's entries, narrowed by an optional provider
+   and dropped to visible, curated-or-server-owned models unless [all]. *)
 let readiness_rows ~all ~provider readiness =
   let want = Option.map Provider.make provider in
   Readiness.routes readiness
@@ -151,7 +166,9 @@ let readiness_rows ~all ~provider readiness =
       | Some p -> Provider.equal (Route.provider route) p)
   |> List.concat_map (fun route ->
       Route.models route
-      |> List.filter (fun entry -> all || Model.visible (Entry.model entry))
+      |> List.filter (fun entry ->
+          all
+          || (Model.visible (Entry.model entry) && not (on_demand route entry)))
       |> List.map (fun entry -> (route, entry)))
 
 (* list. *)

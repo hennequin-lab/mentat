@@ -67,7 +67,7 @@ let cohttp_headers headers =
     (fun acc (name, value) -> Cohttp.Header.add acc name value)
     (Cohttp.Header.init ()) headers
 
-let read_body body =
+let read_body ~max_body body =
   let chunk = Cstruct.create 4096 in
   let buffer = Buffer.create 1024 in
   let rec loop remaining =
@@ -80,7 +80,7 @@ let read_body body =
             (Cstruct.to_string (Cstruct.sub chunk 0 count));
           loop (remaining - count)
   in
-  loop max_body_size;
+  loop max_body;
   Buffer.contents buffer
 
 (* Cohttp-eio currently reports resolver failure through [Failure]. Keep that
@@ -93,12 +93,12 @@ let call client ~sw ~headers uri =
       (Failure _ | Tls_eio.Tls_alert _ | Tls_eio.Tls_failure _ | End_of_file) ->
       Error ()
 
-let read_response_body body =
-  match read_body body with
+let read_response_body ~max_body body =
+  match read_body ~max_body body with
   | body -> Ok body
   | exception (Tls_eio.Tls_alert _ | Tls_eio.Tls_failure _) -> Error ()
 
-let get ~sw ~env ~headers url =
+let get ?(max_body = max_body_size) ~sw ~env ~headers url =
   let uri =
     match Uri.of_string url with
     | uri -> Ok uri
@@ -120,7 +120,7 @@ let get ~sw ~env ~headers url =
                 in
                 Result.map
                   (fun body -> (status, body))
-                  (read_response_body body))
+                  (read_response_body ~max_body body))
       with
       | result -> result
       | exception Eio.Time.Timeout -> Error ()
