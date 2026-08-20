@@ -1,4 +1,4 @@
 (test
  (name test_lpath)
  (modules test_lpath)
- (libraries windtrap lpath lpath_model))
+ (libraries windtrap lpath))

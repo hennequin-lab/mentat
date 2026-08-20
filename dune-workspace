@@ -1,35 +1,6 @@
-(lang dune 3.24)
-
-; Local opam repository overlay, checked in under vendor/. It carries rocq
-; packages that build from the Rocq development branch: released Rocq uses
-; the `coq` dune extension, which dune deleted in lang 3.24, so no released
-; version can build under the dune this workspace runs. Served as
-; repository metadata (not pins) so the build/install fixes survive every
-; `dune pkg lock`. The relative path resolves against the workspace root.
-(repository
- (name mentat-overlay)
- (url "file://vendor/opam-overlay"))
-
-; Dune's installed-theory discovery is disabled for a prover living in
-; _build (it assumes that means composing with Rocq itself), so ROCQPATH is
-; the only channel through which the lock-dir Corelib can be found. The
-; path is a stable symlink that rocq-core's install refreshes to its
-; current build (see vendor/opam-overlay/packages/rocq-core); _rocq/ is
-; per-checkout generated state, gitignored by the _*/ rule. env-vars values
-; are literal, so this relative path resolves against the directory dune is
-; invoked from: run builds from the workspace root.
-;
-; Known wrinkle: dune scans ROCQPATH during rule generation, before the
-; packages that populate it are built, so the FIRST build of a fresh
-; checkout reports "Theory Corelib has not been found" while it builds the
-; prover; the next invocation is green.
-(env
- (_
-  (env-vars
-   (ROCQPATH _rocq/rocqpath))))
+(lang dune 3.20)
 
 (lock_dir
- (repositories mentat-overlay overlay upstream)
  (solve_for_platforms
   ((arch x86_64)
    (os linux))

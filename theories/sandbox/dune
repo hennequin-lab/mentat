@@ -1,9 +1,0 @@
-; The verified model of the confinement kernel. Its .vo targets are on the
-; default alias, so a full `dune build` (and CI) checks the proofs; the laws
-; are not in the OCaml library's dependency closure, so building lib/sandbox
-; alone does not.
-
-(rocq.theory
- (name MentatSandbox)
- (no_corelib)
- (theories Corelib))

@@ -1,8 +1,0 @@
-; Extraction of the verified kernel. The generated sources are promoted into
-; lib/sandbox/kernel, where they compile; see the dune file there; see the dune file there.
-
-(rocq.extraction
- (prelude extract)
- (extracted_files confinement.ml confinement.mli)
- (no_corelib)
- (theories Corelib MentatSandbox))

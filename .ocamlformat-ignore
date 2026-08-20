@@ -1,4 +1,0 @@
-lib/sandbox/kernel/confinement.ml
-lib/sandbox/kernel/confinement.mli
-otherlibs/lpath/test/model/lpath_model.ml
-otherlibs/lpath/test/model/lpath_model.mli

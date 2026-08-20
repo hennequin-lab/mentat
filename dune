@@ -2,8 +2,3 @@
  (_
   (flags
    (:standard -w +a-4-70 -warn-error +a-4))))
-
-; Third-party material maintained in-tree; nothing in it is built by dune
-; directly (vendor/opam-overlay is package metadata read at lock time).
-
-(vendored_dirs vendor)

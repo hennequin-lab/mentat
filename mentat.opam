@@ -15,7 +15,7 @@ homepage: "https://github.com/invariant-hq/mentat"
 doc: "https://github.com/invariant-hq/mentat#readme"
 bug-reports: "https://github.com/invariant-hq/mentat/issues"
 depends: [
-  "dune" {>= "3.24"}
+  "dune" {>= "3.22"}
   "ocaml" {>= "5.5.0"}
   "jsont" {>= "0.2.0"}
   "bytesrw" {>= "0.3.0"}
@@ -51,7 +51,6 @@ depends: [
   "windtrap" {with-test & >= "0.2.0"}
   "ppx_windtrap" {with-test & >= "0.2.0"}
   "thumper" {with-test}
-  "rocq-core"
   "odoc" {with-doc}
 ]
 build: [

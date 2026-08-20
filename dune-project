@@ -1,6 +1,4 @@
-(lang dune 3.24)
-
-(using rocq 0.14)
+(lang dune 3.22)
 
 (name mentat)
 
@@ -144,11 +142,6 @@
     :with-test
     (>= 0.2.0)))
   ; House benchmarking harness for the bench/ suites.
-  (thumper :with-test)
-  ; Formal verification: verified kernels are written in Rocq under
-  ; theories/ and extracted to OCaml at build time, so the prover is an
-  ; ordinary build dependency and every build checks the proofs. rocq-core
-  ; carries the Corelib prelude and pulls the prover runtime.
-  rocq-core)
+  (thumper :with-test))
  (tags
   (ai cli coding-agent developer-tools ocaml org:invariant-hq)))
