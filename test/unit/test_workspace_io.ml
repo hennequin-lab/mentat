@@ -381,6 +381,7 @@ let describe_roots_labels_scoped_reads () =
       "executable:PATH";
       "executable:PATH runtime";
       "git-worktree";
+      "git-config";
     ]
   in
   List.iter
@@ -535,6 +536,106 @@ let describe_roots_carries_user_toolchain_dirs () =
     (carved cache_db);
   is_true ~msg:"the dune toolchains are carved out of the cache grant"
     (carved cache_toolchains)
+
+let describe_roots_admits_git_config () =
+  in_dirs "gitcfg" @@ fun ~stdenv ~base ~ws_dir ~out_dir:_ ~tmp_base ->
+  (* A fake real home holding git's global configuration next to the state that
+     must stay unreachable: the credential file and the shared XDG config base.
+     Git aborts on a denied config read where a missing file is fine, so the
+     resolver admits exactly the files git resolves, read-only. *)
+  let home = Filename.concat base "home" in
+  Unix.mkdir home 0o755;
+  let mk_dir sub =
+    let dir = Filename.concat home sub in
+    let rec create path =
+      if not (Sys.file_exists path) then (
+        create (Filename.dirname path);
+        Unix.mkdir path 0o755)
+    in
+    create dir;
+    Unix.realpath dir
+  in
+  let mk_file path =
+    Out_channel.with_open_text path (fun oc ->
+        Out_channel.output_string oc "# fixture\n");
+    Unix.realpath path
+  in
+  let gitconfig = mk_file (Filename.concat home ".gitconfig") in
+  let config_git = mk_dir (Filename.concat ".config" "git") in
+  let credentials = mk_file (Filename.concat home ".git-credentials") in
+  let config = Unix.realpath (Filename.concat home ".config") in
+  let named = mk_file (Filename.concat base "work.gitconfig") in
+  let primary = Workspace.Root.of_dir (abs ws_dir) in
+  let logical = Workspace.make ~primary ~read_only:[] () |> Result.get_ok in
+  let env ~global =
+    [
+      ("HOME", Some home);
+      ("PATH", Some "/usr/bin:/bin");
+      ("GIT_CONFIG_GLOBAL", global);
+      ("OPAM_SWITCH_PREFIX", None);
+      ("MENTAT_DUNE", None);
+      ("CAML_LD_LIBRARY_PATH", None);
+      ("OCAMLPATH", None);
+      ("OCAML_TOPLEVEL_PATH", None);
+      ("OCAMLLIB", None);
+      ("DUNE_OCAML_STDLIB", None);
+      ("OPAMROOT", None);
+      ("XDG_CACHE_HOME", None);
+      ("XDG_CONFIG_HOME", None);
+      ("XDG_STATE_HOME", None);
+      ("XDG_DATA_HOME", None);
+    ]
+  in
+  let read_roots io =
+    match Wio.policy io with
+    | Some policy -> (
+        match Sandbox.Policy.reads_default policy with
+        | Sandbox.Policy.Denied -> Sandbox.Policy.readable_roots policy
+        | Sandbox.Policy.All -> fail "expected a project-scoped read policy")
+    | None -> fail "expected a confined seal carrying a policy"
+  in
+  (Eio.Switch.run @@ fun sw ->
+   let io =
+     capability_exn ~stdenv ~sw ~tmp_base ~env:(env ~global:None)
+       ~read:Read.Project logical
+   in
+   let described = Wio.describe_roots io in
+   let admitted dir =
+     List.exists
+       (fun (l, d) -> String.equal l "git-config" && Abs.equal d (abs dir))
+       described
+   in
+   is_true ~msg:"the global gitconfig is admitted, labeled git-config"
+     (admitted gitconfig);
+   is_true ~msg:"the XDG git directory is admitted, labeled git-config"
+     (admitted config_git);
+   let readable dir = List.exists (Abs.equal (abs dir)) (read_roots io) in
+   is_true ~msg:"the global gitconfig is a read root" (readable gitconfig);
+   is_true ~msg:"the XDG git directory is a read root" (readable config_git);
+   is_false
+     ~msg:
+       "the credential file next to the config is not a read root — the admit \
+        covers configuration, never credentials"
+     (readable credentials);
+   is_false
+     ~msg:
+       "the shared XDG config base is not a read root, so neighbouring tools' \
+        credentials stay outside the read scope"
+     (readable config));
+  (* [GIT_CONFIG_GLOBAL] replaces both default paths, so the admitted roots
+     follow it: the named file alone is readable. *)
+  Eio.Switch.run @@ fun sw ->
+  let io =
+    capability_exn ~stdenv ~sw ~tmp_base
+      ~env:(env ~global:(Some named))
+      ~read:Read.Project logical
+  in
+  let readable dir = List.exists (Abs.equal (abs dir)) (read_roots io) in
+  is_true ~msg:"the named config file is a read root" (readable named);
+  is_false ~msg:"the replaced global gitconfig is not admitted"
+    (readable gitconfig);
+  is_false ~msg:"the replaced XDG git directory is not admitted"
+    (readable config_git)
 
 let toolchain_placeholder_is_skipped_not_fatal () =
   in_dirs "toolchain-placeholder"
@@ -2331,6 +2432,8 @@ let () =
         describe_roots_labels_scoped_reads;
       test "describe_roots carries the user toolchain directories"
         describe_roots_carries_user_toolchain_dirs;
+      test "describe_roots admits git's global configuration"
+        describe_roots_admits_git_config;
       test "a placeholder toolchain value is skipped, not fatal"
         toolchain_placeholder_is_skipped_not_fatal;
       test "resolve refuses a missing workspace root"

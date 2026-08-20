@@ -263,16 +263,19 @@ let owned_directories paths =
    fields rather than the installed bytes, so a replaced binary is
    indistinguishable from the real one. A write here is arbitrary code in the
    user's next unconfined build. *)
+let resolved_home ~lookup =
+  match lookup "HOME" with
+  | Some home when not (String.equal home "") -> Some home
+  | _ -> Option.map Lpath.Abs.to_string (account_home ())
+
 let home_relative ~lookup ~var ~default =
-  let home =
-    match lookup "HOME" with
-    | Some home when not (String.equal home "") -> Some home
-    | _ -> Option.map Lpath.Abs.to_string (account_home ())
-  in
   let spelling =
     match lookup var with
     | Some value when not (String.equal value "") -> Some value
-    | _ -> Option.map (fun home -> Filename.concat home default) home
+    | _ ->
+        Option.map
+          (fun home -> Filename.concat home default)
+          (resolved_home ~lookup)
   in
   Option.bind spelling existing_auto_root
 
@@ -296,6 +299,10 @@ let toolchain_home_roots ~lookup ~workspace_roots =
   in
   let cache = home_relative ~lookup ~var:"XDG_CACHE_HOME" ~default:".cache" in
   let dune_config = admit (under config "dune") in
+  (* uv aborts outright when reading [uv.toml] returns [EPERM], the same
+     failure shape git has with its global config, so its config directory is
+     admitted alongside dune's. Neither holds credentials by convention. *)
+  let uv_config = admit (under config "uv") in
   (* The cache is materialized rather than merely observed, and the two
      carveouts with it. Observing was the obvious reading — grant what is there —
      but it makes the grant a function of machine state in both directions, and
@@ -347,13 +354,55 @@ let toolchain_home_roots ~lookup ~workspace_roots =
       [
         ("OPAMROOT", opam);
         ("XDG_CONFIG_HOME", dune_config);
+        ("XDG_CONFIG_HOME", uv_config);
         ("XDG_CACHE_HOME", dune_cache);
       ]
   in
-  ( Option.to_list opam @ Option.to_list dune_config,
+  ( Option.to_list opam @ Option.to_list dune_config @ Option.to_list uv_config,
     Option.to_list dune_cache,
     carveouts,
     describe )
+
+(* Git treats a denied read of its global configuration as fatal rather than
+   absent: [ENOENT] and [EACCES] mean "no config" and are skipped, but the
+   [EPERM] a sandbox denial returns aborts every git command before it does
+   anything, [git status] included. [HOME] is inherited, so git resolves the
+   real files, and dune's package revision store runs git underneath every
+   build of a pinned project — the breakage surfaces far from its cause. So
+   the files git actually resolves are admitted, read-only. Credential state
+   ([~/.git-credentials], helper stores) lives outside all of them.
+
+   [GIT_CONFIG_GLOBAL] replaces both default paths when set, and an empty
+   value names nothing, so the admitted roots follow the same resolution. *)
+let git_config_roots ~lookup ~workspace_roots =
+  let admit = function
+    | Some path when not (broad_root ~lookup ~workspace_roots path) -> Some path
+    | Some path ->
+        Log.warn (fun m ->
+            m "ignoring git config root %S: broad root"
+              (Lpath.Abs.to_string path));
+        None
+    | None -> None
+  in
+  let candidates =
+    match lookup "GIT_CONFIG_GLOBAL" with
+    | Some "" -> []
+    | Some spelling -> [ existing_auto_root spelling ]
+    | None ->
+        let config_git =
+          Option.bind
+            (home_relative ~lookup ~var:"XDG_CONFIG_HOME" ~default:".config")
+            (fun base ->
+              existing_auto_root
+                (Filename.concat (Lpath.Abs.to_string base) "git"))
+        in
+        let gitconfig =
+          Option.bind (resolved_home ~lookup) (fun home ->
+              existing_auto_root (Filename.concat home ".gitconfig"))
+        in
+        [ config_git; gitconfig ]
+  in
+  List.filter_map admit candidates
 
 let platform_roots ~lookup ~workspace_roots =
   let candidates =
@@ -845,11 +894,15 @@ let run ~scoped ~lookup ~logical ~configured_reads ~configured_writes
       =
     toolchain_home_roots ~lookup ~workspace_roots:scope_roots
   in
+  let git_config =
+    if scoped then git_config_roots ~lookup ~workspace_roots:scope_roots else []
+  in
   let readable =
     if scoped then
       root_paths
         (scope_roots @ configured_reads @ platform @ executable_roots
-       @ runtime_roots @ List.map snd toolchain @ git @ toolchain_reads)
+       @ runtime_roots @ List.map snd toolchain @ git @ toolchain_reads
+       @ git_config)
     else []
   in
   let protected =
@@ -907,6 +960,7 @@ let run ~scoped ~lookup ~logical ~configured_reads ~configured_writes
       @ List.map (fun (name, p) -> ("toolchain:" ^ name, p)) toolchain
       @ toolchain_describe
       @ List.map (fun p -> ("git-worktree", p)) git
+      @ List.map (fun p -> ("git-config", p)) git_config
     else []
   in
   Ok

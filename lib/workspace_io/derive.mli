@@ -45,7 +45,7 @@ type derived = {
           somewhere to put a temporary file, and is not granted this. *)
   readable : Lpath.Abs.t list;
       (** The scoped read roots (workspace, configured, platform, executable,
-          toolchain, git-worktree); [[]] when not scoped. *)
+          toolchain, git-worktree, git-config); [[]] when not scoped. *)
   protected : Lpath.Abs.t list;
       (** The existence-filtered protected paths: existing protected metadata
           under the primary root, the read-only workspace roots, the linked

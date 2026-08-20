@@ -124,9 +124,18 @@ The following remain read-only even when nested under a writable root:
 Native mutation tools share the `.git` and `.mentat` protection. They also
 validate workspace containment independently of the command sandbox.
 
-Machine-global toolchain state — the OPAM root and the dune config directory —
-is admitted read-only under the project read scope so tools resolve their real
-locations.
+Machine-global toolchain state — the OPAM root and the dune and uv config
+directories — is admitted read-only under the project read scope so tools
+resolve their real locations.
+
+Git's global configuration — `~/.gitconfig` and the `git` directory under
+`$XDG_CONFIG_HOME`, or the file `$GIT_CONFIG_GLOBAL` names instead — is
+admitted read-only for the same reason, with a sharper edge behind it: git
+treats a config file it cannot read as fatal rather than absent, so without
+the admit every git command in a confined shell fails outright, and so does
+anything that runs git underneath, dune's package revision store included.
+Credential state — `~/.git-credentials`, credential-helper stores — is not
+part of the admit and stays unreadable.
 
 Dune's cache directory is the exception, and it is writable, because a build
 with git-pinned sources takes a lock under it unconditionally and cannot

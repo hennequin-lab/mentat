@@ -122,7 +122,7 @@ val resolve :
     It owns: root canonicalization (each configured spelling canonicalized once;
     broad roots — [/], the account home, a workspace ancestor — rejected),
     capability opening (each admitted root opened once as an Eio subtree under
-    [sw]), toolchain/platform/git-worktree read-root derivation,
+    [sw]), toolchain/platform/git-worktree/git-config read-root derivation,
     existence-filtered protected-meta resolution (only existing protected paths
     enter the policy), exact child-environment construction (the ambient
     environment is read once, here), and — for a confined [mode] — the bounded
@@ -185,7 +185,8 @@ val describe_roots : t -> (string * Lpath.Abs.t) list
     the one status consumer, [mentat sandbox status]/[explain]. Labels are
     stable diagnostic spellings — ["project"], ["user-configured"],
     ["platform"], ["executable:PATH"], ["executable:PATH runtime"],
-    ["toolchain:<name>"], ["git-worktree"], in that display order. Only roots
+    ["toolchain:<name>"], ["git-worktree"], ["git-config"], in that display
+    order. Only roots
     the sealed policy actually reads appear, so an unscoped route lists nothing.
     This is a rendering projection sized to that surface — not a programmatic
     root inventory. No caller may branch on it. *)
