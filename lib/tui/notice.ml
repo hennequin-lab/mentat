@@ -109,10 +109,14 @@ let failure ~palette ~message ~next_step ~count =
 
 (* A top-only border box is an intrinsic horizontal rule. Both sides grow by
    the same factor, so Mosaic centers the label and owns all narrow-layout
-   shrinkage without a terminal-column projection in this widget. *)
+   shrinkage without a terminal-column projection in this widget. One cell is
+   each side's floor: a label wide enough to squeeze the rules to zero would
+   otherwise erase the boundary the seam exists to draw. *)
 let rule_side ~palette () =
   box ~box_sizing:Box_sizing.Border_box ~overflow:hidden_overflow ~flex_grow:1.
-    ~flex_shrink:1. ~min_size:zero_size ~border:true ~border_style:Border.single
+    ~flex_shrink:1.
+    ~min_size:{ width = px 1; height = px 0 }
+    ~border:true ~border_style:Border.single
     ~border_sides:[ `Top ]
     ~border_color:(Theme.Palette.rule palette)
     ~fill:false

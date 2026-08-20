@@ -127,10 +127,14 @@ let hint_row ~palette hints =
 let blank_row = box ~flex_shrink:0. ~size:{ width = pct 100; height = px 1 } []
 
 let view ~palette ~frame ~name ~filter ~hint ~content =
+  (* One row is the body's floor: a panel short enough to squeeze it to zero
+     would otherwise drop the whole run and show only chrome, where the
+     trailing blank and hint rows are the right things to give way. *)
   let body =
     box ~key:"panel.body" ~flex_direction:Flex_direction.Column ~flex_grow:1.
-      ~flex_shrink:1. ~min_size:zero_size ~size:fill_remaining
-      ~overflow:hidden_overflow [ content ]
+      ~flex_shrink:1.
+      ~min_size:{ width = px 0; height = px 1 }
+      ~size:fill_remaining ~overflow:hidden_overflow [ content ]
   in
   box ~key:"panel" ~flex_direction:Flex_direction.Column
     ~overflow:hidden_overflow ~flex_grow:1. ~flex_shrink:1. ~min_size:zero_size

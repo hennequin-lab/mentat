@@ -315,9 +315,12 @@ let scroll_state ~key children =
         children;
     ]
 
+(* One row is the floor: a squeezed error strip must keep its line — a
+   zero-height box drops its subtree from the frame entirely. *)
 let refresh_error ~palette message =
   scroll_box ~key:"sessions.refresh-error" ~scroll_x:false ~scroll_y:true
-    ~show_scrollbars:false ~focusable:false ~flex_shrink:1. ~min_size:zero_size
+    ~show_scrollbars:false ~focusable:false ~flex_shrink:1.
+    ~min_size:{ width = px 0; height = px 1 }
     ~size:fill_width
     [
       box ~padding:(padding_lrtb 2 2 0 0) ~flex_shrink:0. ~size:fill_width

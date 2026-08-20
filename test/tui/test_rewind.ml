@@ -220,30 +220,32 @@ let%expect_test "committing a rewind branches into an edited resubmission" =
   settle_turn t;
   Tui.print t;
   [%expect
-    {|01 |
-02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5
-03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~
-04 |
-05 |  ─ rewound session-fork-0000001 · from session-visual-00001 · files not revert…─
-06 |
-07 | ❯ add a --json flag with tests
-08 |
-09 | ⏺ Added the flag and its tests.
-10 |
-11 |
-12 |
-13 |
-14 |
-15 |
-16 |
-17 |
-18 |
-19 |
-20 |
-21 | ────────────────────────────────────────────────────────────────────────────────
-22 | ❯ message mentat
-23 | ────────────────────────────────────────────────────────────────────────────────
-24 |   ! not logged in · /login · ~ · openai/gpt-5.5 · ! full access ? for shortcu…|}]
+    {|
+    01 |
+    02 |  █▄█ ██▀ █▀▄ ▀█▀ ▄▀█ ▀█▀   ·    dev · openai/gpt-5.5
+    03 |  █ █ █▄▄ █ █  █  █▀█  █  ▂▄▆▄▂  ~
+    04 |
+    05 |  ─  rewound session-fork-0000001 · from session-visual-00001 · files not reve…─
+    06 |
+    07 | ❯ add a --json flag with tests
+    08 |
+    09 | ⏺ Added the flag and its tests.
+    10 |
+    11 |
+    12 |
+    13 |
+    14 |
+    15 |
+    16 |
+    17 |
+    18 |
+    19 |
+    20 |
+    21 | ────────────────────────────────────────────────────────────────────────────────
+    22 | ❯ message mentat
+    23 | ────────────────────────────────────────────────────────────────────────────────
+    24 |   ! not logged in · /login · ~ · openai/gpt-5.5 · ! full access ? for shortcu…
+    |}]
 
 let%expect_test "the source session survives a rewind" =
   let rewound =

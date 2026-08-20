@@ -802,10 +802,13 @@ let selected_detail ~palette ~home (ready : ready) =
 
 let status_view ~key ~style message = scrollable ~key [ prose ~style message ]
 
+(* One row is the floor: a squeezed error strip must keep its line — a
+   zero-height box drops its subtree from the frame entirely. *)
 let retained_error ~palette message =
   scroll_box ~key:"sessions.refresh-error" ~scroll_x:false ~scroll_y:true
     ~show_scrollbars:true ~focusable:false ~flex_grow:0. ~flex_shrink:1.
-    ~min_size:zero_size ~size:full_width
+    ~min_size:{ width = px 0; height = px 1 }
+    ~size:full_width
     [
       content_column
         [

@@ -478,10 +478,15 @@ let prose ?key ?(style = Ansi.Style.default) ?(wrap = `Word) value =
    drawn on one, and a neighbour placed flush against it then starts on that same
    row, so the two texts interleave. One row of clearance makes that impossible,
    and it costs the panel a row it can afford to lose. *)
+(* A growing column keeps a one-row floor: squeezed to zero it would drop
+   its whole run from the frame, where the panel's contract is to shorten
+   the run and let its head blocks keep their rows. *)
 let content_column ?key ?(grow = true) children =
   box ?key ~flex_direction:Flex_direction.Column
     ~flex_grow:(if grow then 1. else 0.)
-    ~flex_shrink:1. ~min_size:minimum_size
+    ~flex_shrink:1.
+    ~min_size:
+      { width = px 0; height = (if grow then px 1 else px 0) }
     ~size:(if grow then fill_remaining else full_width)
     ~gap:{ width = px 0; height = px 1 }
     children
@@ -489,9 +494,13 @@ let content_column ?key ?(grow = true) children =
 (* A diagnostic fills the room the panel leaves it. Its basis is zero rather
    than the panel's full height, so it takes only what is left over instead of
    claiming the rows its neighbouring blocks stand on. *)
+(* One row is the floor: a squeezed diagnostic must keep its line — a
+   zero-height box drops its subtree from the frame entirely. *)
 let diagnostic_scroll ~key ~style message =
   scroll_box ~key ~scroll_x:false ~scroll_y:true ~focusable:false ~flex_grow:1.
-    ~flex_shrink:1. ~min_size:minimum_size ~size:fill_remaining
+    ~flex_shrink:1.
+    ~min_size:{ width = px 0; height = px 1 }
+    ~size:fill_remaining
     [ content_column ~grow:false [ prose ~style message ] ]
 
 let current_line ~palette snapshot =
@@ -722,7 +731,7 @@ let readiness_blocks ~palette t =
               [
                 scroll_box ~key:"model.catalog.refresh-error" ~scroll_x:false
                   ~scroll_y:true ~focusable:false ~flex_shrink:1.
-                  ~min_size:minimum_size
+                  ~min_size:{ width = px 0; height = px 1 }
                   ~max_size:{ width = pct 100; height = pct 30 }
                   ~size:full_width
                   [

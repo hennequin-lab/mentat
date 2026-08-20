@@ -623,18 +623,18 @@ let%expect_test "browser keeps partial listing diagnostics while filtering" =
     01 |  sessions ─────────────────────────────────────────────────────────── 4 sessions
     02 |
     03 |   ! one damaged session document was skipped · stale index ignored
-    04 |    session                              lifecycle phase   turns updated  recency
-    05 | ❯  Parser streaming cleanup             active    idle  0 turns just now today
-    06 |    Archived protocol notes              archived  idle  0 turns just now today
-    07 |    Authentication dialog polish         active    idle  0 turns 1m ago   today
-    08 |    Deleted scratch experiment           deleted   idle  0 turns 1m ago   today
-    09 |
+    04 |
+    05 |    session                              lifecycle phase   turns updated  recency
+    06 | ❯  Parser streaming cleanup             active    idle  0 turns just now today
+    07 |    Archived protocol notes              archived  idle  0 turns just now today
+    08 |    Authentication dialog polish         active    idle  0 turns 1m ago   today
+    09 |    Deleted scratch experiment           deleted   idle  0 turns 1m ago   today
     10 |
     11 |
     12 |
     13 |
-    14 |   cwd ~/mentat-tui-session60a53ed4
-    15 |
+    14 |
+    15 |   cwd ~/mentat-tui-session60a53ed4
     16 |
     17 |
     18 |
@@ -654,9 +654,9 @@ let%expect_test "browser keeps partial listing diagnostics while filtering" =
     02 |   /archive  1 match
     03 |
     04 |   ! one damaged session document was skipped · stale index ignored
-    05 |    session                              lifecycle phase   turns updated  recency
-    06 | ❯  Archived protocol notes              archived  idle  0 turns just now today
-    07 |
+    05 |
+    06 |    session                              lifecycle phase   turns updated  recency
+    07 | ❯  Archived protocol notes              archived  idle  0 turns just now today
     08 |
     09 |
     10 |
@@ -1323,18 +1323,18 @@ let%expect_test "lifecycle failure stays visible over the unlocked browser" =
     01 |  sessions ─────────────────────────────────────────────────────────── 4 sessions
     02 |
     03 |   ! archive denied by another driver
-    04 |    session                              lifecycle phase   turns updated  recency
-    05 | ❯  Parser streaming cleanup             active    idle  0 turns just now today
-    06 |    Archived protocol notes              archived  idle  0 turns just now today
-    07 |    Authentication dialog polish         active    idle  0 turns 1m ago   today
-    08 |    Deleted scratch experiment           deleted   idle  0 turns 1m ago   today
-    09 |
+    04 |
+    05 |    session                              lifecycle phase   turns updated  recency
+    06 | ❯  Parser streaming cleanup             active    idle  0 turns just now today
+    07 |    Archived protocol notes              archived  idle  0 turns just now today
+    08 |    Authentication dialog polish         active    idle  0 turns 1m ago   today
+    09 |    Deleted scratch experiment           deleted   idle  0 turns 1m ago   today
     10 |
     11 |
     12 |
     13 |
-    14 |   cwd ~
-    15 |
+    14 |
+    15 |   cwd ~
     16 |
     17 |
     18 |
@@ -1468,18 +1468,18 @@ let%expect_test "failed lifecycle refresh retains the last complete listing" =
     01 |  sessions ─────────────────────────────────────────────────────────── 4 sessions
     02 |
     03 |   ! refreshed session index unavailable
-    04 |    session                              lifecycle phase   turns updated  recency
-    05 | ❯  Parser streaming cleanup             active    idle  0 turns just now today
-    06 |    Archived protocol notes              archived  idle  0 turns just now today
-    07 |    Authentication dialog polish         active    idle  0 turns 1m ago   today
-    08 |    Deleted scratch experiment           deleted   idle  0 turns 1m ago   today
-    09 |
+    04 |
+    05 |    session                              lifecycle phase   turns updated  recency
+    06 | ❯  Parser streaming cleanup             active    idle  0 turns just now today
+    07 |    Archived protocol notes              archived  idle  0 turns just now today
+    08 |    Authentication dialog polish         active    idle  0 turns 1m ago   today
+    09 |    Deleted scratch experiment           deleted   idle  0 turns 1m ago   today
     10 |
     11 |
     12 |
     13 |
-    14 |   cwd ~
-    15 |
+    14 |
+    15 |   cwd ~
     16 |
     17 |
     18 |
