@@ -210,6 +210,15 @@ let route escalation input =
     | Mentat_sandbox.Available ->
         if input.Input.escalate then Escalated else Granted granted
 
+(* The POSIX shell runs the command with [-c] and no login flag, for the reason
+   PowerShell runs it with [-NoProfile]: the child environment is constructed
+   once at resolution, and a login shell re-sources the profile on top of it.
+   That is not a harmless repeat. On macOS [/etc/zprofile] runs [path_helper],
+   which moves the system directories to the front of [PATH]; a profile that
+   evaluates [opam env] prepends a switch. Either way the login shell resolves
+   [dune], [cc], [make] and [git] to different binaries than the shell the user
+   builds from, and two dune binaries sharing one build directory invalidate
+   each other's work on every alternation. *)
 let shell_argv shell command =
   let executable = String.lowercase_ascii (Filename.basename shell) in
   if
@@ -223,7 +232,7 @@ let shell_argv shell command =
        || String.equal executable "pwsh"
        || String.equal executable "pwsh.exe")
   then [ shell; "-NoLogo"; "-NoProfile"; "-Command"; command ]
-  else [ shell; "-lc"; command ]
+  else [ shell; "-c"; command ]
 
 let resolve_workdir workspace_io input =
   let requested = Option.value input.Input.workdir ~default:"." in

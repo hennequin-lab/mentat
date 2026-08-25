@@ -101,13 +101,15 @@ not expose arbitrary host-file reads.
 
 - every workspace root;
 - shared scratch space: `/tmp`, and whatever `$TMPDIR`, `$TEMP` and `$TMP` name;
-- toolchain state a build must write — dune's cache directory, and on macOS the
-  per-user Darwin cache bucket Apple's developer-tool shims use;
+- toolchain state a build must write — dune's cache directory (whatever
+  `$DUNE_CACHE_ROOT` names, else `dune` under `$XDG_CACHE_HOME` or
+  `~/.cache`, resolved the way dune resolves it), and on macOS the per-user
+  Darwin cache bucket Apple's developer-tool shims use;
 - absolute or `~`-relative paths in `sandbox.writable_roots`.
 
-Mentat does not rewrite the child's environment. `$HOME` and the temp-dir
-family are the ones you launched with, so a tool resolves the same directories
-the policy grants — the two cannot disagree.
+Mentat does not rewrite the child's environment. `$HOME`, the temp-dir family
+and `$DUNE_CACHE_ROOT` are the ones you launched with, so a tool resolves the
+same directories the policy grants — the two cannot disagree.
 
 Existing paths are realpath-canonicalized before the policy is generated, so
 the described path and the backend-enforced path agree across symlinks such as
@@ -204,12 +206,29 @@ The child environment contains:
 - `PATH`, validated as absolute non-empty entries;
 - private run-owned `HOME`, `TMPDIR`, `TMP`, and `TEMP`;
 - deterministic non-interactive pager, terminal, and color settings;
-- valid locale and OCaml toolchain path variables from a fixed allowlist.
+- valid locale and OCaml toolchain path variables from a fixed allowlist;
+- the dune and OCaml configuration families, verbatim: every `DUNE_*`,
+  `OCAML*` and `CAML*` variable you launched with — `DUNE_CACHE`,
+  `DUNE_PROFILE`, `DUNE_SANDBOX`, `DUNE_CONFIG__*`, `OCAMLPARAM`, and the
+  rest. Dune folds its configuration into the digest of every rule, so a
+  build that saw a different configuration from your shell would re-execute
+  your whole build and have its own re-executed back on your next one. The
+  handles dune assigns to the actions it spawns (`DUNE_ACTION_TRACE_DIR`,
+  `DUNE_SOURCEROOT`, `DUNE_DIR_LOCATIONS`) describe a running dune rather
+  than configure one and are not inherited.
 
 Optional inherited values that are malformed are omitted. Values are never
 included in sandbox diagnostics. After repository activation, an existing
 canonical workspace-local `_opam/bin` leads `PATH`; a restricted repository
 cannot contribute executable roots.
+
+The `shell` tool runs its command with `-c`, not as a login shell, for the
+same reason: a login shell re-sources your profile on top of the constructed
+environment — on macOS `path_helper` moves the system directories to the
+front of `PATH`, and a profile that evaluates `opam env` prepends a switch —
+so it would resolve `dune`, `cc`, `make` or `git` to different binaries than
+the shell you build from. Set `MENTAT_SHELL` to choose the shell; its
+`-c` invocation sees exactly the environment above.
 
 ## Enforcement requirements and backends
 

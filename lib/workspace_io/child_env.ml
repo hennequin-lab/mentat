@@ -71,6 +71,37 @@ let single_toolchain_paths =
 
 let toolchain_path_lists = [ "CAML_LD_LIBRARY_PATH"; "OCAMLPATH" ]
 
+(* Dune and the OCaml toolchain take their configuration from the environment
+   as much as from files: the shared-cache mode and root, the build profile,
+   the sandboxing mode, the job count, every [DUNE_CONFIG__*] override,
+   [OCAMLPARAM]. Dune folds several of these into the digest of every rule it
+   runs, so a confined build that sees a different configuration from the
+   user's shell does not merely behave differently: it re-executes the world,
+   and the user's next build re-executes it back, each side invalidating the
+   other's build directory for as long as the two disagree. The families are
+   inherited whole, by prefix, so the build inside is configured exactly like
+   the build outside. A member that names a directory is a base the policy
+   still has to grant — the resolver reads [DUNE_CACHE_ROOT] the way dune does
+   — and a member the toolchain lists above already own keeps its normalized
+   treatment, dropped included: the family must not hand back verbatim what
+   normalization refused.
+
+   The names dune assigns to the actions it spawns are not configuration but
+   handles on that running instance — its trace directory, a cram test's
+   source root, the site locations of a built executable — and stay stripped
+   the way agent sockets do: a Mentat launched from inside a dune action must
+   not hand its children another dune's session. *)
+let configuration_prefixes = [ "DUNE_"; "OCAML"; "CAML" ]
+
+let dune_action_handles =
+  [ "DUNE_ACTION_TRACE_DIR"; "DUNE_SOURCEROOT"; "DUNE_DIR_LOCATIONS" ]
+
+let configuration_family name =
+  List.exists
+    (fun prefix -> String.starts_with ~prefix name)
+    configuration_prefixes
+  && not (List.mem name dune_action_handles)
+
 (* Normalization drops what cannot be represented rather than failing:
    construction is total, and a bad ambient segment costs only itself. *)
 let normalize_path_list value =
@@ -103,7 +134,7 @@ let add_inherited ~normalize lookup names bindings =
           | Some value -> (name, value) :: bindings))
     bindings names
 
-let make ~path ~lookup =
+let make ~path ~lookup ~names =
   let path_dirs = normalize_path_list path in
   let bindings = ("PATH", String.concat ":" path_dirs) :: fixed_bindings in
   let bindings =
@@ -120,6 +151,19 @@ let make ~path ~lookup =
         | [] -> None
         | dirs -> Some (String.concat ":" dirs))
       lookup toolchain_path_lists bindings
+  in
+  let bindings =
+    let owned =
+      List.map fst fixed_bindings
+      @ inherited_names @ single_toolchain_paths @ toolchain_path_lists
+    in
+    let family =
+      List.filter
+        (fun name -> configuration_family name && not (List.mem name owned))
+        names
+      |> List.sort_uniq String.compare
+    in
+    add_inherited ~normalize:Option.some lookup family bindings
   in
   let bindings =
     List.sort (fun (a, _) (b, _) -> String.compare a b) bindings

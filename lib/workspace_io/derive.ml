@@ -247,8 +247,9 @@ let owned_directories paths =
 
    Only dune's cache is written by the tool these roots exist for — the revision
    store whose lock a pinned-source build must take sits directly under it — so
-   the grant is [dune] under the cache, not the shared cache base, whose
-   neighbours hold other tools' executables. Its own [db] and [toolchains] are
+   the grant is [dune] under the cache (or whatever [DUNE_CACHE_ROOT] names
+   instead, as dune reads it), not the shared cache base, whose neighbours
+   hold other tools' executables. Its own [db] and [toolchains] are
    carved back out: a cache entry is restored by hardlinking into a later
    unsandboxed build without being re-digested, and a downloaded toolchain is
    executed outright, so neither may be reachable through a grant taken for a
@@ -318,24 +319,35 @@ let toolchain_home_roots ~lookup ~workspace_roots =
      directory — and the write grant is issued only if both carveouts are in
      place. If either cannot be secured the cache is not granted at all, which
      costs a cold build its cache and never trades away the next one. *)
+  let owned = function
+    | Error _ -> None
+    | Ok path -> (
+        match owned_directory path with
+        | Ok (Some path) -> Some (canonical path)
+        | Ok None -> None
+        | Error _ ->
+            Log.warn (fun m ->
+                m "ignoring toolchain root %S: not usable"
+                  (Lpath.Abs.to_string path));
+            None)
+  in
   let owned_under base sub =
     Option.bind base (fun base ->
-        match
-          Lpath.Abs.of_string (Filename.concat (Lpath.Abs.to_string base) sub)
-        with
-        | Error _ -> None
-        | Ok path -> (
-            match owned_directory path with
-            | Ok (Some path) -> Some (canonical path)
-            | Ok None -> None
-            | Error _ ->
-                Log.warn (fun m ->
-                    m "ignoring toolchain root %S: not usable"
-                      (Lpath.Abs.to_string path));
-                None))
+        owned
+          (Lpath.Abs.of_string (Filename.concat (Lpath.Abs.to_string base) sub)))
+  in
+  (* Dune resolves its cache root from [DUNE_CACHE_ROOT] before the XDG cache
+     base, and the child inherits the variable, so the grant follows the same
+     resolution: whatever the variable names, else [dune] under the cache base.
+     Dune refuses a relative spelling outright, so none is granted either. *)
+  let dune_cache_base, dune_cache_label =
+    match lookup "DUNE_CACHE_ROOT" with
+    | Some root when not (String.equal root "") ->
+        (owned (Lpath.Abs.of_string root), "DUNE_CACHE_ROOT")
+    | _ -> (owned_under cache "dune", "XDG_CACHE_HOME")
   in
   let dune_cache, carveouts =
-    match admit (owned_under cache "dune") with
+    match admit dune_cache_base with
     | None -> (None, [])
     | Some base ->
         let secured =
@@ -355,7 +367,7 @@ let toolchain_home_roots ~lookup ~workspace_roots =
         ("OPAMROOT", opam);
         ("XDG_CONFIG_HOME", dune_config);
         ("XDG_CONFIG_HOME", uv_config);
-        ("XDG_CACHE_HOME", dune_cache);
+        (dune_cache_label, dune_cache);
       ]
   in
   ( Option.to_list opam @ Option.to_list dune_config @ Option.to_list uv_config,

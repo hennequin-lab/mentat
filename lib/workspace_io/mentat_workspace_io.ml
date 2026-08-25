@@ -124,8 +124,10 @@ let edit_lock_for key =
           Hashtbl.add edit_locks key lock;
           lock)
 
-(* The ambient environment is read exactly once, at resolution. *)
-let ambient_lookup () =
+(* The ambient environment is read exactly once, at resolution: a lookup by
+   name, and the names themselves for the families the child inherits by
+   prefix. *)
+let ambient_environment () =
   let bindings = Unix.environment () in
   let table = Hashtbl.create (Array.length bindings) in
   Array.iter
@@ -138,7 +140,8 @@ let ambient_lookup () =
             Hashtbl.add table name
               (String.sub binding (i + 1) (String.length binding - i - 1)))
     bindings;
-  fun name -> Hashtbl.find_opt table name
+  let names = Hashtbl.fold (fun name _ names -> name :: names) table [] in
+  ((fun name -> Hashtbl.find_opt table name), names)
 
 let open_roots ~sw ~fs ~logical workspace_roots =
   let rec loop acc = function
@@ -216,7 +219,7 @@ let described_roots ~sandbox facts =
 
 let resolve ~sw ~stdenv ~logical ~mode ~read ~readable_roots ~writable_roots
     ~mentat_dirs ~network =
-  let lookup = ambient_lookup () in
+  let lookup, ambient_names = ambient_environment () in
   let fs = Eio.Stdenv.fs stdenv in
   let confined =
     match mode with
@@ -243,7 +246,9 @@ let resolve ~sw ~stdenv ~logical ~mode ~read ~readable_roots ~writable_roots
           ~configured_writes:writable_roots)
   in
   let capability () =
-    let env = Child_env.make ~path:derived.Derive.path ~lookup in
+    let env =
+      Child_env.make ~path:derived.Derive.path ~lookup ~names:ambient_names
+    in
     let sandbox =
       match mode with
       | Mentat_config.Mode.Danger_full_access -> Mentat_sandbox.direct

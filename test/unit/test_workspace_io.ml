@@ -537,6 +537,79 @@ let describe_roots_carries_user_toolchain_dirs () =
   is_true ~msg:"the dune toolchains are carved out of the cache grant"
     (carved cache_toolchains)
 
+(* Dune resolves its cache root from [DUNE_CACHE_ROOT] before the XDG cache
+   base, and the child inherits the variable, so the grant must follow the same
+   resolution: the named directory is the writable cache, with the same
+   carveouts secured beneath it, and the XDG default is not granted at all. *)
+let describe_roots_follows_dune_cache_root () =
+  in_dirs "cache-root" @@ fun ~stdenv ~base ~ws_dir ~out_dir:_ ~tmp_base ->
+  let home = Filename.concat base "home" in
+  Unix.mkdir home 0o755;
+  let mk_path sub =
+    let dir = Filename.concat home sub in
+    let rec create path =
+      if not (Sys.file_exists path) then (
+        create (Filename.dirname path);
+        Unix.mkdir path 0o755)
+    in
+    create dir;
+    Unix.realpath dir
+  in
+  let xdg_cache_dune = mk_path (Filename.concat ".cache" "dune") in
+  let cache_root = mk_path "dune-cache" in
+  let primary = Workspace.Root.of_dir (abs ws_dir) in
+  let logical = Workspace.make ~primary ~read_only:[] () |> Result.get_ok in
+  Eio.Switch.run @@ fun sw ->
+  let io =
+    capability_exn ~stdenv ~sw ~tmp_base
+      ~env:
+        [
+          ("HOME", Some home);
+          ("PATH", Some "/usr/bin:/bin");
+          ("DUNE_CACHE_ROOT", Some cache_root);
+          ("OPAM_SWITCH_PREFIX", None);
+          ("MENTAT_DUNE", None);
+          ("CAML_LD_LIBRARY_PATH", None);
+          ("OCAMLPATH", None);
+          ("OCAML_TOPLEVEL_PATH", None);
+          ("OCAMLLIB", None);
+          ("DUNE_OCAML_STDLIB", None);
+          ("OPAMROOT", None);
+          ("XDG_CACHE_HOME", None);
+          ("XDG_CONFIG_HOME", None);
+          ("XDG_STATE_HOME", None);
+          ("XDG_DATA_HOME", None);
+        ]
+      ~read:Read.Project logical
+  in
+  let policy =
+    match Wio.policy io with
+    | Some policy -> policy
+    | None -> fail "expected a confined seal carrying a policy"
+  in
+  is_true ~msg:"the named cache root is admitted, labeled DUNE_CACHE_ROOT"
+    (List.exists
+       (fun (label, dir) ->
+         String.equal label "toolchain:DUNE_CACHE_ROOT"
+         && Abs.equal dir (abs cache_root))
+       (Wio.describe_roots io));
+  let writable = Sandbox.Policy.writable_roots policy in
+  let grants dir = List.exists (Abs.equal (abs dir)) writable in
+  is_true ~msg:"the named cache root is writable" (grants cache_root);
+  is_false ~msg:"the XDG default is not granted when the variable names another"
+    (grants xdg_cache_dune);
+  let carved dir =
+    List.exists
+      (fun (path, access) ->
+        Sandbox.Policy.Access.equal access Sandbox.Policy.Access.Read
+        && Abs.equal path (abs dir))
+      (Sandbox.Policy.entries policy)
+  in
+  is_true ~msg:"the build cache is carved out beneath the named root"
+    (carved (Filename.concat cache_root "db"));
+  is_true ~msg:"the toolchains are carved out beneath the named root"
+    (carved (Filename.concat cache_root "toolchains"))
+
 let describe_roots_admits_git_config () =
   in_dirs "gitcfg" @@ fun ~stdenv ~base ~ws_dir ~out_dir:_ ~tmp_base ->
   (* A fake real home holding git's global configuration next to the state that
@@ -1911,6 +1984,39 @@ let child_environment_is_private_on_every_route () =
         parent_only
   | _ -> fail "unexpected env probe output"
 
+(* Dune folds its configuration — the shared-cache mode, the profile, the
+   sandboxing mode, every [DUNE_CONFIG__*] override — into the digest of every
+   rule, so a child configured differently from the launcher's shell would
+   re-execute the user's whole build and have its own re-executed back. The
+   dune and OCaml families reach the child verbatim; the handles dune assigns
+   to its own actions, and [INSIDE_DUNE] with them, do not. *)
+let child_environment_carries_dune_configuration () =
+  with_direct "run-dune-env"
+    ~env:
+      [
+        ("DUNE_CACHE", Some "enabled-except-user-rules");
+        ("DUNE_CONFIG__BACKGROUND_DIGESTS", Some "disabled");
+        ("OCAMLPARAM", Some "_,w=+a");
+        ("DUNE_ACTION_TRACE_DIR", Some "/nope/trace");
+        ("INSIDE_DUNE", Some "1");
+      ]
+  @@ fun w ->
+  let outcome =
+    run_ok w.io
+      (sh
+         {|printf '%s\n%s\n%s\n%s\n%s' "${DUNE_CACHE:-ABSENT}" "${DUNE_CONFIG__BACKGROUND_DIGESTS:-ABSENT}" "${OCAMLPARAM:-ABSENT}" "${DUNE_ACTION_TRACE_DIR:-ABSENT}" "${INSIDE_DUNE:-ABSENT}"|})
+  in
+  match String.split_on_char '\n' (stdout_str outcome) with
+  | [ cache; override; ocamlparam; trace; inside ] ->
+      equal string ~msg:"the shared-cache mode reaches the child"
+        "enabled-except-user-rules" cache;
+      equal string ~msg:"a DUNE_CONFIG__ override reaches the child" "disabled"
+        override;
+      equal string ~msg:"OCAMLPARAM reaches the child" "_,w=+a" ocamlparam;
+      equal string ~msg:"dune's action-trace handle is stripped" "ABSENT" trace;
+      equal string ~msg:"INSIDE_DUNE is stripped" "ABSENT" inside
+  | _ -> fail "unexpected env probe output"
+
 (* Command.Session: the supervised background primitive behind background
    terminals (direct route — the ring, cursor, drain, and waiter mechanics are
    backend-independent). Long-lived children are driven to determinism through
@@ -2432,6 +2538,8 @@ let () =
         describe_roots_labels_scoped_reads;
       test "describe_roots carries the user toolchain directories"
         describe_roots_carries_user_toolchain_dirs;
+      test "describe_roots follows DUNE_CACHE_ROOT the way dune does"
+        describe_roots_follows_dune_cache_root;
       test "describe_roots admits git's global configuration"
         describe_roots_admits_git_config;
       test "a placeholder toolchain value is skipped, not fatal"
@@ -2529,6 +2637,8 @@ let () =
         missing_program_is_a_spawn_error;
       test "the child environment is private on every route"
         child_environment_is_private_on_every_route;
+      test "the child environment carries the dune and OCaml configuration"
+        child_environment_carries_dune_configuration;
       (* Session: the supervised background primitive *)
       test "session reads are incremental over a cursor"
         session_reads_are_incremental_over_a_cursor;

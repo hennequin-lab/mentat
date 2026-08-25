@@ -10,9 +10,13 @@
     because inheritance is allow-listed, and nothing is rewritten. The
     allow-list carries every variable the resolver derives a root from — [HOME],
     the temp-dir family, and the three base directories beneath it — so the
-    child computes the same directories the policy grants. Construction is
-    total: ambient values that cannot be represented (a NUL byte, a malformed
-    path segment) are dropped, never fatal.
+    child computes the same directories the policy grants, and the whole dune
+    and OCaml configuration families ([DUNE_*], [OCAML*], [CAML*]), so a build
+    inside is configured exactly like the user's build outside: dune folds its
+    configuration into every rule digest, and two differently configured builds
+    sharing one build directory re-execute each other's work on every
+    alternation. Construction is total: ambient values that cannot be
+    represented (a NUL byte, a malformed path segment) are dropped, never fatal.
 
     [PWD] is deliberately absent here and written by the launch instead: it
     names the directory a single command starts in, which the resolution does
@@ -29,8 +33,9 @@ type t = {
           resolve an implicit program. *)
 }
 
-val make : path:string -> lookup:(string -> string option) -> t
-(** [make ~path ~lookup] builds the environment.
+val make :
+  path:string -> lookup:(string -> string option) -> names:string list -> t
+(** [make ~path ~lookup ~names] builds the environment.
 
     [path] is the resolver-derived [PATH] value; its segments are normalized
     (absolute, deduplicated, malformed segments dropped). No value is rewritten:
@@ -39,5 +44,10 @@ val make : path:string -> lookup:(string -> string option) -> t
     and no directory can be named to a tool without the grant that makes it
     usable. [lookup] reads the ambient environment for the allow-listed names:
     [HOME], the temp-dir family, locale variables verbatim, and the OCaml
-    toolchain variables with their path values normalized. Fixed pager, color,
-    and terminal bindings complete the set. *)
+    toolchain variables with their path values normalized. [names] are the
+    ambient variable names, from which the dune and OCaml configuration families
+    are inherited verbatim by prefix — every [DUNE_*], [OCAML*] and [CAML*] name
+    except the handles dune assigns to the actions it spawns
+    ([DUNE_ACTION_TRACE_DIR], [DUNE_SOURCEROOT], [DUNE_DIR_LOCATIONS]), which
+    describe a running dune instance rather than configure one. Fixed pager,
+    color, and terminal bindings complete the set. *)

@@ -505,12 +505,12 @@ let%expect_test
   Printf.printf "stdout: %S\nstderr: %S\n" normalized stderr;
   Printf.printf "configured command ran: %b shell flag exact: %b\n"
     (String.includes ~affix:"secret=unset" stdout)
-    (String.equal stderr "wrapper:-lc\n");
+    (String.equal stderr "wrapper:-c\n");
   [%expect
     {|
     status: completed
     stdout: "cwd=<workspace>/subject/nested\nstdin=null\nsecret=unset\n"
-    stderr: "wrapper:-lc\n"
+    stderr: "wrapper:-c\n"
     configured command ran: true shell flag exact: true |}]
 
 let%expect_test "success failure signal and pre-spawn refusal preserve taxonomy"
