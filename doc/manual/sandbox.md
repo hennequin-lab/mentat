@@ -126,6 +126,14 @@ The following remain read-only even when nested under a writable root:
 Native mutation tools share the `.git` and `.mentat` protection. They also
 validate workspace containment independently of the command sandbox.
 
+On macOS, the per-session launchd endpoints under `/private/tmp` — where the
+ssh-agent socket `$SSH_AUTH_SOCK` names lives — are denied outright: reads,
+writes, and socket connects, in every posture, network-enabled included. The
+directory sits inside the shared scratch grant, so without the denial the
+agent that signs for every host you can reach would be one glob and one
+connect away; stripping the variable from the environment alone is friction,
+not a boundary.
+
 Machine-global toolchain state — the OPAM root and the dune and uv config
 directories — is admitted read-only under the project read scope so tools
 resolve their real locations.

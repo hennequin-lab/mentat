@@ -310,6 +310,20 @@ let network_section policy =
       Printf.sprintf "(allow network-outbound)\n(allow network-inbound)\n%s"
         network_policy
 
+(* The per-session launchd endpoints under [/private/tmp] — above all the
+   ssh-agent socket [SSH_AUTH_SOCK] names — sit inside a directory every
+   writable posture grants, so the Unix-socket allowance above reaches them
+   and their glob is discoverable through the same grant. Stripping the
+   variable from the child environment is therefore friction, not a boundary:
+   the agent that signs for every host the user can reach is one readdir and
+   one connect away. This denial closes the capability itself — the connect,
+   and the reads that would discover the path — and it is emitted after every
+   other section because SBPL resolves last-match-wins: not even an enabled
+   network's blanket outbound allowance may re-open it. *)
+let agent_socket_denial =
+  {|(deny network-outbound network-bind file-read* file-write* file-test-existence
+  (regex #"^/private/tmp/com\.apple\.launchd\."))|}
+
 let sbpl policy =
   let params =
     List.mapi
@@ -325,6 +339,7 @@ let sbpl policy =
           ancestor_rule params;
           unix_socket_policy params;
           network_section policy;
+          agent_socket_denial;
         ])
   in
   ( String.concat "\n" sections,

@@ -550,6 +550,33 @@ let seatbelt_no_path_enters_the_text () =
         (List.mem path values))
     paths
 
+let seatbelt_agent_socket_denied_last () =
+  (* Stripping SSH_AUTH_SOCK from the child environment is friction, not a
+     boundary: the launchd endpoint directory lives under /private/tmp, which
+     every writable posture grants, and its name is one glob away. The profile
+     denies the capability itself, and the denial must be the last word — an
+     enabled network's blanket outbound allowance is emitted before it, and
+     SBPL resolves last-match-wins. *)
+  let denial = {|(regex #"^/private/tmp/com\.apple\.launchd\.")|} in
+  let restricted, _ =
+    seatbelt_sbpl (confined ~writable_roots:[ abs "/private/tmp" ] ())
+  in
+  contains ~msg:"a restricted posture denies the launchd endpoints" ~sub:denial
+    restricted;
+  in_order
+    ~msg:"the denial follows the writable socket allowance, so it decides"
+    ~subs:[ "(allow network-bind network-outbound"; denial ]
+    restricted;
+  let enabled, _ =
+    seatbelt_sbpl (confined ~network:Policy.Network.Enabled ())
+  in
+  in_order
+    ~msg:
+      "an enabled network's blanket outbound precedes the denial, so the agent \
+       socket stays closed"
+    ~subs:[ "(allow network-outbound)"; denial ]
+    enabled
+
 let seatbelt_generation_is_deterministic () =
   let policy =
     confined
@@ -1466,7 +1493,7 @@ let identity_digest_pins () =
       ()
   in
   equal string ~msg:"seatbelt enforced identity digest golden"
-    "e3566e4638f2f7855d25e85278c6badf57a07fe24f67d934f4e804d32aab8b0e"
+    "8e9cf4f282dd25f620a18d54eb6c2a82337d8009661da62696a97bbad762b5fe"
     (Digest.to_hex (Identity.digest (identity_of pinned_policy)));
   equal string ~msg:"bubblewrap enforced identity digest golden"
     "3c45f1b71d50ebc65eb0b88551cc2aec352f542c709ce094dd9f4d255204858a"
@@ -1627,6 +1654,8 @@ let () =
       test "seatbelt nested roots share carveouts"
         seatbelt_nested_roots_share_carveouts;
       test "seatbelt network-enabled golden" seatbelt_network_enabled_golden;
+      test "seatbelt denies the launchd agent endpoints last"
+        seatbelt_agent_socket_denied_last;
       test "seatbelt puts no path byte in the profile text"
         seatbelt_no_path_enters_the_text;
       test "seatbelt generation is deterministic"
