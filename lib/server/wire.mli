@@ -31,7 +31,16 @@ type response = {
 
 val response_jsont : response Jsont.t
 
-type handshake_request = { v_max : int; requested_workspace : string option }
+type handshake_request = {
+  v_max : int;
+  requested_workspace : string option;
+  environment : (string * string) list option;
+      (** The invoking client's process environment, offered on every handshake;
+          the daemon resolves a freshly booted workspace instance against it so
+          confined commands are configured from the shell that asked for the
+          run, not the shell that spawned the daemon. [None] is a client that
+          offers none; the daemon falls back to its own. *)
+}
 (** [requested_workspace] is the client's canonical workspace root to bind this
     connection to (the one-connection-one-workspace binding); [None] leaves it
     unbound. *)

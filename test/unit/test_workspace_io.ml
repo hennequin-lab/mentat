@@ -138,8 +138,21 @@ let resolve_capability ~stdenv ~sw ~tmp_base ?(env = [])
     ?(mode = Mode.Workspace_write) ?(read = Read.All) ?(readable_roots = [])
     ?(writable_roots = []) logical =
   with_env (("TMPDIR", Some tmp_base) :: env) @@ fun () ->
-  Wio.resolve ~sw ~stdenv ~logical ~mode ~read ~readable_roots ~writable_roots
-    ~mentat_dirs:[] ~network:Sandbox.Policy.Network.Restricted
+  (* The capability takes its ambient environment from the caller now (the
+     daemon passes the invoking client's); the suite hands it this process's
+     snapshot, taken inside the [with_env] scope so the overrides hold. *)
+  let environment =
+    Array.to_list (Unix.environment ())
+    |> List.filter_map (fun kv ->
+        match String.index_opt kv '=' with
+        | None -> None
+        | Some i ->
+            Some
+              ( String.sub kv 0 i,
+                String.sub kv (i + 1) (String.length kv - i - 1) ))
+  in
+  Wio.resolve ~sw ~stdenv ~logical ~environment ~mode ~read ~readable_roots
+    ~writable_roots ~mentat_dirs:[] ~network:Sandbox.Policy.Network.Restricted
 
 let capability_exn ~stdenv ~sw ~tmp_base ?env ?mode ?read ?readable_roots
     ?writable_roots logical =
@@ -1908,9 +1921,20 @@ let executable_resolution_checks_the_exec_bit () =
   let io =
     with_env [ ("TMPDIR", Some tmp_base); ("PATH", Some (dir1 ^ ":" ^ dir2)) ]
     @@ fun () ->
+    let environment =
+      Array.to_list (Unix.environment ())
+      |> List.filter_map (fun kv ->
+          match String.index_opt kv '=' with
+          | None -> None
+          | Some i ->
+              Some
+                ( String.sub kv 0 i,
+                  String.sub kv (i + 1) (String.length kv - i - 1) ))
+    in
     match
-      Wio.resolve ~sw ~stdenv ~logical ~mode:Mode.Danger_full_access
-        ~read:Read.All ~readable_roots:[] ~writable_roots:[] ~mentat_dirs:[]
+      Wio.resolve ~sw ~stdenv ~logical ~environment
+        ~mode:Mode.Danger_full_access ~read:Read.All ~readable_roots:[]
+        ~writable_roots:[] ~mentat_dirs:[]
         ~network:Sandbox.Policy.Network.Restricted
     with
     | Ok io -> io

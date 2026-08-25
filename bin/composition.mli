@@ -100,17 +100,24 @@ val instance :
   sw:Eio.Switch.t ->
   cwd:string option ->
   overrides:Mentat_config.t list ->
+  ?environment:(string * string) list ->
   ?review_base:string ->
   unit ->
   (t, Exit_status.t) result
-(** [instance shared ~sw ~cwd ~overrides ?review_base ()] stages one workspace
-    instance over [shared]: the canonical root for [cwd] (the process directory
-    when [None]), its trust verdict, and its config with [overrides] layered,
-    under the instance's own switch [sw]. No store is opened — the shared handle
-    is reused, which is what keeps the fence's same-process half honest. The
-    engine, watch lane, and dune-RPC producer built on demand live under [sw],
-    so evicting the instance is one {!shutdown} then closing [sw]. [review_base]
-    is the review cone's base spec, as in {!with_base}. A staging failure (an
+(** [instance shared ~sw ~cwd ~overrides ?environment ?review_base ()] stages
+    one workspace instance over [shared]: the canonical root for [cwd] (the
+    process directory when [None]), its trust verdict, and its config with
+    [overrides] layered, under the instance's own switch [sw]. No store is
+    opened — the shared handle is reused, which is what keeps the fence's
+    same-process half honest. The engine, watch lane, and dune-RPC producer
+    built on demand live under [sw], so evicting the instance is one {!shutdown}
+    then closing [sw]. [environment] is the ambient environment the instance
+    resolves against — config env overrides, toolchain and account discovery,
+    and the workspace resolution that constructs the exact child environment; it
+    defaults to [shared]'s process snapshot, and a daemon passes the invoking
+    client's snapshot instead so the child is configured from the shell that
+    asked for the run, not the shell that spawned the daemon. [review_base] is
+    the review cone's base spec, as in {!with_base}. A staging failure (an
     unresolvable root, malformed config) is an {!Exit_status.Runtime_error}. *)
 
 val shutdown : t -> unit

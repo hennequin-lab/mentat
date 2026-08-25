@@ -69,15 +69,37 @@ let response_jsont : response Jsont.t =
 (* The handshake — the connection's first exchange and the only version
    negotiation. *)
 
-type handshake_request = { v_max : int; requested_workspace : string option }
+type handshake_request = {
+  v_max : int;
+  requested_workspace : string option;
+  environment : (string * string) list option;
+      (* The invoking client's process environment, captured at its snapshot.
+         The daemon resolves a freshly booted workspace instance against it —
+         config env overrides, toolchain discovery, and the exact child
+         environment — so a confined command is configured from the shell that
+         asked for the run, not the shell that spawned the daemon. Carried on
+         every handshake because any dial may be the one that (re)boots an
+         evicted instance; a live instance keeps the environment it booted
+         with. Absent means the client offered none (a raw wire client) and
+         the daemon falls back to its own. *)
+}
+
+let binding_jsont : (string * string) Jsont.t =
+  Jsont.t2 ~kind:"environment binding"
+    ~dec:(fun name value -> (name, value))
+    ~enc:(fun (name, value) i -> if i = 0 then name else value)
+    Jsont.string
 
 let handshake_request_jsont : handshake_request Jsont.t =
-  Jsont.Object.map ~kind:"handshake request" (fun v_max requested_workspace ->
-      { v_max; requested_workspace })
+  Jsont.Object.map ~kind:"handshake request"
+    (fun v_max requested_workspace environment ->
+      { v_max; requested_workspace; environment })
   |> Jsont.Object.mem "v_max" Jsont.int ~enc:(fun (r : handshake_request) ->
       r.v_max)
   |> Jsont.Object.opt_mem "workspace" Jsont.string
        ~enc:(fun (r : handshake_request) -> r.requested_workspace)
+  |> Jsont.Object.opt_mem "environment" (Jsont.list binding_jsont)
+       ~enc:(fun (r : handshake_request) -> r.environment)
   |> Jsont.Object.error_unknown |> Jsont.Object.finish
 
 type handshake_response = { negotiated : int; workspace : string option }

@@ -575,7 +575,7 @@ let handle_handshake ~driver_for ~bindings conn body =
   let key = conn_key conn in
   match Wire.decode Wire.handshake_request_jsont body with
   | Error message -> reply ~status:`Bad_request ~body:message ()
-  | Ok { Wire.v_max; requested_workspace } -> (
+  | Ok { Wire.v_max; requested_workspace; environment } -> (
       if v_max < Wire.version then
         (* The client's floor is below the daemon's; refuse with 409 and name the
            server version. *)
@@ -601,7 +601,7 @@ let handle_handshake ~driver_for ~bindings conn body =
                    })
               ()
         | None -> (
-            match driver_for ~workspace:requested_workspace with
+            match driver_for ~workspace:requested_workspace ~environment with
             | Error error ->
                 (* A9 / wrong-checkout refusal: a structured protocol error, the
                    connection left unbound (the client treats it as definite and
@@ -1098,6 +1098,7 @@ type ctx = {
   base : string;
   token : Token.t option;
   workspace : string option;
+  environment : (string * string) list option;
   sw : Eio.Switch.t;
 }
 
@@ -1106,7 +1107,16 @@ let auth_headers token =
   | None -> []
   | Some token -> [ ("authorization", "Bearer " ^ Token.to_string token) ]
 
-let make_ctx ~sw ~net ?workspace bind =
+let make_ctx ~sw ~net ?workspace ?environment bind =
+  (* The wire is JSON: a binding either side cannot spell in UTF-8 is dropped
+     rather than fatal, matching the child environment's own total
+     construction. *)
+  let environment =
+    Option.map
+      (List.filter (fun (name, value) ->
+           String.is_valid_utf_8 name && String.is_valid_utf_8 value))
+      environment
+  in
   match bind with
   | Unix { dir } ->
       let path = unix_socket_path dir in
@@ -1114,7 +1124,15 @@ let make_ctx ~sw ~net ?workspace bind =
         (Eio.Net.connect ~sw net (`Unix path)
           :> [ `Close | Eio.Flow.two_way_ty ] Eio.Resource.t)
       in
-      Ok { dial; base = "http://mentat"; token = None; workspace; sw }
+      Ok
+        {
+          dial;
+          base = "http://mentat";
+          token = None;
+          workspace;
+          environment;
+          sw;
+        }
   | Loopback { port; token } -> (
       match port with
       | None ->
@@ -1132,6 +1150,7 @@ let make_ctx ~sw ~net ?workspace bind =
               base = Printf.sprintf "http://127.0.0.1:%d" port;
               token = Some token;
               workspace;
+              environment;
               sw;
             })
   | Public _ ->
@@ -1170,10 +1189,14 @@ let http_post ~base ~token client ~sw path body =
    request. Returns the transport outcome so the caller can retry a bare
    [`Transport] failure but never a [`Definite] refusal (a 409 version mismatch,
    an A9 absent-workspace refusal, or a wrong-checkout echo). *)
-let client_handshake ~base ~token ~workspace client ~sw =
+let client_handshake ~base ~token ~workspace ~environment client ~sw =
   let body =
     Wire.encode Wire.handshake_request_jsont
-      { Wire.v_max = Wire.version; requested_workspace = workspace }
+      {
+        Wire.v_max = Wire.version;
+        requested_workspace = workspace;
+        environment;
+      }
   in
   match http_post ~base ~token client ~sw "/handshake" body with
   | Error message -> Error (`Transport message)
@@ -1270,7 +1293,7 @@ let call : type req resp.
         let client = pinned_client socket in
         match
           client_handshake ~base:ctx.base ~token:ctx.token
-            ~workspace:ctx.workspace client ~sw:sub
+            ~workspace:ctx.workspace ~environment:ctx.environment client ~sw:sub
         with
         | Error (`Transport message) -> `Retry message
         | Error (`Definite error) ->
@@ -1385,7 +1408,7 @@ let stream_issue ctx ~sw issue =
   let client = pinned_client socket in
   (match
      client_handshake ~base:ctx.base ~token:ctx.token ~workspace:ctx.workspace
-       client ~sw
+       ~environment:ctx.environment client ~sw
    with
   | Ok () -> ()
   | Error (`Transport message) ->
@@ -1547,7 +1570,7 @@ let verify_binding ctx =
       let client = pinned_client socket in
       match
         client_handshake ~base:ctx.base ~token:ctx.token
-          ~workspace:ctx.workspace client ~sw:sub
+          ~workspace:ctx.workspace ~environment:ctx.environment client ~sw:sub
       with
       | Ok () -> Ok ()
       | Error (`Transport message) -> Error (Error.Transport message)
@@ -1716,8 +1739,8 @@ let build_driver ctx : Mentat_client.Driver.t =
     workspace;
   }
 
-let connect ~sw ~net ~clock:_ ?workspace bind =
-  match make_ctx ~sw ~net ?workspace bind with
+let connect ~sw ~net ~clock:_ ?workspace ?environment bind =
+  match make_ctx ~sw ~net ?workspace ?environment bind with
   | Error error -> Error error
   | Ok ctx -> (
       match verify_binding ctx with

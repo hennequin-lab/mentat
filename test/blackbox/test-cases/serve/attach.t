@@ -1,19 +1,21 @@
 A real turn driven through the daemon, then the session-lifecycle --attach
 round-trips (rename / export / revert) reaching the daemon's online cones over
-the wire. The daemon captures its environment at start, so the
-fake provider is configured BEFORE start_daemon — an attaching client's env does
-not reach an already-running daemon (the captured-env rule).
+the wire. A workspace instance resolves against the environment of the client
+whose handshake boots it, and keeps it for the instance's life — so the fake
+provider is configured before the first attach, and a LATER client's env does
+not reach the already-booted instance (the boot-env rule; attach-env.t proves
+the boot half).
 
   $ use_trusted_workspace
   $ export MENTAT_NOW=1753000000000
   $ trap stop_daemon EXIT
 
-The fake provider is wired before the daemon starts, so the daemon's captured
+The fake provider is wired before the first attach, so the instance's boot
 environment makes the turn's provider call.
 
-One multi-response fake serves every turn: the daemon uses the provider it
-captured at start, so a second fake for a later turn would be unreachable (the
-captured-env rule). Line 1 answers the first turn; line 2 (a long delay_ms) is
+One multi-response fake serves every turn: the instance uses the provider it
+captured at boot, so a second fake for a later turn would be unreachable (the
+boot-env rule). Line 1 answers the first turn; line 2 (a long delay_ms) is
 the slow turn that holds the fence below.
 
   $ cat > script.jsonl <<'JSONL'

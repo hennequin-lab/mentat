@@ -26,8 +26,18 @@ let resolve_exn ?(mode = Mentat_config.Mode.Danger_full_access)
     ?(read = Mentat_config.Read.All)
     ?(network = Mentat_sandbox.Policy.Network.Restricted) ~sw ~stdenv ~logical
     () =
+  let environment =
+    Array.to_list (Unix.environment ())
+    |> List.filter_map (fun kv ->
+        match String.index_opt kv '=' with
+        | None -> None
+        | Some i ->
+            Some
+              ( String.sub kv 0 i,
+                String.sub kv (i + 1) (String.length kv - i - 1) ))
+  in
   match
-    Mentat_workspace_io.resolve ~sw ~stdenv ~logical ~mode ~read
+    Mentat_workspace_io.resolve ~sw ~stdenv ~logical ~environment ~mode ~read
       ~readable_roots:[] ~writable_roots:[] ~mentat_dirs:[] ~network
   with
   | Ok io -> io

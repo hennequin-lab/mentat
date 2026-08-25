@@ -209,6 +209,14 @@ escalation — receives one exact environment constructed when the run resolves 
 sandbox. Tools cannot add per-call overlays and no route inherits the ambient
 process environment.
 
+The ambient environment the construction reads is the one you launched from —
+including under `--attach`: the client ships its environment snapshot with
+every handshake, and the daemon resolves a freshly booted workspace instance
+against the snapshot of the client that boots it, not against whichever shell
+happened to spawn the daemon. A live instance keeps the environment it booted
+with for its life; two clients sharing one workspace share the first binder's
+resolution, because the instance is one engine and one sealed sandbox.
+
 The child environment contains:
 
 - `PATH`, validated as absolute non-empty entries;

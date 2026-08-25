@@ -101,6 +101,7 @@ val resolve :
   sw:Eio.Switch.t ->
   stdenv:Eio_unix.Stdenv.base ->
   logical:Mentat_workspace.t ->
+  environment:(string * string) list ->
   mode:Mentat_config.Mode.t ->
   read:Mentat_config.Read.t ->
   readable_roots:string list ->
@@ -108,8 +109,17 @@ val resolve :
   mentat_dirs:Lpath.Abs.t list ->
   network:Mentat_sandbox.Policy.Network.t ->
   (t, Resolve_error.t) result
-(** [resolve ~sw ~stdenv ~logical ~mode ~read ~readable_roots ~writable_roots
-     ~mentat_dirs ~network] resolves the capability, in one fallible call.
+(** [resolve ~sw ~stdenv ~logical ~environment ~mode ~read ~readable_roots
+     ~writable_roots ~mentat_dirs ~network] resolves the capability, in one
+    fallible call.
+
+    [environment] is the ambient environment every derivation reads — the roots,
+    the child environment, the backend probe. The caller decides whose
+    environment that is: the process's own snapshot for a local run, the
+    invoking client's snapshot for a daemon-hosted one. A daemon resolving from
+    its own environment would configure every confined child from whichever
+    shell happened to spawn the daemon first, which is exactly the disagreement
+    the exact-child-environment design exists to prevent.
 
     [mentat_dirs] are Mentat's own user directories. They are denied to every
     confined command on every route and in every mode, because the session store

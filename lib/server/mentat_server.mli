@@ -155,20 +155,24 @@ val serve :
   ?heartbeat_s:float ->
   ?ledger_cap:int ->
   driver_for:
-    (workspace:string option -> (target, Mentat_protocol.Error.t) result) ->
+    (workspace:string option ->
+    environment:(string * string) list option ->
+    (target, Mentat_protocol.Error.t) result) ->
   listener ->
   unit
 (** [serve ~sw ~clock ?heartbeat_s ?ledger_cap ~driver_for listener] runs the
     accept loop. Each connection's {b first} request must be [POST /handshake];
-    [serve] calls [driver_for] with the requested workspace and binds the
-    returned {!target} to that connection's identity. Every later request on
-    that connection — decoded, its descriptor resolved, the matching [driver]
-    field invoked, the result encoded; a session feed streamed as SSE, the login
-    flow as its own stream — dispatches to the bound driver. [driver_for]
-    returning [Error] refuses the handshake with that structured error and
-    leaves the connection unbound; a non-handshake request on an unbound
-    connection is answered with a structured "not bound" error. A logical client
-    spans several TCP connections (a feed GET, POST bursts),
+    [serve] calls [driver_for] with the requested workspace — and the
+    environment the client offered, which matters only to the handshake that
+    (re)boots a workspace instance; a live instance keeps the environment it
+    booted with — and binds the returned {!target} to that connection's
+    identity. Every later request on that connection — decoded, its descriptor
+    resolved, the matching [driver] field invoked, the result encoded; a session
+    feed streamed as SSE, the login flow as its own stream — dispatches to the
+    bound driver. [driver_for] returning [Error] refuses the handshake with that
+    structured error and leaves the connection unbound; a non-handshake request
+    on an unbound connection is answered with a structured "not bound" error. A
+    logical client spans several TCP connections (a feed GET, POST bursts),
     {b each with its own handshake and binding}; [on_close] therefore fires per
     connection, exactly once.
 
@@ -312,18 +316,23 @@ val connect :
   net:_ Eio.Net.t ->
   clock:_ Eio.Time.clock ->
   ?workspace:string ->
+  ?environment:(string * string) list ->
   Bind.t ->
   (Mentat_client.Driver.t, Error.t) result
-(** [connect ~sw ~net ~clock ?workspace bind] dials the daemon [bind] describes,
-    performs the version handshake — binding the connection to [workspace] and
-    {b verifying the echo}: a daemon that binds a different canonical root than
-    requested is a {!Error.Transport} (the wrong-checkout refusal) — and returns
-    a complete {!Mentat_client.Driver.t} whose every field is a wire call
-    through the shared descriptor table and whose feed and login fields
-    re-materialise the SSE streams into the pull seams {!Mentat_client} wraps.
-    Hand the result to {!Mentat_client.make}; the frontend cannot tell it from
-    an in-process fill. Cancellation of [sw], or a feed [close] / login
-    [cancel], aborts the connection so the daemon releases its stream.
+(** [connect ~sw ~net ~clock ?workspace ?environment bind] dials the daemon
+    [bind] describes, performs the version handshake — binding the connection to
+    [workspace] and {b verifying the echo}: a daemon that binds a different
+    canonical root than requested is a {!Error.Transport} (the wrong-checkout
+    refusal) — and returns a complete {!Mentat_client.Driver.t} whose every
+    field is a wire call through the shared descriptor table and whose feed and
+    login fields re-materialise the SSE streams into the pull seams
+    {!Mentat_client} wraps. [environment] is the invoking process's environment
+    snapshot, offered on every handshake (any dial may be the one that re-boots
+    an evicted instance); bindings either side cannot spell in UTF-8 are dropped
+    rather than fatal. Hand the result to {!Mentat_client.make}; the frontend
+    cannot tell it from an in-process fill. Cancellation of [sw], or a feed
+    [close] / login [cancel], aborts the connection so the daemon releases its
+    stream.
 
     {b Transport.} [connect] verifies the binding up front on a throwaway
     connection, then every driver-field call and every stream dials a {b fresh}

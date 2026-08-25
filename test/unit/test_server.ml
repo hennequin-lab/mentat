@@ -270,7 +270,8 @@ let socket_dir () =
    the mechanical Stage-1 wrapper (the single-driver harness): it echoes the
    bound root so [connect ~workspace:"/workspace"]'s echo-verify passes, and its
    [on_close] is inert. *)
-let const_driver_for ?(on_close = fun () -> ()) driver ~workspace:_ =
+let const_driver_for ?(on_close = fun () -> ()) driver ~workspace:_
+    ~environment:_ =
   Ok { Server.workspace = Some "/workspace"; driver; on_close }
 
 let with_server ?ledger_cap ?heartbeat_s ~driver f =
@@ -2288,7 +2289,7 @@ let driver_for_group =
         "the handshake binds the requested workspace and routes to its driver"
         (fun () ->
           let served = ref [] in
-          let driver_for ~workspace =
+          let driver_for ~workspace ~environment:_ =
             match workspace with
             | Some "/ws/a" ->
                 Ok
@@ -2323,7 +2324,7 @@ let driver_for_group =
                 [ "B"; "A" ] !served));
       test "a driver_for error surfaces as a structured handshake refusal"
         (fun () ->
-          let driver_for ~workspace:_ =
+          let driver_for ~workspace:_ ~environment:_ =
             Error
               (Error.Unavailable (Mentat_diagnostic.of_text "no such workspace"))
           in
@@ -2339,7 +2340,7 @@ let driver_for_group =
       test "an absent handshake workspace is refused" (fun () ->
           (* The Stage-2 daemon's driver_for refuses [None]; the wire optional
              stays but no unbound connection is bound. *)
-          let driver_for ~workspace =
+          let driver_for ~workspace ~environment:_ =
             match workspace with
             | None ->
                 Error
@@ -2364,7 +2365,7 @@ let driver_for_group =
                   failf "expected a Transport refusal, got %a" Server.Error.pp e));
       test "on_close fires exactly once per connection" (fun () ->
           let opens = ref 0 and closes = ref 0 in
-          let driver_for ~workspace:_ =
+          let driver_for ~workspace:_ ~environment:_ =
             incr opens;
             Ok
               {
@@ -2403,7 +2404,7 @@ let driver_for_group =
           let bind = Server.Bind.unix ~dir in
           let listener = Server.listen ~sw ~net bind in
           let opens = ref 0 and closes = ref 0 in
-          let driver_for ~workspace:_ =
+          let driver_for ~workspace:_ ~environment:_ =
             incr opens;
             Ok
               {
@@ -2441,7 +2442,7 @@ let driver_for_group =
       test "a duplicate handshake on one connection takes no second lease"
         (fun () ->
           let opens = ref 0 and closes = ref 0 in
-          let driver_for ~workspace:_ =
+          let driver_for ~workspace:_ ~environment:_ =
             incr opens;
             Ok
               {
@@ -2505,7 +2506,7 @@ let session_routing_group =
           in
           (* driver_for binds workspace A, but hands back the composite whose
              session cone routes independently. *)
-          let driver_for ~workspace:_ =
+          let driver_for ~workspace:_ ~environment:_ =
             Ok
               {
                 Server.workspace = Some "/ws/a";
@@ -2554,7 +2555,7 @@ let session_routing_group =
             in
             make_driver ~lifecycle ()
           in
-          let driver_for ~workspace:_ =
+          let driver_for ~workspace:_ ~environment:_ =
             Ok
               {
                 Server.workspace = Some "/ws/a";

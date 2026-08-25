@@ -124,22 +124,19 @@ let edit_lock_for key =
           Hashtbl.add edit_locks key lock;
           lock)
 
-(* The ambient environment is read exactly once, at resolution: a lookup by
-   name, and the names themselves for the families the child inherits by
-   prefix. *)
-let ambient_environment () =
-  let bindings = Unix.environment () in
-  let table = Hashtbl.create (Array.length bindings) in
-  Array.iter
-    (fun binding ->
-      match String.index_opt binding '=' with
-      | None -> ()
-      | Some i ->
-          let name = String.sub binding 0 i in
-          if not (Hashtbl.mem table name) then
-            Hashtbl.add table name
-              (String.sub binding (i + 1) (String.length binding - i - 1)))
-    bindings;
+(* The ambient environment is supplied by the caller and indexed exactly once,
+   at resolution: a lookup by name (first binding wins, as execve would), and
+   the names themselves for the families the child inherits by prefix. The
+   caller decides whose environment "ambient" means — the process's own for a
+   local run, the invoking client's snapshot for a daemon-hosted one — because
+   a daemon that resolved from its own environment would configure every
+   child from whichever shell happened to spawn it first. *)
+let index_environment environment =
+  let table = Hashtbl.create (List.length environment) in
+  List.iter
+    (fun (name, value) ->
+      if not (Hashtbl.mem table name) then Hashtbl.add table name value)
+    environment;
   let names = Hashtbl.fold (fun name _ names -> name :: names) table [] in
   ((fun name -> Hashtbl.find_opt table name), names)
 
@@ -217,9 +214,9 @@ let described_roots ~sandbox facts =
             [] facts
           |> List.rev)
 
-let resolve ~sw ~stdenv ~logical ~mode ~read ~readable_roots ~writable_roots
-    ~mentat_dirs ~network =
-  let lookup, ambient_names = ambient_environment () in
+let resolve ~sw ~stdenv ~logical ~environment ~mode ~read ~readable_roots
+    ~writable_roots ~mentat_dirs ~network =
+  let lookup, ambient_names = index_environment environment in
   let fs = Eio.Stdenv.fs stdenv in
   let confined =
     match mode with

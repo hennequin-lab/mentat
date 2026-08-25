@@ -98,7 +98,7 @@ let make_registry ~shared ~parent_sw =
    returned [release] runs — the detached scope eviction closes. Runs the
    staging and driver assembly synchronously and reports the ready entry (or the
    staging failure) back to the caller. *)
-let boot registry ~root =
+let boot registry ~root ~environment =
   let ready, set_ready = Eio.Promise.create () in
   let released, do_release = Eio.Promise.create () in
   let settled, set_settled = Eio.Promise.create () in
@@ -107,7 +107,7 @@ let boot registry ~root =
       Eio.Switch.run @@ fun instance_sw ->
       match
         Composition.instance registry.shared ~sw:instance_sw ~cwd:(Some root)
-          ~overrides:[] ()
+          ~overrides:[] ?environment ()
       with
       | Error status -> Eio.Promise.resolve set_ready (Error status)
       | Ok instance -> (
@@ -144,14 +144,18 @@ let boot registry ~root =
    cost of serializing concurrent boots of {e distinct} workspaces behind one
    mutex. Acceptable for a single-user daemon where boots are rare; a per-root
    lock would lift the cross-workspace serialization if it ever bites. *)
-let get_or_boot registry ~root =
+(* A live instance keeps the environment it booted with: [environment] binds
+   only the handshake whose boot it is. Two clients attaching the same root
+   from different shells share the first binder's resolution — the instance is
+   one engine, one run lock, one sealed sandbox. *)
+let get_or_boot registry ~root ?environment () =
   Eio.Mutex.use_rw ~protect:true registry.mutex @@ fun () ->
   match Hashtbl.find_opt registry.entries root with
   | Some entry ->
       entry.lease <- entry.lease + 1;
       Ok entry
   | None -> (
-      match boot registry ~root with
+      match boot registry ~root ~environment with
       | Error status -> Error status
       | Ok entry ->
           Hashtbl.replace registry.entries root entry;
@@ -202,7 +206,7 @@ let route_session registry session ~on_error f =
   match resolve_session_root registry session with
   | Error e -> on_error e
   | Ok root -> (
-      match get_or_boot registry ~root with
+      match get_or_boot registry ~root () with
       | Error status -> on_error (Error.unavailable (exit_message status))
       | Ok entry ->
           Eio.Mutex.use_rw ~protect:true registry.mutex (fun () ->
@@ -380,7 +384,7 @@ let composite_driver registry (bound : Driver.t) : Driver.t =
    instance (lease → bound), hand back the composite, and decrement on close
    then sweep. An absent workspace is refused: Stage 2 binds no unbound
    connection. *)
-let driver_for registry ~workspace =
+let driver_for registry ~workspace ~environment =
   match workspace with
   | None ->
       Error
@@ -388,7 +392,7 @@ let driver_for registry ~workspace =
            "bind a workspace: this daemon serves only workspace-bound \
             connections")
   | Some root -> (
-      match get_or_boot registry ~root with
+      match get_or_boot registry ~root ?environment () with
       | Error status -> Error (Error.unavailable (exit_message status))
       | Ok entry ->
           Eio.Mutex.use_rw ~protect:true registry.mutex (fun () ->
@@ -466,7 +470,7 @@ let web_handler env : Server.Web.handler =
    bound port. *)
 let start_web registry ~sw ~net ~clock ~web_port ~token =
   let root = web_cwd_root () in
-  match get_or_boot registry ~root with
+  match get_or_boot registry ~root () with
   | Error status -> Error (exit_message status)
   | Ok entry ->
       (* Pin the cwd instance bound for the daemon's life (the boot lease → a
@@ -762,7 +766,9 @@ let connect_to t ~socket =
   let root = Lpath.Abs.to_string (Composition.root t) in
   let dir = Lpath.Abs.of_string_exn (Filename.dirname socket) in
   match
-    Server.connect ~sw ~net ~clock ~workspace:root (Server.Bind.unix ~dir)
+    Server.connect ~sw ~net ~clock ~workspace:root
+      ~environment:(Composition.environment t)
+      (Server.Bind.unix ~dir)
   with
   | Ok driver -> Some driver
   | Error _ -> None

@@ -69,6 +69,14 @@ type t = {
   root : Lpath.Abs.t;
   trusted : bool;
   config : Cfg.Resolved.t;
+  (* The ambient environment this instance resolves against: the process's own
+     snapshot on the single-workspace CLI path, the invoking client's snapshot
+     for a daemon-hosted instance. Everything instance-scoped — config env
+     overrides, toolchain discovery, account discovery, and above all the
+     workspace resolution that constructs the exact child environment — reads
+     this, never [shared.environment], so a daemon does not configure every
+     child from whichever shell happened to spawn it first. *)
+  ambient : (string * string) list;
   (* The per-instance switch: the engine, watch lane, and dune-RPC producer live
      under it, so instance eviction is one switch close after {!shutdown}. In the
      single-workspace CLI it is the same switch as {!shared}'s. *)
@@ -127,7 +135,7 @@ let snapshot_self_prefix t =
   | Ok abs -> Lpath.Abs.relativize ~root:t.root abs
   | Error _ -> None
 
-let environment t = t.shared.environment
+let environment t = t.ambient
 let stdenv t = t.shared.stdenv
 let sw t = t.switch
 let owner t = t.owner
@@ -142,7 +150,7 @@ let environment_get environment name =
     (fun (found, value) -> if String.equal found name then Some value else None)
     environment
 
-let getenv t name = environment_get t.shared.environment name
+let getenv t name = environment_get t.ambient name
 let clock_seconds t = Eio.Time.now (Eio.Stdenv.clock t.shared.stdenv)
 
 (* [MENTAT_NOW] (Unix ms) pins the reference clock, so session timestamps and the
@@ -157,7 +165,7 @@ let cred_now t = Int64.of_float (clock_seconds t)
 
 let toolchain t =
   let env =
-    t.shared.environment
+    t.ambient
     |> List.map (fun (name, value) -> name ^ "=" ^ value)
     |> Array.of_list
   in
@@ -272,13 +280,14 @@ let stage_store_reported ~stdenv ~sw ~dirs ~getenv ?data_home () =
         | Some path -> Printf.sprintf "%s (report saved: %s)" message path
         | None -> message)
 
-let make_instance ~shared ~sw ~root ~trusted ~config ~overrides ~review_base : t
-    =
+let make_instance ~shared ~sw ~root ~trusted ~config ~environment ~overrides
+    ~review_base : t =
   {
     shared;
     root;
     trusted;
     config;
+    ambient = environment;
     switch = sw;
     owner = Store.Run_lock.Owner.make ();
     review_base;
@@ -312,7 +321,9 @@ let build_base ~stdenv ~sw ~cwd ~overrides ?data_home ?review_base () :
     stage (stage_store_reported ~stdenv ~sw ~dirs ~getenv ?data_home ())
   in
   let shared = { dirs; runtime; store; environment; stdenv; sw } in
-  Ok (make_instance ~shared ~sw ~root ~trusted ~config ~overrides ~review_base)
+  Ok
+    (make_instance ~shared ~sw ~root ~trusted ~config
+       ~environment:shared.environment ~overrides ~review_base)
 
 (* The daemon path: the per-user shared stage opened once under the owning
    switch. It stages the same dirs/runtime/store the CLI path does, in that
@@ -334,17 +345,20 @@ let stage_shared ~stdenv ~sw ?data_home () : (shared, Exit_status.t) result =
    own switch [sw] (the engine and watch lane live under it, so eviction closes
    one switch). No store is opened here — the shared handle is reused, which is
    what keeps the fence's same-process half honest. *)
-let instance shared ~sw ~cwd ~overrides ?review_base () :
+let instance shared ~sw ~cwd ~overrides ?environment ?review_base () :
     (t, Exit_status.t) result =
   let ( let* ) = Result.bind in
-  let getenv = environment_get shared.environment in
+  let environment = Option.value environment ~default:shared.environment in
+  let getenv = environment_get environment in
   let stage r = Result.map_error Exit_status.runtime r in
   let* root = stage (stage_root ~cwd) in
   let trusted = stage_trust ~dirs:shared.dirs ~root in
   let* config =
     stage (stage_config ~dirs:shared.dirs ~root ~trusted ~getenv ~overrides)
   in
-  Ok (make_instance ~shared ~sw ~root ~trusted ~config ~overrides ~review_base)
+  Ok
+    (make_instance ~shared ~sw ~root ~trusted ~config ~environment ~overrides
+       ~review_base)
 
 (* The engine's drivers are long-lived fibers under the instance switch; shut
    them down so the switch can close instead of blocking on idle drivers. The
@@ -370,8 +384,7 @@ let with_base ~cwd ~overrides ?data_home ?review_base f =
 (* Model resolution. *)
 
 let discover_accounts t =
-  Runtime.discover_accounts t.shared.runtime ~environment:t.shared.environment
-    ()
+  Runtime.discover_accounts t.shared.runtime ~environment:t.ambient ()
 
 (* Base-URL and issuer overrides are per-provider, read from config and env. *)
 let base_url_for t provider =
@@ -400,8 +413,7 @@ let auth_base_url_for t provider =
 let provider_listings ?providers t =
   match
     Runtime.listings t.shared.runtime ?providers ~base_url:(base_url_for t)
-      ~auth_base_url:(auth_base_url_for t)
-      ~environment:t.shared.environment ()
+      ~auth_base_url:(auth_base_url_for t) ~environment:t.ambient ()
   with
   | Ok listings -> listings
   | Error _ -> []
@@ -436,9 +448,8 @@ let listed_model t selector =
 let refresh_listings t ?providers () =
   match
     Runtime.refresh_listings t.shared.runtime ~sw:t.switch ~env:t.shared.stdenv
-      ?providers ~base_url:(base_url_for t)
-      ~auth_base_url:(auth_base_url_for t)
-      ~environment:t.shared.environment ()
+      ?providers ~base_url:(base_url_for t) ~auth_base_url:(auth_base_url_for t)
+      ~environment:t.ambient ()
   with
   | Ok () -> ()
   | Error _ ->
@@ -808,7 +819,7 @@ let make_provider_call t =
   Provider_adapter.make ~sw:t.switch ~env:t.shared.stdenv
     ~now:(fun () -> cred_now t)
     ~runtime:t.shared.runtime ~base_url:(base_url_for t)
-    ~auth_base_url:(auth_base_url_for t) ~environment:t.shared.environment ()
+    ~auth_base_url:(auth_base_url_for t) ~environment:t.ambient ()
 
 let small_model_completion t ~system ~user =
   let ( let* ) = Result.bind in
@@ -884,7 +895,7 @@ let accounts_cone t : Client.Driver.Accounts.t =
           Runtime.Login.logout t.shared.runtime ~sw:t.switch
             ~env:t.shared.stdenv ~provider ~revoke
             ?auth_base_url:(auth_base_url_for t provider)
-            ~environment:t.shared.environment ()
+            ~environment:t.ambient ()
         with
         | Ok settlement -> Ok settlement
         | Error e -> Error (runtime_error_to_protocol e));
@@ -1745,7 +1756,8 @@ let resolve_workspace t ~mode ~network :
   in
   match
     Mentat_workspace_io.resolve ~sw:t.switch ~stdenv:t.shared.stdenv ~logical
-      ~mode ~read ~readable_roots ~writable_roots ~mentat_dirs ~network
+      ~environment:t.ambient ~mode ~read ~readable_roots ~writable_roots
+      ~mentat_dirs ~network
   with
   | Ok capability -> Ok capability
   | Error e ->
