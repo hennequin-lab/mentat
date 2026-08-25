@@ -284,8 +284,11 @@ that child processes do not inherit. Relaunch from a shell where
 `command -v dune` prints a real path, or set `MENTAT_DUNE`.
 
 Two surfaces show the resolution without starting a session: `mentat doctor`
-carries an `ocaml toolchain` check, and `mentat sandbox explain` a `toolchain=`
-line. Both print where `dune` resolves from — or, when it does not, every
+carries an `ocaml toolchain` check — and beside it a `parity` check, which
+resolves the workspace the way a run would and warns when the `dune` a
+confined command's `PATH` finds is not the one mentat resolves, because two
+dune binaries sharing one `_build` re-execute each other's work on every
+alternation — and `mentat sandbox explain` a `toolchain=` line. Both print where `dune` resolves from — or, when it does not, every
 permitted rung that was checked. They skip the project-local `_opam` rung until
 workspace trust. With `sandbox.read=project`, Mentat admits resolved `PATH`
 directories and the active OCaml switch to the read policy. An unrecognized

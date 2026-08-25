@@ -125,6 +125,9 @@ let checks_of_probe probe =
   (match Composition.Probe.toolchain probe with
   | Ok detail -> add "toolchain" Pass detail
   | Error reason -> add "toolchain" Warn reason);
+  (match Composition.Probe.parity probe with
+  | Ok detail -> add "parity" Pass detail
+  | Error reason -> add "parity" Warn reason);
   (match Composition.Probe.project probe with
   | Ok detail -> add "project" Pass detail
   | Error reason -> add "project" Warn reason);

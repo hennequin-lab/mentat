@@ -196,6 +196,13 @@ val check :
     with the exact path. Every later launch re-runs the discharge privately as
     its per-command TOCTOU guard. *)
 
+val child_program : t -> string -> string option
+(** [child_program t name] is where the child's [PATH] resolves the bare program
+    [name] — a diagnostic projection for parity reporting (the doctor row
+    comparing the child's [dune] with the launcher's), never a launch surface:
+    launches resolve internally, at spawn. [None] for a name carrying a
+    separator, or one no child-[PATH] directory holds executable. *)
+
 val describe_roots : t -> (string * Lpath.Abs.t) list
 (** [describe_roots t] is the display-ordered, origin-labeled readable roots for
     the one status consumer, [mentat sandbox status]/[explain]. Labels are

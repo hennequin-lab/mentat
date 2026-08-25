@@ -428,6 +428,8 @@ module Probe : sig
       non-zero [corrupt] is a genuine failure. *)
 
   val toolchain : t -> (string, string) result
+
+  val parity : t -> (string, string) result
   (** [toolchain t] is [Ok detail] naming the resolved [dune] and its ladder
       rung when the OCaml toolchain resolves it, else [Error reason]. Absence is
       a warning, not a failure: a non-OCaml workspace needs no toolchain. *)

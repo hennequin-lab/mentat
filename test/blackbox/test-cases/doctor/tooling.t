@@ -6,10 +6,19 @@ present. Neither changes the exit code — a workspace without OCaml tooling is 
 warning, not a failure. (The live dune build-health verdict is deliberately not read
 by doctor; it rides the workspace notice channel.)
 
+The stub lives in a directory placed at the front of PATH and the override
+names that same file, so the parity row's two resolutions — mentat's ladder
+and the child PATH a confined command searches — agree on one binary and the
+row is a host-independent pass. (The suite's own dune is further down the
+ambient PATH; without the front placement, parity would truthfully warn that
+commands resolve a different dune than the override.)
+
   $ use_trusted_workspace
-  $ printf '#!/bin/sh\ntrue\n' > dune-stub
-  $ chmod +x dune-stub
-  $ export MENTAT_DUNE="$PWD/dune-stub"
+  $ mkdir stub-bin
+  $ printf '#!/bin/sh\ntrue\n' > stub-bin/dune
+  $ chmod +x stub-bin/dune
+  $ export PATH="$PWD/stub-bin:$PATH"
+  $ export MENTAT_DUNE="$PWD/stub-bin/dune"
   $ touch dune-project
   $ MENTAT_MODEL=openai/gpt-5.6-sol mentat doctor | censor
   [PASS] config: resolved ($TESTCASE_ROOT/config/mentat/config.json)
@@ -18,7 +27,8 @@ by doctor; it rides the workspace notice channel.)
   [PASS] trust: workspace trusted
   [WARN] auth: no connected provider; run `mentat auth login <provider>`
   [PASS] model: openai/gpt-5.6-sol
-  [PASS] toolchain: dune at $TESTCASE_ROOT/dune-stub (via MENTAT_* override)
+  [PASS] toolchain: dune at $TESTCASE_ROOT/stub-bin/dune (via MENTAT_* override)
+  [PASS] parity: commands resolve the same dune ($TESTCASE_ROOT/stub-bin/dune)
   [PASS] project: dune project
   [PASS] diagnostics: $TESTCASE_ROOT/state/mentat (0 log(s), 0 crash report(s))
   $ MENTAT_MODEL=openai/gpt-5.6-sol mentat doctor >/dev/null 2>&1; echo $?
@@ -28,6 +38,6 @@ The toolchain override is authoritative: an override set but not executable is "
 found" (it never falls through to PATH), so the found path is exactly the override.
 
   $ MENTAT_MODEL=openai/gpt-5.6-sol mentat doctor --json | mentat_cram json '.checks[6].detail' | censor
-  dune at $TESTCASE_ROOT/dune-stub (via MENTAT_* override)
-  $ MENTAT_MODEL=openai/gpt-5.6-sol mentat doctor --json | mentat_cram json '.checks[7].detail'
+  dune at $TESTCASE_ROOT/stub-bin/dune (via MENTAT_* override)
+  $ MENTAT_MODEL=openai/gpt-5.6-sol mentat doctor --json | mentat_cram json '.checks[8].detail'
   dune project

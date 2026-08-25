@@ -16,6 +16,7 @@ The toolchain probe is pinned to a missing [MENTAT_DUNE] for a host-independent 
   [WARN] auth: no connected provider; run `mentat auth login <provider>`
   [PASS] model: openai/gpt-5.6-sol
   [WARN] toolchain: dune not found on PATH or opam switch
+  [WARN] parity: no dune to compare (see toolchain)
   [WARN] project: no dune-project (OCaml tooling inactive)
   [PASS] diagnostics: $TESTCASE_ROOT/state/mentat (0 log(s), 0 crash report(s))
   [1]

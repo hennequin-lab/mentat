@@ -330,6 +330,20 @@ let identity t = Mentat_sandbox.identity t.sandbox
 let policy t = Mentat_sandbox.policy t.sandbox
 let evidence t = Mentat_sandbox.evidence t.sandbox
 let escalation t = Mentat_sandbox.escalation t.sandbox
+
+(* A diagnostic projection for parity reporting: where the child's [PATH]
+   resolves a bare program name. Not a launch surface — launches resolve
+   internally, at spawn — and not the child environment itself, which no
+   accessor returns. *)
+let child_program t program =
+  if String.contains program '/' then None
+  else
+    List.find_map
+      (fun dir ->
+        let candidate = Filename.concat dir program in
+        if Derive.is_executable_file candidate then Some candidate else None)
+      t.path_dirs
+
 let describe_roots t = t.described_roots
 
 (* Obligation discharge.

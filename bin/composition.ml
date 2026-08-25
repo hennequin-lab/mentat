@@ -198,6 +198,26 @@ let platform =
 
 (* Startup staging. *)
 
+(* The sandbox posture pieces shared by the run path ([resolve_workspace]) and
+   the doctor's parity probe, factored so the two cannot drift. *)
+let env_policy_of_config config =
+  {
+    Mentat_workspace_io.Env_policy.inherit_all =
+      String.equal (Cfg.Resolved.get Cfg.Field.sandbox_env_inherit config) "all";
+    exclude = Cfg.Resolved.get Cfg.Field.sandbox_env_exclude config;
+    include_only = Cfg.Resolved.get Cfg.Field.sandbox_env_include_only config;
+  }
+
+let mentat_dirs_of dirs =
+  List.filter_map
+    (fun spelling -> Lpath.Abs.of_string spelling |> Result.to_option)
+    [
+      User_dirs.config_home dirs;
+      User_dirs.data_home dirs;
+      User_dirs.state_home dirs;
+      User_dirs.daemon_socket_dir dirs;
+    ]
+
 let env_snapshot () =
   Array.to_list (Unix.environment ())
   |> List.filter_map (fun kv ->
@@ -664,6 +684,7 @@ module Probe = struct
     storage : (string, string) result;
     sessions : (int * int, string) result;
     toolchain : (string, string) result;
+    parity : (string, string) result;
     project : (string, string) result;
     trusted : bool;
     accounts : (Account.Discovery.t list, string) result;
@@ -676,6 +697,7 @@ module Probe = struct
   let state (p : t) = p.state
   let sessions (p : t) = p.sessions
   let toolchain (p : t) = p.toolchain
+  let parity (p : t) = p.parity
   let project (p : t) = p.project
   let trusted (p : t) = p.trusted
   let accounts (p : t) = p.accounts
@@ -695,6 +717,7 @@ let probe ~stdenv ~sw ~cwd : Probe.t =
         storage = Error message;
         sessions = Error message;
         toolchain = Error message;
+        parity = Error message;
         project = Error message;
         trusted = false;
         accounts = Error message;
@@ -753,6 +776,84 @@ let probe ~stdenv ~sw ~cwd : Probe.t =
                      (Mentat_ocaml_toolchain.Source.to_string source))
             | None -> Error "dune not found on PATH or opam switch")
       in
+      (* Toolchain parity — the ping-pong advisory. The dune mentat resolves
+         and the dune a confined command's PATH resolves must be one binary:
+         two dunes sharing one _build invalidate each other's work on every
+         alternation, and the divergence is silent until a build takes ten
+         minutes. The child PATH is a derivation of its own — an active opam
+         switch is deliberately put ahead of it — so doctor resolves the
+         workspace the way a run would and compares. *)
+      let parity =
+        match (root_result, config_resolved) with
+        | Error message, _ | _, Error message -> Error message
+        | Ok root, Ok config -> (
+            let env_array =
+              environment
+              |> List.map (fun (name, value) -> name ^ "=" ^ value)
+              |> Array.of_list
+            in
+            let tc =
+              Mentat_ocaml_toolchain.discover ~env:env_array
+                ~workspace_root:(Some (Lpath.Abs.to_string root))
+            in
+            match Mentat_ocaml_toolchain.find tc "dune" with
+            | None -> Error "no dune to compare (see toolchain)"
+            | Some (ambient_dune, _) -> (
+                let logical =
+                  Mentat_workspace.single (Mentat_workspace.Root.of_dir root)
+                in
+                let mode =
+                  Option.value
+                    (Cfg.Resolved.find Cfg.Field.sandbox_mode config)
+                    ~default:Cfg.Mode.Workspace_write
+                in
+                match
+                  Mentat_workspace_io.resolve ~sw ~stdenv ~logical ~environment
+                    ~env_policy:(env_policy_of_config config)
+                    ~mode
+                    ~read:(Cfg.Resolved.get Cfg.Field.sandbox_read config)
+                    ~readable_roots:
+                      (Cfg.Resolved.get Cfg.Field.sandbox_readable_roots config)
+                    ~writable_roots:
+                      (Cfg.Resolved.get Cfg.Field.sandbox_writable_roots config)
+                    ~mentat_dirs:(mentat_dirs_of dirs)
+                    ~network:
+                      (Cfg.Resolved.get Cfg.Field.sandbox_network config)
+                    ()
+                with
+                | Error e ->
+                    Error
+                      (Format.asprintf "workspace did not resolve: %a"
+                         Mentat_workspace_io.Resolve_error.pp e)
+                | Ok capability -> (
+                    let physical path =
+                      match Unix.realpath path with
+                      | resolved -> resolved
+                      | exception Unix.Unix_error _ -> path
+                    in
+                    match
+                      Mentat_workspace_io.child_program capability "dune"
+                    with
+                    | None ->
+                        Error
+                          (Printf.sprintf
+                             "commands find no dune on their PATH, but mentat \
+                              resolves %s"
+                             ambient_dune)
+                    | Some child_dune
+                      when String.equal (physical child_dune)
+                             (physical ambient_dune) ->
+                        Ok
+                          (Printf.sprintf
+                             "commands resolve the same dune (%s)" child_dune)
+                    | Some child_dune ->
+                        Error
+                          (Printf.sprintf
+                             "commands resolve dune at %s but mentat resolves \
+                              %s; builds inside and outside will re-execute \
+                              each other's work"
+                             child_dune ambient_dune))))
+      in
       (* Project detection reads the workspace root directly — doctor is a
          local-state diagnostic, not a sealed run — for the same [dune-project]/
          [dune-workspace] marker the tooling gate keys on. *)
@@ -793,6 +894,7 @@ let probe ~stdenv ~sw ~cwd : Probe.t =
         storage;
         sessions;
         toolchain;
+        parity;
         project;
         trusted;
         accounts;
@@ -1744,31 +1846,12 @@ let resolve_workspace t ~mode ~network :
      daemon a request and drive Mentat instead of being confined by it. A
      denial nested inside a writable root is exactly the shape the ordered
      policy resolves correctly. *)
-  let mentat_dirs =
-    List.filter_map
-      (fun spelling -> Lpath.Abs.of_string spelling |> Result.to_option)
-      [
-        User_dirs.config_home t.shared.dirs;
-        User_dirs.data_home t.shared.dirs;
-        User_dirs.state_home t.shared.dirs;
-        User_dirs.daemon_socket_dir t.shared.dirs;
-      ]
-  in
+  let mentat_dirs = mentat_dirs_of t.shared.dirs in
   match
-    let env_policy =
-      {
-        Mentat_workspace_io.Env_policy.inherit_all =
-          String.equal
-            (Cfg.Resolved.get Cfg.Field.sandbox_env_inherit t.config)
-            "all";
-        exclude = Cfg.Resolved.get Cfg.Field.sandbox_env_exclude t.config;
-        include_only =
-          Cfg.Resolved.get Cfg.Field.sandbox_env_include_only t.config;
-      }
-    in
     Mentat_workspace_io.resolve ~sw:t.switch ~stdenv:t.shared.stdenv ~logical
-      ~environment:t.ambient ~env_policy ~mode ~read ~readable_roots
-      ~writable_roots ~mentat_dirs ~network ()
+      ~environment:t.ambient
+      ~env_policy:(env_policy_of_config t.config)
+      ~mode ~read ~readable_roots ~writable_roots ~mentat_dirs ~network ()
   with
   | Ok capability -> Ok capability
   | Error e ->
