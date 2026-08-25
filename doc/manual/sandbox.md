@@ -207,6 +207,13 @@ The child environment contains:
 - private run-owned `HOME`, `TMPDIR`, `TMP`, and `TEMP`;
 - deterministic non-interactive pager, terminal, and color settings;
 - valid locale and OCaml toolchain path variables from a fixed allowlist;
+- a curated build-tool set, verbatim: the C toolchain (`CC`, `CXX`, the
+  `*FLAGS` families), `PKG_CONFIG`/`PKG_CONFIG_PATH`/`PKG_CONFIG_LIBDIR`,
+  the proxy variables in both spellings (`HTTPS_PROXY`, `https_proxy`, …),
+  TLS trust (`SSL_CERT_FILE`, `SSL_CERT_DIR`, `CURL_CA_BUNDLE`), and git
+  identity (`GIT_AUTHOR_*`, `GIT_COMMITTER_*`, `EMAIL`) — so a `conf-*`
+  probe, a fetch behind a proxy, or a C stub compiles exactly as it would
+  from your shell;
 - the dune and OCaml configuration families, verbatim: every `DUNE_*`,
   `OCAML*` and `CAML*` variable you launched with — `DUNE_CACHE`,
   `DUNE_PROFILE`, `DUNE_SANDBOX`, `DUNE_CONFIG__*`, `OCAMLPARAM`, and the

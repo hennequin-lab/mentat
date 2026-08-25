@@ -43,11 +43,14 @@ val make :
     name, so the resolver derives its roots from the same values the child reads
     and no directory can be named to a tool without the grant that makes it
     usable. [lookup] reads the ambient environment for the allow-listed names:
-    [HOME], the temp-dir family, locale variables verbatim, and the OCaml
-    toolchain variables with their path values normalized. [names] are the
-    ambient variable names, from which the dune and OCaml configuration families
-    are inherited verbatim by prefix — every [DUNE_*], [OCAML*] and [CAML*] name
-    except the handles dune assigns to the actions it spawns
-    ([DUNE_ACTION_TRACE_DIR], [DUNE_SOURCEROOT], [DUNE_DIR_LOCATIONS]), which
-    describe a running dune instance rather than configure one. Fixed pager,
-    color, and terminal bindings complete the set. *)
+    [HOME], the temp-dir family, locale variables verbatim, the curated
+    build-tool set verbatim — the C toolchain ([CC] and the flag families),
+    pkg-config's search path, the proxy variables in both spellings, TLS trust,
+    and git identity — and the OCaml toolchain variables with their path values
+    normalized. [names] are the ambient variable names, from which the dune and
+    OCaml configuration families are inherited verbatim by prefix — every
+    [DUNE_*], [OCAML*] and [CAML*] name except the handles dune assigns to the
+    actions it spawns ([DUNE_ACTION_TRACE_DIR], [DUNE_SOURCEROOT],
+    [DUNE_DIR_LOCATIONS]), which describe a running dune instance rather than
+    configure one. Fixed pager, color, and terminal bindings complete the set.
+*)

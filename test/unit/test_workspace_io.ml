@@ -2017,6 +2017,36 @@ let child_environment_carries_dune_configuration () =
       equal string ~msg:"INSIDE_DUNE is stripped" "ABSENT" inside
   | _ -> fail "unexpected env probe output"
 
+(* The curated build-tool set — C toolchain, pkg-config, proxies in both
+   spellings, TLS trust, git identity — reaches the child verbatim: each is
+   configuration a command must read exactly as the user's shell would, and
+   stripping one fails silently (a dead proxy fetch, a differently built
+   stub) rather than loudly. *)
+let child_environment_carries_build_tool_configuration () =
+  with_direct "run-tool-env"
+    ~env:
+      [
+        ("PKG_CONFIG_PATH", Some "/opt/pc/lib/pkgconfig");
+        ("https_proxy", Some "http://127.0.0.1:3128");
+        ("GIT_AUTHOR_EMAIL", Some "g@example.org");
+        ("CC", Some "cc -pipe");
+      ]
+  @@ fun w ->
+  let outcome =
+    run_ok w.io
+      (sh
+         {|printf '%s\n%s\n%s\n%s' "${PKG_CONFIG_PATH:-ABSENT}" "${https_proxy:-ABSENT}" "${GIT_AUTHOR_EMAIL:-ABSENT}" "${CC:-ABSENT}"|})
+  in
+  match String.split_on_char '\n' (stdout_str outcome) with
+  | [ pc; proxy; email; cc ] ->
+      equal string ~msg:"pkg-config's search path reaches the child"
+        "/opt/pc/lib/pkgconfig" pc;
+      equal string ~msg:"the lowercase proxy spelling reaches the child"
+        "http://127.0.0.1:3128" proxy;
+      equal string ~msg:"git identity reaches the child" "g@example.org" email;
+      equal string ~msg:"the C compiler choice reaches the child" "cc -pipe" cc
+  | _ -> fail "unexpected env probe output"
+
 (* Command.Session: the supervised background primitive behind background
    terminals (direct route — the ring, cursor, drain, and waiter mechanics are
    backend-independent). Long-lived children are driven to determinism through
@@ -2639,6 +2669,8 @@ let () =
         child_environment_is_private_on_every_route;
       test "the child environment carries the dune and OCaml configuration"
         child_environment_carries_dune_configuration;
+      test "the child environment carries the curated build-tool set"
+        child_environment_carries_build_tool_configuration;
       (* Session: the supervised background primitive *)
       test "session reads are incremental over a cursor"
         session_reads_are_incremental_over_a_cursor;

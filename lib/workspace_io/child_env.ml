@@ -71,6 +71,47 @@ let single_toolchain_paths =
 
 let toolchain_path_lists = [ "CAML_LD_LIBRARY_PATH"; "OCAMLPATH" ]
 
+(* Build tools read more configuration from the environment than the OCaml
+   family alone: the C toolchain that compiles every foreign stub ([CC] and
+   the flag families), pkg-config's search path — what a [conf-*] package
+   probes the system through — the proxy and TLS-trust variables without
+   which a fetch behind a corporate network is dead (the lowercase proxy
+   spellings are the ones curl actually reads), and git's identity, which
+   decides what a commit is authored as. Each is configuration a confined
+   command must read exactly as the user's shell would — a stripped proxy is
+   a failed [dune pkg] fetch, a stripped [CC] a differently built stub — and
+   none carries a credential by convention. Inherited verbatim. *)
+let build_tool_names =
+  [
+    "CC";
+    "CXX";
+    "CPPFLAGS";
+    "CFLAGS";
+    "CXXFLAGS";
+    "LDFLAGS";
+    "PKG_CONFIG";
+    "PKG_CONFIG_PATH";
+    "PKG_CONFIG_LIBDIR";
+    "HTTP_PROXY";
+    "HTTPS_PROXY";
+    "FTP_PROXY";
+    "ALL_PROXY";
+    "NO_PROXY";
+    "http_proxy";
+    "https_proxy";
+    "ftp_proxy";
+    "all_proxy";
+    "no_proxy";
+    "SSL_CERT_FILE";
+    "SSL_CERT_DIR";
+    "CURL_CA_BUNDLE";
+    "GIT_AUTHOR_NAME";
+    "GIT_AUTHOR_EMAIL";
+    "GIT_COMMITTER_NAME";
+    "GIT_COMMITTER_EMAIL";
+    "EMAIL";
+  ]
+
 (* Dune and the OCaml toolchain take their configuration from the environment
    as much as from files: the shared-cache mode and root, the build profile,
    the sandboxing mode, the job count, every [DUNE_CONFIG__*] override,
@@ -141,6 +182,9 @@ let make ~path ~lookup ~names =
     add_inherited ~normalize:Option.some lookup inherited_names bindings
   in
   let bindings =
+    add_inherited ~normalize:Option.some lookup build_tool_names bindings
+  in
+  let bindings =
     add_inherited ~normalize:normalize_single_path lookup single_toolchain_paths
       bindings
   in
@@ -155,7 +199,8 @@ let make ~path ~lookup ~names =
   let bindings =
     let owned =
       List.map fst fixed_bindings
-      @ inherited_names @ single_toolchain_paths @ toolchain_path_lists
+      @ inherited_names @ build_tool_names @ single_toolchain_paths
+      @ toolchain_path_lists
     in
     let family =
       List.filter
