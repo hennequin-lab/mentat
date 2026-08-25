@@ -4,6 +4,7 @@
  ---------------------------------------------------------------------------*)
 
 module Resolve_error = Resolve_error
+module Env_policy = Child_env.Policy
 module File_error = File_error
 
 let ( let* ) = Result.bind
@@ -214,8 +215,9 @@ let described_roots ~sandbox facts =
             [] facts
           |> List.rev)
 
-let resolve ~sw ~stdenv ~logical ~environment ~mode ~read ~readable_roots
-    ~writable_roots ~mentat_dirs ~network =
+let resolve ~sw ~stdenv ~logical ~environment
+    ?(env_policy = Child_env.Policy.default) ~mode ~read ~readable_roots
+    ~writable_roots ~mentat_dirs ~network () =
   let lookup, ambient_names = index_environment environment in
   let fs = Eio.Stdenv.fs stdenv in
   let confined =
@@ -245,6 +247,7 @@ let resolve ~sw ~stdenv ~logical ~environment ~mode ~read ~readable_roots
   let capability () =
     let env =
       Child_env.make ~path:derived.Derive.path ~lookup ~names:ambient_names
+        ~policy:env_policy
     in
     let sandbox =
       match mode with

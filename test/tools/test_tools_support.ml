@@ -38,7 +38,7 @@ let resolve_exn ?(mode = Mentat_config.Mode.Danger_full_access)
   in
   match
     Mentat_workspace_io.resolve ~sw ~stdenv ~logical ~environment ~mode ~read
-      ~readable_roots:[] ~writable_roots:[] ~mentat_dirs:[] ~network
+      ~readable_roots:[] ~writable_roots:[] ~mentat_dirs:[] ~network ()
   with
   | Ok io -> io
   | Error error ->

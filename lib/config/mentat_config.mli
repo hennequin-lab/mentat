@@ -425,6 +425,27 @@ module Field : sig
   (** [sandbox_network] is the [sandbox.network] field. Defaults to
       [Restricted]. *)
 
+  val sandbox_env_inherit : (string, defaulted) t
+  (** [sandbox_env_inherit] is the [sandbox.env_inherit] field: ["allowlist"]
+      (the default) constructs the child environment from the curated allow-list
+      alone; ["all"] additionally inherits every remaining ambient variable that
+      survives the built-in floor — the secret-shaped name patterns and agent
+      handles, which no setting subtracts from — and the exclude/include_only
+      policy below. *)
+
+  val sandbox_env_exclude : (string list, defaulted) t
+  (** [sandbox_env_exclude] is the [sandbox.env_exclude] field: case-insensitive
+      [*] globs removed from the inheritable sets, on top of the built-in floor.
+      The structural core — [PATH], [HOME], the temp-dir family and the base
+      directories the sandbox derives roots from — is not excludable: the policy
+      grants what the child computes, and the two may not disagree. Defaults to
+      [[]]. *)
+
+  val sandbox_env_include_only : (string list, defaulted) t
+  (** [sandbox_env_include_only] is the [sandbox.env_include_only] field: when
+      non-empty, only inheritable variables matching one of these globs reach
+      the child (the structural core always does). Defaults to [[]]. *)
+
   val shell : (string, defaulted) t
   (** [shell] is the [shell] field: the shell executable used for shell
       commands. Defaults to the platform shell ([SHELL], or [COMSPEC] on

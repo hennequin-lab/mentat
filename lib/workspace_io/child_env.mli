@@ -33,8 +33,39 @@ type t = {
           resolve an implicit program. *)
 }
 
+module Policy : sig
+  (** The configurable half of the construction — [sandbox.env_inherit],
+      [sandbox.env_exclude], [sandbox.env_include_only] — governing the
+      inherited sets beyond the structural core. The core ([PATH], the fixed
+      bindings, and the base directories the resolver derives roots from) is not
+      governable: excluding [HOME] would leave the policy granting directories
+      the child no longer computes, the disagreement this library exists to
+      prevent. A floor of secret-shaped patterns and agent handles is applied
+      before the policy and nothing subtracts from it. *)
+
+  type t = {
+    inherit_all : bool;
+        (** Inherit every remaining ambient name, floor and policy permitting —
+            the widest posture, as an explicit choice. *)
+    exclude : string list;
+        (** Case-insensitive ['*'] globs removed from the governable sets, on
+            top of the floor. *)
+    include_only : string list;
+        (** When non-empty, only governable names matching one of these globs
+            are inherited — the hard mode. *)
+  }
+
+  val default : t
+  (** The allow-list posture: no [inherit_all], nothing excluded beyond the
+      floor, no restriction. *)
+end
+
 val make :
-  path:string -> lookup:(string -> string option) -> names:string list -> t
+  path:string ->
+  lookup:(string -> string option) ->
+  names:string list ->
+  policy:Policy.t ->
+  t
 (** [make ~path ~lookup ~names] builds the environment.
 
     [path] is the resolver-derived [PATH] value; its segments are normalized

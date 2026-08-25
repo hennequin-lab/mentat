@@ -97,21 +97,27 @@ type t
     sandbox value itself — only projections of it — so the sandbox's lowering
     bridges are unreachable from a holder. *)
 
+module Env_policy = Child_env.Policy
+(** The child-environment inheritance policy — [sandbox.env_inherit],
+    [sandbox.env_exclude], [sandbox.env_include_only]. *)
+
 val resolve :
   sw:Eio.Switch.t ->
   stdenv:Eio_unix.Stdenv.base ->
   logical:Mentat_workspace.t ->
   environment:(string * string) list ->
+  ?env_policy:Env_policy.t ->
   mode:Mentat_config.Mode.t ->
   read:Mentat_config.Read.t ->
   readable_roots:string list ->
   writable_roots:string list ->
   mentat_dirs:Lpath.Abs.t list ->
   network:Mentat_sandbox.Policy.Network.t ->
+  unit ->
   (t, Resolve_error.t) result
-(** [resolve ~sw ~stdenv ~logical ~environment ~mode ~read ~readable_roots
-     ~writable_roots ~mentat_dirs ~network] resolves the capability, in one
-    fallible call.
+(** [resolve ~sw ~stdenv ~logical ~environment ?env_policy ~mode ~read
+     ~readable_roots ~writable_roots ~mentat_dirs ~network ()] resolves the
+    capability, in one fallible call.
 
     [environment] is the ambient environment every derivation reads — the roots,
     the child environment, the backend probe. The caller decides whose

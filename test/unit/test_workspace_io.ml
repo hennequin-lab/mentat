@@ -134,7 +134,7 @@ let in_dirs name fn =
   let tmp_base = subdir "tmp" in
   fn ~stdenv ~base ~ws_dir ~out_dir ~tmp_base
 
-let resolve_capability ~stdenv ~sw ~tmp_base ?(env = [])
+let resolve_capability ~stdenv ~sw ~tmp_base ?(env = []) ?env_policy
     ?(mode = Mode.Workspace_write) ?(read = Read.All) ?(readable_roots = [])
     ?(writable_roots = []) logical =
   with_env (("TMPDIR", Some tmp_base) :: env) @@ fun () ->
@@ -151,14 +151,15 @@ let resolve_capability ~stdenv ~sw ~tmp_base ?(env = [])
               ( String.sub kv 0 i,
                 String.sub kv (i + 1) (String.length kv - i - 1) ))
   in
-  Wio.resolve ~sw ~stdenv ~logical ~environment ~mode ~read ~readable_roots
-    ~writable_roots ~mentat_dirs:[] ~network:Sandbox.Policy.Network.Restricted
+  Wio.resolve ~sw ~stdenv ~logical ~environment ?env_policy ~mode ~read
+    ~readable_roots ~writable_roots ~mentat_dirs:[]
+    ~network:Sandbox.Policy.Network.Restricted ()
 
-let capability_exn ~stdenv ~sw ~tmp_base ?env ?mode ?read ?readable_roots
-    ?writable_roots logical =
+let capability_exn ~stdenv ~sw ~tmp_base ?env ?env_policy ?mode ?read
+    ?readable_roots ?writable_roots logical =
   match
-    resolve_capability ~stdenv ~sw ~tmp_base ?env ?mode ?read ?readable_roots
-      ?writable_roots logical
+    resolve_capability ~stdenv ~sw ~tmp_base ?env ?env_policy ?mode ?read
+      ?readable_roots ?writable_roots logical
   with
   | Ok io -> io
   | Error e -> fail (Format.asprintf "resolve failed: %a" Resolve_error.pp e)
@@ -178,7 +179,7 @@ type world = {
    [aux] entries are admitted as read-only workspace roots and [writable]
    entries as configured sandbox writable roots. *)
 let with_capability ?mode ?read ?readable_roots ?(writable = []) ?(aux = [])
-    ?env name fn =
+    ?env ?env_policy name fn =
   in_dirs name @@ fun ~stdenv ~base ~ws_dir ~out_dir ~tmp_base ->
   let mk sub =
     let dir = Filename.concat base sub in
@@ -192,8 +193,8 @@ let with_capability ?mode ?read ?readable_roots ?(writable = []) ?(aux = [])
   let logical = Workspace.make ~primary ~read_only:aux () |> Result.get_ok in
   Eio.Switch.run @@ fun sw ->
   let io =
-    capability_exn ~stdenv ~sw ~tmp_base ?env ?mode ?read ?readable_roots
-      ~writable_roots logical
+    capability_exn ~stdenv ~sw ~tmp_base ?env ?env_policy ?mode ?read
+      ?readable_roots ~writable_roots logical
   in
   fn { io; stdenv; base; ws_dir; out_dir; tmp_base; primary; aux }
 
@@ -1575,8 +1576,8 @@ let a_claim_scope_records_successes_and_failures_in_one_order () =
 (* Command: supervision and the launch boundary (direct route — these
    mechanics are backend-independent and must hold on every host). *)
 
-let with_direct ?env name fn =
-  with_capability ?env name ~mode:Mode.Danger_full_access fn
+let with_direct ?env ?env_policy name fn =
+  with_capability ?env ?env_policy name ~mode:Mode.Danger_full_access fn
 
 let run_captures_both_streams () =
   with_direct "run-capture" @@ fun w ->
@@ -1935,7 +1936,7 @@ let executable_resolution_checks_the_exec_bit () =
       Wio.resolve ~sw ~stdenv ~logical ~environment
         ~mode:Mode.Danger_full_access ~read:Read.All ~readable_roots:[]
         ~writable_roots:[] ~mentat_dirs:[]
-        ~network:Sandbox.Policy.Network.Restricted
+        ~network:Sandbox.Policy.Network.Restricted ()
     with
     | Ok io -> io
     | Error e -> failf "resolve failed: %a" Resolve_error.pp e
@@ -2069,6 +2070,77 @@ let child_environment_carries_build_tool_configuration () =
         "http://127.0.0.1:3128" proxy;
       equal string ~msg:"git identity reaches the child" "g@example.org" email;
       equal string ~msg:"the C compiler choice reaches the child" "cc -pipe" cc
+  | _ -> fail "unexpected env probe output"
+
+(* [sandbox.env_inherit=all]: the remaining ambient names reach the child —
+   except the floor, which no setting subtracts from: secret-shaped names and
+   agent handles stay behind even under the widest posture. *)
+let child_environment_policy_inherit_all () =
+  with_direct "run-env-all"
+    ~env_policy:
+      { Wio.Env_policy.inherit_all = true; exclude = []; include_only = [] }
+    ~env:
+      [
+        ("ARBITRARY_SETTING", Some "zesty");
+        ("MY_API_KEY", Some "hunter2");
+        ("SSH_AUTH_SOCK", Some "/nope/agent");
+      ]
+  @@ fun w ->
+  let outcome =
+    run_ok w.io
+      (sh
+         {|printf '%s
+%s
+%s' "${ARBITRARY_SETTING:-ABSENT}" "${MY_API_KEY:-ABSENT}" "${SSH_AUTH_SOCK:-ABSENT}"|})
+  in
+  match String.split_on_char '
+' (stdout_str outcome) with
+  | [ arbitrary; key; agent ] ->
+      equal string ~msg:"an arbitrary ambient variable reaches the child"
+        "zesty" arbitrary;
+      equal string ~msg:"a secret-shaped name stays behind the floor" "ABSENT"
+        key;
+      equal string ~msg:"the agent handle stays behind the floor" "ABSENT"
+        agent
+  | _ -> fail "unexpected env probe output"
+
+(* [exclude] and [include_only] govern the inheritable sets; the structural
+   core — HOME and the directories the resolver derives grants from — is not
+   governable, so the pair cannot be configured into disagreement. *)
+let child_environment_policy_exclude_and_include_only () =
+  with_direct "run-env-gov"
+    ~env_policy:
+      {
+        Wio.Env_policy.inherit_all = false;
+        exclude = [ "OCAMLPARAM" ];
+        include_only = [ "DUNE_*"; "OCAML*" ];
+      }
+    ~env:
+      [
+        ("DUNE_CACHE", Some "enabled");
+        ("OCAMLPARAM", Some "_,w=+a");
+        ("GIT_AUTHOR_EMAIL", Some "g@example.org");
+      ]
+  @@ fun w ->
+  let outcome =
+    run_ok w.io
+      (sh
+         {|printf '%s
+%s
+%s
+%s' "${DUNE_CACHE:-ABSENT}" "${OCAMLPARAM:-ABSENT}" "${GIT_AUTHOR_EMAIL:-ABSENT}" "${HOME:-ABSENT}"|})
+  in
+  match String.split_on_char '
+' (stdout_str outcome) with
+  | [ cache; param; email; home ] ->
+      equal string ~msg:"a name passing include_only reaches the child"
+        "enabled" cache;
+      equal string ~msg:"an excluded name stays behind even inside a family"
+        "ABSENT" param;
+      equal string
+        ~msg:"a curated name outside include_only stays behind" "ABSENT" email;
+      is_true ~msg:"the structural core is not governable"
+        (not (String.equal home "ABSENT"))
   | _ -> fail "unexpected env probe output"
 
 (* Command.Session: the supervised background primitive behind background
@@ -2695,6 +2767,10 @@ let () =
         child_environment_carries_dune_configuration;
       test "the child environment carries the curated build-tool set"
         child_environment_carries_build_tool_configuration;
+      test "env_inherit=all inherits the rest, floor excepted"
+        child_environment_policy_inherit_all;
+      test "env exclude and include_only govern, the core stays"
+        child_environment_policy_exclude_and_include_only;
       (* Session: the supervised background primitive *)
       test "session reads are incremental over a cursor"
         session_reads_are_incremental_over_a_cursor;

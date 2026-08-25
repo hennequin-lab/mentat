@@ -1755,9 +1755,20 @@ let resolve_workspace t ~mode ~network :
       ]
   in
   match
+    let env_policy =
+      {
+        Mentat_workspace_io.Env_policy.inherit_all =
+          String.equal
+            (Cfg.Resolved.get Cfg.Field.sandbox_env_inherit t.config)
+            "all";
+        exclude = Cfg.Resolved.get Cfg.Field.sandbox_env_exclude t.config;
+        include_only =
+          Cfg.Resolved.get Cfg.Field.sandbox_env_include_only t.config;
+      }
+    in
     Mentat_workspace_io.resolve ~sw:t.switch ~stdenv:t.shared.stdenv ~logical
-      ~environment:t.ambient ~mode ~read ~readable_roots ~writable_roots
-      ~mentat_dirs ~network
+      ~environment:t.ambient ~env_policy ~mode ~read ~readable_roots
+      ~writable_roots ~mentat_dirs ~network ()
   with
   | Ok capability -> Ok capability
   | Error e ->

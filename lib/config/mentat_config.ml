@@ -217,6 +217,12 @@ let tui_diff_layout_of_string =
 let tools_editor_of_string =
   string_enum_of_string ~what:"tools editor" ~spellings:tools_editor_spellings
 
+let sandbox_env_inherit_spellings = [ "allowlist"; "all" ]
+
+let sandbox_env_inherit_of_string =
+  string_enum_of_string ~what:"sandbox env inheritance"
+    ~spellings:sandbox_env_inherit_spellings
+
 let workspace_tooling_of_string =
   string_enum_of_string ~what:"workspace tooling mode"
     ~spellings:workspace_tooling_spellings
@@ -757,6 +763,10 @@ let string_enum_codec ~spellings of_text =
 let tools_editor_codec =
   string_enum_codec ~spellings:tools_editor_spellings tools_editor_of_string
 
+let sandbox_env_inherit_codec =
+  string_enum_codec ~spellings:sandbox_env_inherit_spellings
+    sandbox_env_inherit_of_string
+
 let workspace_tooling_codec =
   string_enum_codec ~spellings:workspace_tooling_spellings
     workspace_tooling_of_string
@@ -810,6 +820,9 @@ module Field = struct
     | Sandbox_readable_roots : (string list, defaulted) t
     | Sandbox_writable_roots : (string list, defaulted) t
     | Sandbox_network : (Mentat_sandbox.Policy.Network.t, defaulted) t
+    | Sandbox_env_inherit : (string, defaulted) t
+    | Sandbox_env_exclude : (string list, defaulted) t
+    | Sandbox_env_include_only : (string list, defaulted) t
     | Shell : (string, defaulted) t
     | Compaction_auto : (bool, defaulted) t
     | Revert_merge : (bool, defaulted) t
@@ -876,6 +889,9 @@ module Field = struct
   let sandbox_readable_roots = Sandbox_readable_roots
   let sandbox_writable_roots = Sandbox_writable_roots
   let sandbox_network = Sandbox_network
+  let sandbox_env_inherit = Sandbox_env_inherit
+  let sandbox_env_exclude = Sandbox_env_exclude
+  let sandbox_env_include_only = Sandbox_env_include_only
   let shell = Shell
   let compaction_auto = Compaction_auto
   let revert_merge = Revert_merge
@@ -942,6 +958,9 @@ module Field = struct
     | Sandbox_readable_roots -> "sandbox.readable_roots"
     | Sandbox_writable_roots -> "sandbox.writable_roots"
     | Sandbox_network -> "sandbox.network"
+    | Sandbox_env_inherit -> "sandbox.env_inherit"
+    | Sandbox_env_exclude -> "sandbox.env_exclude"
+    | Sandbox_env_include_only -> "sandbox.env_include_only"
     | Shell -> "shell"
     | Compaction_auto -> "compaction.auto"
     | Revert_merge -> "revert.merge"
@@ -1034,7 +1053,8 @@ module Field = struct
     | Run_max_steps | Run_subagent_max_concurrent | Run_subagent_max_depth
     | Run_subagent_max_exchanges | Permission_unattended | Sandbox_mode
     | Sandbox_require | Sandbox_read | Sandbox_readable_roots
-    | Sandbox_writable_roots | Sandbox_network | Shell | Compaction_auto
+    | Sandbox_writable_roots | Sandbox_network | Sandbox_env_inherit
+    | Sandbox_env_exclude | Sandbox_env_include_only | Shell | Compaction_auto
     | Revert_merge | Notices_fswatch | Notices_cr_comments
     | Notices_dune_diagnostics | Notices_dune_build | Workspace_tooling
     | Instructions_global | Instructions_project | Instructions_claude_md
@@ -1078,6 +1098,9 @@ module Field = struct
       Any Sandbox_readable_roots;
       Any Sandbox_writable_roots;
       Any Sandbox_network;
+      Any Sandbox_env_inherit;
+      Any Sandbox_env_exclude;
+      Any Sandbox_env_include_only;
       Any Shell;
       Any Compaction_auto;
       Any Revert_merge;
@@ -1289,6 +1312,14 @@ module Field = struct
         defaulted sandbox_network_codec
           ~default:(builtin field Mentat_sandbox.Policy.Network.Restricted)
           ~env:("MENTAT_SANDBOX_NETWORK", sandbox_network_of_string)
+    | Sandbox_env_inherit ->
+        defaulted sandbox_env_inherit_codec
+          ~default:(builtin field "allowlist")
+          ~env:("MENTAT_SANDBOX_ENV_INHERIT", sandbox_env_inherit_of_string)
+    | Sandbox_env_exclude ->
+        defaulted string_list_codec ~default:(builtin field [])
+    | Sandbox_env_include_only ->
+        defaulted string_list_codec ~default:(builtin field [])
     | Shell ->
         defaulted string_codec
           ~env:("MENTAT_SHELL", parse_string "shell")

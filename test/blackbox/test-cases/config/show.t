@@ -36,6 +36,9 @@ built-in defaults.
   run.subagent_max_concurrent=4
   run.subagent_max_depth=2
   run.subagent_max_exchanges=8
+  sandbox.env_exclude=[]
+  sandbox.env_include_only=[]
+  sandbox.env_inherit=allowlist
   sandbox.mode=danger-full-access
   sandbox.network=restricted
   sandbox.read=project
@@ -71,7 +74,7 @@ The JSON view is a single enveloped object: schema_version, type, workspace
 trust, and a string-valued values map.
 
   $ mentat config show --json | censor
-  {"schema_version":1,"type":"config","workspace_trust":"trusted","values":{"commands.compat":"true","commands.disabled":"[]","commands.enabled":"true","commands.project":"true","compaction.auto":"true","image.max_bytes":"5242880","image.max_count":"20","image.max_dimension":"8000","instructions.claude_md":"true","instructions.global":"true","instructions.project":"true","instructions.project_max_bytes":"32768","notices.cr_comments":"true","notices.dune_build":"true","notices.dune_diagnostics":"true","notices.fswatch":"true","notify.channel":"auto","notify.command":"[]","notify.enabled":"true","notify.on":"[\"turn-done\",\"decision\"]","notify.when":"unfocused","ocaml.merlin_program":"[\"ocamlmerlin\"]","permission.unattended":"block","revert.merge":"true","run.subagent_max_concurrent":"4","run.subagent_max_depth":"2","run.subagent_max_exchanges":"8","sandbox.mode":"danger-full-access","sandbox.network":"restricted","sandbox.read":"project","sandbox.readable_roots":"[]","sandbox.require":"enforced","sandbox.writable_roots":"[]","shell":"/bin/sh","skills.builtin":"true","skills.catalog_max_bytes":"8192","skills.compat":"true","skills.disabled":"[]","skills.enabled":"true","skills.paths":"[]","skills.project":"true","tools.editor":"auto","tui.diff_layout":"auto","tui.mouse":"true","tui.theme":"mentat-dark","tui.theme_dark":"mentat-dark","tui.theme_light":"mentat-light","tui.thinking":"true","web.allow_private_network":"false","web.enabled":"false","web.fetch_max_bytes":"5242880","web.max_timeout_ms":"120000","web.output_max_chars":"100000","web.search_provider":"exa","web.timeout_ms":"30000","workspace.tooling":"auto"}}
+  {"schema_version":1,"type":"config","workspace_trust":"trusted","values":{"commands.compat":"true","commands.disabled":"[]","commands.enabled":"true","commands.project":"true","compaction.auto":"true","image.max_bytes":"5242880","image.max_count":"20","image.max_dimension":"8000","instructions.claude_md":"true","instructions.global":"true","instructions.project":"true","instructions.project_max_bytes":"32768","notices.cr_comments":"true","notices.dune_build":"true","notices.dune_diagnostics":"true","notices.fswatch":"true","notify.channel":"auto","notify.command":"[]","notify.enabled":"true","notify.on":"[\"turn-done\",\"decision\"]","notify.when":"unfocused","ocaml.merlin_program":"[\"ocamlmerlin\"]","permission.unattended":"block","revert.merge":"true","run.subagent_max_concurrent":"4","run.subagent_max_depth":"2","run.subagent_max_exchanges":"8","sandbox.env_exclude":"[]","sandbox.env_include_only":"[]","sandbox.env_inherit":"allowlist","sandbox.mode":"danger-full-access","sandbox.network":"restricted","sandbox.read":"project","sandbox.readable_roots":"[]","sandbox.require":"enforced","sandbox.writable_roots":"[]","shell":"/bin/sh","skills.builtin":"true","skills.catalog_max_bytes":"8192","skills.compat":"true","skills.disabled":"[]","skills.enabled":"true","skills.paths":"[]","skills.project":"true","tools.editor":"auto","tui.diff_layout":"auto","tui.mouse":"true","tui.theme":"mentat-dark","tui.theme_dark":"mentat-dark","tui.theme_light":"mentat-light","tui.thinking":"true","web.allow_private_network":"false","web.enabled":"false","web.fetch_max_bytes":"5242880","web.max_timeout_ms":"120000","web.output_max_chars":"100000","web.search_provider":"exa","web.timeout_ms":"30000","workspace.tooling":"auto"}}
 
 --origins annotates each value with its source. With nothing configured, every
 value is a default except the env-provided sandbox mode.
@@ -104,6 +107,9 @@ value is a default except the env-provided sandbox mode.
   run.subagent_max_concurrent=4 (default)
   run.subagent_max_depth=2 (default)
   run.subagent_max_exchanges=8 (default)
+  sandbox.env_exclude=[] (default)
+  sandbox.env_include_only=[] (default)
+  sandbox.env_inherit=allowlist (default)
   sandbox.mode=danger-full-access (env)
   sandbox.network=restricted (default)
   sandbox.read=project (default)

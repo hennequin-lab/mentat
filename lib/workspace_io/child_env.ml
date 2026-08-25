@@ -5,6 +5,16 @@
 
 type t = { bindings : string array; path_dirs : string list }
 
+module Policy = struct
+  type t = {
+    inherit_all : bool;
+    exclude : string list;
+    include_only : string list;
+  }
+
+  let default = { inherit_all = false; exclude = []; include_only = [] }
+end
+
 (* Nothing in the child environment is rewritten. [HOME], the temp-dir family
    and the three base directories the resolver reads are inherited like every
    other allow-listed name, so the resolver derives its roots from the same
@@ -143,6 +153,82 @@ let configuration_family name =
     configuration_prefixes
   && not (List.mem name dune_action_handles)
 
+(* Case-insensitive glob over ['*'] alone — the vocabulary the policy's
+   [exclude] and [include_only] speak, and the floor below. Environment names
+   are short, so the naive scan is fine. *)
+let glob_matches pattern name =
+  let pattern = String.lowercase_ascii pattern in
+  let name = String.lowercase_ascii name in
+  let find_from haystack ~start needle =
+    let h = String.length haystack and n = String.length needle in
+    let rec scan i =
+      if i + n > h then None
+      else if String.equal (String.sub haystack i n) needle then Some i
+      else scan (i + 1)
+    in
+    if start > h then None else scan start
+  in
+  match String.split_on_char '*' pattern with
+  | [] -> false
+  | [ exact ] -> String.equal exact name
+  | first :: rest ->
+      String.starts_with ~prefix:first name
+      &&
+      let length = String.length name in
+      let rec loop position = function
+        | [] -> true
+        | [ last ] ->
+            let tail = length - String.length last in
+            tail >= position
+            && String.equal last (String.sub name tail (String.length last))
+        | segment :: rest -> (
+            match find_from name ~start:position segment with
+            | None -> false
+            | Some found -> loop (found + String.length segment) rest)
+      in
+      loop (String.length first) rest
+
+(* The floor: names that never reach the child through a family, the curated
+   sets, or [inherit_all] — secret-shaped names by convention, and the handles
+   that address an agent or a running instance rather than configure a tool.
+   The floor is not configuration: [Policy.exclude] adds to it and nothing
+   subtracts from it. A pattern list is best-effort by nature — a credential
+   living in [DATABASE_URL] does not match — which is why [inherit_all] is an
+   explicit posture choice and [include_only] the hard mode, not the default. *)
+let floor_patterns =
+  [ "*KEY*"; "*SECRET*"; "*TOKEN*"; "*PASSWORD*"; "*PASSWD*"; "*CREDENTIAL*" ]
+
+let floor_names =
+  [
+    "SSH_AUTH_SOCK";
+    "SSH_AGENT_PID";
+    "GPG_AGENT_INFO";
+    "DBUS_SESSION_BUS_ADDRESS";
+    "INSIDE_DUNE";
+  ]
+  @ dune_action_handles
+
+let floored name =
+  List.mem name floor_names
+  || String.starts_with ~prefix:"MENTAT_" name
+  || List.exists (fun pattern -> glob_matches pattern name) floor_patterns
+
+(* The policy gate over every governable name. The structural set — [PATH],
+   the fixed bindings, and the inherited base directories the resolver derives
+   roots from — is not governable: excluding [HOME] would leave the policy
+   granting directories the child no longer computes, the disagreement this
+   library exists to prevent. *)
+let admitted (policy : Policy.t) name =
+  (not (floored name))
+  && (not
+        (List.exists
+           (fun pattern -> glob_matches pattern name)
+           policy.Policy.exclude))
+  &&
+  match policy.Policy.include_only with
+  | [] -> true
+  | patterns -> List.exists (fun pattern -> glob_matches pattern name) patterns
+
 (* Normalization drops what cannot be represented rather than failing:
    construction is total, and a bad ambient segment costs only itself. *)
 let normalize_path_list value =
@@ -175,17 +261,22 @@ let add_inherited ~normalize lookup names bindings =
           | Some value -> (name, value) :: bindings))
     bindings names
 
-let make ~path ~lookup ~names =
+let make ~path ~lookup ~names ~policy =
+  let admitted = admitted policy in
+  let governed names = List.filter admitted names in
   let path_dirs = normalize_path_list path in
   let bindings = ("PATH", String.concat ":" path_dirs) :: fixed_bindings in
   let bindings =
     add_inherited ~normalize:Option.some lookup inherited_names bindings
   in
   let bindings =
-    add_inherited ~normalize:Option.some lookup build_tool_names bindings
+    add_inherited ~normalize:Option.some lookup
+      (governed build_tool_names)
+      bindings
   in
   let bindings =
-    add_inherited ~normalize:normalize_single_path lookup single_toolchain_paths
+    add_inherited ~normalize:normalize_single_path lookup
+      (governed single_toolchain_paths)
       bindings
   in
   let bindings =
@@ -194,21 +285,46 @@ let make ~path ~lookup ~names =
         match normalize_path_list value with
         | [] -> None
         | dirs -> Some (String.concat ":" dirs))
-      lookup toolchain_path_lists bindings
+      lookup
+      (governed toolchain_path_lists)
+      bindings
+  in
+  let owned =
+    List.map fst fixed_bindings
+    @ inherited_names @ build_tool_names @ single_toolchain_paths
+    @ toolchain_path_lists
   in
   let bindings =
-    let owned =
-      List.map fst fixed_bindings
-      @ inherited_names @ build_tool_names @ single_toolchain_paths
-      @ toolchain_path_lists
-    in
     let family =
       List.filter
-        (fun name -> configuration_family name && not (List.mem name owned))
+        (fun name ->
+          configuration_family name
+          && (not (List.mem name owned))
+          && admitted name)
         names
       |> List.sort_uniq String.compare
     in
     add_inherited ~normalize:Option.some lookup family bindings
+  in
+  (* [inherit_all]: the remaining ambient names, floor and policy permitting.
+     A curated name whose value normalization dropped must not re-enter
+     verbatim through this pass, so the owned lists are excluded along with
+     everything already bound. *)
+  let bindings =
+    if not policy.Policy.inherit_all then bindings
+    else
+      let bound = List.map fst bindings in
+      let rest =
+        List.filter
+          (fun name ->
+            (not (List.mem name bound))
+            && (not (List.mem name owned))
+            && (not (String.equal name "PATH"))
+            && admitted name)
+          names
+        |> List.sort_uniq String.compare
+      in
+      add_inherited ~normalize:Option.some lookup rest bindings
   in
   let bindings =
     List.sort (fun (a, _) (b, _) -> String.compare a b) bindings

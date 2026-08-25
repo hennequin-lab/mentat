@@ -105,6 +105,9 @@ Keys supported by `get`, `set`, and `unset`:
 | `sandbox.readable_roots` | Additional absolute or `~`-relative readable roots for `sandbox.read=project`. |
 | `sandbox.writable_roots` | Additional absolute or `~`-relative writable roots for `workspace-write`. |
 | `sandbox.network` | Confined shell-command network posture: `restricted` (default) or `enabled`. |
+| `sandbox.env_inherit` | Child-environment inheritance: `allowlist` (default) or `all` — inherit every ambient variable that survives the built-in secret/agent floor. |
+| `sandbox.env_exclude` | Case-insensitive `*` globs stripped from the inheritable child-environment sets, on top of the floor. |
+| `sandbox.env_include_only` | When non-empty, only inheritable variables matching these globs reach the child (the structural core always does). |
 | `shell` | Shell program used for shell commands (defaults to `SHELL`, or `COMSPEC` on Windows). |
 | `workspace.tooling` | Whether project-scoped OCaml/Dune tools enter fresh turn catalogs: `auto` (default), `on`, or `off`. |
 | `instructions.global` | Load the global `AGENTS.md` from the config home. |

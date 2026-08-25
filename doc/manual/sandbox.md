@@ -245,6 +245,26 @@ included in sandbox diagnostics. After repository activation, an existing
 canonical workspace-local `_opam/bin` leads `PATH`; a restricted repository
 cannot contribute executable roots.
 
+### Inheriting more, or less
+
+`sandbox.env_inherit=all` (or `MENTAT_SANDBOX_ENV_INHERIT=all`) additionally
+inherits every remaining ambient variable — the widest posture, offered as an
+explicit choice rather than a default. A built-in floor survives it:
+names matching `*KEY*`, `*SECRET*`, `*TOKEN*`, `*PASSWORD*`, `*PASSWD*`,
+`*CREDENTIAL*`, the agent handles (`SSH_AUTH_SOCK`, `SSH_AGENT_PID`,
+`GPG_AGENT_INFO`, `DBUS_SESSION_BUS_ADDRESS`), `MENTAT_*`, and dune's
+running-instance handles never reach a child, and no setting subtracts from
+the floor. A pattern floor is best-effort — a credential inside
+`DATABASE_URL` does not match it — so weigh what your shell exports before
+choosing `all`.
+
+`sandbox.env_exclude` removes case-insensitive `*`-glob matches from the
+inheritable sets on top of the floor; `sandbox.env_include_only`, when
+non-empty, is the hard mode: only matching inheritable names reach the child.
+Neither governs the structural core — `PATH`, `HOME`, the temp-dir family and
+the base directories the policy derives grants from — which the child and the
+policy must always agree on.
+
 The `shell` tool runs its command with `-c`, not as a login shell, for the
 same reason: a login shell re-sources your profile on top of the constructed
 environment — on macOS `path_helper` moves the system directories to the

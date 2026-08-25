@@ -211,6 +211,9 @@ let all_field_names =
     "sandbox.readable_roots";
     "sandbox.writable_roots";
     "sandbox.network";
+    "sandbox.env_inherit";
+    "sandbox.env_exclude";
+    "sandbox.env_include_only";
     "shell";
     "compaction.auto";
     "revert.merge";

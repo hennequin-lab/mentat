@@ -44,3 +44,24 @@ The running-instance handles and the unrelated secret did not.
   $ grep -c 'DUNE_ACTION_TRACE_DIR=\|INSIDE_DUNE=\|AMBIENT_SECRET=' capture/request-2.json
   0
   [1]
+
+The posture is a choice: `sandbox.env_inherit=all` (here through its
+environment override) additionally inherits the rest of the ambient
+environment — the floor excepted, which no setting subtracts from: an
+arbitrary exported setting reaches the command, a secret-shaped name does
+not.
+
+  $ cat > env2.jsonl <<'JSONL'
+  > {"response":{"id":"f1","status":"completed","model":"gpt-5.6-sol","output":[{"type":"function_call","id":"i2","call_id":"fc1","name":"shell","arguments":"{\"command\":\"env | grep -E '^(ARBITRARY_SETTING|MY_API_KEY)=' | sort\"}"}]}}
+  > {"expect":{"body_contains":["function_call_output","fc1"]},"response":{"id":"f2","status":"completed","model":"gpt-5.6-sol","output":[{"type":"message","role":"assistant","content":[{"type":"output_text","text":"done"}]}]}}
+  > JSONL
+  $ start_fake_openai env2.jsonl capture2 port2
+  $ MENTAT_SANDBOX_ENV_INHERIT=all ARBITRARY_SETTING=zesty MY_API_KEY=hunter2 \
+  >   MENTAT_SHELL=/bin/sh mentat run start --json --permission bypass --id env2 "e" >run2.out 2>/dev/null; echo exit:$?
+  exit:0
+  $ wait_fake_server
+  $ grep -o 'ARBITRARY_SETTING=zesty' capture2/request-2.json
+  ARBITRARY_SETTING=zesty
+  $ grep -c 'MY_API_KEY=' capture2/request-2.json
+  0
+  [1]
