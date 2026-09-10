@@ -20,7 +20,15 @@
     {!Credential.t}; the chat-completions route reads it as a bearer
     authorization header and the messages route as the dialect's [x-api-key].
     A request for a model the gateway does not serve fails at request time
-    with the gateway's own error. *)
+    with the gateway's own error.
+
+    Every request to the gateway carries [x-opencode-session]: one stable id
+    per conversation. A request built with a cache key — the agent stamps each
+    conversation request with its session id — sends that id; a request
+    without one rides the process-stable fallback id
+    ({!fallback_session_header}). The chat-completions route additionally
+    sends a [user-agent] naming mentat, so the gateway can recognize the
+    client. *)
 
 val provider : Mentat_llm.Provider.t
 (** [provider] is the [opencode-go] provider namespace. *)
@@ -102,6 +110,12 @@ module Credential : sig
       Raises [Invalid_argument] if [token] is empty or contains a newline. *)
 end
 
+val fallback_session_header : unit -> string * string
+(** [fallback_session_header ()] is the gateway's [x-opencode-session] header
+    for a request with no conversation identity — an account check or a
+    one-off completion. The id is minted once per process and shared by every
+    such request. *)
+
 val client :
   env:Eio_unix.Stdenv.base ->
   ?config:Config.t ->
@@ -109,7 +123,8 @@ val client :
   unit ->
   Mentat_llm.Client.t
 (** [client ~env ~credential ()] is an OpenCode Go client. Each request
-    streams over the endpoint of its model's protocol family. The client
+    streams over the endpoint of its model's protocol family, sending
+    [x-opencode-session] (see {!fallback_session_header}). The client
     accepts models built with {!chat_model} or {!messages_model}; a model from
     another provider or an unserved protocol family is refused before any
     transport is opened. Each response closes its gateway connection before

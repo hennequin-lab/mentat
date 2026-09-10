@@ -943,7 +943,15 @@ let opencode_check ~sw ~env ?base_url ?auth_base_url credential =
               ~access_token ~refresh_token:_ ~expires_at:_ ~account_id:_ ->
             access_token)
       in
-      let headers = [ ("authorization", "Bearer " ^ token) ] in
+      (* The gateway reads [x-opencode-session] on every route; a login check
+         has no conversation, so it rides the process-wide fallback id. *)
+      let headers =
+        [
+          ("authorization", "Bearer " ^ token);
+          ("user-agent", "mentat-opencode-check/0");
+          Mentat_llm_opencode.fallback_session_header ();
+        ]
+      in
       let base_url =
         effective_base_url ~default:opencode_gateway_default base_url
       in

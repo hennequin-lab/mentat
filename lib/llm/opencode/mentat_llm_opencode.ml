@@ -80,6 +80,55 @@ module Credential = struct
     | Api_key value | Bearer value -> ("x-api-key", value)
 end
 
+(* The gateway requires [x-opencode-session] — one stable id per conversation —
+   on every request and keys its routing optimizations on it. A conversation
+   request carries that identity already: the agent stamps each with its
+   session id as [Llm.Request.cache_key], so that id rides the header. A
+   request with no cache key — an account check, a one-off completion — is not
+   a conversation, so it rides the process-stable fallback id, minted on first
+   use and shared by every such request. *)
+let uuid_v4 () =
+  Mirage_crypto_rng_unix.use_default ();
+  let bytes = Bytes.of_string (Mirage_crypto_rng.generate 16) in
+  (* Version 4, variant 1. *)
+  Bytes.set bytes 6
+    (Char.chr ((Char.code (Bytes.get bytes 6) land 0x0f) lor 0x40));
+  Bytes.set bytes 8
+    (Char.chr ((Char.code (Bytes.get bytes 8) land 0x3f) lor 0x80));
+  let hex = "0123456789abcdef" in
+  let buffer = Buffer.create 36 in
+  let add_byte index =
+    let value = Char.code (Bytes.get bytes index) in
+    Buffer.add_char buffer hex.[value lsr 4];
+    Buffer.add_char buffer hex.[value land 0xf]
+  in
+  let group first last =
+    for index = first to last do
+      add_byte index
+    done
+  in
+  group 0 3;
+  Buffer.add_char buffer '-';
+  group 4 5;
+  Buffer.add_char buffer '-';
+  group 6 7;
+  Buffer.add_char buffer '-';
+  group 8 9;
+  Buffer.add_char buffer '-';
+  group 10 15;
+  Buffer.contents buffer
+
+let fallback_session_id = lazy (uuid_v4 ())
+
+let session_id request =
+  Option.value (Llm.Request.cache_key request)
+    ~default:(Lazy.force fallback_session_id)
+
+let session_header request = ("x-opencode-session", session_id request)
+
+let fallback_session_header () =
+  ("x-opencode-session", Lazy.force fallback_session_id)
+
 (* The gateway disambiguates failures only in [error.type]: usage limits
    arrive as 429 and account problems — a lapsed subscription, an unknown
    model — as 401, so the status alone misclassifies both. The classifier
@@ -122,7 +171,12 @@ let run_chat config credential ~env ~cancelled ~on_event request =
   Eio.Switch.run ~name:"opencode.request" @@ fun sw ->
   let endpoint =
     Chat_completions.make ~provider
-      ~headers:[ Credential.header credential ]
+      ~headers:
+        [
+          Credential.header credential;
+          ("user-agent", "mentat-llm-opencode/0");
+          session_header request;
+        ]
       ~timeout_s:(Config.timeout_s config)
       ?max_retries:(Config.max_retries config)
       ?max_stream_retries:(Config.max_stream_retries config)
@@ -137,7 +191,7 @@ let run_messages config credential ~env ~cancelled ~on_event request =
   Eio.Switch.run ~name:"opencode.request" @@ fun sw ->
   let endpoint =
     Messages.make ~provider
-      ~headers:[ Credential.messages_header credential ]
+      ~headers:[ Credential.messages_header credential; session_header request ]
       ~timeout_s:(Config.timeout_s config)
       ?max_retries:(Config.max_retries config)
       ?max_stream_retries:(Config.max_stream_retries config)

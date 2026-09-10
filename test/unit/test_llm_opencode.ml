@@ -188,6 +188,11 @@ let completed_stream_decodes_events_and_response () =
     (request_line recorded);
   equal (option string) ~msg:"authorization" (Some "Bearer opencode-key")
     (Llm_test_server.header recorded "authorization");
+  equal (option string) ~msg:"user-agent" (Some "mentat-llm-opencode/0")
+    (Llm_test_server.header recorded "user-agent");
+  is_true ~msg:"session header present"
+    (Option.is_some
+       (Llm_test_server.header recorded "x-opencode-session"));
   equal string ~msg:"model sent verbatim" "kimi-k3"
     (string_field "body" "model" (request_body recorded));
   equal (list string) ~msg:"text deltas" [ "Hel"; "lo" ] (text_deltas events);
@@ -274,6 +279,9 @@ let messages_models_route_to_the_messages_endpoint () =
     (request_line recorded);
   equal (option string) ~msg:"x-api-key header" (Some "opencode-key")
     (Llm_test_server.header recorded "x-api-key");
+  is_true ~msg:"session header present"
+    (Option.is_some
+       (Llm_test_server.header recorded "x-opencode-session"));
   equal (option string) ~msg:"no bearer header on the messages route" None
     (Llm_test_server.header recorded "authorization");
   equal string ~msg:"model sent verbatim" "minimax-m3"
@@ -374,6 +382,61 @@ let reasoning_replays_as_reasoning_content () =
   is_true ~msg:"assistant reasoning replays as reasoning_content"
     (Option.is_some replayed)
 
+(* The gateway's [x-opencode-session]: a request built with a cache key — the
+   agent stamps every conversation request with its session id — sends that
+   exact id; requests without one share the process-stable fallback id.
+   Evaluation order of the three calls is unspecified (list construction is
+   [::] application), so each recorded request is matched by its model id. *)
+let session_header_tracks_the_conversation_and_is_otherwise_stable () =
+  let conversation =
+    Llm.Request.make_exn ~model:(Opencode.chat_model "kimi-k3")
+      ~cache_key:"conversation-abc" (user_transcript "hello")
+  in
+  let results, requests =
+    Llm_test_server.with_server ~name:"opencode-session-header"
+      (fun _index _request -> Llm_test_server.Reply (text_stream "ok"))
+      (fun port ->
+        [
+          run_stream port conversation;
+          run_stream port
+            (request ~model:(Opencode.chat_model "kimi-k2.7-code") ());
+          run_stream port
+            (request ~model:(Opencode.chat_model "kimi-k3-turbo") ());
+        ])
+  in
+  List.iter
+    (fun result -> ignore (expect_stream_ok "session header" result))
+    results;
+  let recorded_of model_id =
+    List.find_opt
+      (fun recorded ->
+        String.equal model_id
+          (string_field "body" "model" (request_body recorded)))
+      requests
+  in
+  let find model_id =
+    match recorded_of model_id with
+    | Some recorded -> recorded
+    | None -> failf "no recorded request for model %s" model_id
+  in
+  equal (option string) ~msg:"conversation id rides the session header"
+    (Some "conversation-abc")
+    (Llm_test_server.header (find "kimi-k3") "x-opencode-session");
+  let plain = [ "kimi-k2.7-code"; "kimi-k3-turbo" ] |> List.map find in
+  match plain with
+  | [ first; second ] -> (
+      match Llm_test_server.header first "x-opencode-session" with
+      | None -> failf "expected a session header on cache-key-less requests"
+      | Some fallback ->
+          is_true ~msg:"fallback id is non-empty"
+            (not (String.is_empty fallback));
+          is_true ~msg:"fallback id is not the conversation id"
+            (not (String.equal fallback "conversation-abc"));
+          equal (option string) ~msg:"fallback id is stable across requests"
+            (Some fallback)
+            (Llm_test_server.header second "x-opencode-session"))
+  | _ -> failf "impossible"
+
 let transient_http_failures_are_retried () =
   let result, requests =
     Llm_test_server.with_server ~name:"opencode-transient-retry"
@@ -466,6 +529,8 @@ let () =
         unknown_model_is_invalid_request;
       test "assistant reasoning replays as reasoning_content"
         reasoning_replays_as_reasoning_content;
+      test "session header tracks the conversation and is otherwise stable"
+        session_header_tracks_the_conversation_and_is_otherwise_stable;
       test "transient HTTP failures are retried"
         transient_http_failures_are_retried;
       test "stream faults are retried" stream_faults_are_retried;
