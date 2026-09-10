@@ -1,0 +1,21 @@
+(library
+ (name mentat_broker)
+ (instrumentation
+  (backend ppx_windtrap.coverage))
+ (instrumentation
+  (backend ppx_windtrap.mutate))
+ (private_modules spawn)
+ (libraries
+  eio
+  eio.unix
+  unix
+  lpath
+  ; CR: very surprised to see some of these dependencies here, 
+  ; we need a design pass on broker, no idea why we depend on the store, the server, the client, etc.
+  mentat_client
+  mentat_digest
+  mentat_llm
+  mentat_protocol
+  mentat_server
+  mentat_session
+  mentat_store))

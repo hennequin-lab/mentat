@@ -393,11 +393,10 @@ let run ~stdenv ~client ~(startup : Startup.t) ~(local : Local.t)
       @
       if String.equal prompt "" then [] else [ Mentat_llm.Content.text prompt ]
     in
-    let submit_prompt ~request ~session ~prompt ~media ~mode ~goal =
+    let submit_prompt ~request ~session ~prompt ~media ~mode =
       let input = prompt_input ~media ~prompt in
       match
-        Protocol.Command.prompt ~session ~turn:(fresh_turn ()) ~input ~mode
-          ?goal ()
+        Protocol.Command.prompt ~session ~turn:(fresh_turn ()) ~input ~mode ()
       with
       | Error invalid ->
           deliver
@@ -408,10 +407,11 @@ let run ~stdenv ~client ~(startup : Startup.t) ~(local : Local.t)
           | Ok () -> ()
           | Error error -> deliver (App.command_failed ~request error))
     in
-    (* Auto-title must persist before the prompt is submitted: submission attaches
-       the turn's driver, which holds the session's exclusive guard for the rest
-       of the process, and the rename needs that guard. So it runs inline on the
-       admission fiber, ahead of [submit_prompt], under a best-effort contract so
+    (* Auto-title must persist before the first session-scoped call: that
+       call starts the session's agent, which adopts the session and holds
+       its fence for its whole life, and the rename commits through the
+       offline twin, which needs a free fence. So it runs inline on the
+       admission fiber, right after create, under a best-effort contract so
        a titling failure never disturbs the session. *)
     let auto_title ~session ~prompt =
       match local.Local.auto_title with
@@ -536,8 +536,7 @@ let run ~stdenv ~client ~(startup : Startup.t) ~(local : Local.t)
                                    (Printexc.to_string exn))))
                   in
                   deliver (App.attached ~request result))
-      | App.Start_session { request; prompt; media; mode; history; goal; model }
-        ->
+      | App.Start_session { request; prompt; media; mode; history; model } ->
           desire request;
           let session = !next_session in
           next_session := fresh_session ();
@@ -546,35 +545,40 @@ let run ~stdenv ~client ~(startup : Startup.t) ~(local : Local.t)
               (* A staged pre-session selection binds between create and the
                  first submit so that turn seals on the chosen model; a refusal
                  fails the start like a create failure rather than letting the
-                 turn silently run on the default model. *)
+                 turn silently run on the default model. It is the start's
+                 first session-scoped call, so it lands on the agent it
+                 starts — after the auto-title's offline rename, which needs
+                 the fence the agent will hold. *)
               let staged_selection () =
                 match model with
                 | None -> Ok ()
                 | Some (selector, reasoning_effort) ->
                     Client.set_model client ~session ?reasoning_effort selector
               in
-              match
-                Result.bind
-                  (Client.create client ~id:session ())
-                  staged_selection
-              with
+              match Client.create client ~id:session () with
               | Error error when latest request ->
                   deliver (App.command_failed ~request error)
               | Error _ -> ()
               | Ok () -> (
-                  match follow ~request session ~from:`Now with
-                  | `Admitted ->
-                      auto_title ~session ~prompt;
-                      submit_prompt ~request ~session ~prompt ~media ~mode ~goal
-                  | `Failed | `Stale -> ()))
-      | App.Prompt { request; session; prompt; media; mode; goal } ->
+                  auto_title ~session ~prompt;
+                  match staged_selection () with
+                  | Error error when latest request ->
+                      deliver (App.command_failed ~request error)
+                  | Error _ -> ()
+                  | Ok () -> (
+                      match follow ~request session ~from:`Now with
+                      | `Admitted ->
+                          submit_prompt ~request ~session ~prompt ~media ~mode
+                      | `Failed | `Stale -> ())))
+      | App.Prompt { request; session; prompt; media; mode } ->
           perform (fun _ ->
-              submit_prompt ~request ~session ~prompt ~media ~mode ~goal)
+              submit_prompt ~request ~session ~prompt ~media ~mode)
       | App.Queue_next { request; session; prompt; media } ->
           perform (fun _ ->
               match
                 Protocol.Command.queue_next ~session
                   ~input:(prompt_input ~media ~prompt)
+                  ()
               with
               | Error invalid ->
                   deliver
@@ -639,7 +643,7 @@ let run ~stdenv ~client ~(startup : Startup.t) ~(local : Local.t)
               | Error _ -> ()
               | Ok () -> ignore (follow ~request into ~from:`Beginning))
       | App.Rewind_session
-          { request; source; anchor; prompt; media; mode; history; goal } ->
+          { request; source; anchor; prompt; media; mode; history } ->
           desire request;
           let into = !next_session in
           next_session := fresh_session ();
@@ -656,7 +660,6 @@ let run ~stdenv ~client ~(startup : Startup.t) ~(local : Local.t)
                          edit to prompt history under an unrealized child id. *)
                       Option.iter (append_prompt_history (Some into)) history;
                       submit_prompt ~request ~session:into ~prompt ~media ~mode
-                        ~goal
                   | `Failed | `Stale -> ()))
       | App.Compact_session { request; session } ->
           perform (fun _ ->
@@ -688,6 +691,30 @@ let run ~stdenv ~client ~(startup : Startup.t) ~(local : Local.t)
               match Client.rename client ~session ~title with
               | Ok () -> deliver (App.command_succeeded ~request)
               | Error error -> deliver (App.command_failed ~request error))
+      | App.Set_goal { request; session; goal } ->
+          perform (fun _ ->
+              match Client.set_goal client ~session ~goal with
+              | Ok () -> deliver (App.command_succeeded ~request)
+              | Error error -> deliver (App.command_failed ~request error))
+      | App.Goal_continue { request; session; prompt } ->
+          (* The steward's continuation: an ordinary prompt turn sealed under
+             the goal_status schema through the generic output-schema
+             channel, so the engine stays goal-blind and the model can end
+             with the structured claim. *)
+          perform (fun _ ->
+              match
+                Protocol.Command.prompt ~session ~turn:(fresh_turn ())
+                  ~input:[ Mentat_llm.Content.text prompt ]
+                  ~output_schema:Session.Metadata.Goal.Claim.schema ()
+              with
+              | Error invalid ->
+                  deliver
+                    (App.command_failed ~request
+                       (unavailable (Protocol.Command.Invalid.message invalid)))
+              | Ok command -> (
+                  match Client.submit client command with
+                  | Ok () -> deliver (App.command_succeeded ~request)
+                  | Error error -> deliver (App.command_failed ~request error)))
       | App.Archive_session { request; session } ->
           perform (fun _ ->
               match Client.archive client ~session with
@@ -822,48 +849,6 @@ let run ~stdenv ~client ~(startup : Startup.t) ~(local : Local.t)
                   deliver
                     (App.ui_theme_persisted ~request
                        (Ok (theme_shadow client name))))
-      | App.Goal_pause { request; session; goal } ->
-          perform (fun _ ->
-              deliver
-                (App.goal_mutation_finished ~request
-                   (Client.submit client
-                      (Protocol.Command.goal_pause ~session ~goal))))
-      | App.Goal_edit { request; session; goal; objective } ->
-          (* Goal_screen validates local constructor invariants before emitting
-             an effect. Build outside [perform] so a violated frontend/runtime
-             contract fails the application immediately instead of becoming an
-             operational client error or leaving the screen pending. *)
-          let command =
-            match Protocol.Command.goal_edit ~session ~goal ~objective with
-            | Ok command -> command
-            | Error invalid ->
-                invalid_arg
-                  ("goal edit escaped local validation: "
-                  ^ Protocol.Command.Invalid.message invalid)
-          in
-          perform (fun _ ->
-              deliver
-                (App.goal_mutation_finished ~request
-                   (Client.submit client command)))
-      | App.Goal_resume { request; session; goal; budget } ->
-          let command =
-            match Protocol.Command.goal_resume ~session ~goal ?budget () with
-            | Ok command -> command
-            | Error invalid ->
-                invalid_arg
-                  ("goal resume escaped local validation: "
-                  ^ Protocol.Command.Invalid.message invalid)
-          in
-          perform (fun _ ->
-              deliver
-                (App.goal_mutation_finished ~request
-                   (Client.submit client command)))
-      | App.Goal_clear { request; session; goal } ->
-          perform (fun _ ->
-              deliver
-                (App.goal_mutation_finished ~request
-                   (Client.submit client
-                      (Protocol.Command.goal_clear ~session ~goal))))
       | App.Auth_save_api_key { attempt; provider; key } ->
           perform (fun _ ->
               deliver

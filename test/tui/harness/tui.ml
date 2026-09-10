@@ -974,20 +974,6 @@ module Permission_runtime = struct
   }
 end
 
-module Goal_runtime = struct
-  type delivery = {
-    acknowledge : unit -> unit;
-    commit : unit -> unit;
-    reject : Protocol.Error.t -> unit;
-    mutable acknowledged : bool;
-  }
-
-  type t = {
-    mutable current : delivery option;
-    mutable update : (Session.Goal.Update.t -> unit) option;
-  }
-end
-
 module Decision_runtime = struct
   type delivery = {
     acknowledge : unit -> unit;
@@ -1375,7 +1361,6 @@ type fixture = {
   queue_runtime : Queue_runtime.t;
   model_runtime : Model_runtime.t;
   permission_runtime : Permission_runtime.t;
-  goal_runtime : Goal_runtime.t;
   decision_runtime : Decision_runtime.t;
   login_runtime : Login_runtime.t;
   account_runtime : Account_runtime.t;
@@ -1423,7 +1408,6 @@ type t = {
   screen_sessions : Screen_sessions_runtime.t;
   models : Model_runtime.t;
   permissions : Permission_runtime.t;
-  goals : Goal_runtime.t;
   decisions : Decision_runtime.t;
   logins : Login_runtime.t;
   accounts : Account_runtime.t;
@@ -1763,51 +1747,6 @@ let finish_permission_review (t : t) result =
       delivery.Permission_runtime.complete result;
       wake t
 
-let acknowledge_goal_mutation (t : t) =
-  match t.goals.Goal_runtime.current with
-  | None ->
-      invalid_arg
-        "Tui.acknowledge_goal_mutation: no goal mutation is awaiting a result"
-  | Some delivery ->
-      if delivery.Goal_runtime.acknowledged then
-        invalid_arg
-          "Tui.acknowledge_goal_mutation: the current mutation is already \
-           acknowledged";
-      delivery.Goal_runtime.acknowledged <- true;
-      delivery.Goal_runtime.acknowledge ();
-      wake t
-
-let commit_goal_mutation (t : t) =
-  match t.goals.Goal_runtime.current with
-  | None ->
-      invalid_arg
-        "Tui.commit_goal_mutation: no goal mutation is awaiting a fact"
-  | Some delivery ->
-      if not delivery.Goal_runtime.acknowledged then
-        invalid_arg
-          "Tui.commit_goal_mutation: acknowledge the client result before the \
-           durable fact";
-      t.goals.Goal_runtime.current <- None;
-      delivery.Goal_runtime.commit ();
-      wake t
-
-let fail_goal_mutation (t : t) error =
-  match t.goals.Goal_runtime.current with
-  | None ->
-      invalid_arg
-        "Tui.fail_goal_mutation: no goal mutation is awaiting a result"
-  | Some delivery ->
-      t.goals.Goal_runtime.current <- None;
-      delivery.Goal_runtime.reject error;
-      wake t
-
-let update_goal (t : t) update =
-  match t.goals.Goal_runtime.update with
-  | None -> invalid_arg "Tui.update_goal: goal fixture is not installed"
-  | Some apply ->
-      apply update;
-      wake t
-
 let next_login_step (t : t) =
   match t.logins.Login_runtime.current with
   | None -> invalid_arg "Tui.next_login_step: no interactive login is active"
@@ -2076,7 +2015,7 @@ let projected_tool_facts fixture ~session claims =
       | Protocol.Fact.Tool_prepared _ | Protocol.Fact.Tool_returned _
       | Protocol.Fact.Tool_ambiguous _ | Protocol.Fact.Decision_requested _
       | Protocol.Fact.Decision_resolved _ | Protocol.Fact.Journal_task_board _
-      | Protocol.Fact.Journal_goal _ | Protocol.Fact.Journal_delegation _
+      | Protocol.Fact.Journal_delegation _
       | Protocol.Fact.Journal_queue _ | Protocol.Fact.Compaction _
       | Protocol.Fact.Workspace_notice _ | Protocol.Fact.Undo _ ->
           None)
@@ -2378,18 +2317,6 @@ and admit_queued (fixture : fixture) ~session =
         ~mode:Session.Contract.Mode.Build
         ~origin:(Session.Turn.Origin.Queued (Session.Queue.Entry.id entry))
 
-let commit_goal_update fixture update =
-  if Option.is_none fixture.turn_runtime.Turn_runtime.session then
-    failwith "next tui harness: goal update has no active session";
-  append_events fixture.turn_runtime [ Session.Event.goal_updated update ];
-  let document =
-    match fixture.turn_runtime.Turn_runtime.session with
-    | None -> assert false
-    | Some document -> document
-  in
-  retain_session fixture document;
-  publish_session fixture document
-
 let mutate_session_result (fixture : fixture) ~operation mutation =
   (match fixture.lifecycle_runtime.Lifecycle_runtime.current with
   | Some _ ->
@@ -2658,42 +2585,19 @@ let answer_decision fixture ~session ~decision ~answer =
   end;
   Gate.await admission
 
-let hold_goal_command fixture ~session update =
-  ignore (require_active_session fixture ~operation:"goal mutation" session);
-  if Option.is_some fixture.goal_runtime.Goal_runtime.current then
-    failwith
-      "next tui harness: a second goal mutation escaped while one was pending";
-  let admission = Gate.create () in
-  let delivery : Goal_runtime.delivery =
-    {
-      Goal_runtime.acknowledge = (fun () -> Gate.resolve admission (Ok ()));
-      commit = (fun () -> commit_goal_update fixture update);
-      reject = (fun error -> Gate.resolve admission (Error error));
-      acknowledged = false;
-    }
-  in
-  fixture.goal_runtime.Goal_runtime.current <- Some delivery;
-  Gate.await admission
-
 let submit_command (fixture : fixture) = function
-  | Protocol.Command.Prompt { session; turn; input; mode; goal; _ } ->
+  | Protocol.Command.Prompt { session; turn; input; mode; _ } ->
       ignore (require_active_session fixture ~operation:"prompt" session);
-      (* A staged goal is invisible in any rendered frame once the cue clears,
-         so the journey surfaces the declaration the prompt carried. *)
-      Option.iter
-        (fun { Protocol.Command.objective; token_budget = _ } ->
-          Printf.printf "goal declared on prompt: %s\n" objective)
-        goal;
       begin_turn fixture ~turn_id:turn ~session ~prompt:(command_prompt input)
         ~content:input
         ~mode:(Option.value mode ~default:Session.Contract.Mode.Build)
         ~origin:Session.Turn.Origin.User;
       Ok ()
-  | Protocol.Command.Queue_next { session; input } ->
+  | Protocol.Command.Queue_next { session; input; _ } ->
       let entry =
         Session.Queue.Entry.make
           ~id:(mint_queue_id fixture.queue_runtime)
-          ~input
+          ~input ()
       in
       queue_update fixture session (Session.Queue.Update.enqueued entry);
       Ok ()
@@ -2704,7 +2608,7 @@ let submit_command (fixture : fixture) = function
               (fun input ->
                 Session.Queue.Entry.make
                   ~id:(mint_queue_id fixture.queue_runtime)
-                  ~input)
+                  ~input ())
               inputs
           in
           queue_update fixture session (Session.Queue.Update.replaced entries))
@@ -2722,16 +2626,6 @@ let submit_command (fixture : fixture) = function
       Ok ()
   | Protocol.Command.Answer_decision { session; decision; answer } ->
       answer_decision fixture ~session ~decision ~answer
-  | Protocol.Command.Goal_pause { session; goal } ->
-      hold_goal_command fixture ~session (Session.Goal.Update.pause ~id:goal)
-  | Protocol.Command.Goal_edit { session; goal; objective } ->
-      hold_goal_command fixture ~session
-        (Session.Goal.Update.edit ~id:goal ~objective)
-  | Protocol.Command.Goal_resume { session; goal; budget } ->
-      hold_goal_command fixture ~session
-        (Session.Goal.Update.resume ~id:goal ?token_budget:budget ())
-  | Protocol.Command.Goal_clear { session; goal } ->
-      hold_goal_command fixture ~session (Session.Goal.Update.clear ~id:goal)
 
 let unavailable text =
   Error (Protocol.Error.Unavailable (Mentat_diagnostic.of_text text))
@@ -3106,6 +3000,19 @@ let client (fixture : fixture) =
         (fun ~session ->
           mutate_session_result fixture
             ~operation:(Lifecycle_script.Delete session) Session.delete);
+      set_goal =
+        (fun ~session ~goal ->
+          (* An unscripted always-succeeds write: the fixture document gains
+             or loses the intent, so goal flows can read back what the owner
+             verb recorded. *)
+          match session_by_id fixture session with
+          | None ->
+              Error
+                (Mentat_protocol.Error.unavailable
+                   "set_goal targeted an unknown session")
+          | Some document ->
+              replace_session fixture (Session.set_goal goal document);
+              Ok ());
       sessions =
         (fun ~listing ->
           query_sessions fixture
@@ -3331,7 +3238,6 @@ let run ?(size = (80, 24)) ?(env = []) ?(reduced_motion = true)
       effective = Mentat_permission.Review_behavior.Enforce;
     }
   in
-  let goals = { Goal_runtime.current = None; update = None } in
   let decisions =
     {
       Decision_runtime.expected = decision_answers;
@@ -3443,7 +3349,6 @@ let run ?(size = (80, 24)) ?(env = []) ?(reduced_motion = true)
       screen_sessions = screen_sessions_runtime;
       models;
       permissions;
-      goals;
       decisions;
       logins;
       accounts;
@@ -3488,7 +3393,6 @@ let run ?(size = (80, 24)) ?(env = []) ?(reduced_motion = true)
       queue_runtime = queue;
       model_runtime = models;
       permission_runtime = permissions;
-      goal_runtime = goals;
       decision_runtime = decisions;
       login_runtime = logins;
       account_runtime = accounts;
@@ -3509,8 +3413,6 @@ let run ?(size = (80, 24)) ?(env = []) ?(reduced_motion = true)
       canonical_ids;
     }
   in
-  goals.Goal_runtime.update <-
-    Some (fun update -> commit_goal_update fixture update);
   Eio.Fiber.both
     (fun () ->
       Fun.protect
@@ -3570,10 +3472,6 @@ let run ?(size = (80, 24)) ?(env = []) ?(reduced_motion = true)
           if Option.is_some permissions.Permission_runtime.current then
             failwith
               "next tui harness: a permission review was left without a result";
-          if Option.is_some goals.Goal_runtime.current then
-            failwith
-              "next tui harness: a goal mutation was left without a result or \
-               durable fact";
           (match readiness_runtime.Readiness_runtime.source with
           | Readiness_runtime.Constant _ | Readiness_runtime.Scripted [] -> ()
           | Readiness_runtime.Scripted remaining ->

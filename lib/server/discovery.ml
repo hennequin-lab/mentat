@@ -4,13 +4,13 @@
  ---------------------------------------------------------------------------*)
 
 type t = {
-  socket : string;
   pid : int;
   protocol : int;
   binary : string;
   config_home : string;
   started_at : int;
   web_url : string option;
+  ingress : string option;
 }
 
 (* The file-format version, distinct from the [protocol] member (the wire
@@ -19,14 +19,17 @@ let file_version = 1
 
 let jsont =
   Jsont.Object.map ~kind:"daemon discovery"
-    (fun v socket pid protocol binary config_home started_at web_url ->
+    (fun v _socket pid protocol binary config_home started_at web_url ingress ->
       if not (Int.equal v file_version) then
         Jsont.Error.msg Jsont.Meta.none
           (Printf.sprintf "unsupported discovery file version %d (expected %d)"
              v file_version);
-      { socket; pid; protocol; binary; config_home; started_at; web_url })
+      { pid; protocol; binary; config_home; started_at; web_url; ingress })
   |> Jsont.Object.mem "v" Jsont.int ~enc:(fun _ -> file_version)
-  |> Jsont.Object.mem "socket" Jsont.string ~enc:(fun t -> t.socket)
+  (* Never written since the daemon stopped serving a wire socket; decoded
+     and discarded so a record a pre-R4 daemon wrote — one still running
+     across an upgrade, whose pid [stop] must read — is not foreign. *)
+  |> Jsont.Object.opt_mem "socket" Jsont.string ~enc:(fun _ -> None)
   |> Jsont.Object.mem "pid" Jsont.int ~enc:(fun t -> t.pid)
   |> Jsont.Object.mem "protocol" Jsont.int ~enc:(fun t -> t.protocol)
   |> Jsont.Object.mem "binary" Jsont.string ~enc:(fun t -> t.binary)
@@ -37,6 +40,9 @@ let jsont =
      that does not know the field is the same binary that wrote it (the identity
      gate), so no [v] bump is owed. *)
   |> Jsont.Object.opt_mem "web_url" Jsont.string ~enc:(fun t -> t.web_url)
+  (* Optional and additive for the same reason: the webhook ingress
+     listener's bound loopback address, when the daemon runs one. *)
+  |> Jsont.Object.opt_mem "ingress" Jsont.string ~enc:(fun t -> t.ingress)
   |> Jsont.Object.error_unknown |> Jsont.Object.finish
 
 let daemon_json = "daemon.json"
@@ -133,86 +139,3 @@ let clear ~dir ~pid =
       with Unix.Unix_error _ -> ())
   | `Found _ | `Absent | `Foreign _ -> ()
 
-(* The find-or-spawn convergence state machine, lifted here
-   as a pure combinator over injected effects so its every branch is
-   deterministically unit-testable — a true two-process race is not. The library
-   owns the discipline (read → liveness-first probe → identity gate → spawn →
-   poll ladder → one full retry); the daemon binary supplies the real effects
-   ([Unix.create_process] spawn, a socket handshake probe, a clock sleep). *)
-
-type 'conn outcome =
-  [ `Attached of 'conn | `Mismatch of t | `Foreign_held | `Timeout ]
-
-let locate ~read ~claim_free ~probe ~identity_ok ~spawn ~sleep ~poll_budget =
-  (* After a spawn (or while a starting daemon has not yet written its socket),
-     poll: re-read and re-probe on the injected cadence until the socket answers
-     or the budget runs out. *)
-  let rec poll n =
-    if n <= 0 then `Timeout
-    else
-      match read () with
-      | `Found record -> (
-          match probe record with
-          | Some conn ->
-              (* The identity gate applies here too (F2): after we spawn, a
-                 different-identity daemon can win the claim and answer first — the
-                 exact skew A2 refuses. Never attach to it silently. *)
-              if identity_ok record then `Attached conn else `Mismatch record
-          | None ->
-              sleep ();
-              poll (n - 1))
-      | `Absent | `Foreign _ ->
-          sleep ();
-          poll (n - 1)
-  in
-  let attempt () =
-    match read () with
-    | `Found record -> (
-        match probe record with
-        | Some conn ->
-            (* Live: the identity gate applies only here. *)
-            if identity_ok record then `Attached conn else `Mismatch record
-        | None ->
-            (* Not answering: a free claim means the recorded daemon is dead —
-               a stale file, reclaimed by spawning the current binary; a
-               held claim means it is still starting, so poll. *)
-            if claim_free () then (
-              spawn ();
-              poll poll_budget)
-            else poll poll_budget)
-    | `Absent ->
-        spawn ();
-        poll poll_budget
-    | `Foreign _ ->
-        (* An unknown-version or undecodable file: reclaim it only when its
-           claim is free (a dead daemon left it); a held claim is a live daemon
-           we cannot speak to — refuse, never clobber. *)
-        if claim_free () then (
-          spawn ();
-          poll poll_budget)
-        else `Foreign_held
-  in
-  match attempt () with
-  | (`Attached _ | `Mismatch _ | `Foreign_held) as settled -> settled
-  | `Timeout -> (
-      (* D4 step 4: one full retry covers a winner that died between taking the
-         claim and writing the file — its lock died with it, so the next
-         read/claim reflects the vacancy. *)
-      match attempt () with
-      | (`Attached _ | `Mismatch _ | `Foreign_held) as settled -> settled
-      | `Timeout -> `Timeout)
-
-(* [MENTAT_DAEMON_SOCKET] beats discovery entirely (dune's [DUNE_RPC]
-   precedent): evaluated first, a [`Reached conn] — the named socket answered its
-   handshake — attaches straight through with no file read, no claim, no spawn,
-   and no identity gate beyond the handshake; a [`Set_unreachable] override is a
-   definite [`Timeout], never a fallback that reads the file or spawns; [`Unset]
-   defers to {!locate}. The daemon owns reading the variable and probing the
-   named socket; this owns the precedence. *)
-let locate_with_override ~socket_override ~read ~claim_free ~probe ~identity_ok
-    ~spawn ~sleep ~poll_budget =
-  match socket_override () with
-  | `Reached conn -> `Attached conn
-  | `Set_unreachable -> `Timeout
-  | `Unset ->
-      locate ~read ~claim_free ~probe ~identity_ok ~spawn ~sleep ~poll_budget

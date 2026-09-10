@@ -4,7 +4,7 @@
  ---------------------------------------------------------------------------*)
 
 type category = Session | Conversation | Navigation | Model | View | App
-type screen = Review | Sessions | Settings | Goal
+type screen = Review | Sessions | Settings
 type settings_tab = Config | Status | Usage
 type scope = Global | Chat | Screen of screen
 type phase = Idle_only | Anytime
@@ -19,7 +19,6 @@ type fate =
   | Undo_session
   | Redo_session
   | Compact_session
-  | Open_goal
   | Rename_session
   | Open_model
   | Open_theme
@@ -32,6 +31,7 @@ type fate =
   | Toggle_verbose
   | Open_review
   | Dune_command
+  | Goal_command
   | Init_project of string
   | Quit
   (* App-level key gestures, folded from the former keymap. *)
@@ -219,10 +219,6 @@ let all =
       ~description:"Free up context by summarizing the conversation so far"
       ~category:Session ~scope:Chat ~phase:Idle_only ~echoes:false
       ~fate:Compact_session ();
-    entry ~id:"goal" ~slash:"/goal" ~title:"Goal"
-      ~description:"Declare a goal, or inspect and control the current one"
-      ~argument_hint:"[objective]" ~category:Conversation ~scope:Chat
-      ~phase:Anytime ~echoes:false ~fate:Open_goal ();
     entry ~id:"init" ~slash:"/init" ~title:"Init"
       ~description:"Generate or update AGENTS.md with project conventions"
       ~category:Conversation ~scope:Chat ~phase:Idle_only ~echoes:false
@@ -235,6 +231,10 @@ let all =
       ~description:"Restart or stop the supervised build watch"
       ~argument_hint:"restart|stop" ~category:Session ~scope:Chat
       ~phase:Anytime ~echoes:false ~fate:Dune_command ();
+    entry ~id:"goal" ~slash:"/goal" ~title:"Goal"
+      ~description:"Declare a standing goal, stop it, or re-arm one"
+      ~argument_hint:"<objective>" ~category:Session ~scope:Chat
+      ~phase:Anytime ~echoes:false ~fate:Goal_command ();
     (* App-level slash commands (Global scope: offered in every palette). *)
     entry ~id:"review" ~slash:"/review" ~title:"Review"
       ~description:"Review the worktree diff against the base" ~category:View
@@ -436,9 +436,8 @@ let scope_equal a b =
   | Global, Global | Chat, Chat -> true
   | Screen a, Screen b -> (
       match (a, b) with
-      | Review, Review | Sessions, Sessions | Settings, Settings | Goal, Goal ->
-          true
-      | (Review | Sessions | Settings | Goal), _ -> false)
+      | Review, Review | Sessions, Sessions | Settings, Settings -> true
+      | (Review | Sessions | Settings), _ -> false)
   | (Global | Chat | Screen _), _ -> false
 
 let category_label = function
@@ -606,8 +605,8 @@ let review_reserved =
       "escape";
     ]
 
-(* Settings and goal screens carry no registry verbs; their classifier nav is
-   the generic screen vocabulary. *)
+(* The settings screen carries no registry verbs; its classifier nav is the
+   generic screen vocabulary. *)
 let screen_nav =
   List.map chord_exn
     [
@@ -645,7 +644,7 @@ let reserved_vocabulary scope chord =
   | Chat -> is_plain_printable chord || in_set chat_readline chord
   | Screen Sessions -> in_set sessions_reserved chord
   | Screen Review -> in_set review_reserved chord
-  | Screen (Settings | Goal) -> in_set screen_nav chord
+  | Screen Settings -> in_set screen_nav chord
 
 (* Every default binding obeys the law the overlay validator enforces: no
    binding's chord is reserved vocabulary on the surface it resolves. *)

@@ -6,14 +6,13 @@
 (** Durable sessions and pure replay state — the journal.
 
     [mentat.session] owns the sole durable truth of a conversation. A session is
-    an ordered sequence of eighteen inert {!Event.t} facts, and everything a
+    an ordered sequence of seventeen inert {!Event.t} facts, and everything a
     reader needs is a pure fold of that sequence: {!State.t} reconstructs the
     transcript, the single open suspension, the decisions, and the product
     boards deterministically, with no clock, randomness, or IO — byte-identical
     events replay to equal states. The library also defines the sealed turn
     {!Contract.t} and the domain vocabularies whose facts live in the journal —
-    decisions, plans, tasks, goals, delegations, the next-turn queue, and
-    compaction.
+    decisions, plans, tasks, delegations, the next-turn queue, and compaction.
 
     {b What the journal deliberately does not own.} Execution belongs to the
     engine ([mentat.session.run]): this library records that a provider call or
@@ -75,11 +74,11 @@ module Decision = Decision
 module Task = Task
 (** The durable task board. *)
 
-module Goal = Goal
-(** Session goals. *)
-
 module Delegation = Delegation
 (** Subagent delegation edges. *)
+
+module Origin = Origin
+(** Message provenance — who sent a queued input. *)
 
 module Queue = Queue
 (** The next-turn queue. *)
@@ -160,23 +159,36 @@ val create :
   id:Id.t ->
   ?title:string ->
   ?delegated_from:Metadata.Delegated_from.t ->
+  ?triggered_from:Metadata.Triggered_from.t ->
+  ?run_policy:Metadata.Run_policy.t ->
+  ?goal:Metadata.Goal.t ->
   cwd:Lpath.Abs.t ->
   created_at:Time.t ->
   unit ->
   t
-(** [create ~id ?title ?delegated_from ~cwd ~created_at ()] is a new active
-    session with no semantic events. [delegated_from] records the parent edge an
-    independently attached subagent must verify before execution.
+(** [create ~id ?title ?delegated_from ?triggered_from ?run_policy ?goal ~cwd
+     ~created_at ()] is a new active session with no semantic events.
+    [delegated_from] records the parent edge an independently attached
+    subagent must verify before execution. [triggered_from] records the
+    trigger a scheduling host created the session for, and [run_policy] the
+    run contract it was created under; the two are how a trigger-born
+    session's mail admission and serving boot re-derive their shape from the
+    document alone. [goal] records standing owner intent on a session created
+    to pursue it ([mentat run --goal]).
 
-    Raises [Invalid_argument] if [title] is empty. *)
+    Raises [Invalid_argument] if [title] is empty, both [delegated_from]
+    and [triggered_from] are supplied, [run_policy] is supplied together
+    with [delegated_from] — a delegated child's contract is its parent
+    edge's, never a recorded policy — or [goal] is supplied together with
+    [delegated_from] or [triggered_from]. *)
 
 val make :
   id:Id.t -> metadata:Metadata.t -> events:Event.t list -> (t, Error.t) result
 (** [make ~id ~metadata ~events] is a session reconstructed from saved parts, or
     [Error (Replay e)] if [events] is not a valid replay. Fork metadata must
     name an in-range copied prefix, and the events immediately after that prefix
-    must contain the entire reset suffix generated from its queue, goal, and
-    live delegation projections. Any missing or different reset event, root
+    must contain the entire reset suffix generated from its queue and live
+    delegation projections. Any missing or different reset event, root
     detachment, or later detachment returns its structured branch error. *)
 
 val id : t -> Id.t
@@ -190,6 +202,31 @@ val events : t -> Event.t list
 
 val state : t -> State.t
 (** [state t] is [t]'s validated replay projection. *)
+
+val mail_backlog_cap : int
+(** [mail_backlog_cap] is the per-sender bound on unconsumed queue entries one
+    session will hold — the count {!admits_mail} refuses at, [8]. Admission
+    consumes one entry per turn boundary, so a full backlog is already several
+    turns of unread mail from one sender; consumption frees the sender's
+    slots. The owner's own entries are never counted or capped. *)
+
+val admits_mail :
+  origin:Origin.t option ->
+  t ->
+  [ `Admitted | `Refused_sender | `Refused_backlog ]
+(** [admits_mail ~origin t] judges a queue entry attributed to [origin] — the
+    one admit judgment every queue admission runs, whether a live driver
+    admits the entry or a sender appends it to [t]'s dormant journal under
+    the run fence, so the admissions cannot drift. The owner (an absent
+    origin, {!Origin}) is always [`Admitted]. [t]'s recorded delegation
+    parent, [t]'s own recorded delegation children, and — for a
+    trigger-born session — [t]'s own trigger (an {!Origin.Trigger} whose
+    source and digest match [t]'s recorded {!Metadata.Triggered_from}) are
+    [`Admitted] while fewer than {!mail_backlog_cap} of the sender's entries
+    are still unconsumed, [`Refused_backlog] at the cap (a trigger's backlog
+    counts its entries across event keys). Any other sender is
+    [`Refused_sender]. Admission gates delivery only — an admitted origin
+    remains attribution, never authority. *)
 
 val media_refs : t -> Mentat_digest.Content_ref.t list
 (** [media_refs t] is the content references of every model-visible media block
@@ -412,14 +449,16 @@ module Session_view : sig
   (** [last_text t] is the session-wide latest model prose ({!State.final_text})
       — the drill-in's "last activity", distinct from {!Summary.preview}. *)
 
-  val goal : t -> Goal.t option
-  (** [goal t] is the current goal projection, if a goal is declared. *)
-
   val metrics : t -> Metrics.t
   (** [metrics t] is the raw session spend and activity. A context-window fill
       percentage needs the model's provider-owned context limit and is computed
       by the frontend, never here — the session library takes no provider
       dependency. *)
+
+  val goal : t -> Metadata.Goal.t option
+  (** [goal t] is the session's recorded goal intent, if the owner has one
+      standing — how a frontend learns of a goal at attach, since metadata
+      never crosses the event feed. *)
 
   val equal : t -> t -> bool
   (** [equal a b] is [true] iff [a] and [b] carry the same view data. *)
@@ -476,6 +515,13 @@ val set_title : string option -> t -> t
 
     Raises [Invalid_argument] if [title] is [Some ""]. *)
 
+val set_goal : Metadata.Goal.t option -> t -> t
+(** [set_goal goal t] is [t] with goal intent [goal] — the owner verb's write,
+    [None] retiring a standing goal. Does not change [updated_at].
+
+    Raises [Invalid_argument] if [goal] is supplied on a delegated or
+    trigger-born session ({!Metadata.with_goal}'s exclusivity). *)
+
 val touch : Time.t -> t -> t
 (** [touch time t] is [t] with its saved update time set to [time].
 
@@ -504,8 +550,7 @@ val fork :
   (t, Error.t) result
 (** [fork ~id ?title ~cwd ~created_at t] is a new active session with [t]'s
     events as a copied prefix plus a branch reset suffix: a
-    {!Queue.Update.Cleared} when the prefix's queue is non-empty, a goal
-    {!Goal.Update.Pause} when the goal is pausable, and
+    {!Queue.Update.Cleared} when the prefix's queue is non-empty, and
     {!Event.Delegations_detached} when the prefix owns delegated children. The
     branch retains historical child calls and results but starts with no live
     child ownership. Its lineage points to [t] with [copied_events] set to the

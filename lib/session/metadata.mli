@@ -111,6 +111,293 @@ module Delegated_from : sig
   (** [jsont] maps delegation lineage to JSON values. *)
 end
 
+module Triggered_from : sig
+  (** Durable trigger provenance.
+
+      A session created by a trigger host on a standing grant records the
+      trigger's identity here: [source] names the trigger as the scheduling
+      host defines it, [digest] seals the policy content it fired under, and
+      [key] names the event it fired on — the same three members an
+      {!Origin.Trigger} queue entry carries. [source] and [digest] are the
+      admission proof: mail admission ({!Mentat_session.admits_mail}) proves
+      "this session's own trigger" by matching both against the session's
+      recorded facts alone. [key] is provenance for the reader — which event
+      created this run — and no admission reads it. Provenance is
+      attribution, never authority. *)
+
+  type t = private { source : string; digest : string; key : string }
+
+  val make : source:string -> digest:string -> key:string -> t
+  (** [make ~source ~digest ~key] is trigger provenance with every member
+      checked non-empty.
+
+      Raises [Invalid_argument] if any member is empty. *)
+
+  val source : t -> string
+  (** [source t] is the trigger's name. *)
+
+  val digest : t -> string
+  (** [digest t] is the policy digest the trigger fired under. *)
+
+  val key : t -> string
+  (** [key t] is the event the trigger fired on. *)
+
+  val equal : t -> t -> bool
+  (** [equal a b] is [true] iff [a] and [b] are the same provenance. *)
+
+  val pp : Format.formatter -> t -> unit
+  (** [pp] formats provenance for diagnostics. *)
+
+  val jsont : t Jsont.t
+  (** [jsont] maps provenance to JSON values. Decoding validates the same
+      non-empty invariants as {!make}. *)
+end
+
+module Run_policy : sig
+  (** The recorded run contract a session was created under.
+
+      A session created for a standing, unattended run records the run knobs
+      its creator granted, so every process that later serves it — the first
+      activation and any successor — applies the same contract without
+      re-consulting the grant that has since moved on. Two consumers split
+      the members: queue admission reads [mode] and [output_schema] to seal
+      each admitted turn (never the plain Build defaults), and the serving
+      boot lowers the rest onto its configuration overlay before the engine
+      is built. The lowered members hold the run surface's own textual
+      spellings — [sandbox] a sandbox-mode token, [model] a provider/model
+      selector, [reasoning] a reasoning effort, [unattended] an unattended
+      permission policy — validated by the configuration layer that applies
+      them, so an unknown spelling refuses the boot loudly rather than
+      running under defaults the grant never named. *)
+
+  type t = private {
+    mode : Contract.Mode.t option;
+        (** The product mode admitted turns seal; absent means Build. *)
+    output_schema : Jsont.json option;
+        (** The structured-output schema admitted turns run under. *)
+    max_steps : int option;  (** The per-turn step bound; positive. *)
+    sandbox : string option;  (** The sandbox-mode spelling to apply. *)
+    require_sandbox : bool;
+        (** Whether the run must refuse to start without an enforceable or
+            external sandbox. *)
+    model : string option;  (** A provider/model selector override. *)
+    reasoning : string option;  (** A reasoning-effort spelling. *)
+    unattended : string option;
+        (** An unattended permission-policy spelling. *)
+    project_instructions : bool option;
+        (** Force project instruction files on or off; absent uses the
+            default. *)
+  }
+
+  val make :
+    ?mode:Contract.Mode.t ->
+    ?output_schema:Jsont.json ->
+    ?max_steps:int ->
+    ?sandbox:string ->
+    ?require_sandbox:bool ->
+    ?model:string ->
+    ?reasoning:string ->
+    ?unattended:string ->
+    ?project_instructions:bool ->
+    unit ->
+    t
+  (** [make ()] is a recorded run policy; every member is optional and
+      [require_sandbox] defaults to [false].
+
+      Raises [Invalid_argument] if [max_steps] is not positive or a textual
+      member is empty. *)
+
+  val mode : t -> Contract.Mode.t option
+  (** [mode t] is the recorded product mode. *)
+
+  val output_schema : t -> Jsont.json option
+  (** [output_schema t] is the recorded structured-output schema. *)
+
+  val max_steps : t -> int option
+  (** [max_steps t] is the recorded per-turn step bound. *)
+
+  val sandbox : t -> string option
+  (** [sandbox t] is the recorded sandbox-mode spelling. *)
+
+  val require_sandbox : t -> bool
+  (** [require_sandbox t] is whether the run requires an enforceable or
+      external sandbox. *)
+
+  val model : t -> string option
+  (** [model t] is the recorded model selector. *)
+
+  val reasoning : t -> string option
+  (** [reasoning t] is the recorded reasoning-effort spelling. *)
+
+  val unattended : t -> string option
+  (** [unattended t] is the recorded unattended permission-policy spelling. *)
+
+  val project_instructions : t -> bool option
+  (** [project_instructions t] is the recorded project-instructions toggle. *)
+
+  val equal : t -> t -> bool
+  (** [equal a b] is [true] iff [a] and [b] record the same policy. Schemas
+      compare over their JSON values, so a decoded policy equals an
+      otherwise-identical constructed one. *)
+
+  val pp : Format.formatter -> t -> unit
+  (** [pp] formats a policy for diagnostics. The schema is elided. *)
+
+  val jsont : t Jsont.t
+  (** [jsont] maps policies to JSON values. Decoding validates the same
+      invariants as {!make}. *)
+end
+
+module Goal : sig
+  (** Recorded goal intent — "keep working toward this, within these bounds,
+      until you declare it done" — and the steward vocabulary that reads it.
+
+      A goal is standing owner intent on a session, written and retired by
+      owner verbs alone. It grants nothing and drives nothing by itself: the
+      steward — the process driving the session — reads it at each finished
+      judgment and {!decide}s whether to send another {!continuation}.
+      Progress is never written back here — done-ness is derived from the
+      journal's last {!Claim}, so no second record can disagree with it. The
+      loop that acts on a {!Verdict.t} lives in the steward processes, never
+      here and never in the engine. *)
+
+  type t = private {
+    objective : string;  (** What the session is working toward; non-empty. *)
+    max_turns : int option;
+        (** The continuation bound, counted in goal continuations; positive. *)
+    budget : float option;
+        (** The spend bound in dollars, metered against the journal's whole
+            cost fold; positive. *)
+  }
+
+  val make : objective:string -> ?max_turns:int -> ?budget:float -> unit -> t
+  (** [make ~objective ()] is goal intent. Bounds are optional; absence means
+      the owner is the only bound.
+
+      Raises [Invalid_argument] if [objective] is empty, [max_turns] is not
+      positive, or [budget] is not positive. *)
+
+  val objective : t -> string
+  (** [objective t] is what the session is working toward. *)
+
+  val max_turns : t -> int option
+  (** [max_turns t] is [t]'s continuation bound. *)
+
+  val budget : t -> float option
+  (** [budget t] is [t]'s spend bound in dollars. *)
+
+  val equal : t -> t -> bool
+  (** [equal a b] is [true] iff [a] and [b] record the same intent. *)
+
+  val pp : Format.formatter -> t -> unit
+  (** [pp] formats goal intent for diagnostics. *)
+
+  val jsont : t Jsont.t
+  (** [jsont] maps goal intent to JSON values. Decoding validates the same
+      invariants as {!make}. *)
+
+  (** {1:claim The [goal_status] claim} *)
+
+  (** What a continuation turn declares about the goal. *)
+  module Claim : sig
+    type t =
+      | Done of string option
+          (** The model declares the goal reached; the optional note says how
+              it concluded. *)
+      | Continuing of string option
+          (** The model declares more work remains; the optional note says
+              what is next. *)
+
+    val of_json : Jsont.json -> t option
+    (** [of_json json] is the claim [json] declares, or [None] when [json]
+        does not carry one — an unknown status, a missing member, any
+        malformed shape. Absence means continue, so a claim the steward
+        cannot read stops nothing and fails nothing. *)
+
+    val schema : Jsont.json
+    (** [schema] is the JSON schema of the claim — [{status: done |
+        continuing, note?}] — the output schema a steward seals on the
+        continuation turn so the model can deliver the claim as a structured
+        answer. *)
+
+    val equal : t -> t -> bool
+    (** [equal a b] is [true] iff [a] and [b] are the same claim. *)
+
+    val pp : Format.formatter -> t -> unit
+    (** [pp] formats a claim for diagnostics. *)
+  end
+
+  (** {1:decision The steward decision} *)
+
+  (** The steward's continue-or-stop verdict. *)
+  module Verdict : sig
+    type t =
+      | Continue  (** Send the next continuation. *)
+      | Done of string option
+          (** The model declared the goal reached; the note is the claim's. *)
+      | Bound_reached  (** The recorded turn bound is spent. *)
+      | Budget_spent  (** The recorded dollar budget is spent. *)
+
+    val equal : t -> t -> bool
+    (** [equal a b] is [true] iff [a] and [b] are the same verdict. *)
+
+    val pp : Format.formatter -> t -> unit
+    (** [pp] formats a verdict for diagnostics. *)
+  end
+
+  val continuation : objective:string -> string
+  (** [continuation ~objective] is the framed continuation text every steward
+      sends — the goal named, then the [goal_status] instruction. One
+      constant framing, so the transcript always shows who continued the work
+      and why, and the journal count of framed continuations stays
+      derivable. *)
+
+  val framed_objective : string -> string option
+  (** [framed_objective text] is the objective a turn input [text] names when
+      it opens with the {!continuation} framing, or [None] for any other
+      input — the one parse behind {!val-continuations}, exposed so a steward
+      folding turn inputs incrementally (a frontend reducer) counts by the
+      same rule. *)
+
+  val continuations : objective:string -> Turn.t list -> int
+  (** [continuations ~objective turns] is how many continuation turns for
+      [objective] the journal holds — the turns whose input opens with the
+      {!continuation} framing for exactly this objective. Derived, never
+      persisted: a resumed steward and the one that sent the turns count the
+      same journal. Re-declaring the identical objective continues the same
+      ledger; a fresh objective starts at zero. *)
+
+  val decide :
+    t ->
+    finished:bool ->
+    claim:Jsont.json option ->
+    continuations:int ->
+    spent:float option ->
+    Verdict.t option
+  (** [decide t ~finished ~claim ~continuations ~spent] is the steward's one
+      decision, or [None] while the session is not finished — the loop fires
+      on the finished judgment alone (settled head, empty queue), so user
+      input preempts it by construction.
+
+      [claim] is the head turn's structured-output claim; [continuations] is
+      how many goal continuations the steward has already spent, derived from
+      the journal ({!val-continuations}); [spent] is the journal's whole cost
+      fold in dollars, [None] when the model is unpriced.
+
+      The arms, in order: a claim declaring done is {!Verdict.Done} — the
+      honest completion beats every bound; a spent turn bound is
+      {!Verdict.Bound_reached}; a spent budget is {!Verdict.Budget_spent};
+      everything else — a continuing claim, an absent claim, an unreadable
+      claim — is {!Verdict.Continue}: ending the goal takes the explicit
+      declaration, a bound, or the owner, never the model forgetting. The
+      table judges declarations only: a step-limited head is bounded work
+      and its absent claim reads as continue, while a head that settled
+      failed is a machinery fault the steward stops on loudly {e before}
+      consulting this table — the opt-out law governs the model's
+      declarations, never machinery. An unpriced spend ([None]) trips no
+      budget: the turn bound and the owner remain the fences. *)
+end
+
 type t = private {
   title : string option;  (** Optional non-empty user-facing title. *)
   status : Status.t;  (** Saved lifecycle status. *)
@@ -118,6 +405,12 @@ type t = private {
       (** Fork lineage, if this document was created from another session. *)
   delegated_from : Delegated_from.t option;
       (** Delegation lineage, if this document is a subagent session. *)
+  triggered_from : Triggered_from.t option;
+      (** Trigger provenance, if a trigger host created this session. *)
+  run_policy : Run_policy.t option;
+      (** The recorded run contract, if the session was created under one. *)
+  goal : Goal.t option;
+      (** Standing goal intent, if the owner has recorded one. *)
   root : Mentat_workspace.Root.t;
       (** The workspace the session was created under. {!Mentat_workspace.Root}
           is the one owner of a session's workspace identity; the absolute
@@ -134,30 +427,38 @@ type t = private {
 }
 (** The type for durable session metadata.
 
-    [updated_at] is always greater than or equal to [created_at]. Fork and
-    delegation lineage are mutually exclusive: a session has at most one
-    creation origin. *)
+    [updated_at] is always greater than or equal to [created_at]. Fork,
+    delegation, and trigger lineage are mutually exclusive: a session has at
+    most one creation origin. *)
 
 val make :
   ?title:string ->
   ?status:Status.t ->
   ?forked_from:Forked_from.t ->
   ?delegated_from:Delegated_from.t ->
+  ?triggered_from:Triggered_from.t ->
+  ?run_policy:Run_policy.t ->
+  ?goal:Goal.t ->
   cwd:Lpath.Abs.t ->
   created_at:Time.t ->
   updated_at:Time.t ->
   unit ->
   t
-(** [make ?title ?status ?forked_from ?delegated_from ~cwd ~created_at
-     ~updated_at ()] is metadata whose workspace identity is
-    {!Mentat_workspace.Root.of_dir} [cwd] — the v1 injective minting of a
-    directory into a durable root.
+(** [make ?title ?status ?forked_from ?delegated_from ?triggered_from
+     ?run_policy ?goal ~cwd ~created_at ~updated_at ()] is metadata whose
+    workspace identity is {!Mentat_workspace.Root.of_dir} [cwd] — the v1
+    injective minting of a directory into a durable root.
 
     [status] defaults to {!Status.Active}. [title], when present, must be a
     non-empty display title; no trimming or normalization is performed.
 
     Raises [Invalid_argument] if [title] is empty, [updated_at] is before
-    [created_at], or both [forked_from] and [delegated_from] are supplied. *)
+    [created_at], more than one of [forked_from], [delegated_from], and
+    [triggered_from] is supplied, [run_policy] is supplied together with
+    [delegated_from] — a delegated child's contract is its parent edge's,
+    never a recorded policy — or [goal] is supplied together with
+    [delegated_from] or [triggered_from]: a delegation edge owns its child's
+    contract, and a trigger-born run already has a steward. *)
 
 val title : t -> string option
 (** [title t] is [t]'s optional user-facing title. *)
@@ -173,6 +474,17 @@ val delegated_from : t -> Delegated_from.t option
 (** [delegated_from t] is [t]'s delegation lineage, if it is a subagent session.
     Lineage is fixed at construction ([make ?delegated_from]) and never updated.
 *)
+
+val triggered_from : t -> Triggered_from.t option
+(** [triggered_from t] is [t]'s trigger provenance, if a trigger host created
+    it. Fixed at construction and never updated. *)
+
+val run_policy : t -> Run_policy.t option
+(** [run_policy t] is [t]'s recorded run contract, if it was created under
+    one. Fixed at construction and never updated. *)
+
+val goal : t -> Goal.t option
+(** [goal t] is [t]'s standing goal intent, if the owner has recorded one. *)
 
 val root : t -> Mentat_workspace.Root.t
 (** [root t] is the workspace [t] was created under — the owner of [t]'s
@@ -195,6 +507,15 @@ val with_title : string option -> t -> t
 (** [with_title title t] is [t] with title [title].
 
     Raises [Invalid_argument] if [title] is [Some ""]. *)
+
+val with_goal : Goal.t option -> t -> t
+(** [with_goal goal t] is [t] with goal intent [goal] — recorded by the owner
+    verb, retired ([None]) by the same. Unlike the creation lineages a goal is
+    a standing intent the owner declares and withdraws over a session's life.
+
+    Raises [Invalid_argument] if [goal] is supplied on metadata carrying
+    [delegated_from] or [triggered_from] — the same exclusivity {!make}
+    enforces. *)
 
 val with_status : Status.t -> t -> t
 (** [with_status status t] is [t] with status [status]. *)

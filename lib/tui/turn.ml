@@ -372,17 +372,16 @@ let content_text content =
 
 let user_input_blocks turn =
   match (Session.Turn.origin turn, Session.Turn.input turn) with
-  | ( (Session.Turn.Origin.User | Session.Turn.Origin.Queued _),
+  | ( ( Session.Turn.Origin.User | Session.Turn.Origin.Queued _
+      | Session.Turn.Origin.Triggered _ ),
       Session.Turn.Input.User content ) ->
       let text = content_text content in
       if has_visible_text text then [ Transcript.user text ] else []
-  | ( Session.Turn.Origin.Goal_continuation,
-      ( Session.Turn.Input.Continue | Session.Turn.Input.User _
-      | Session.Turn.Input.Plan_build _ ) )
   | ( Session.Turn.Origin.Plan_build,
       ( Session.Turn.Input.Plan_build _ | Session.Turn.Input.User _
       | Session.Turn.Input.Continue ) )
-  | ( (Session.Turn.Origin.User | Session.Turn.Origin.Queued _),
+  | ( ( Session.Turn.Origin.User | Session.Turn.Origin.Queued _
+      | Session.Turn.Origin.Triggered _ ),
       (Session.Turn.Input.Continue | Session.Turn.Input.Plan_build _) )
   | ( Session.Turn.Origin.Compaction,
       ( Session.Turn.Input.Continue | Session.Turn.Input.User _
@@ -976,11 +975,11 @@ let fact ~now ~show_reasoning fact t =
       Ok
         ( { t with committed_output },
           [ Transcript.notice (Notice.Seam (compaction_label compaction)) ] )
-  (* Goal and queue transitions are session-scoped: a goal wind-down (e.g.
-     Budget_limited) is committed between turns, so these facts legitimately
-     arrive with no active turn. The transcript renders neither; the goal and
-     queue surfaces re-read session state at the app level. Accept and drop. *)
-  | Fact.Journal_goal _ | Fact.Journal_queue _ -> Ok (t, [])
+  (* Queue transitions are session-scoped and committed between turns, so
+     these facts legitimately arrive with no active turn. The transcript does
+     not render them; the queue surface re-reads session state at the app
+     level. *)
+  | Fact.Journal_queue _ -> Ok (t, [])
   | Fact.Undo { update; dropped_turns; files } -> (
       (* The undo boundary is committed at an idle head. An [Armed] boundary
          renders a seam. The transcript is append-only, so a [Released] one

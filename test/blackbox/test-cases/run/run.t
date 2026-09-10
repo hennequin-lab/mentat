@@ -291,7 +291,7 @@ the original tool result before the turn completes.
   $ cat > unattended-question-answer.jsonl <<'JSONL'
   > {"expect":{"body_contains":["function_call_output","unattended-question-call","staging"]},"response":{"id":"unattended-question-2","status":"completed","model":"gpt-5.6-sol","output":[{"type":"message","role":"assistant","content":[{"type":"output_text","text":"question answer continued"}]}]}}
   > JSONL
-  $ start_fake_openai unattended-question-answer.jsonl capture-unattended-question-answer port-unattended-question-answer
+  $ start_fake_openai unattended-question-answer.jsonl capture-unattended-question-answer port-unattended-question-answer --port "$(cat port-unattended-question)"
   $ mentat run reply unattended-question --decision "$question_decision" --answer '  staging  ' --cwd "$PWD" 2>/dev/null
   question answer continued
   $ wait_fake_server
@@ -325,13 +325,11 @@ The turn persisted an idle session that is listed and resumable.
   phase=idle
   lifecycle=active
 
-F4 / RUN-10 — the resume arg-model is a SESSION_OR_PROMPT matrix, not a required
-PROMPT after an optional SESSION: `--last` with no prompt and a bare resume are
-structured usage errors (exit 2), never cmdliner's 124.
+F4 / RUN-10 — the resume arg-model is a SESSION_OR_PROMPT matrix: a bare
+resume without a target is a structured usage error (exit 2), never
+cmdliner's 124, and extra positionals under --last refuse. (A no-prompt
+resume with a target is the supported promptless form — run/inbox.t.)
 
-  $ mentat run resume --last --cwd "$PWD" 2>&1
-  mentat: --last needs a PROMPT
-  [2]
   $ mentat run resume --cwd "$PWD" 2>&1
   mentat: resume requires SESSION or --last
   [2]
@@ -416,18 +414,8 @@ pending decision and starts no turn.
   $ mentat session show blocked --cwd "$PWD" | grep -E '^title='
   title=Renamed
 
-A decision answer and a goal or title action cannot be combined.
+A decision answer and a title action cannot be combined.
 
   $ mentat run reply blocked --decision d --allow --title "x" --cwd "$PWD" 2>&1
-  mentat: choose one of a decision answer, a goal action, or --title
-  [2]
-
-`--goal-budget` without `--resume-goal` is a usage error; a goal action on a
-session with no declared goal reports it.
-
-  $ mentat run reply blocked --goal-budget 100 --cwd "$PWD" 2>&1
-  mentat: --goal-budget requires --resume-goal
-  [2]
-  $ mentat run reply blocked --pause-goal --cwd "$PWD" 2>&1
-  mentat: no goal declared on blocked
+  mentat: choose one of a decision answer or --title
   [2]

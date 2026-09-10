@@ -32,6 +32,15 @@
 module Owner = Owner
 (** Ephemeral driver identities. *)
 
+val remove_owner_label : string
+(** The run-fence owner label {!Session.remove} acquires the fence under while
+    it deletes a session's tree — a brief custodial hold that releases on its
+    own, never a driver. Exported so an observer that classifies fence owners
+    (a mail delivery's probe, a child activation's first attach) treats the
+    hold as a transient to re-probe shortly, never a holder to preempt, dial,
+    or fail over; one spelling, because a drifted copy would silently demote a
+    removal hold to an untouchable foreign driver. *)
+
 type guard = Handle.guard
 (** The type for a held run lock: one close-on-exec descriptor plus one
     confirmed registry reservation, matched by the witness token the guard
@@ -42,7 +51,11 @@ type guard = Handle.guard
 type acquire_error = [ `Held of Owner.t option | `Io of Io.t ]
 (** The type for acquisition outcomes that are not the fence. [`Held None] means
     the fence is held but its owner line was unreadable (torn or
-    pre-owner-line): the exclusion is real, only the display is absent. *)
+    pre-owner-line) — the exclusion is real, only the display is absent — or
+    that a same-process {!holder} probe had its descriptor open at that
+    instant, a transient refusal a retry finds gone: a lock taken during the
+    probe's window would be dropped when the probe descriptor closes, so the
+    contender is turned away instead. *)
 
 val try_acquire :
   sw:Eio.Switch.t ->
@@ -77,6 +90,31 @@ val release : guard -> unit
     [F_TLOCK] a second descriptor to the still-locked inode (record locks never
     conflict within one process), and closing either descriptor would then
     silently drop the fence. *)
+
+val holder :
+  Handle.t ->
+  session:Mentat_session.Id.t ->
+  [ `Free | `Held of Owner.t option | `Io of Io.t ]
+(** [holder root ~session] probes the fence for [session] without contending
+    for it: it never creates [run.lock], never writes the owner line, and never
+    acquires anything — the observation {!try_acquire} cannot make, because a
+    free fence would be created and rewritten by it. [`Held display] names the
+    holder from the owner line when it is readable ([None] when it is not — the
+    exclusion is real, only the display is absent); [`Free] means no lock is
+    held on the file, or the file does not exist. The lock, not the file, is
+    the truth: a [run.lock] left behind by a crashed driver reads [`Free].
+
+    {b Same-process visibility.} A fence held or being acquired by {e this}
+    process is answered from the root's reservation registry with no
+    descriptor touched — POSIX record locks never conflict within one process,
+    so the OS probe cannot see them, and a probe descriptor opened onto an
+    inode this process holds locked would drop the lock at close. The probe
+    and same-process acquisition are mutually exclusive per key: while the
+    probe descriptor is open no acquisition is admitted (it is turned away
+    with a transient [`Held None]), so the no-same-process-lock premise holds
+    across the probe's own suspension points, not merely at its first check.
+    What the OS probe observes is then exactly the cross-process contract:
+    [`Held] iff {e another} process holds the lock. *)
 
 val session : guard -> Mentat_session.Id.t
 (** [session guard] is the fenced session. *)

@@ -19,6 +19,18 @@ set -eu
 REPO="invariant-hq/mentat"
 GITHUB="https://github.com"
 
+# Test seam: MENTAT_INSTALL_BASE_URL replaces the GitHub release root in the
+# download URLs so the test suite can install from a local file:// fixture
+# tree shaped like <root>/releases/download/<version>/, and file transfers
+# are then permitted alongside https. Unset (every real install), both
+# values keep the GitHub behavior documented above, byte for byte.
+RELEASE_ROOT="$GITHUB/$REPO"
+FETCH_PROTO='=https'
+if [ -n "${MENTAT_INSTALL_BASE_URL:-}" ]; then
+  RELEASE_ROOT="$MENTAT_INSTALL_BASE_URL"
+  FETCH_PROTO='=https,file'
+fi
+
 usage() {
   cat <<'EOF'
 Install mentat, the OCaml coding agent.
@@ -62,7 +74,7 @@ select_downloader() {
 
 fetch() {
   if [ "$downloader" = curl ]; then
-    curl -fsSL --proto '=https' --tlsv1.2 -o "$2" "$1"
+    curl -fsSL --proto "$FETCH_PROTO" --tlsv1.2 -o "$2" "$1"
   elif [ "$wget_gnu" = 1 ]; then
     wget -q --https-only -O "$2" "$1"
   else
@@ -134,10 +146,10 @@ resolve_version() {
     printf '%s' "$version"
     return
   fi
-  url="$GITHUB/$REPO/releases/latest"
+  url="$RELEASE_ROOT/releases/latest"
   if [ "$downloader" = curl ]; then
     location="$(curl -fsSLI -o /dev/null -w '%{url_effective}' \
-      --proto '=https' --tlsv1.2 "$url")" || err "cannot reach $url"
+      --proto "$FETCH_PROTO" --tlsv1.2 "$url")" || err "cannot reach $url"
   else
     [ "$wget_gnu" = 1 ] || err "this wget cannot report the latest release;
 pass --version X.Y.Z, or install curl or GNU wget"
@@ -158,16 +170,18 @@ modify_path() {
   *":$install_dir:"*) return 0 ;;
   esac
 
-  # Make the freshly installed binary visible to GitHub Actions steps.
-  if [ -n "${GITHUB_PATH:-}" ]; then
-    echo "$install_dir" >> "$GITHUB_PATH"
-    return 0
-  fi
-
+  # --no-modify-path means no path modification anywhere, the GitHub Actions
+  # file included; a workflow that wants the append simply omits the flag.
   if [ "$no_modify_path" = 1 ]; then
     say ""
     say "Add $install_dir to your PATH to use mentat:"
     say "  export PATH=\"$install_dir:\$PATH\""
+    return 0
+  fi
+
+  # Make the freshly installed binary visible to GitHub Actions steps.
+  if [ -n "${GITHUB_PATH:-}" ]; then
+    echo "$install_dir" >> "$GITHUB_PATH"
     return 0
   fi
 
@@ -297,11 +311,13 @@ main() {
   target="$(detect_target)"
   version="$(resolve_version)"
   archive="mentat-$target.tar.gz"
-  base="$GITHUB/$REPO/releases/download/$version"
+  base="$RELEASE_ROOT/releases/download/$version"
 
   installed="$install_dir/mentat"
-  if [ -x "$installed" ] \
-    && [ "$("$installed" --version 2> /dev/null || true)" = "$version" ]; then
+  installed_d="$install_dir/mentatd"
+  if [ -x "$installed" ] && [ -x "$installed_d" ] \
+    && [ "$("$installed" --version 2> /dev/null || true)" = "$version" ] \
+    && [ "$("$installed_d" --version 2> /dev/null || true)" = "$version" ]; then
     say "mentat $version is already installed at $installed"
     exit 0
   fi
@@ -315,7 +331,8 @@ Pick another with --dir, or re-run under sudo with an explicit --dir."
 
   tmp="$(mktemp -d)"
   staged="$install_dir/.mentat.$$"
-  trap 'rm -rf "$tmp"; rm -f "$staged"' EXIT INT TERM
+  staged_d="$install_dir/.mentatd.$$"
+  trap 'rm -rf "$tmp"; rm -f "$staged" "$staged_d"' EXIT INT TERM
 
   fetch "$base/$archive" "$tmp/$archive" || err "cannot download $base/$archive
 Check that release $version exists and publishes a $target archive, and that
@@ -335,22 +352,48 @@ The download may be corrupted or tampered with; not installing."
 
   tar -xzf "$tmp/$archive" -C "$tmp"
   [ -f "$tmp/mentat" ] || err "archive did not contain a mentat binary"
+  # The archive's own contents are the vintage signal: releases before the
+  # daemon ship no mentatd, and pinning one with --version must stay
+  # installable — the mentatd half of everything below is conditioned on the
+  # member's presence, never required.
+  has_mentatd=false
+  [ -f "$tmp/mentatd" ] && has_mentatd=true
 
-  # Stage inside the destination directory first so the final rename is
+  # Stage inside the destination directory first so the final renames are
   # atomic even when $tmp is on another filesystem, and so a running mentat
   # keeps the executable it started from.
   chmod 755 "$tmp/mentat"
   cp -f "$tmp/mentat" "$staged"
+  if [ "$has_mentatd" = true ]; then
+    chmod 755 "$tmp/mentatd"
+    cp -f "$tmp/mentatd" "$staged_d"
+  fi
 
-  # Run the staged copy before publishing it. It sits on the destination
+  # Run the staged copies before publishing them. They sit on the destination
   # filesystem, so this is the exec check the final path would get, and a
   # binary that cannot run here never replaces a working install.
   reported="$("$staged" --version 2> /dev/null || true)"
   [ -n "$reported" ] || err "the $target binary does not run on this machine
 Nothing was installed. Please report this with the output of: uname -sm"
+  if [ "$has_mentatd" = true ]; then
+    reported_d="$("$staged_d" --version 2> /dev/null || true)"
+    [ -n "$reported_d" ] || err "the $target mentatd binary does not run on this machine
+Nothing was installed. Please report this with the output of: uname -sm"
+  fi
 
+  # Two renames, not one: POSIX cannot publish a pair atomically. Each rename
+  # is itself atomic, and the window where a new mentat sits beside an old
+  # mentatd is harmless — the pair carries one version stamp, so a client
+  # catching the skew is refused loudly by the daemon identity check rather
+  # than silently attached to a mismatched daemon.
   mv -f "$staged" "$installed"
   say "Installed $reported -> $installed"
+  if [ "$has_mentatd" = true ]; then
+    mv -f "$staged_d" "$installed_d"
+    say "Installed $reported_d -> $installed_d"
+  else
+    say "note: release $version predates the mentatd daemon; only mentat was installed"
+  fi
   modify_path
 
   say ""

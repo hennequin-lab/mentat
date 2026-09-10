@@ -88,6 +88,7 @@ let lifecycle document : Driver.Lifecycle.t =
     archive = (fun ~session:_ -> unavailable "archive is unused");
     restore = (fun ~session:_ -> unavailable "restore is unused");
     delete = (fun ~session:_ -> unavailable "delete is unused");
+    set_goal = (fun ~session:_ ~goal:_ -> unavailable "set_goal is unused");
     sessions =
       (fun ~listing:_ -> Ok ([ Session.Summary.of_session document ], []));
     session =
@@ -438,7 +439,7 @@ let fresh_start_client ~cwd ~mark_ready =
   let submit command =
     match command with
     | Protocol.Command.Prompt
-        { session; turn; input; options; mode; max_steps; goal = _; _ } -> (
+        { session; turn; input; options; mode; max_steps; _ } -> (
         match (input, options, mode, max_steps) with
         | ( [ Mentat_llm.Content.Text prompt ],
             None,

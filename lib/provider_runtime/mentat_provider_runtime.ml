@@ -19,7 +19,9 @@ let catalog = Runtime.catalog
    or retry, but it must never rewrite the request. Prompt-munging would change
    the digest upstream already trusts and defeat the dedup it keys. Because
    authentication rides in headers, below the digest boundary, even a refreshed
-   credential re-runs a byte-identical request. *)
+   credential re-runs a byte-identical request. A wrapper carries the inner
+   client's acceptance data verbatim: widening it would let preparation work
+   start for a model the inner client then rejects. *)
 
 (* The artifact-prepare gate: a local client prepares its weights transparently
    on first request. Preparation progress is forwarded to [on_progress] so the
@@ -53,12 +55,14 @@ let with_artifact_prepare ~sw ~env ~on_progress artifact model client =
       in
       Mentat_llm.Client.make
         ~provider:(Mentat_llm.Client.provider client)
-        ~run ()
+        ~apis:(Mentat_llm.Client.apis client)
+        ~run
 
 (* One reactive refresh on a [Startup]-phase [Auth] failure: refresh, rebuild,
    retry the same request once. A second failure returns; no loop. *)
 let with_refresh_retry ~rebuild ~refresh credential client =
   let provider = Mentat_llm.Client.provider client in
+  let apis = Mentat_llm.Client.apis client in
   let current = ref (client, credential) in
   let refreshing = Eio.Mutex.create () in
   let run ~cancelled ~on_event request =
@@ -93,7 +97,7 @@ let with_refresh_retry ~rebuild ~refresh credential client =
         | _ -> result)
     | result -> result
   in
-  Mentat_llm.Client.make ~provider ~run ()
+  Mentat_llm.Client.make ~provider ~apis ~run
 
 let client t ~sw ~env ~now ?base_url ?auth_base_url ?(process = [])
     ?(on_artifact_progress = fun (_ : Artifact.Progress.t) -> ()) ~environment
@@ -154,6 +158,14 @@ let refresh_listings = Account_ops.refresh_listings
 let listings = Account_ops.listings
 
 module Login = Login_flow
+
+module Loopback = struct
+  let await_once ~stdenv ?provider ?on_ready ?accept ?serve ~redirect_uri
+      ~timeout_s () =
+    Result.map_error Oauth_flow.Error.message
+      (Oauth_flow.Local_callback.await_once ~stdenv ?provider ?on_ready
+         ?accept ?serve ~redirect_uri ~timeout_s ())
+end
 
 module Local = struct
   let status t model =

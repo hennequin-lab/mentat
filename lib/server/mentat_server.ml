@@ -19,24 +19,10 @@ let to_hex s =
     s;
   Buffer.contents buffer
 
-(* Constant-time string equality: the running time depends only on the lengths,
-   never on where the first differing byte lies, so a comparison cannot leak a
-   token by timing. Hand-written because [eqaf] is not in the
-   lock and this campaign adds no lock entries; the length-checked byte-wise
-   [lxor]/[lor] fold is the standard constant-time idiom, unit-tested against the
-   equal, unequal-same-length, and unequal-length cases. Token length is fixed
-   (a hex CSPRNG value) and not itself secret, so folding to the longer length is
-   sound. *)
-let constant_time_equal a b =
-  let la = String.length a and lb = String.length b in
-  let n = if la > lb then la else lb in
-  let acc = ref (la lxor lb) in
-  for i = 0 to n - 1 do
-    let ca = if i < la then Char.code a.[i] else 0 in
-    let cb = if i < lb then Char.code b.[i] else 0 in
-    acc := !acc lor (ca lxor cb)
-  done;
-  Int.equal !acc 0
+(* Every secret compare here — token, cookie, ingress MAC — goes through
+   [Eqaf.equal]: constant time in where the first differing byte lies, so a
+   comparison cannot leak a secret by timing (lengths are fixed-width and not
+   themselves secret). *)
 
 (* CSPRNG helpers shared by the connection token and the browser session cookie:
    a hex value from [Mirage_crypto_rng], seeded once. stdlib
@@ -60,7 +46,7 @@ module Token = struct
   let generate () = csprng_hex 32
   let of_string s = s
   let to_string t = t
-  let equal = constant_time_equal
+  let equal = Eqaf.equal
 end
 
 module Origin = struct
@@ -76,27 +62,20 @@ end
 type bind =
   | Unix of { dir : Lpath.Abs.t }
   | Loopback of { port : int option; token : Token.t }
-  | Public of {
-      host : string;
-      port : int;
-      tls : Tls.Config.server;
-      token : Token.t;
-      origins : Origin.t list;
-    }
+
+let socket_name = "mentat.sock"
 
 module Bind = struct
   type t = bind
 
   let unix ~dir = Unix { dir }
   let loopback ~port ~token = Loopback { port; token }
+  let socket_path ~dir = Filename.concat (Lpath.Abs.to_string dir) socket_name
 
-  let public ~host ~port ~tls ~token ~origins =
-    Public { host; port; tls; token; origins }
+  let remove_endpoint ~dir =
+    (try Unix.unlink (socket_path ~dir) with Unix.Unix_error _ -> ());
+    try Unix.rmdir (Lpath.Abs.to_string dir) with Unix.Unix_error _ -> ()
 end
-
-exception Unsupported of string
-
-let socket_name = "mentat.sock"
 
 (* The [sockaddr_un.sun_path] buffer is 104 bytes on macOS (108 on Linux); the
    smaller bound is the portable limit, and a path needs room for its NUL. A path
@@ -104,14 +83,13 @@ let socket_name = "mentat.sock"
    [EINVAL], so we refuse it up front with a message naming the limit and the
    escape (the whole reason the default socket lives under a short [/tmp] key). *)
 let sun_path_max = 104
-let unix_socket_path dir = Filename.concat (Lpath.Abs.to_string dir) socket_name
 
 type listener = {
   bind : bind;
   addr : Eio.Net.Sockaddr.stream option;
-      (* The address the socket bound to, captured for a loopback/public
-         listener so the daemon can name the browser URL and a test can dial an
-         ephemeral port; [None] for a unix socket, which carries no TCP port. *)
+      (* The address the socket bound to, captured for a loopback listener so
+         the daemon can name the browser URL and a test can dial an ephemeral
+         port; [None] for a unix socket, which carries no TCP port. *)
   run_server :
     stop:unit Eio.Promise.t ->
     on_error:(exn -> unit) ->
@@ -132,9 +110,9 @@ type listener = {
       under a sticky directory a non-owner cannot unlink, rename, or replace the
       entry we verified, so no other uid can swap a symlink in beneath us between
       the [lstat] and the [bind]. That premise is load-bearing, so we check it: we
-      [lstat] the parent and refuse loudly (naming [--socket]) when it is
+      [lstat] the parent and refuse loudly (naming [--socket-dir]) when it is
       world-writable {b without} the sticky bit. The default [/tmp] parent always
-      passes; a [--socket] override into an unsafe location is caught here.
+      passes; a [--socket-dir] override into an unsafe location is caught here.
 
    The residual is the same-uid boundary the RFC concedes: a process running as
    the same user is trusted. Uses [Unix] directly; the library takes no filesystem
@@ -169,20 +147,20 @@ let ensure_private_dir dir =
         invalid_arg
           (Printf.sprintf
              "mentat_server: parent directory %s is world-writable without the \
-              sticky bit; refusing to bind a socket there (use --socket to \
-              choose a private directory)"
+              sticky bit; refusing to bind a socket there (use --socket-dir \
+              to choose a private directory)"
              parent)
 
 let listen ~sw ~net bind =
   match bind with
   | Unix { dir } ->
-      let path = unix_socket_path dir in
+      let path = Bind.socket_path ~dir in
       if String.length path >= sun_path_max then
         invalid_arg
           (Printf.sprintf
              "mentat_server: socket path %S is %d bytes, at or over the \
               %d-byte unix-socket limit; choose a shorter directory (the \
-              --socket flag, or a shallower data home)"
+              --socket-dir flag, or a shallower data home)"
              path (String.length path) sun_path_max);
       ensure_private_dir dir;
       (try Unix.unlink path with Unix.Unix_error _ -> ());
@@ -210,17 +188,33 @@ let listen ~sw ~net bind =
           (fun ~stop ~on_error server ->
             Cohttp_eio.Server.run ~stop ~on_error socket server);
       }
-  | Public _ ->
-      (* The type-level guarantee (a public bind needs the TLS × token × origin
-         triple) holds now; its listener lands in Stage 3. *)
-      raise
-        (Unsupported
-           "mentat_server: a public (non-loopback) listener lands in Stage 3")
 
 let port listener =
   match listener.addr with
   | Some (`Tcp (_ip, port)) -> Some port
   | Some (`Unix _) | None -> None
+
+(* The webhook ingress configuration: the resolver answering an ingress id with
+   one consistent snapshot (secret and enabled state read together, so
+   verification and delivery of a single request see the same configuration),
+   the delivery callback taking custody of verified bytes with the two GitHub
+   identity headers, and the optional observer of 401 refusals. The family
+   built on it lives beside [handle]; the semantics are the .mli's. *)
+module Ingress = struct
+  type resolution = Resolved of { secret : string; enabled : bool } | Unknown
+
+  type t = {
+    resolve : ingress_id:string -> resolution;
+    deliver :
+      ingress_id:string ->
+      enabled:bool ->
+      event:string option ->
+      delivery_id:string option ->
+      body:string ->
+      [ `Accepted | `Refused of string ];
+    rejected : (ingress_id:string -> unit) option;
+  }
+end
 
 (* HTTP responses (server side). cohttp owns body framing: [reply] a fixed
    string, [reply_stream] an SSE body cohttp reads from a flow source and
@@ -287,7 +281,7 @@ let read_body body =
 let authorize bind request =
   match bind with
   | Unix _ -> Ok ()
-  | Loopback { token; _ } | Public { token; _ } -> (
+  | Loopback { token; _ } -> (
       let headers = Cohttp.Request.headers request in
       match Cohttp.Header.get headers "authorization" with
       | Some value
@@ -641,8 +635,136 @@ let reply_unbound meth path =
       reply_stream (one_frame_puller (error_frame error))
   | _ -> reply ~status:`Not_found ~body:"not found" ()
 
-let handle ~clock ~heartbeat ~driver_for ~bindings ~bind ~ledger conn request
-    body =
+(* ---- The webhook ingress: POST /ingress/github/<ingress-id> ---- *)
+
+(* Every ingress answer is content-free — an empty body, no content type: an
+   internet-facing endpoint gets garbage, and garbage deserves no detail. *)
+let content_free status = Cohttp_eio.Server.respond_string ~status ~body:"" ()
+
+(* 1 MiB. Policy headroom over observed webhook payloads (~100 KiB), enforced by
+   capping the read itself, never by trusting a length the sender declared. *)
+let ingress_body_cap = 1024 * 1024
+
+(* When the family is mounted it owns the whole [/ingress/] prefix, so no path
+   beneath it ever reaches the bearer check, the handshake bindings, or the
+   endpoint table: a valid wire token grants nothing here, and a valid delivery
+   signature grants nothing past this arm. *)
+let ingress_claims path =
+  String.equal path "/ingress" || String.starts_with ~prefix:"/ingress/" path
+
+(* The one route shape in the family. Anything else under the prefix — another
+   provider segment, a trailing slash, a missing id — is a content-free 404. *)
+let ingress_route path =
+  match String.split_on_char '/' path with
+  | [ ""; "ingress"; "github"; id ] when not (String.equal id "") -> Some id
+  | _ -> None
+
+(* The MAC a delivery presents: the [X-Hub-Signature-256] header, verified by
+   the github library's strict-grammar, constant-time check. [None] — an
+   absent header — and every malformed or mismatched value land in the same
+   content-free 401, so a probe learns nothing from the refusal shape. The
+   SHA-1 [X-Hub-Signature] is never consulted. *)
+let ingress_presented_mac headers =
+  Cohttp.Header.get headers "x-hub-signature-256"
+
+(* Read the delivery body under the cap without ever buffering the excess: the
+   reader's buffer is allowed exactly one byte past the cap, so an oversized
+   body is refused as soon as the boundary is crossed, not after it arrives. *)
+let read_ingress_body body =
+  let reader = Eio.Buf_read.of_flow body ~max_size:(ingress_body_cap + 1) in
+  match Eio.Buf_read.take_all reader with
+  | raw when String.length raw <= ingress_body_cap -> Ok raw
+  | _ -> Error `Too_large
+  | exception Eio.Buf_read.Buffer_limit_exceeded -> Error `Too_large
+
+(* One delivery, per the .mli's response contract: resolve the path id (unknown
+   ⇒ 404 — and an unknown id never buys a body read), read the capped raw body
+   (over ⇒ 413), verify the HMAC-SHA256 over those exact bytes against the
+   secret as re-resolved {e after} the body arrived (absent, malformed, or
+   mismatched ⇒ one 401, the rejection observer told — a disabled
+   configuration still verifies, so an unverified sender cannot observe even
+   the disablement), and only then hand custody to the callback: [`Accepted] ⇒
+   202, [`Refused] ⇒ 500 with the reason logged, never sent. Verifying first
+   against the gate resolution and then against the fresh one keeps rotation
+   fail-closed without spending a second resolve on unauthenticated input: a
+   sender pacing an old-key delivery across a rotation passes the stale check
+   and lands on the fresh secret's 401, while a sender with no valid key
+   never triggers the re-read. Refusals are answered, never raised, and never
+   per-event news. The callbacks are foreign code, so each runs under a
+   guard: a raise (cancellation excepted) is logged, never allowed to tear
+   the connection down responseless. *)
+let handle_ingress ~(ingress : Ingress.t) meth path request body =
+  let guarded ~what f =
+    match f () with
+    | value -> Ok value
+    | exception (Eio.Cancel.Cancelled _ as exn) -> raise exn
+    | exception exn ->
+        Eio.traceln "mentat_server: ingress %s raised: %s" what
+          (Printexc.to_string exn);
+        Error ()
+  in
+  let refuse_unverified ~ingress_id =
+    (* The observer is bookkeeping; the sender-visible refusal stays the
+       401 whatever the observer does. *)
+    (match ingress.Ingress.rejected with
+    | None -> ()
+    | Some rejected ->
+        ignore (guarded ~what:"rejected" (fun () -> rejected ~ingress_id)));
+    content_free `Unauthorized
+  in
+  match (meth, ingress_route path) with
+  | `POST, Some ingress_id -> (
+      match
+        guarded ~what:"resolve" (fun () -> ingress.Ingress.resolve ~ingress_id)
+      with
+      | Error () -> content_free `Internal_server_error
+      | Ok Ingress.Unknown -> content_free `Not_found
+      | Ok (Ingress.Resolved { secret; enabled = _ }) -> (
+          let headers = Cohttp.Request.headers request in
+          let presented = ingress_presented_mac headers in
+          match read_ingress_body body with
+          | Error `Too_large -> content_free (`Code 413)
+          | Ok raw -> (
+              let verifies ~secret =
+                match presented with
+                | None -> false
+                | Some signature ->
+                    Github.Webhook.verify ~secret ~signature ~body:raw
+              in
+              if not (verifies ~secret) then refuse_unverified ~ingress_id
+              else
+                match
+                  guarded ~what:"resolve" (fun () ->
+                      ingress.Ingress.resolve ~ingress_id)
+                with
+                | Error () -> content_free `Internal_server_error
+                | Ok Ingress.Unknown -> content_free `Not_found
+                | Ok (Ingress.Resolved { secret; enabled }) -> (
+                    if not (verifies ~secret) then
+                      refuse_unverified ~ingress_id
+                    else
+                      let event =
+                        Cohttp.Header.get headers "x-github-event"
+                      in
+                      let delivery_id =
+                        Cohttp.Header.get headers "x-github-delivery"
+                      in
+                      match
+                        guarded ~what:"deliver" (fun () ->
+                            ingress.Ingress.deliver ~ingress_id ~enabled
+                              ~event ~delivery_id ~body:raw)
+                      with
+                      | Error () -> content_free `Internal_server_error
+                      | Ok `Accepted -> content_free `Accepted
+                      | Ok (`Refused reason) ->
+                          Eio.traceln
+                            "mentat_server: ingress delivery refused: %s"
+                            reason;
+                          content_free `Internal_server_error))))
+  | _, _ -> content_free `Not_found
+
+let handle ~clock ~heartbeat ~driver_for ~bindings ~bind ~ledger ~ingress conn
+    request body =
   let uri = Cohttp.Request.uri request in
   let path = Uri.path uri in
   let meth = Cohttp.Request.meth request in
@@ -651,26 +773,31 @@ let handle ~clock ~heartbeat ~driver_for ~bindings ~bind ~ledger conn request
       (* Pre-auth and content-free. *)
       reply ~content_type:"text/plain; charset=utf-8" ~status:`OK ~body:"ok" ()
   | _ -> (
-      match authorize bind request with
-      | Error `Unauthorized ->
-          reply ~status:`Unauthorized ~body:"unauthorized" ()
-      | Ok () -> (
-          let body_text = read_body body in
-          match (meth, path) with
-          | `POST, "/handshake" ->
-              handle_handshake ~driver_for ~bindings conn body_text
-          | _ -> (
-              match Hashtbl.find_opt bindings (conn_key conn) with
-              | None -> reply_unbound meth path
-              | Some { target; _ } -> (
-                  let driver = target.driver in
-                  match (meth, path) with
-                  | `GET, "/feed" ->
-                      handle_feed ~clock ~heartbeat ~driver request uri
-                  | `POST, "/login" ->
-                      handle_login ~clock ~heartbeat ~driver body_text
-                  | `POST, "/wire" -> handle_wire ~driver ~ledger body_text
-                  | _ -> reply ~status:`Not_found ~body:"not found" ()))))
+      match ingress with
+      | Some ingress when ingress_claims path ->
+          handle_ingress ~ingress meth path request body
+      | Some _ | None -> (
+          match authorize bind request with
+          | Error `Unauthorized ->
+              reply ~status:`Unauthorized ~body:"unauthorized" ()
+          | Ok () -> (
+              let body_text = read_body body in
+              match (meth, path) with
+              | `POST, "/handshake" ->
+                  handle_handshake ~driver_for ~bindings conn body_text
+              | _ -> (
+                  match Hashtbl.find_opt bindings (conn_key conn) with
+                  | None -> reply_unbound meth path
+                  | Some { target; _ } -> (
+                      let driver = target.driver in
+                      match (meth, path) with
+                      | `GET, "/feed" ->
+                          handle_feed ~clock ~heartbeat ~driver request uri
+                      | `POST, "/login" ->
+                          handle_login ~clock ~heartbeat ~driver body_text
+                      | `POST, "/wire" ->
+                          handle_wire ~driver ~ledger body_text
+                      | _ -> reply ~status:`Not_found ~body:"not found" ())))))
 
 let default_ledger_cap = 1024
 
@@ -685,7 +812,7 @@ let is_disconnect = function
   | _ -> false
 
 let serve ~sw ~clock ?(heartbeat_s = default_heartbeat)
-    ?(ledger_cap = default_ledger_cap) ~driver_for listener =
+    ?(ledger_cap = default_ledger_cap) ?ingress ~driver_for listener =
   let stop, resolve_stop = Eio.Promise.create () in
   Eio.Switch.on_release sw (fun () ->
       ignore (Eio.Promise.try_resolve resolve_stop ()));
@@ -698,7 +825,7 @@ let serve ~sw ~clock ?(heartbeat_s = default_heartbeat)
     Cohttp_eio.Server.make
       ~callback:
         (handle ~clock ~heartbeat:heartbeat_s ~driver_for ~bindings
-           ~bind:listener.bind ~ledger)
+           ~bind:listener.bind ~ledger ~ingress)
       ()
   in
   listener.run_server ~stop
@@ -760,7 +887,7 @@ module Web = struct
 
     let valid jar presented =
       Hashtbl.fold
-        (fun secret () found -> found || constant_time_equal presented secret)
+        (fun secret () found -> found || Eqaf.equal presented secret)
         jar.secrets false
   end
 
@@ -1119,7 +1246,7 @@ let make_ctx ~sw ~net ?workspace ?environment bind =
   in
   match bind with
   | Unix { dir } ->
-      let path = unix_socket_path dir in
+      let path = Bind.socket_path ~dir in
       let dial ~sw =
         (Eio.Net.connect ~sw net (`Unix path)
           :> [ `Close | Eio.Flow.two_way_ty ] Eio.Resource.t)
@@ -1153,8 +1280,6 @@ let make_ctx ~sw ~net ?workspace ?environment bind =
               environment;
               sw;
             })
-  | Public _ ->
-      Error (Error.Transport "connect to a public daemon lands in Stage 3")
 
 (* A client pinned to one already-dialed socket, so a handshake and the request
    that follows it ride the same TCP connection. cohttp's own client dials a
@@ -1241,8 +1366,7 @@ let client_handshake ~base ~token ~workspace ~environment client ~sw =
         | Error _ when status = 400 ->
             Printf.sprintf
               "daemon rejected the handshake (%s); a running daemon older than \
-               this client cannot read it — restart it with `mentat serve \
-               --stop`"
+               this client cannot read it — restart it with `mentatd stop`"
               (String.trim text)
         | Error _ -> String.trim text
       in
@@ -1718,6 +1842,14 @@ let build_driver ctx : Mentat_client.Driver.t =
       archive = (fun ~session -> call ctx Endpoint.archive { Codecs.session });
       restore = (fun ~session -> call ctx Endpoint.restore { Codecs.session });
       delete = (fun ~session -> call ctx Endpoint.delete { Codecs.session });
+      set_goal =
+        (fun ~session:_ ~goal:_ ->
+          (* Goal intent is an owner metadata write with no wire endpoint:
+             the owner's own process commits it through the offline twin. *)
+          Error
+            (Mentat_protocol.Error.unavailable
+               "goal intent is recorded by the owner's own process, not over \
+                the wire"));
       sessions = (fun ~listing -> call ctx Endpoint.sessions listing);
       session = (fun id -> call ctx Endpoint.session { Codecs.session = id });
     }

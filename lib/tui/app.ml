@@ -48,7 +48,6 @@ type command =
       media : Mentat_llm.Content.t list;
       mode : Session.Contract.Mode.t;
       history : Draft.History_entry.t option;
-      goal : Protocol.Command.goal option;
       model :
         (Mentat_provider.Selector.t
         * Mentat_llm.Request.Options.Reasoning_effort.t option)
@@ -60,7 +59,6 @@ type command =
       prompt : string;
       media : Mentat_llm.Content.t list;
       mode : Session.Contract.Mode.t;
-      goal : Protocol.Command.goal option;
     }
   | Queue_next of {
       request : request;
@@ -86,7 +84,6 @@ type command =
       media : Mentat_llm.Content.t list;
       mode : Session.Contract.Mode.t;
       history : Draft.History_entry.t option;
-      goal : Protocol.Command.goal option;
     }
   | Compact_session of { request : request; session : Session.Id.t }
   | Undo_step of {
@@ -98,6 +95,16 @@ type command =
       request : request;
       session : Session.Id.t;
       title : string;
+    }
+  | Set_goal of {
+      request : request;
+      session : Session.Id.t;
+      goal : Session.Metadata.Goal.t option;
+    }
+  | Goal_continue of {
+      request : request;
+      session : Session.Id.t;
+      prompt : string;
     }
   | Archive_session of { request : request; session : Session.Id.t }
   | Restore_session of { request : request; session : Session.Id.t }
@@ -143,28 +150,6 @@ type command =
       review : Mentat_permission.Review_behavior.t;
     }
   | Persist_ui_theme of { request : request; name : string }
-  | Goal_pause of {
-      request : Goal_screen.mutation;
-      session : Session.Id.t;
-      goal : Session.Goal.Id.t;
-    }
-  | Goal_edit of {
-      request : Goal_screen.mutation;
-      session : Session.Id.t;
-      goal : Session.Goal.Id.t;
-      objective : string;
-    }
-  | Goal_resume of {
-      request : Goal_screen.mutation;
-      session : Session.Id.t;
-      goal : Session.Goal.Id.t;
-      budget : int option;
-    }
-  | Goal_clear of {
-      request : Goal_screen.mutation;
-      session : Session.Id.t;
-      goal : Session.Goal.Id.t;
-    }
   | Auth_save_api_key of {
       attempt : Auth_panel.attempt;
       provider : Provider.t;
@@ -282,7 +267,6 @@ type panel =
 type screen =
   | Sessions of Sessions_screen.t
   | Settings of Settings_screen.t
-  | Goal of Goal_screen.t
   | Review of Review_screen.t
 
 type surface = Conversing | Panel of panel | Screen of screen
@@ -344,6 +328,12 @@ type pending_kind =
   | Archive
   | Restore
   | Delete
+  | Goal_write of Session.Metadata.Goal.t option
+    (* The durable intent write behind /goal and /goal stop; the carried
+         value narrates record vs retire at completion. *)
+  | Goal_turn
+    (* A steward continuation submission in flight: the guard that keeps one
+         finished reading from mailing twice before the turn starts. *)
   | Answer of Session.Decision.Id.t
   | Model_selection of {
       session : Session.Id.t;
@@ -404,11 +394,6 @@ type t = {
   effect_capabilities : capabilities;
   current_review : Mentat_permission.Review_behavior.t;
   draft_mode : Session.Contract.Mode.t;
-  staged_goal : Protocol.Command.goal option;
-      (* An objective the user declared with [/goal <objective>] that has not yet
-         ridden a turn. It is attached to the next fresh [Prompt] or
-         [Start_session], never to a queued input, and cleared the moment it is
-         sent or the user cancels it with a bare [/goal]. *)
   staged_model :
     (Mentat_provider.Selector.t
     * Mentat_llm.Request.Options.Reasoning_effort.t option)
@@ -452,6 +437,25 @@ type t = {
   surface : surface;
   completion : completion;
   queue : Session.Queue.Entry.t list;
+  goal_intent : Session.Metadata.Goal.t option;
+      (* The session's recorded goal as last known: adopted from each fresh
+         session view, set optimistically by /goal while its write is in
+         flight. *)
+  goal_armed : bool;
+      (* Whether this terminal stewards the goal — the loop is process-bound;
+         a standing goal re-arms only through /goal resume. *)
+  goal_framed : string list;
+      (* The objectives of the framed continuation turns seen on the feed, in
+         journal order — the derived continuation counter's fold
+         ({!Session.Metadata.Goal.framed_objective}), rebuilt whole by a
+         from-the-beginning replay. *)
+  goal_claim : Jsont.json option;
+      (* The last structured-output claim of the running or just-settled
+         turn; reset at each turn start. Read as the goal_status claim only
+         when the head settled Completed. *)
+  goal_offered : bool;
+      (* Whether the resume-offer notice ran for this attachment, so a
+         standing goal is offered once, never on every view refresh. *)
   changes : Change.t list;
   last_usage : Mentat_llm.Usage.t option;
       (* The most recent whole-response provider usage on the active feed. Its
@@ -603,8 +607,6 @@ type msg =
       request * (Mentat_client.compaction_result, Protocol.Error.t) result
   | Settings_mutation_finished of
       Settings_screen.mutation * (unit, Protocol.Error.t) result
-  | Goal_mutation_finished of
-      Goal_screen.mutation * (unit, Protocol.Error.t) result
   | Capability_failed of request * Mentat_diagnostic.t
   | Attached of request * (Mentat_llm.Content.t, Protocol.Attach.Error.t) result
   | Home_sessions_loaded of
@@ -664,7 +666,6 @@ type msg =
   | Rewind_panel_msg of Rewind_panel.msg
   | Sessions_screen_msg of Sessions_screen.msg
   | Settings_screen_msg of Settings_screen.msg
-  | Goal_screen_msg of Goal_screen.msg
   | Settings_paste of string
   | Model_panel_msg of Model_panel.msg
   | Threads_strip_msg of Threads_strip.msg
@@ -734,9 +735,6 @@ let ui_theme_persisted ~request result = Ui_theme_persisted (request, result)
 
 let settings_mutation_finished ~request result =
   Settings_mutation_finished (request, result)
-
-let goal_mutation_finished ~request result =
-  Goal_mutation_finished (request, result)
 
 let capability_failed ~request diagnostic =
   Capability_failed (request, diagnostic)
@@ -1104,7 +1102,6 @@ let initial_model ~now ~(startup : Startup.t) ~capabilities ~reduced_motion
     effect_capabilities = capabilities;
     current_review = Startup.permission_review startup;
     draft_mode = Startup.mode startup;
-    staged_goal = None;
     staged_model = None;
     active_session = None;
     main_feed = None;
@@ -1113,6 +1110,11 @@ let initial_model ~now ~(startup : Startup.t) ~capabilities ~reduced_motion
     session_view_request = None;
     pending_decision_request = None;
     possibly_mutating = false;
+    goal_intent = None;
+    goal_armed = false;
+    goal_framed = [];
+    goal_claim = None;
+    goal_offered = false;
     all_accounts_missing = false;
     account_readiness_request = None;
     model_readiness_request = None;
@@ -1283,8 +1285,8 @@ let close_to_chat ?(restore = Fun.id) t =
 (* The conversation reset shared by activating a session and by clearing to a
    fresh one: every field that returns to the conversing baseline, with the home
    motion frozen so the next stage animates from rest. Each caller layers its own
-   divergent overrides — the destination session, the staged model or goal, and
-   the phase it opens on — on top of this. *)
+   divergent overrides — the destination session, the staged model, and the
+   phase it opens on — on top of this. *)
 let reset_conversation t =
   {
     t with
@@ -1298,6 +1300,11 @@ let reset_conversation t =
     completion = No_completion;
     rewind = None;
     queue = [];
+    goal_intent = None;
+    goal_armed = false;
+    goal_framed = [];
+    goal_claim = None;
+    goal_offered = false;
     changes = [];
     last_usage = None;
     glance = None;
@@ -1404,7 +1411,6 @@ let init ~now ~(startup : Startup.t) ~capabilities ~reduced_motion
                   media = [];
                   mode = t.draft_mode;
                   history = None;
-                  goal = None;
                   model = None;
                 }
               :: base_commands ))
@@ -1502,10 +1508,9 @@ let evidence_changes = function
   | Protocol.Fact.Tool_returned { mutation = None; _ }
   | Protocol.Fact.Tool_ambiguous { mutation = None; _ }
   | Protocol.Fact.Decision_requested _ | Protocol.Fact.Decision_resolved _
-  | Protocol.Fact.Journal_task_board _ | Protocol.Fact.Journal_goal _
-  | Protocol.Fact.Journal_delegation _ | Protocol.Fact.Journal_queue _
-  | Protocol.Fact.Compaction _ | Protocol.Fact.Workspace_notice _
-  | Protocol.Fact.Undo _ ->
+  | Protocol.Fact.Journal_task_board _ | Protocol.Fact.Journal_delegation _
+  | Protocol.Fact.Journal_queue _ | Protocol.Fact.Compaction _
+  | Protocol.Fact.Workspace_notice _ | Protocol.Fact.Undo _ ->
       []
 
 let queue_update update queue =
@@ -1530,7 +1535,7 @@ let consume_queued turn queue =
         (fun entry ->
           not (Session.Queue.Id.equal admitted (Session.Queue.Entry.id entry)))
         queue
-  | Session.Turn.Origin.User | Session.Turn.Origin.Goal_continuation
+  | Session.Turn.Origin.User | Session.Turn.Origin.Triggered _
   | Session.Turn.Origin.Plan_build | Session.Turn.Origin.Compaction
   | Session.Turn.Origin.Step_limit_wind_down ->
       queue
@@ -1660,13 +1665,15 @@ let exact_decision_id requested = Session.Decision.Requested.id requested
 
 (* A user turn's origin, keyed by turn id, captured at its start. This mirrors
    [user_input_blocks]' predicate so the picker offers exactly the turns that
-   render as user speech: only [User] and [Queued] origins with visible text. *)
+   render as user speech: only [User], [Queued], and [Triggered] origins with
+   visible text. *)
 let text_has_visible_grapheme text =
   String.exists (function ' ' | '\t' | '\n' | '\r' -> false | _ -> true) text
 
 let turn_origin_of ~now ~prefix ~index turn =
   match Session.Turn.origin turn with
-  | Session.Turn.Origin.User | Session.Turn.Origin.Queued _ -> (
+  | Session.Turn.Origin.User | Session.Turn.Origin.Queued _
+  | Session.Turn.Origin.Triggered _ -> (
       match Session.Turn.Input.text (Session.Turn.input turn) with
       | Some text when text_has_visible_grapheme text ->
           Some
@@ -1678,8 +1685,8 @@ let turn_origin_of ~now ~prefix ~index turn =
               origin_at = now;
             }
       | Some _ | None -> None)
-  | Session.Turn.Origin.Goal_continuation | Session.Turn.Origin.Plan_build
-  | Session.Turn.Origin.Compaction | Session.Turn.Origin.Step_limit_wind_down ->
+  | Session.Turn.Origin.Plan_build | Session.Turn.Origin.Compaction
+  | Session.Turn.Origin.Step_limit_wind_down ->
       None
 
 (* Every turn of any origin advances [turn_count]; a user turn additionally
@@ -1769,10 +1776,19 @@ let fold_fact ~now fact t =
       let contract = Session.Turn.contract turn in
       let t =
         remove_pending_kind
-          (function Start | Submission -> true | _ -> false)
+          (function Start | Submission | Goal_turn -> true | _ -> false)
           t
       in
       let t = record_turn_origin ~now ~prefix:prefix_len turn t in
+      let goal_framed =
+        match
+          Option.bind
+            (Session.Turn.Input.text (Session.Turn.input turn))
+            Session.Metadata.Goal.framed_objective
+        with
+        | Some objective -> t.goal_framed @ [ objective ]
+        | None -> t.goal_framed
+      in
       ( {
           t with
           current_snapshot = model_snapshot t turn t.current_snapshot;
@@ -1780,6 +1796,8 @@ let fold_fact ~now fact t =
           current_review = Session.Contract.review contract;
           flash = None;
           queue = consume_queued turn t.queue;
+          goal_framed;
+          goal_claim = None;
         },
         [] )
   | Protocol.Fact.Decision_requested requested ->
@@ -1818,16 +1836,8 @@ let fold_fact ~now fact t =
           let t, glance = issue_workspace_status t in
           let t, running = issue_running_processes session t in
           (t, (command :: glance) @ [ running ] @ notify))
-  | (Protocol.Fact.Journal_goal _ | Protocol.Fact.Turn_settled _) as settled
-    -> (
-      (* A settled turn notifies; a goal-journal fact rides the same view refresh
-         but is not a turn completion, so it never notifies. *)
-      let notify =
-        match settled with
-        | Protocol.Fact.Turn_settled _ ->
-            notify_for ~event:Mentat_config.Notify.Event.Turn_done t
-        | _ -> []
-      in
+  | Protocol.Fact.Turn_settled _ -> (
+      let notify = notify_for ~event:Mentat_config.Notify.Event.Turn_done t in
       match t.active_session with
       | None -> (t, notify)
       | Some session ->
@@ -1881,8 +1891,23 @@ let fold_fact ~now fact t =
               (restore_draft a.undo_restored { t with undo_armed = None }, [])
           | None -> (t, [])))
   | Protocol.Fact.Turn_assistant _ | Protocol.Fact.Turn_assistant_interrupted _
-  | Protocol.Fact.Turn_provider_failed _ | Protocol.Fact.Turn_message _
-  | Protocol.Fact.Tool_started _ | Protocol.Fact.Tool_prepared _
+  | Protocol.Fact.Turn_provider_failed _ | Protocol.Fact.Turn_message _ ->
+      (t, [])
+  | Protocol.Fact.Tool_started started ->
+      (* The head turn's structured-output claim, captured as it lands. The
+         tool name is the engine's reserved [structured_output]
+         ([Mentat_agent.Catalog.output_tool_name]) — a stable product
+         contract this frontend spells rather than links the engine for. *)
+      if
+        String.equal
+          (Mentat_llm.Tool.Call.name
+             (Session.Tool_claim.Started.call started))
+          "structured_output"
+      then
+        ( { t with goal_claim = Some (Session.Tool_claim.Started.input started) },
+          [] )
+      else (t, [])
+  | Protocol.Fact.Tool_prepared _
   | Protocol.Fact.Tool_returned _ | Protocol.Fact.Tool_ambiguous _
   | Protocol.Fact.Compaction _ | Protocol.Fact.Workspace_notice _ ->
       (t, [])
@@ -1932,6 +1957,234 @@ let command_label command =
   match Command.slash command with
   | Some slash -> slash
   | None -> Command.title command
+
+(* Cumulative session spend: the whole session's metered usage priced by the
+   active model's catalog rate. It is distinct from the occupancy the [context]
+   rows show, and it is withheld — never a fabricated zero — when the catalog
+   carries no rate for the model. A view still describing a previous conversation
+   contributes nothing. *)
+let workspace_spent t =
+  match (t.active_session, t.session_view) with
+  | Some session, Some view when session_view_matches session view ->
+      let usage = (Session.Session_view.metrics view).Session.Metrics.usage in
+      let model =
+        match
+          Mentat_provider.Selector.of_string (Snapshot.model t.current_snapshot)
+        with
+        | Ok selector -> model_catalog t selector
+        | Error _ -> None
+      in
+      Option.bind model (fun model -> Mentat_provider.Model.cost model usage)
+  | _, None | None, _ | Some _, Some _ -> None
+
+(* The TUI steward (RFC 0027). The vocabulary — the claim, the verdict
+   table, the framing, the counter's parse — is the session library's
+   ({!Session.Metadata.Goal}); this block only gathers the decision's inputs
+   from the reducer's own folds and acts on the verdict. The loop is
+   process-bound: /goal arms it, an interrupt pauses it, and a standing goal
+   found at attach is offered, never auto-spent. *)
+
+let goal_notice text = Notice.Event (Prims.normalize_inline ("● " ^ text))
+
+let goal_continuations objective t =
+  List.length (List.filter (String.equal objective) t.goal_framed)
+
+let goal_turn_label goal ~next t =
+  let turns =
+    goal_continuations (Session.Metadata.Goal.objective goal) t
+    + if next then 1 else 0
+  in
+  match Session.Metadata.Goal.max_turns goal with
+  | Some bound -> Printf.sprintf "turn %d of %d" turns bound
+  | None -> Printf.sprintf "turn %d" turns
+
+let goal_status_line t =
+  match t.goal_intent with
+  | None -> "no goal; /goal OBJECTIVE declares one"
+  | Some goal ->
+      Printf.sprintf "goal %s: %s (%s)"
+        (if t.goal_armed then "(armed)" else "(paused; /goal resume re-arms)")
+        (Session.Metadata.Goal.objective goal)
+        (goal_turn_label goal ~next:false t)
+
+let goal_write_pending t =
+  List.exists
+    (fun pending ->
+      match pending.pending_kind with Goal_write _ -> true | _ -> false)
+    t.pending
+
+let goal_turn_pending t =
+  List.exists
+    (fun pending ->
+      match pending.pending_kind with Goal_turn -> true | _ -> false)
+    t.pending
+
+(* The reducer's finished reading over a fresh view: nothing running, nothing
+   queued, nothing of the user's in flight — pending input means not
+   finished, so the owner preempts the loop by construction. *)
+let goal_finished view t =
+  Option.is_none (Session.Session_view.waiting view)
+  && t.queue = []
+  && (not (turn_in_flight t))
+  && (not (submission_pending t))
+  && (not (goal_turn_pending t))
+  && Option.is_none t.undo_armed
+
+(* Adopt the fresh view's recorded intent (unless our own write is still in
+   flight and a pre-write read would clobber it), and offer a standing goal
+   once per attachment — unless its head already declared done, which is a
+   concluded goal, not an offer. *)
+let goal_learn view t =
+  if goal_write_pending t then t
+  else
+    let intent = Session.Session_view.goal view in
+    let t = { t with goal_intent = intent } in
+    match intent with
+    | Some goal when (not t.goal_armed) && not t.goal_offered -> (
+        let t = { t with goal_offered = true } in
+        let declared_done =
+          match Session.Session_view.last_outcome view with
+          | Some Session.Turn.Outcome.Completed -> (
+              match
+                Option.bind t.goal_claim Session.Metadata.Goal.Claim.of_json
+              with
+              | Some (Session.Metadata.Goal.Claim.Done _) -> true
+              | Some (Session.Metadata.Goal.Claim.Continuing _) | None -> false)
+          | Some _ | None -> false
+        in
+        if declared_done then t
+        else
+          update_chat
+            (append_notice
+               (goal_notice
+                  (Printf.sprintf
+                     "a goal stands: %s — /goal resume re-arms it"
+                     (Session.Metadata.Goal.objective goal))))
+            t)
+    | Some _ | None -> t
+
+(* One steward decision, run at each fresh view install. *)
+let goal_step t =
+  match (t.goal_intent, t.active_session, t.session_view) with
+  | Some goal, Some session, Some view
+    when t.goal_armed && session_view_matches session view -> (
+      if not (goal_finished view t) then (t, [])
+      else
+        match Session.Session_view.last_outcome view with
+        | Some (Session.Turn.Outcome.Interrupted _) ->
+            (* The owner stopped the work; continuing over an interrupt would
+               fight the hand on the wheel. The intent stands. *)
+            ( update_chat
+                (append_notice
+                   (goal_notice
+                      "goal paused by the interrupt — /goal resume re-arms it"))
+                { t with goal_armed = false },
+              [] )
+        | Some (Session.Turn.Outcome.Failed _) ->
+            (* A failed turn is machinery, not a declaration: the provider
+               retry layer absorbed the transient blips before the turn
+               failed, so continuing would burn the bound on repeats. The
+               intent stands; the owner re-arms after looking. *)
+            ( update_chat
+                (append_notice
+                   (goal_notice
+                      "goal stopped: the last turn failed — /goal resume \
+                       re-arms it once the cause is addressed"))
+                { t with goal_armed = false },
+              [] )
+        | outcome -> (
+            let objective = Session.Metadata.Goal.objective goal in
+            let claim =
+              match outcome with
+              | Some Session.Turn.Outcome.Completed -> t.goal_claim
+              | Some _ | None -> None
+            in
+            match
+              Session.Metadata.Goal.decide goal ~finished:true ~claim
+                ~continuations:(goal_continuations objective t)
+                ~spent:(workspace_spent t)
+            with
+            | None -> (t, [])
+            | Some Session.Metadata.Goal.Verdict.Continue ->
+                let request, t = fresh_request t in
+                let t = add_pending request Goal_turn t in
+                ( {
+                    t with
+                    flash =
+                      Some
+                        (Printf.sprintf "continuing toward the goal (%s)"
+                           (goal_turn_label goal ~next:true t));
+                  },
+                  [
+                    Goal_continue
+                      {
+                        request;
+                        session;
+                        prompt = Session.Metadata.Goal.continuation ~objective;
+                      };
+                  ] )
+            | Some (Session.Metadata.Goal.Verdict.Done note) ->
+                ( update_chat
+                    (append_notice
+                       (goal_notice
+                          (match note with
+                          | None -> "goal declared done"
+                          | Some note -> "goal declared done: " ^ note)))
+                    { t with goal_armed = false },
+                  [] )
+            | Some Session.Metadata.Goal.Verdict.Bound_reached ->
+                ( update_chat
+                    (append_notice
+                       (goal_notice
+                          (Printf.sprintf
+                             "goal stopped: the turn bound (%d) is spent — /goal with a higher --max-turns re-arms it"
+                             (Option.value ~default:0
+                                (Session.Metadata.Goal.max_turns goal)))))
+                    { t with goal_armed = false },
+                  [] )
+            | Some Session.Metadata.Goal.Verdict.Budget_spent ->
+                ( update_chat
+                    (append_notice
+                       (goal_notice
+                          (Printf.sprintf
+                             "goal stopped: the budget ($%.2f) is spent — /goal with a higher --budget re-arms it"
+                             (Option.value ~default:0.
+                                (Session.Metadata.Goal.budget goal)))))
+                    { t with goal_armed = false },
+                  [] )))
+  | _ -> (t, [])
+
+(* The /goal declaration grammar: OBJECTIVE with trailing bounds. Tokens are
+   whitespace-split, so a fresh declaration records a space-normalized
+   objective; the framing and the counter use the recorded string
+   consistently, so the normalization is invisible downstream. *)
+let parse_goal_declaration raw =
+  let tokens =
+    String.split_on_char ' ' raw
+    |> List.filter (fun token -> not (String.equal token ""))
+  in
+  let rec strip rev max_turns budget =
+    match rev with
+    | value :: "--max-turns" :: rest when Option.is_none max_turns -> (
+        match int_of_string_opt value with
+        | Some n when n > 0 -> strip rest (Some n) budget
+        | Some _ | None -> Error "--max-turns takes a positive count")
+    | value :: "--budget" :: rest when Option.is_none budget -> (
+        match float_of_string_opt value with
+        | Some b when b > 0. -> strip rest max_turns (Some b)
+        | Some _ | None -> Error "--budget takes a positive dollar amount")
+    | _ -> Ok (List.rev rev, max_turns, budget)
+  in
+  match strip (List.rev tokens) None None with
+  | Error _ as error -> error
+  | Ok ([], _, _) ->
+      Error "usage: /goal OBJECTIVE [--max-turns N] [--budget USD]"
+  | Ok (words, max_turns, budget) ->
+      Ok
+        (Session.Metadata.Goal.make
+           ~objective:(String.concat " " words)
+           ?max_turns ?budget ())
+
 
 let echo_command command t =
   if not (Command.echoes command) then t
@@ -1986,65 +2239,6 @@ let open_settings tab t =
   in
   (t, configuration :: readiness :: view_commands)
 
-(* The live goal projected for the active session, if the current detail view is
-   the matching one and its goal still admits transitions. Declaration is
-   engine-owned, so this is a best-effort guard that keeps [/goal <objective>]
-   honest before admission; the engine remains the final authority. *)
-let current_live_goal t =
-  match (t.active_session, t.session_view) with
-  | Some session, Some view when session_view_matches session view -> (
-      match Session.Session_view.goal view with
-      | Some goal
-        when not (Session.Goal.Status.is_terminal (Session.Goal.status goal)) ->
-          Some goal
-      | Some _ | None -> None)
-  | (None | Some _), _ -> None
-
-let open_goal_screen t =
-  match t.active_session with
-  | None -> ({ t with flash = Some "goal: no active session" }, [])
-  | Some session -> (
-      match t.session_view with
-      | Some view when session_view_matches session view ->
-          ( {
-              t with
-              surface =
-                Screen
-                  (Goal (Goal_screen.make (Session.Session_view.goal view)));
-            },
-            [] )
-      | None | Some _ ->
-          let t = { t with surface = Screen (Goal Goal_screen.loading) } in
-          let t, command = issue_session_view session t in
-          (t, [ command ]))
-
-(* [/goal <objective>] declares a goal by riding the next turn, mirroring the
-   headless [--goal] flag. The frontend never mints the goal itself; it stages
-   the objective and the engine admits it. A live goal is edited from the
-   management screen, so declaring over one is refused rather than replaced. *)
-let stage_goal objective t =
-  match current_live_goal t with
-  | Some _ ->
-      ( { t with flash = Some "a goal is already active; edit it from /goal" },
-        [] )
-  | None ->
-      ( {
-          t with
-          staged_goal = Some { Protocol.Command.objective; token_budget = None };
-          flash = None;
-        },
-        [] )
-
-let open_goal ?argument t =
-  match argument with
-  | Some objective -> stage_goal objective t
-  | None -> (
-      match t.staged_goal with
-      | Some _ ->
-          ( { t with staged_goal = None; flash = Some "goal staging cancelled" },
-            [] )
-      | None -> open_goal_screen t)
-
 let open_model ~return t =
   let panel = { state = Model_panel.loading t.current_snapshot; return } in
   let t, command =
@@ -2086,7 +2280,6 @@ let clear_session t =
   ( {
       (reset_conversation t) with
       active_session = None;
-      staged_goal = None;
       phase = Chat chat;
       pending = [];
       armed = None;
@@ -2126,7 +2319,7 @@ let selected_command_repairs_observation t =
      application, not to any one conversation. They dispatch identically in a
      drill: the panel or screen opens over it and the drill persists underneath.
 
-   - Conversation-lifecycle commands (clear, fork, compact, rename, goal) act on
+   - Conversation-lifecycle commands (clear, fork, compact, rename) act on
      a specific session through main-owned request accounting. In a drill they
      would silently target the hidden main session, so they are gated with an
      honest note directing the user back to main rather than acting on the wrong
@@ -2135,8 +2328,8 @@ let command_targets_conversation command =
   match Command.fate command with
   | Command.Clear_session | Command.Fork_session | Command.Rewind_session
   | Command.Undo_session | Command.Redo_session | Command.Compact_session
-  | Command.Rename_session | Command.Open_goal | Command.Init_project _ ->
-      true
+  | Command.Rename_session | Command.Init_project _ -> true
+  | Command.Goal_command -> true
   | Command.Open_model | Command.Open_theme | Command.Open_sessions
   | Command.Open_settings _ | Command.Open_login | Command.Open_logout
   | Command.Switch_mode _ | Command.Toggle_thinking | Command.Toggle_verbose
@@ -2270,7 +2463,6 @@ let rec dispatch_command ?argument command t =
     | Command.Open_login -> open_auth Auth_panel.Mode.Login argument t
     | Command.Open_logout -> open_auth Auth_panel.Mode.Logout argument t
     | Command.Open_settings tab -> open_settings tab t
-    | Command.Open_goal -> open_goal ?argument t
     | Command.Open_review -> open_review t
     | Command.Switch_mode mode -> ({ t with draft_mode = mode }, [])
     | Command.Toggle_thinking ->
@@ -2300,6 +2492,73 @@ let rec dispatch_command ?argument command t =
             ({ t with flash = Some "dune: watch stopped" }, [ verb ])
         | Some _ | None ->
             ({ t with flash = Some "usage: /dune restart|stop" }, []))
+    | Command.Goal_command -> (
+        match t.active_session with
+        | None -> ({ t with flash = Some "no active session for a goal" }, [])
+        | Some session -> (
+            match argument with
+            | None -> ({ t with flash = Some (goal_status_line t) }, [])
+            | Some "stop" -> (
+                match t.goal_intent with
+                | None -> ({ t with flash = Some "no goal to stop" }, [])
+                | Some _ ->
+                    let request, t = fresh_request t in
+                    let t = add_pending request (Goal_write None) t in
+                    let t =
+                      { t with goal_intent = None; goal_armed = false }
+                    in
+                    ( update_chat (append_notice (goal_notice "goal stopped")) t,
+                      [ Set_goal { request; session; goal = None } ] ))
+            | Some "resume" -> (
+                match t.goal_intent with
+                | None ->
+                    ( {
+                        t with
+                        flash =
+                          Some
+                            "no goal recorded on this session; /goal OBJECTIVE declares one";
+                      },
+                      [] )
+                | Some goal ->
+                    (* Re-arm, then read a fresh view: the loop's first
+                       decision runs when it lands. *)
+                    let t = { t with goal_armed = true } in
+                    let t =
+                      update_chat
+                        (append_notice
+                           (goal_notice
+                              ("goal re-armed: "
+                              ^ Session.Metadata.Goal.objective goal)))
+                        t
+                    in
+                    let t, view = issue_session_view session t in
+                    (t, [ view ]))
+            | Some raw -> (
+                match parse_goal_declaration raw with
+                | Error message -> ({ t with flash = Some message }, [])
+                | Ok goal ->
+                    let request, t = fresh_request t in
+                    let t = add_pending request (Goal_write (Some goal)) t in
+                    let t =
+                      {
+                        t with
+                        goal_intent = Some goal;
+                        goal_armed = true;
+                        goal_offered = true;
+                      }
+                    in
+                    let t =
+                      update_chat
+                        (append_notice
+                           (goal_notice
+                              ("goal declared: "
+                              ^ Session.Metadata.Goal.objective goal)))
+                        t
+                    in
+                    let t, view = issue_session_view session t in
+                    ( t,
+                      [ Set_goal { request; session; goal = Some goal }; view ]
+                    ))))
     | Command.Undo_session -> (
         match t.active_session with
         | None -> ({ t with flash = Some "undo: no active session" }, [])
@@ -2352,23 +2611,6 @@ let rec dispatch_command ?argument command t =
       ->
         dispatch_registry ?argument command t
 
-(* A staged goal rides only a fresh turn. If a live goal appeared since staging,
-   the declaration would fail admission, so it is dropped with an honest note
-   rather than losing the prompt it was attached to. *)
-and consume_staged_goal t =
-  match t.staged_goal with
-  | None -> (None, t)
-  | Some goal -> (
-      match current_live_goal t with
-      | Some _ ->
-          ( None,
-            {
-              t with
-              staged_goal = None;
-              flash = Some "goal not declared: a goal is already active";
-            } )
-      | None -> (Some goal, { t with staged_goal = None }))
-
 and submit_prompt ~entry ?mode ?(media = []) prompt t =
   let mode = Option.value mode ~default:t.draft_mode in
   if t.observation_lost then
@@ -2404,11 +2646,10 @@ and submit_prompt ~entry ?mode ?(media = []) prompt t =
             Queue_next { request; session; prompt; media }
             :: persistence (Some session) )
     else
-      let goal, t = consume_staged_goal t in
       match t.active_session with
       | Some session ->
           ( request_transcript_tail request (add_pending request Submission t),
-            Prompt { request; session; prompt; media; mode; goal }
+            Prompt { request; session; prompt; media; mode }
             :: persistence (Some session) )
       | None ->
           let model = t.staged_model in
@@ -2430,7 +2671,6 @@ and submit_prompt ~entry ?mode ?(media = []) prompt t =
                   media;
                   mode;
                   history = Some entry;
-                  goal;
                   model;
                 };
             ] )
@@ -2445,7 +2685,6 @@ let commit_rewind ~entry ?(media = []) text armed t =
       ({ t with rewind = None; flash = Some "rewind: no active session" }, [])
   | Some source ->
       let anchor = Session.Anchor.before_turn armed.rewind_anchor in
-      let goal, t = consume_staged_goal t in
       let request, t = fresh_request t in
       let mode = t.draft_mode in
       let t =
@@ -2463,7 +2702,6 @@ let commit_rewind ~entry ?(media = []) text armed t =
               media;
               mode;
               history = Some entry;
-              goal;
             };
         ] )
 
@@ -2581,7 +2819,6 @@ let current_command_scope t =
   | Screen (Sessions _) -> Some (Command.Screen Command.Sessions)
   | Screen (Review _) -> Some (Command.Screen Command.Review)
   | Screen (Settings _) -> Some (Command.Screen Command.Settings)
-  | Screen (Goal _) -> Some (Command.Screen Command.Goal)
   | Panel _ -> None
 
 (* Command-palette rows: every Global row plus the current surface's own rows,
@@ -3066,7 +3303,6 @@ let submit_drill_prompt ~entry ?(media = []) text drill t =
           prompt = text;
           media;
           mode = Session.Contract.Mode.Build;
-          goal = None;
         }
   in
   let drill =
@@ -3432,31 +3668,6 @@ let update_settings_screen message screen t =
           ({ keep with flash = Some "permission review needs a session" }, [])
       | Some session ->
           (keep, [ Set_permission_review { request; session; review } ]))
-
-let goal_command ~request ~session = function
-  | Goal_screen.Pause goal -> Goal_pause { request; session; goal }
-  | Goal_screen.Edit { goal; objective } ->
-      Goal_edit { request; session; goal; objective }
-  | Goal_screen.Resume { goal; budget } ->
-      Goal_resume { request; session; goal; budget }
-  | Goal_screen.Clear goal -> Goal_clear { request; session; goal }
-
-let update_goal_screen message screen t =
-  let screen, event = Goal_screen.update message screen in
-  let keep = { t with surface = Screen (Goal screen) } in
-  match event with
-  | Goal_screen.Stay -> (keep, [])
-  | Goal_screen.Close -> close_to_chat t
-  | Goal_screen.Request { mutation = request; command } -> (
-      match t.active_session with
-      | None ->
-          ( {
-              t with
-              surface = Conversing;
-              flash = Some "goal command has no active session";
-            },
-            [] )
-      | Some session -> (keep, [ goal_command ~request ~session command ]))
 
 let apply_dialog_outcome dialog outcome t =
   (* A dialog transition retires its previous validation; [Flash] below may
@@ -3951,9 +4162,6 @@ let install_session_view session view t =
       match t.surface with
       | Screen (Settings screen) ->
           Screen (Settings (Settings_screen.set_session (Some view) screen))
-      | Screen (Goal screen) ->
-          Screen
-            (Goal (Goal_screen.set_goal (Session.Session_view.goal view) screen))
       | Panel (Model model) ->
           let return =
             map_settings_return
@@ -4029,17 +4237,11 @@ let load_session_view_result ~request ~session result t =
   guard_request_session t.session_view_request request ~session t @@ fun t ->
   let t = { t with session_view_request = None } in
   match result with
-  | Ok view -> (install_session_view session view t, [])
-  | Error error -> (
-      match t.surface with
-      | Screen (Goal screen) ->
-          ( {
-              t with
-              surface = Screen (Goal (Goal_screen.load_failed error screen));
-            },
-            [] )
-      | Conversing | Panel _ | Screen (Sessions _ | Settings _ | Review _) ->
-          (command_error error t, []))
+  | Ok view ->
+      let t = install_session_view session view t in
+      if not (session_view_matches session view) then (t, [])
+      else goal_step (goal_learn view t)
+  | Error error -> (command_error error t, [])
 
 let load_pending_decision_result ~request ~session result t =
   guard_request_session t.pending_decision_request request ~session t
@@ -4075,7 +4277,7 @@ let apply_account_readiness_to_surface result surface =
       (Panel (Auth panel), Some (panel, event))
   | Conversing
   | Panel (Session_switch _ | Theme _ | Dialog _)
-  | Screen (Sessions _ | Goal _ | Review _) ->
+  | Screen (Sessions _ | Review _) ->
       (surface, None)
 
 let apply_model_readiness_to_surface result surface =
@@ -4089,7 +4291,7 @@ let apply_model_readiness_to_surface result surface =
       Panel (Model { model with state })
   | Conversing
   | Panel (Session_switch _ | Theme _ | Dialog _ | Auth _)
-  | Screen (Sessions _ | Settings _ | Goal _ | Review _) ->
+  | Screen (Sessions _ | Settings _ | Review _) ->
       surface
 
 let all_accounts_missing = function
@@ -4181,7 +4383,7 @@ let refresh_session_screen t =
       let request, t = fresh_request t in
       ( { t with screen_sessions_request = Some request },
         [ Load_screen_sessions request ] )
-  | Conversing | Panel _ | Screen (Settings _ | Goal _ | Review _) -> (t, [])
+  | Conversing | Panel _ | Screen (Settings _ | Review _) -> (t, [])
 
 (* A drill composer submission owns its own [drill_prompt] request, distinct
    from the observation's [drill_request]. Its admission is silent — the child
@@ -4250,6 +4452,19 @@ let command_succeeded_result request t =
     | Some { pending_kind = Rename | Archive | Restore | Delete; _ } ->
         let _, t = take_pending request t in
         refresh_session_screen t
+    | Some { pending_kind = Goal_write intent; _ } ->
+        let _, t = take_pending request t in
+        ( update_chat
+            (append_notice
+               (goal_notice
+                  (match intent with
+                  | Some _ -> "goal recorded in the session document"
+                  | None -> "goal retired from the session document")))
+            t,
+          [] )
+    | Some { pending_kind = Goal_turn; _ } ->
+        let _, t = take_pending request t in
+        (t, [])
     | None -> (t, [])
 
 let child_request_pending request t =
@@ -4296,7 +4511,7 @@ let session_mutation_failed error t =
                (Sessions_screen.mutation_failed (error_text error) screen));
         flash = None;
       }
-  | Conversing | Panel _ | Screen (Settings _ | Goal _ | Review _) ->
+  | Conversing | Panel _ | Screen (Settings _ | Review _) ->
       command_error error t
 
 let command_failed_result request error t =
@@ -4348,6 +4563,34 @@ let command_failed_result request error t =
     | Some { pending_kind = Rename | Archive | Restore | Delete; _ } ->
         let t = clear_child_request request error t in
         (session_mutation_failed error t, [])
+    | Some { pending_kind = Goal_write _; _ } ->
+        (* The offline twin could not commit — a live agent holds the fence,
+           or the write was refused. The loop stays armed for this terminal;
+           the durable record is the documented limitation until the
+           intent-write ruling lands. *)
+        ( update_chat
+            (append_notice
+               (goal_notice
+                  (Printf.sprintf
+                     "goal not recorded in the session document (%s); it stands for this terminal only"
+                     (error_text error))))
+            t,
+          [] )
+    | Some { pending_kind = Goal_turn; _ } -> (
+        match error with
+        | Protocol.Error.Active_turn_exists _ ->
+            (* The benign race: work arrived between the finished reading and
+               the submission; the loop re-decides at the next settle. *)
+            (t, [])
+        | _ ->
+            ( update_chat
+                (append_notice
+                   (goal_notice
+                      (Printf.sprintf
+                         "goal paused: the continuation was refused (%s) — /goal resume retries"
+                         (error_text error))))
+                { t with goal_armed = false },
+              [] ))
     | Some { pending_kind = Rewind { draft; _ }; _ } ->
         (* A rewind or its follow failed before the child was admitted: the feed
            is untouched and nothing was discarded, so restore the edited message
@@ -4462,15 +4705,6 @@ let settings_mutation_result request result t =
     | Screen (Settings screen) ->
         Screen
           (Settings (Settings_screen.mutation_finished request result screen))
-    | surface -> surface
-  in
-  ({ t with surface }, [])
-
-let goal_mutation_result request result t =
-  let surface =
-    match t.surface with
-    | Screen (Goal screen) ->
-        Screen (Goal (Goal_screen.mutation_finished request result screen))
     | surface -> surface
   in
   ({ t with surface }, [])
@@ -4863,13 +5097,13 @@ let dispatch_sessions_verb verb t =
   match t.surface with
   | Screen (Sessions screen) ->
       update_sessions_screen (Sessions_screen.verb verb) screen t
-  | Conversing | Panel _ | Screen (Settings _ | Goal _ | Review _) -> (t, [])
+  | Conversing | Panel _ | Screen (Settings _ | Review _) -> (t, [])
 
 let dispatch_review_verb verb t =
   match t.surface with
   | Screen (Review screen) ->
       update_review_screen (Review_screen.verb verb) screen t
-  | Conversing | Panel _ | Screen (Sessions _ | Settings _ | Goal _) -> (t, [])
+  | Conversing | Panel _ | Screen (Sessions _ | Settings _) -> (t, [])
 
 (* The total registry dispatcher: the folded gestures reach their effect
    functions here, the per-screen verbs route into their screen, and the slash
@@ -4907,11 +5141,12 @@ let dispatch_registry_impl ?argument command t =
   | Command.Review_prev_cr -> dispatch_review_verb `Prev_cr t
   | Command.Clear_session | Command.Fork_session | Command.Rewind_session
   | Command.Undo_session | Command.Redo_session | Command.Compact_session
-  | Command.Open_goal | Command.Rename_session | Command.Open_model
+  | Command.Rename_session | Command.Open_model
   | Command.Open_theme | Command.Open_sessions | Command.Open_settings _
   | Command.Open_login | Command.Open_logout | Command.Switch_mode _
   | Command.Toggle_thinking | Command.Toggle_verbose | Command.Open_review
-  | Command.Dune_command | Command.Init_project _ | Command.Quit ->
+  | Command.Dune_command | Command.Goal_command | Command.Init_project _
+  | Command.Quit ->
       dispatch_command ?argument command t
 
 let () = dispatch_registry_hook := dispatch_registry_impl
@@ -5034,8 +5269,6 @@ let update msg t =
   | Compaction_finished (request, result) -> compaction_result request result t
   | Settings_mutation_finished (request, result) ->
       settings_mutation_result request result t
-  | Goal_mutation_finished (request, result) ->
-      goal_mutation_result request result t
   | Capability_failed (request, diagnostic) ->
       if pending_request request t then
         let _, t = take_pending request t in
@@ -5091,7 +5324,7 @@ let update msg t =
   | Review_screen_msg message -> (
       match t.surface with
       | Screen (Review screen) -> update_review_screen message screen t
-      | Conversing | Panel _ | Screen (Sessions _ | Settings _ | Goal _) ->
+      | Conversing | Panel _ | Screen (Sessions _ | Settings _) ->
           (t, []))
   | Sessions_panel_msg message -> (
       match t.surface with
@@ -5105,18 +5338,13 @@ let update msg t =
   | Sessions_screen_msg message -> (
       match t.surface with
       | Screen (Sessions screen) -> update_sessions_screen message screen t
-      | Conversing | Panel _ | Screen (Settings _ | Goal _ | Review _) -> (t, [])
+      | Conversing | Panel _ | Screen (Settings _ | Review _) -> (t, [])
       )
   | Settings_screen_msg message -> (
       match t.surface with
       | Screen (Settings screen) -> update_settings_screen message screen t
-      | Conversing | Panel _ | Screen (Sessions _ | Goal _ | Review _) -> (t, [])
+      | Conversing | Panel _ | Screen (Sessions _ | Review _) -> (t, [])
       )
-  | Goal_screen_msg message -> (
-      match t.surface with
-      | Screen (Goal screen) -> update_goal_screen message screen t
-      | Conversing | Panel _ | Screen (Sessions _ | Settings _ | Review _) ->
-          (t, []))
   | Settings_paste text -> (
       match t.surface with
       | Screen (Settings screen) ->
@@ -5125,7 +5353,7 @@ let update msg t =
               surface = Screen (Settings (Settings_screen.paste text screen));
             },
             [] )
-      | Conversing | Panel _ | Screen (Sessions _ | Goal _ | Review _) -> (t, [])
+      | Conversing | Panel _ | Screen (Sessions _ | Review _) -> (t, [])
       )
   | Model_panel_msg message -> (
       match t.surface with
@@ -5321,32 +5549,11 @@ let completion_rows t =
         |> Mosaic.map (fun message -> History_search_msg message);
       ]
 
-(* A quiet standing cue so a staged goal is never invisible: it names the exact
-   objective that will ride the next turn and how to cancel it. It clears the
-   moment the goal is sent or the user runs a bare [/goal]. *)
-let staged_goal_rows t =
-  match t.staged_goal with
-  | None -> []
-  | Some { Protocol.Command.objective; _ } ->
-      [
-        box ~key:"composer.staged-goal" ~flex_shrink:0.
-          ~padding:(padding_lrtb 2 1 0 0)
-          ~size:{ width = pct 100; height = auto }
-          [
-            text
-              ~style:(Theme.Palette.muted_style t.palette)
-              ~wrap:`None
-              (Prims.normalize_inline
-                 ("◇ goal staged: " ^ objective ^ Theme.separator
-                ^ "/goal cancels"));
-          ];
-      ]
-
 let composer_region t =
   box ~key:"composer.region" ~flex_direction:Flex_direction.Column
     ~flex_shrink:0.
     ~size:{ width = pct 100; height = auto }
-    (staged_goal_rows t @ completion_rows t
+    (completion_rows t
     @ [
         composer_element
           ~top_margin:(if completion_open t || t.changes <> [] then 0 else 1)
@@ -5487,63 +5694,10 @@ let threads_section t =
   Pane_sections.section ~label:"agents" ~facts:(agent_facts t)
     (thread_strip ~placement:Threads_strip.Agents_pane t)
 
-(* The ambient session goal: the live admitted goal wins; otherwise a staged
-   [/goal] objective that rides the next prompt shows honestly as staged rather
-   than staying invisible until admission. Terminal goals vanish — the glance
-   states current intent, not history. *)
-let ambient_goal t =
-  match current_live_goal t with
-  | Some goal ->
-      let status =
-        match Session.Goal.status goal with
-        | Session.Goal.Status.Active -> []
-        | Session.Goal.Status.Paused -> [ "paused" ]
-        | Session.Goal.Status.Blocked _ -> [ "blocked" ]
-        | Session.Goal.Status.Budget_limited -> [ "budget-limited" ]
-        | Session.Goal.Status.Completed _ | Session.Goal.Status.Cleared -> []
-      in
-      let budget =
-        match Session.Goal.remaining_tokens goal with
-        | Some remaining -> [ Prims.compact_count remaining ^ " left" ]
-        | None -> []
-      in
-      Some (Session.Goal.objective goal, status @ budget)
-  | None -> (
-      match t.staged_goal with
-      | Some { Protocol.Command.objective; _ } -> Some (objective, [ "staged" ])
-      | None -> None)
-
-let goal_section t =
-  match ambient_goal t with
-  | None -> Pane_sections.section ~label:"goal" []
-  | Some (objective, facts) ->
-      Pane_sections.section ~label:"goal" ~facts
-        (Workspace_glance.goal ~palette:t.palette ~labelled:false
-           ~objective:(Some objective))
-
 let workspace_changed t =
   match t.changes with
   | [] -> None
   | _ :: _ -> Some (Change.of_changes t.changes)
-
-(* Cumulative session spend: the whole session's metered usage priced by the
-   active model's catalog rate. It is distinct from the occupancy the [context]
-   rows show, and it is withheld — never a fabricated zero — when the catalog
-   carries no rate for the model. A view still describing a previous conversation
-   contributes nothing. *)
-let workspace_spent t =
-  match (t.active_session, t.session_view) with
-  | Some session, Some view when session_view_matches session view ->
-      let usage = (Session.Session_view.metrics view).Session.Metrics.usage in
-      let model =
-        match
-          Mentat_provider.Selector.of_string (Snapshot.model t.current_snapshot)
-        with
-        | Ok selector -> model_catalog t selector
-        | Error _ -> None
-      in
-      Option.bind model (fun model -> Mentat_provider.Model.cost model usage)
-  | _, None | None, _ | Some _, Some _ -> None
 
 (* The two independent poll signals. The worktree diff is absent until the
    first glance returns; the tooling status defaults to [Off Disabled] (no
@@ -5587,14 +5741,11 @@ let running_section t =
     (Workspace_glance.running ~palette:t.palette ~running:t.running)
 
 let pane_rows chat t =
-  (* Established pane priority: the goal (the session's intent headlines
-     everything beneath it), then workspace, context, and running processes
+  (* Established pane priority: workspace, context, and running processes
      (ambient), agents, then tasks. Each section renders only when it has live
      content, so an idle workspace or a childless run leaves no orphan heading. *)
   let sections =
-    [
-      goal_section t; workspace_section t; context_section t; running_section t;
-    ]
+    [ workspace_section t; context_section t; running_section t ]
     @ (if t.children = [] then [] else [ threads_section t ])
     @
     match chat.task_board with
@@ -5710,16 +5861,6 @@ let ambiguity_status t =
     ]
   else []
 
-(* The narrow strip shares the pane's tenants that survive the width squeeze:
-   the goal line leads (labelled, because the strip has no section headers),
-   then the task board. One rule bounds the whole strip. *)
-let narrow_goal t =
-  match ambient_goal t with
-  | None -> []
-  | Some (objective, _) ->
-      Workspace_glance.goal ~palette:t.palette ~labelled:true
-        ~objective:(Some objective)
-
 (* The narrow activity carried inside the transcript region: only the todo board
    (a side-pane tenant on wide, hence narrow-only here). The agent switcher does
    not ride the region; it stacks beneath the composer exactly as the main view
@@ -5731,7 +5872,7 @@ let narrow_activity chat t =
     | None -> []
     | Some board -> Todo_board.view ~palette:t.palette board
   in
-  match narrow_goal t @ board with
+  match board with
   | [] -> []
   | rows -> Todo_board.strip_rule ~palette:t.palette :: rows
 
@@ -5754,9 +5895,9 @@ let narrow_only element =
 
 (* The main view keeps the agent switcher out of the transcript region and
    stacks it beneath the composer instead (see [chat_view]), so on a narrow
-   terminal the region carries the transcript and its tail: the goal line and
-   todo board (side-pane tenants on wide, hence narrow-only here), then the
-   ambiguity, strip, and change-tally rows. The tail rides inside the region so
+   terminal the region carries the transcript and its tail: the todo board (a
+   side-pane tenant on wide, hence narrow-only here), then the ambiguity,
+   strip, and change-tally rows. The tail rides inside the region so
    the side pane's rule spans it and the region's bottom edge meets the
    composer. *)
 let chat_region ?extra chat t =
@@ -5767,8 +5908,6 @@ let chat_region ?extra chat t =
   in
   let board =
     let rows =
-      narrow_goal t
-      @
       match chat.task_board with
       | None -> []
       | Some board -> Todo_board.view ~palette:t.palette board
@@ -6047,11 +6186,6 @@ let screen_view screen t =
         ~frame:(Theme.Palette.rule t.palette)
         screen
       |> Mosaic.map (fun message -> Settings_screen_msg message)
-  | Goal screen ->
-      Goal_screen.view ~palette:t.palette
-        ~frame:(Theme.Palette.rule t.palette)
-        screen
-      |> Mosaic.map (fun message -> Goal_screen_msg message)
   | Review screen ->
       Review_screen.view ~palette:t.palette ~width:t.cols ~height:t.rows
         ~inject:(fun message -> Review_screen_msg message)
@@ -6114,11 +6248,12 @@ let sessions_verb_of_fate = function
   | Command.Sessions_delete -> Some `Delete
   | Command.Clear_session | Command.Fork_session | Command.Rewind_session
   | Command.Undo_session | Command.Redo_session | Command.Compact_session
-  | Command.Open_goal | Command.Rename_session | Command.Open_model
+  | Command.Rename_session | Command.Open_model
   | Command.Open_theme | Command.Open_sessions | Command.Open_settings _
   | Command.Open_login | Command.Open_logout | Command.Switch_mode _
   | Command.Toggle_thinking | Command.Toggle_verbose | Command.Open_review
-  | Command.Dune_command | Command.Init_project _ | Command.Quit
+  | Command.Dune_command | Command.Goal_command | Command.Init_project _
+  | Command.Quit
   | Command.Interrupt | Command.Toggle_expanded | Command.Transcript_page _
   | Command.Focus_switch
   | Command.History_search | Command.Edit_in_editor | Command.Open_palette
@@ -6140,11 +6275,12 @@ let review_verb_of_fate = function
   | Command.Review_prev_cr -> Some `Prev_cr
   | Command.Clear_session | Command.Fork_session | Command.Rewind_session
   | Command.Undo_session | Command.Redo_session | Command.Compact_session
-  | Command.Open_goal | Command.Rename_session | Command.Open_model
+  | Command.Rename_session | Command.Open_model
   | Command.Open_theme | Command.Open_sessions | Command.Open_settings _
   | Command.Open_login | Command.Open_logout | Command.Switch_mode _
   | Command.Toggle_thinking | Command.Toggle_verbose | Command.Open_review
-  | Command.Dune_command | Command.Init_project _ | Command.Quit
+  | Command.Dune_command | Command.Goal_command | Command.Init_project _
+  | Command.Quit
   | Command.Interrupt | Command.Toggle_expanded | Command.Transcript_page _
   | Command.Focus_switch
   | Command.History_search | Command.Edit_in_editor | Command.Open_palette
@@ -6195,12 +6331,12 @@ let key_message t event =
     | Command.Open_palette -> emit Open_command_palette
     | Command.Clear_session | Command.Fork_session | Command.Rewind_session
     | Command.Undo_session | Command.Redo_session | Command.Compact_session
-    | Command.Open_goal | Command.Rename_session | Command.Open_model
+    | Command.Rename_session | Command.Open_model
     | Command.Open_theme | Command.Open_sessions | Command.Open_settings _
     | Command.Open_login | Command.Open_logout | Command.Switch_mode _
     | Command.Toggle_thinking | Command.Toggle_verbose | Command.Open_review
-    | Command.Dune_command | Command.Copy_selection | Command.Init_project _
-    | Command.Quit ->
+    | Command.Dune_command | Command.Goal_command | Command.Copy_selection
+    | Command.Init_project _ | Command.Quit ->
         emit (Run_command command)
     | Command.Sessions_fork | Command.Sessions_rename | Command.Sessions_archive
     | Command.Sessions_restore | Command.Sessions_delete | Command.Review_toggle
@@ -6300,21 +6436,6 @@ let key_message t event =
                 Option.map
                   (fun message -> Settings_screen_msg message)
                   (Settings_screen.key data)
-            | Screen (Goal screen) ->
-                if Goal_screen.editing screen then
-                  match key with
-                  | Matrix.Input.Key.Escape ->
-                      Mosaic.Event.Key.prevent_default event;
-                      Option.map
-                        (fun message -> Goal_screen_msg message)
-                        (Goal_screen.key data)
-                  | _ -> None
-                else begin
-                  Mosaic.Event.Key.prevent_default event;
-                  Option.map
-                    (fun message -> Goal_screen_msg message)
-                    (Goal_screen.key data)
-                end
             | Screen (Review screen) -> (
                 Mosaic.Event.Key.prevent_default event;
                 let classifier () =
@@ -6369,7 +6490,7 @@ let paste_subscription t =
       Mosaic.Sub.on_paste_all (handler (fun text -> Settings_paste text))
   | Conversing
   | Panel (Session_switch _ | Dialog _ | Auth _)
-  | Screen (Sessions _ | Goal _ | Review _) ->
+  | Screen (Sessions _ | Review _) ->
       Mosaic.Sub.none
 
 (* [Turn_tick] advances [spinner] one frame every [spinner_frame_interval]

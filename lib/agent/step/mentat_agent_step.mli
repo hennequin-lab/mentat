@@ -15,18 +15,18 @@
     The firewall: every event the step emits goes through the session's checked
     constructors and is validated by [State.apply] before the step returns — the
     step never hand-builds an event beyond what the session API mints, and the
-    driver appends nothing beyond the three driver-owned facts (interrupt
-    request, queue, goal), each minted by the same checked constructors and
+    driver appends nothing beyond the two driver-owned facts (interrupt
+    request, queue), each minted by the same checked constructors and
     validated by the same replay. Journal verbs, permission review, decision
     routing, admission, and compaction policy are all evaluated here; the driver
     only ever sees the action sum.
 
     Determinism: claim and decision identifiers derive inside the session
     library's constructors from stable inputs the step supplies, and the child
-    session and goal identifiers the step itself mints are digests of stable
-    inputs (the source turn and call); the step mints no entropy, reads no
-    clock, and performs no IO — the library's dependency set contains no effect
-    library. *)
+    session identifiers the step itself mints are digests of stable inputs (the
+    source turn and call); the step mints no entropy, reads no clock, and
+    performs no IO — the library's dependency set contains no effect library.
+*)
 
 module Catalog = Catalog
 (** The one dispatch surface. *)
@@ -147,21 +147,31 @@ module Step : sig
         call's own decoded input — never from a journal heuristic. *)
   end
 
-  module Child_message : sig
+  module Mail : sig
+    (** Whom a recorded message addresses, resolved from the recording
+        session's own facts. *)
+    type target =
+      | Child of Mentat_session.Delegation.Id.t
+          (** One of the session's own recorded delegation edges. *)
+      | Parent
+          (** The session's recorded delegation parent — its
+              [delegated_from] lineage. *)
+
     type t = private {
       turn : Mentat_session.Turn.Id.t;
-          (** The parent turn whose verb call recorded the message. *)
+          (** The turn whose verb call recorded the message. *)
       call_id : string;  (** The recording model tool-call id. *)
       kind : [ `Context | `Follow_up ];
-          (** [`Context] is [send_message]; [`Follow_up] is [follow_up]. *)
-      child : Mentat_session.Delegation.Id.t;
-          (** The delegation edge the message targets. *)
+          (** [`Context] is [send] (and the retired [send_message]
+              spelling); [`Follow_up] is [follow_up], always to a
+              {!Child}. *)
+      target : target;  (** Whom the message addresses. *)
       message : string;  (** The message text, non-empty. *)
     }
-    (** A recorded parent-to-child message, decoded from the verb call whose
-        successful receipt is durable in the parent transcript — the delivery
-        carrier. [(turn, call_id)] is the stable key delivery derives its
-        idempotency id from. *)
+    (** A recorded model-origin message, decoded from the verb call whose
+        successful receipt is durable in the recording transcript — the
+        delivery carrier. [(turn, call_id)] is the stable key delivery
+        derives its idempotency id from. *)
   end
 
   (** The type for the single action after a commit. *)
@@ -203,47 +213,22 @@ module Admission : sig
   type t =
     | Queued of Mentat_session.Queue.Entry.t
         (** Admit this queued entry; admission consumes it. *)
-    | Continuation of Mentat_session.Turn.Input.t
-        (** Admit a goal-continuation turn with this input. *)
-    | Budget_wind_down of {
-        goal : Mentat_session.Goal.Id.t;
-        input : Mentat_session.Turn.Input.t;
-      }
-        (** The active goal's token budget is exhausted. The driver records the
-            {!Mentat_session.Goal.Update.budget_limited} transition for [goal]
-            and then admits one final goal-continuation wind-down turn with
-            [input]; the now budget-limited goal admits no further continuation.
-        *)
     | Step_limit_wind_down of Mentat_session.Turn.Input.t
         (** The last turn settled {!Mentat_session.Turn.Outcome.Step_limit}. The
             driver admits one wrap-up turn with [input] under the
             {!Mentat_session.Turn.Origin.Step_limit_wind_down} origin, which is
             what keeps a wind-down that spends its own budget from admitting
-            another. Independent of the goal: it is admitted with no goal, with
-            a goal whose continuation is exhausted, and between two turns of a
-            goal that then continues normally. *)
+            another. *)
     | Idle  (** Nothing to admit; park. *)
 end
 
-val next_admission :
-  continuation_turn_limit:int option -> Mentat_session.State.t -> Admission.t
-(** [next_admission ~continuation_turn_limit state] is what the driver admits at
-    an idle boundary: Queued beats a goal turn beats a step-limit wind-down
-    beats Idle. The driver consumes a pending exact plan approval as a
-    [Plan_build] Build turn before consulting this, so the effective admission
-    order is Plan_build, then Queued, then a goal turn, then a step-limit
-    wind-down, then Idle. A goal turn is admissible only when the state is idle
-    with an empty queue, the last settle was clean ([Completed] or
-    [Step_limit]), the goal is active, and [continuation_turn_limit] allows. The
-    goal turn is [Budget_wind_down] when the goal's budget is exhausted (a final
-    wind-down), otherwise [Continuation]; a continuation whose objective was
-    edited since the last goal turn carries the objective-updated notice
-    ({!Mentat_session.State.goal_objective_edit_pending}). A
-    [Step_limit_wind_down] displaces that continuation for exactly one turn and
-    is also admitted where no goal turn is: the goal's own budget notice, which
-    subsumes it and parks the goal, still wins. Pure; the driver enacts it by
-    calling {!start} with the origin the arm names and a host-minted id,
-    recording the budget-limited transition first for a [Budget_wind_down]. *)
+val next_admission : Mentat_session.State.t -> Admission.t
+(** [next_admission state] is what the driver admits at an idle boundary: Queued
+    beats a step-limit wind-down beats Idle. The driver consumes a pending exact
+    plan approval as a [Plan_build] Build turn before consulting this, so the
+    effective admission order is Plan_build, then Queued, then a step-limit
+    wind-down, then Idle. Pure; the driver enacts it by calling {!start} with
+    the origin the arm names and a host-minted id. *)
 
 (** {1:entry Entry points} *)
 
@@ -301,8 +286,8 @@ val compact :
     without a fact, exactly like any provider claim. The summary reason is
     {!Mentat_session.Compaction.Reason.User_requested}.
 
-    A compaction turn is transparent to goal continuation ({!next_admission}
-    skips it) and projects only the [Compaction] fact it installs, never its own
+    A compaction turn is transparent to admission ({!next_admission} skips it)
+    and projects only the [Compaction] fact it installs, never its own
     turn-boundary facts. This keeps the manual and automatic paths one path:
     nothing about the automatic prelude changes.
 
@@ -504,26 +489,41 @@ val deliver_child :
     returns an empty-commit step re-reporting the same [Await_children ~wait]
     (idempotent). *)
 
-(** {1:messages Recorded child messages}
+(** {1:messages Recorded mail}
 
-    The durable carrier of a parent-to-child message is the parent transcript:
-    the [send_message]/[follow_up] call's decoded input plus its successful
-    receipt. The step records honestly — the receipt promises delivery at
+    The durable carrier of a recorded message is the recording transcript:
+    the [send]/[follow_up] call's decoded input plus its successful receipt.
+    The step records honestly — the receipt promises delivery at
     settlement — and the driver detects each settled receipt and routes
-    delivery; recovery re-drives receipts whose delivery never reached the child
-    journal. *)
+    delivery; recovery re-drives receipts whose delivery never reached the
+    target journal. Receipts recorded under the retired [send_message]
+    spelling decode forever — old journals redrive through the same path. *)
 
 val settled_message :
-  Mentat_session.t -> Mentat_session.Event.t -> Step.Child_message.t option
-(** [settled_message session event] is the recorded child message when [event]
-    is a successful [send_message]/[follow_up] receipt, paired with its call in
+  Mentat_session.t -> Mentat_session.Event.t -> Step.Mail.t option
+(** [settled_message session event] is the recorded message when [event] is a
+    successful [send]/[follow_up] receipt, paired with its call in
     [session]'s journal (the committed head containing [event]); [None]
     otherwise. The driver's per-commit delivery detector. *)
 
-val settled_messages : Mentat_session.t -> Step.Child_message.t list
-(** [settled_messages session] is every recorded child message in [session]'s
-    journal, in journal order — the recovery scan's input and the exchange cap's
-    per-edge count. *)
+val settled_messages : Mentat_session.t -> Step.Mail.t list
+(** [settled_messages session] is every recorded message in [session]'s
+    journal, in journal order — the recovery scan's input and the exchange
+    cap's per-edge count. *)
+
+val queued_input :
+  Mentat_session.t ->
+  Mentat_session.Queue.Entry.t ->
+  Mentat_llm.Content.t list
+(** [queued_input session entry] is the turn input admission mints when it
+    consumes [entry] from [session]'s queue. An owner entry (no origin) is
+    its content verbatim — today's queued input, unchanged. An origin-bearing
+    entry is framed: a leading text block names the sender from the typed
+    origin alone — [session]'s own recorded lineage and edges name a parent
+    or child where they can, the raw id otherwise — and fences the body as
+    material from that sender, never as the owner's instructions; the body
+    blocks follow unchanged. The body never influences the framing, so a
+    hostile body cannot imitate a better sender. *)
 
 val interrupt :
   ?reason:string ->

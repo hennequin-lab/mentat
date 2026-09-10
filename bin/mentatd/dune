@@ -1,0 +1,34 @@
+(executable
+ (name main)
+ (public_name mentatd)
+ (package mentat)
+ (modules
+  github_auth
+  cli_github_app
+  cli_routine
+  routine_dashboard
+  routine_reconcile
+  daemon_server
+  main
+  node
+  service)
+ (libraries
+  cmdliner
+  eio
+  eio_main
+  unix
+  mentat_boot
+  mentat_broker
+  mentat_routine
+  mentat_client
+  ; mentat_connector: the publication marker grammar github_auth injects as
+  ; the posted-comment predicate
+  mentat_connector
+  github
+  mentat_protocol
+  mentat_provider_runtime
+  mentat_server
+  mentat_session
+  mentat_store
+  mentat_web
+  uri))

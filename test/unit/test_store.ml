@@ -754,6 +754,122 @@ let fence_excludes_and_names_the_holder () =
        [ observed_event ~claim:"claim-succ" [ "a.ml" ] ]);
   Store.Run_lock.release successor
 
+(* The read-only fence probe: it never creates run.lock, answers a
+   same-process hold from the registry (POSIX record locks are invisible to a
+   same-process OS probe), and reads the lock — not the file — as the truth.
+   The cross-process Held arm needs a second process and is exercised by the
+   daemon's blackbox suite. *)
+let holder_probes_without_contending () =
+  with_store "holder" @@ fun ~sw ~base ~session:store ~mutation:_ ->
+  let _document =
+    ok_store "create"
+      (Store.Session.create store
+         (session_fixture ~id:"s-holder" ~at:1_000
+            ~events:(open_claim_events ()) ()))
+  in
+  let lock_path = Filename.concat base "sessions/s-holder/run.lock" in
+  (match Store.Run_lock.holder store ~session:(sid "s-holder") with
+  | `Free -> ()
+  | `Held _ -> fail "an unfenced session must probe Free"
+  | `Io io -> failf "holder io: %a" Store.Io.pp io);
+  is_false ~msg:"the probe must not create run.lock"
+    (Sys.file_exists lock_path);
+  let holder_owner = owner "probe-holder" in
+  let guard =
+    match
+      Store.Run_lock.try_acquire ~sw store ~session:(sid "s-holder")
+        ~owner:holder_owner
+    with
+    | Ok guard -> guard
+    | Error _ -> fail "acquisition must succeed"
+  in
+  (match Store.Run_lock.holder store ~session:(sid "s-holder") with
+  | `Held (Some reported) ->
+      equal owner_value ~msg:"the same-process probe names the holder"
+        holder_owner reported
+  | `Held None -> fail "the same-process probe must name the holder"
+  | `Free -> fail "a held fence must probe Free"
+  | `Io io -> failf "holder io: %a" Store.Io.pp io);
+  Store.Run_lock.release guard;
+  is_true ~msg:"release leaves the owner-line file behind"
+    (Sys.file_exists lock_path);
+  match Store.Run_lock.holder store ~session:(sid "s-holder") with
+  | `Free -> ()
+  | `Held _ -> fail "a released fence must probe Free"
+  | `Io io -> failf "holder io: %a" Store.Io.pp io
+
+(* The cheap document identity: one stat, no read — present iff the document
+   is, stable while the bytes are, and changed by a commit (every replace
+   lands on a fresh inode). *)
+let stamp_is_cheap_document_identity () =
+  with_fenced "stamp"
+  @@ fun ~sw:_ ~base:_ ~session:store ~mutation:_ ~id ~guard ~document ->
+  is_true ~msg:"a missing document has no stamp"
+    (Option.is_none (Store.Session.stamp store (sid "s-absent")));
+  let first = Store.Session.stamp store (sid id) in
+  is_true ~msg:"a present document has a stamp" (Option.is_some first);
+  equal (option string) ~msg:"an unchanged document keeps its stamp" first
+    (Store.Session.stamp store (sid id));
+  let (_ : Store.Session.Document.t) =
+    ok_store "commit"
+      (Store.Session.commit store ~fence:guard document
+         (Store.Session.Document.session document))
+  in
+  is_false ~msg:"a commit changes the stamp"
+    (Option.equal String.equal first (Store.Session.stamp store (sid id)))
+
+(* The probe/acquire mutual exclusion, raced under one Eio domain: a fence
+   probe must never observe [`Free] while this process holds the fence, and an
+   acquisition landing during a probe's descriptor window is turned away with
+   a transient [`Held] rather than admitted — a lock taken then would be
+   silently dropped when the probe descriptor closes (closing any descriptor
+   to the inode drops every record lock this process holds on it), leaving the
+   guard live with no fence: the two-writer hole. The acquire loop treats the
+   transient [`Held] as the retry it is, so the assertions hold at every
+   interleaving the scheduler produces. What this cannot pin in-process: the
+   OS lock's cross-process retention after a probe (POSIX record locks are
+   invisible within, and only droppable by, the owning process), which the
+   daemon blackbox suite exercises with a real second process. *)
+let holder_never_reads_a_held_fence_free () =
+  with_store "probe-race" @@ fun ~sw:_ ~base:_ ~session:store ~mutation:_ ->
+  let _document =
+    ok_store "create"
+      (Store.Session.create store
+         (session_fixture ~id:"s-race" ~at:1_000
+            ~events:(open_claim_events ()) ()))
+  in
+  let held = Atomic.make false in
+  let done_probing = ref false in
+  Eio.Switch.run @@ fun sw ->
+  Eio.Fiber.both
+    (fun () ->
+      while not !done_probing do
+        (match
+           Store.Run_lock.try_acquire ~sw store ~session:(sid "s-race")
+             ~owner:(owner "race-driver")
+         with
+        | Ok guard ->
+            Atomic.set held true;
+            Eio.Fiber.yield ();
+            Atomic.set held false;
+            Store.Run_lock.release guard
+        | Error (`Held _) -> ()
+        | Error (`Io io) -> failf "acquire io: %a" Store.Io.pp io);
+        Eio.Fiber.yield ()
+      done)
+    (fun () ->
+      for _ = 1 to 200 do
+        let before = Atomic.get held in
+        (match Store.Run_lock.holder store ~session:(sid "s-race") with
+        | `Free ->
+            is_false ~msg:"a probe must never read a held fence Free"
+              (before || Atomic.get held)
+        | `Held _ -> ()
+        | `Io io -> failf "holder io: %a" Store.Io.pp io);
+        Eio.Fiber.yield ()
+      done;
+      done_probing := true)
+
 let released_guards_are_refused_by_appends () =
   with_fenced "released"
   @@ fun ~sw:_ ~base:_ ~session:_ ~mutation ~id:_ ~guard ~document ->
@@ -3101,6 +3217,12 @@ let () =
       (* Run lock *)
       test "the fence excludes a second acquisition and names the holder"
         fence_excludes_and_names_the_holder;
+      test "the fence probe observes without contending"
+        holder_probes_without_contending;
+      test "the fence probe never reads a held fence Free"
+        holder_never_reads_a_held_fence_free;
+      test "the stamp is a cheap document identity"
+        stamp_is_cheap_document_identity;
       test "released guards are refused by every mutation append"
         released_guards_are_refused_by_appends;
       test "a guard never passes against another root's registry"

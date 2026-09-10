@@ -15,8 +15,6 @@ let json_list values = Jsont.Json.list values
 let string_schema =
   json_obj [ ("type", json_string "string"); ("minLength", Jsont.Json.int 1) ]
 
-let int_schema = json_obj [ ("type", json_string "integer") ]
-
 let enum_schema values =
   json_obj
     [
@@ -39,44 +37,32 @@ let object_schema ?(required = []) properties =
 module Verb = struct
   type t =
     | Todo_write
-    | Update_goal
     | Ask_user
     | Propose_plan
     | Spawn
     | Wait
-    | Send_message
+    | Send
     | Follow_up
 
   let reserved =
-    [
-      Todo_write;
-      Update_goal;
-      Ask_user;
-      Propose_plan;
-      Spawn;
-      Wait;
-      Send_message;
-      Follow_up;
-    ]
+    [ Todo_write; Ask_user; Propose_plan; Spawn; Wait; Send; Follow_up ]
 
   let name = function
     | Todo_write -> "todo_write"
-    | Update_goal -> "update_goal"
     | Ask_user -> "ask_user"
     | Propose_plan -> "propose_plan"
     | Spawn -> "spawn"
     | Wait -> "wait"
-    | Send_message -> "send_message"
+    | Send -> "send"
     | Follow_up -> "follow_up"
 
   let description = function
     | Todo_write -> Mentat_prompts.Tools.todo_write
-    | Update_goal -> Mentat_prompts.Tools.update_goal
     | Ask_user -> Mentat_prompts.Tools.ask_user
     | Propose_plan -> Mentat_prompts.Tools.propose_plan
     | Spawn -> Mentat_prompts.Tools.spawn
     | Wait -> Mentat_prompts.Tools.wait
-    | Send_message -> Mentat_prompts.Tools.send_message
+    | Send -> Mentat_prompts.Tools.send
     | Follow_up -> Mentat_prompts.Tools.follow_up
 
   let input_schema = function
@@ -96,25 +82,6 @@ module Verb = struct
                      ("priority", enum_schema [ "high"; "medium"; "low" ]);
                    ]) );
           ]
-    | Update_goal ->
-        object_schema ~required:[ "action" ]
-          [
-            ( "action",
-              enum_schema
-                [
-                  "declare";
-                  "pause";
-                  "resume";
-                  "edit";
-                  "clear";
-                  "complete";
-                  "block";
-                ] );
-            ("objective", string_schema);
-            ("token_budget", int_schema);
-            ("summary", string_schema);
-            ("reason", string_schema);
-          ]
     | Ask_user ->
         object_schema ~required:[ "prompt" ]
           [ ("prompt", string_schema); ("choices", array_schema string_schema) ]
@@ -131,7 +98,10 @@ module Verb = struct
     | Wait ->
         object_schema ~required:[ "children" ]
           [ ("children", array_schema string_schema) ]
-    | Send_message | Follow_up ->
+    | Send ->
+        object_schema ~required:[ "to"; "message" ]
+          [ ("to", string_schema); ("message", string_schema) ]
+    | Follow_up ->
         object_schema ~required:[ "child"; "message" ]
           [ ("child", string_schema); ("message", string_schema) ]
 
@@ -157,6 +127,32 @@ end
 type t = { tools : Mentat_tool.t list; verbs : Verb.t list }
 
 let output_tool_name = "structured_output"
+
+(* The record itself, never a captured stream: the input of the last
+   [structured_output] claim in the head turn, and only when that turn
+   completed, since completion is what proves the claim was the
+   schema-conforming terminating answer. *)
+let claim session =
+  let state = Mentat_session.state session in
+  match Mentat_session.State.settled_head state with
+  | Some (turn, Some Mentat_session.Turn.Outcome.Completed) ->
+      let head = Mentat_session.Turn.id turn in
+      List.fold_left
+        (fun acc (started, _settled) ->
+          if
+            Mentat_session.Turn.Id.equal
+              (Mentat_session.Tool_claim.Started.turn started)
+              head
+            && String.equal
+                 (Mentat_llm.Tool.Call.name
+                    (Mentat_session.Tool_claim.Started.call started))
+                 output_tool_name
+          then Some (Mentat_session.Tool_claim.Started.input started)
+          else acc)
+        None
+        (Mentat_session.State.tool_claims state)
+  | Some (_, _) | None -> None
+
 let tool_name tool = Mentat_llm.Tool.name (Mentat_tool.declaration tool)
 
 let is_verb_name name =

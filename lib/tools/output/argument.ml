@@ -131,11 +131,6 @@ let wait json =
   | None -> None
   | Some children -> Some (String.concat ", " children)
 
-let update_goal json =
-  match string_member "objective" json with
-  | Some objective -> Some objective
-  | None -> string_member "action" json
-
 let headline ~tool ~input =
   let projected =
     match tool with
@@ -156,8 +151,10 @@ let headline ~tool ~input =
     | "skill" -> string_member "name" input
     | "spawn" -> spawn input
     | "wait" -> wait input
+    | "send" -> string_member "to" input
+    (* The retired [send_message] spelling still renders: recorded calls in
+       old journals outlive the verb. *)
     | "send_message" | "follow_up" -> string_member "child" input
-    | "update_goal" -> update_goal input
     (* These built-ins have no header argument: [apply_patch] carries its paths
        inside the patch envelope, and the task board, plan, and question render
        from their own facts. *)

@@ -7,7 +7,7 @@
    the mechanism laws and the replay invariant families:
    turn lifecycle, the single suspension, provider and tool claims including
    the two-claim staged lifecycle, decisions with their validation and
-   derivations, interrupt admissibility, the compaction closer, goals, boards,
+   derivations, interrupt admissibility, the compaction closer, boards,
    delegations, the queue, branch/rewind, and the durable codecs.
 
    Everything is tested through the [Mentat_session] facade. Prepared
@@ -171,8 +171,6 @@ let queue_entry_value =
 let board_value =
   Testable.make ~pp:Session.Task.Board.pp ~equal:Session.Task.Board.equal
 
-let goal_value = Testable.make ~pp:Session.Goal.pp ~equal:Session.Goal.equal
-
 let delegation_value =
   Testable.make ~pp:Session.Delegation.pp ~equal:Session.Delegation.equal
 
@@ -272,7 +270,6 @@ let sandbox_identity = Sandbox.identity Sandbox.direct
 let external_identity = Sandbox.identity Sandbox.external_
 let turn_id id = Session.Turn.Id.of_string id
 let queue_id id = Session.Queue.Id.of_string id
-let goal_id id = Session.Goal.Id.of_string id
 let session_id id = Session.Id.of_string id
 
 let make_contract ?(mode = Session.Contract.Mode.Build) ?(model = model)
@@ -398,6 +395,7 @@ let board items = ok_or "board" (Session.Task.Board.make items)
 
 let queue_entry ?(id = "q-1") text =
   Session.Queue.Entry.make ~id:(queue_id id) ~input:[ Llm.Content.text text ]
+    ()
 
 let finish ?(outcome = Session.Turn.Outcome.completed) t =
   Event.turn_finished ~turn:(Session.Turn.id t) outcome
@@ -487,7 +485,6 @@ let assert_states_equal ~msg a b =
     (Permission.Policy.Grants.equal (State.grants a) (State.grants b));
   equal (list rule_value) ~msg:(m "permission rules") (State.permission_rules a)
     (State.permission_rules b);
-  equal (option goal_value) ~msg:(m "goal") (State.goal a) (State.goal b);
   equal board_value ~msg:(m "tasks") (State.tasks a) (State.tasks b);
   equal (list queue_entry_value) ~msg:(m "queue") (State.pending_queue a)
     (State.pending_queue b);
@@ -498,8 +495,8 @@ let assert_states_equal ~msg a b =
 
 (* A realistic three-turn journey exercising every fact family: a user turn
    with a direct claim, a permission-reviewed claim, an unattended denial, the
-   staged pair, a host rejection append, queue/board/delegation facts; a goal
-   continuation turn with a mid-turn compaction; and a queued turn that is
+   staged pair, a host rejection append, queue/board/delegation facts; a
+   triggered turn with a mid-turn compaction; and a queued turn that is
    interrupted. It backs the replay-algebra, determinism, document round-trip,
    and metrics tests. *)
 
@@ -584,7 +581,10 @@ let journal () =
       ()
   in
   let t2 =
-    turn ~id:"turn-2" ~origin:Session.Turn.Origin.Goal_continuation
+    turn ~id:"turn-2"
+      ~origin:
+        (Session.Turn.Origin.triggered ~source:"nightly" ~digest:"d0"
+           ~key:"k0" ())
       ~input:Session.Turn.Input.continue
       ~contract:(make_contract ~declarations ())
       ()
@@ -654,18 +654,14 @@ let journal () =
       Event.provider_requested p2;
       respond ~usage:(usage ~input:30 ~output:9) p2 "All done.";
       finish t1;
-      (* Goal declared between turns. *)
-      Event.goal_updated
-        (Session.Goal.Update.declare ~id:(goal_id "goal-1")
-           ~objective:"Ship the refactor" ~token_budget:1000 ());
-      (* Turn 2: goal continuation with a mid-turn compaction. *)
+      (* Turn 2: triggered admission with a mid-turn compaction. *)
       Event.turn_started t2;
       Event.provider_requested p3;
-      respond ~usage:(usage ~input:100 ~output:50) p3 "Working on the goal.";
+      respond ~usage:(usage ~input:100 ~output:50) p3 "Working on the task.";
       Event.provider_requested p4;
       Event.compaction_installed compaction;
       Event.provider_requested p5;
-      respond ~usage:(usage ~input:40 ~output:10) p5 "Goal advanced.";
+      respond ~usage:(usage ~input:40 ~output:10) p5 "Task advanced.";
       finish t2;
       (* Turn 3: queued admission, then an interrupt. *)
       Event.turn_started t3;
@@ -706,41 +702,6 @@ let ident_gen =
     let+ c = char_range 'a' 'z'
     and+ rest = string_of ~size:(int_range 0 8) (char_range 'a' 'z') in
     String.make 1 c ^ rest)
-
-let goal_id_gen = Gen.map (fun s -> goal_id s) ident_gen
-let budget_gen = Gen.option (Gen.int_range 0 10_000)
-
-let goal_update_gen =
-  let open Session.Goal.Update in
-  Gen.one_of
-    [
-      Gen.(
-        let+ id = goal_id_gen and+ objective = ident_gen and+ b = budget_gen in
-        match b with
-        | Some token_budget -> declare ~id ~objective ~token_budget ()
-        | None -> declare ~id ~objective ());
-      Gen.map (fun id -> pause ~id) goal_id_gen;
-      Gen.(
-        let+ id = goal_id_gen and+ b = budget_gen in
-        match b with
-        | Some token_budget -> resume ~id ~token_budget ()
-        | None -> resume ~id ());
-      Gen.(
-        let+ id = goal_id_gen and+ objective = ident_gen in
-        edit ~id ~objective);
-      Gen.map (fun id -> clear ~id) goal_id_gen;
-      Gen.(
-        let+ id = goal_id_gen and+ summary = Gen.option ident_gen in
-        match summary with
-        | Some summary -> complete ~id ~summary ()
-        | None -> complete ~id ());
-      Gen.(
-        let+ id = goal_id_gen and+ reason = Gen.option ident_gen in
-        match reason with
-        | Some reason -> block ~id ~reason ()
-        | None -> block ~id ());
-      Gen.map (fun id -> budget_limited ~id) goal_id_gen;
-    ]
 
 let queue_update_gen =
   let entries_gen =
@@ -795,8 +756,17 @@ let origin_gen =
   Gen.one_of
     [
       Gen.pure Session.Turn.Origin.User;
-      Gen.pure Session.Turn.Origin.Goal_continuation;
       Gen.map (fun s -> Session.Turn.Origin.Queued (queue_id s)) ident_gen;
+      Gen.(
+        let+ source = ident_gen and+ digest = ident_gen and+ key = ident_gen in
+        Session.Turn.Origin.Triggered { source; digest; key; entry = None });
+      Gen.(
+        let+ source = ident_gen
+        and+ digest = ident_gen
+        and+ key = ident_gen
+        and+ entry = ident_gen in
+        Session.Turn.Origin.Triggered
+          { source; digest; key; entry = Some (queue_id entry) });
       Gen.pure Session.Turn.Origin.Plan_build;
       Gen.pure Session.Turn.Origin.Compaction;
       Gen.pure Session.Turn.Origin.Step_limit_wind_down;
@@ -818,7 +788,6 @@ let outcome_gen =
 let event_gen =
   Gen.one_of
     [
-      Gen.map Event.goal_updated goal_update_gen;
       Gen.map Event.queue_updated queue_update_gen;
       Gen.map Event.tasks_replaced board_gen;
       Gen.(
@@ -1053,7 +1022,6 @@ let ids_group =
           expect_invalid_arg "session id" (fun () -> Session.Id.of_string "");
           expect_invalid_arg "queue id" (fun () ->
               Session.Queue.Id.of_string "");
-          expect_invalid_arg "goal id" (fun () -> Session.Goal.Id.of_string "");
           expect_invalid_arg "task id" (fun () -> Session.Task.Id.of_string "");
           expect_invalid_arg "decision id" (fun () ->
               Session.Decision.Id.of_string "");
@@ -1235,17 +1203,88 @@ let turn_group =
                 (Session.Turn.Origin.equal origin decoded))
             [
               Session.Turn.Origin.User;
-              Session.Turn.Origin.Goal_continuation;
               Session.Turn.Origin.Queued (queue_id "q-1");
+              Session.Turn.Origin.Triggered
+                {
+                  source = "nightly-review";
+                  digest = "0f9a4c1d2e3b4a5f";
+                  key = "delivery-42";
+                  entry = None;
+                };
               Session.Turn.Origin.Plan_build;
               Session.Turn.Origin.Compaction;
               Session.Turn.Origin.Step_limit_wind_down;
             ];
+          (* The decode-forever pins, hand-built: documents already written
+             carry these spellings, and no corpus regeneration can rewrite
+             this test. *)
+          is_true ~msg:"a written triggered origin decodes forever"
+            (Session.Turn.Origin.equal
+               (Session.Turn.Origin.Triggered
+                  {
+                    source = "nightly-review";
+                    digest = "0f9a4c1d2e3b4a5f";
+                    key = "delivery-42";
+                    entry = None;
+                  })
+               (decode Session.Turn.Origin.jsont
+                  (json_object
+                     [
+                       ("type", Json.string "triggered");
+                       ("source", Json.string "nightly-review");
+                       ("digest", Json.string "0f9a4c1d2e3b4a5f");
+                       ("key", Json.string "delivery-42");
+                     ])));
+          is_true ~msg:"a written triggered origin with its entry decodes"
+            (Session.Turn.Origin.equal
+               (Session.Turn.Origin.Triggered
+                  {
+                    source = "nightly-review";
+                    digest = "0f9a4c1d2e3b4a5f";
+                    key = "delivery-42";
+                    entry = Some (queue_id "q-trigger-1");
+                  })
+               (decode Session.Turn.Origin.jsont
+                  (json_object
+                     [
+                       ("type", Json.string "triggered");
+                       ("source", Json.string "nightly-review");
+                       ("digest", Json.string "0f9a4c1d2e3b4a5f");
+                       ("key", Json.string "delivery-42");
+                       ("entry", Json.string "q-trigger-1");
+                     ])));
           assert_decode_error "unknown origin" Session.Turn.Origin.jsont
             (json_object [ ("type", Json.string "cron") ]);
           assert_decode_error "queued origin without entry"
             Session.Turn.Origin.jsont
-            (json_object [ ("type", Json.string "queued") ]));
+            (json_object [ ("type", Json.string "queued") ]);
+          assert_decode_error "triggered origin missing a member"
+            Session.Turn.Origin.jsont
+            (json_object
+               [
+                 ("type", Json.string "triggered");
+                 ("source", Json.string "nightly-review");
+                 ("digest", Json.string "0f9a4c1d2e3b4a5f");
+               ]);
+          assert_decode_error "triggered origin with an empty member"
+            Session.Turn.Origin.jsont
+            (json_object
+               [
+                 ("type", Json.string "triggered");
+                 ("source", Json.string "");
+                 ("digest", Json.string "0f9a4c1d2e3b4a5f");
+                 ("key", Json.string "delivery-42");
+               ]);
+          assert_decode_error "triggered origin with an unknown member"
+            Session.Turn.Origin.jsont
+            (json_object
+               [
+                 ("type", Json.string "triggered");
+                 ("source", Json.string "nightly-review");
+                 ("digest", Json.string "0f9a4c1d2e3b4a5f");
+                 ("key", Json.string "delivery-42");
+                 ("actor", Json.string "host");
+               ]));
       test "turn jsont round-trips and rejects unknown members" (fun () ->
           let t =
             turn ~id:"turn-json"
@@ -1307,7 +1346,6 @@ let extra_codec_events () =
     Event.queue_updated
       (Session.Queue.Update.replaced [ queue_entry ~id:"q-a" "one" ]);
     Event.queue_updated Session.Queue.Update.cleared;
-    Event.goal_updated (Session.Goal.Update.pause ~id:(goal_id "goal-1"));
     Event.delegation_recorded
       (Session.Delegation.make ~child:(session_id "child-2") ~source_turn:t_id
          ~source_call:"call-9"
@@ -1355,7 +1393,26 @@ let event_codec_group =
               "permission_resolved";
               "tool_claim_started";
               "tool_claim_finished";
-            ]);
+              "goal_updated";
+            ];
+          (* A goal-bearing journal fails even with its full old payload. *)
+          assert_decode_error "old goal_updated wire shape with payload"
+            Event.jsont
+            (json_object
+               [
+                 ("type", Json.string "goal_updated");
+                 ( "update",
+                   json_object
+                     [
+                       ("type", Json.string "declare");
+                       ("id", Json.string "goal-1");
+                       ("objective", Json.string "Ship it");
+                     ] );
+               ]);
+          (* The retired goal-continuation origin is a decode error too. *)
+          assert_decode_error "retired goal_continuation origin"
+            Session.Turn.Origin.jsont
+            (json_object [ ("type", Json.string "goal_continuation") ]));
       test "unknown members are decode errors, never skips" (fun () ->
           let json =
             encode Event.jsont
@@ -1457,6 +1514,33 @@ let turn_replay_group =
             (State.final_text st);
           is_true ~msg:"latest model is the turn's"
             (Option.equal Llm.Model.equal (Some model) (State.latest_model st)));
+      test "the settled head names the concluded turn and nothing sooner"
+        (fun () ->
+          is_true ~msg:"an empty session has no settled head"
+            (Option.is_none (State.settled_head (state [])));
+          let t = turn () in
+          let c = claim (Session.Turn.id t) in
+          let started = [ Event.turn_started t; Event.provider_requested c ] in
+          is_true ~msg:"an active turn has no settled head"
+            (Option.is_none (State.settled_head (state started)));
+          let finished = started @ [ respond c "Done."; finish t ] in
+          (match State.settled_head (state finished) with
+          | Some (head, Some outcome) ->
+              equal turn_id_value ~msg:"the head is the finished turn"
+                (Session.Turn.id t) (Session.Turn.id head);
+              equal outcome_value ~msg:"the head carries its outcome"
+                Session.Turn.Outcome.completed outcome
+          | Some (_, None) -> fail "the recorded outcome must surface"
+          | None -> fail "a finished turn is the settled head");
+          let follow_up =
+            turn ~id:"turn-2"
+              ~input:(Session.Turn.Input.user_text "More.")
+              ()
+          in
+          is_true ~msg:"a newly active turn clears the settled head"
+            (Option.is_none
+               (State.settled_head
+                  (state (finished @ [ Event.turn_started follow_up ])))));
       test "turn ids are unique across the session" (fun () ->
           let t = turn () in
           let c = claim (Session.Turn.id t) in
@@ -1538,7 +1622,61 @@ let turn_replay_group =
             (Event.turn_started
                (turn ~id:"turn-q2"
                   ~origin:(Session.Turn.Origin.Queued (queue_id "q-9"))
-                  ())));
+                  ()));
+          (* The triggered twin: a Triggered origin naming its entry
+             consumes it exactly as a Queued turn does, and an unknown
+             entry errors identically. *)
+          let trig entry =
+            Session.Turn.Origin.triggered ~entry ~source:"pr-review"
+              ~digest:"0f9a4c1d2e3b4a5f" ~key:"delivery-42" ()
+          in
+          let st =
+            state
+              (base
+              @ [
+                  Event.turn_started
+                    (turn ~id:"turn-t" ~origin:(trig (queue_id "q-2")) ());
+                ])
+          in
+          equal (list queue_entry_value)
+            ~msg:"the triggered entry is consumed"
+            [ queue_entry ~id:"q-1" "one" ]
+            (State.pending_queue st);
+          expect_step_error ~msg:"unknown triggered entry"
+            (State.Error.Turn
+               (State.Error.Turn.Unknown_queue_entry (queue_id "q-9")))
+            base
+            (Event.turn_started
+               (turn ~id:"turn-t2" ~origin:(trig (queue_id "q-9")) ())));
+      test "a triggered turn pairs with prompt input like a user turn"
+        (fun () ->
+          let origin =
+            Session.Turn.Origin.Triggered
+              {
+                source = "nightly-review";
+                digest = "0f9a4c1d2e3b4a5f";
+                key = "delivery-42";
+                entry = None;
+              }
+          in
+          let admitted = turn ~id:"turn-trig" ~origin () in
+          let st = state [ Event.turn_started admitted; finish admitted ] in
+          is_true ~msg:"the triggered turn is recorded with its provenance"
+            (match State.turn (Session.Turn.id admitted) st with
+            | Some recorded -> Session.Turn.equal admitted recorded
+            | None -> false);
+          expect_apply_error
+            ~msg:"plan-build input cannot ride a triggered origin"
+            (State.Error.Turn
+               (State.Error.Turn.Unexpected_plan_build_input
+                  (turn_id "turn-trig2")))
+            (Event.turn_started
+               (turn ~id:"turn-trig2" ~origin
+                  ~input:
+                    (Session.Turn.Input.plan_build
+                       (approval ~context:`Current "1. Do the thing"))
+                  ()))
+            State.empty);
       test "enqueue_recorded is a durable receipt, not queue membership"
         (fun () ->
           let consumed =
@@ -3833,322 +3971,6 @@ let compaction_group =
             (State.active_turn_id (state [ Event.turn_started ok ])));
     ]
 
-(* Goals. *)
-
-let goal_events updates = List.map Event.goal_updated updates
-
-let goal_status events =
-  match State.goal (state events) with
-  | Some goal -> Session.Goal.status goal
-  | None -> fail "expected a goal projection"
-
-let declare_g1 ?(objective = "Ship it") ?token_budget () =
-  Session.Goal.Update.declare ~id:(goal_id "goal-1") ~objective ?token_budget ()
-
-let goal_group =
-  group "replay: goals"
-    [
-      test "the lifecycle transitions legally" (fun () ->
-          let id = goal_id "goal-1" in
-          let status updates = goal_status (goal_events updates) in
-          (match status [ declare_g1 () ] with
-          | Session.Goal.Status.Active -> ()
-          | _ -> fail "declare yields Active");
-          (match status [ declare_g1 (); Session.Goal.Update.pause ~id ] with
-          | Session.Goal.Status.Paused -> ()
-          | _ -> fail "pause yields Paused");
-          (match
-             status
-               [
-                 declare_g1 ();
-                 Session.Goal.Update.pause ~id;
-                 Session.Goal.Update.resume ~id ();
-               ]
-           with
-          | Session.Goal.Status.Active -> ()
-          | _ -> fail "resume yields Active");
-          (match
-             status
-               [
-                 declare_g1 (); Session.Goal.Update.block ~id ~reason:"stuck" ();
-               ]
-           with
-          | Session.Goal.Status.Blocked { reason = Some "stuck" } -> ()
-          | _ -> fail "block yields Blocked with its reason");
-          (match
-             status [ declare_g1 (); Session.Goal.Update.budget_limited ~id ]
-           with
-          | Session.Goal.Status.Budget_limited -> ()
-          | _ -> fail "budget_limited yields Budget_limited");
-          (match
-             status
-               [
-                 declare_g1 ();
-                 Session.Goal.Update.complete ~id ~summary:"done" ();
-               ]
-           with
-          | Session.Goal.Status.Completed { summary = Some "done" } -> ()
-          | _ -> fail "complete yields Completed");
-          match status [ declare_g1 (); Session.Goal.Update.clear ~id ] with
-          | Session.Goal.Status.Cleared -> ()
-          | _ -> fail "clear yields Cleared");
-      test "edit rewrites the objective without a transition" (fun () ->
-          let id = goal_id "goal-1" in
-          match
-            State.goal
-              (state
-                 (goal_events
-                    [
-                      declare_g1 ();
-                      Session.Goal.Update.edit ~id ~objective:"Ship it well";
-                    ]))
-          with
-          | Some goal ->
-              equal string ~msg:"objective edited" "Ship it well"
-                (Session.Goal.objective goal)
-          | None -> fail "expected a goal");
-      test "declare requires no unfinished goal" (fun () ->
-          expect_step_error ~msg:"second declare while active"
-            (State.Error.Goal (State.Error.Goal.Unfinished (goal_id "goal-1")))
-            (goal_events [ declare_g1 () ])
-            (Event.goal_updated
-               (Session.Goal.Update.declare ~id:(goal_id "goal-2")
-                  ~objective:"Another" ()));
-          let st =
-            state
-              (goal_events
-                 [
-                   declare_g1 ();
-                   Session.Goal.Update.complete ~id:(goal_id "goal-1") ();
-                   Session.Goal.Update.declare ~id:(goal_id "goal-2")
-                     ~objective:"Another" ();
-                 ])
-          in
-          match State.goal st with
-          | Some goal ->
-              is_true ~msg:"a finished goal admits a new declare"
-                (Session.Goal.Id.equal (goal_id "goal-2") (Session.Goal.id goal))
-          | None -> fail "expected the second goal");
-      test "illegal transitions carry the current status" (fun () ->
-          let id = goal_id "goal-1" in
-          let illegal from_status base update =
-            expect_step_error
-              ~msg:("illegal from " ^ from_status)
-              (State.Error.Goal
-                 (State.Error.Goal.Illegal_transition { id; from_status }))
-              (goal_events base)
-              (Event.goal_updated update)
-          in
-          illegal "paused"
-            [ declare_g1 (); Session.Goal.Update.pause ~id ]
-            (Session.Goal.Update.pause ~id);
-          illegal "paused"
-            [ declare_g1 (); Session.Goal.Update.pause ~id ]
-            (Session.Goal.Update.block ~id ());
-          illegal "active" [ declare_g1 () ] (Session.Goal.Update.resume ~id ());
-          illegal "cleared"
-            [ declare_g1 (); Session.Goal.Update.clear ~id ]
-            (Session.Goal.Update.complete ~id ());
-          illegal "completed"
-            [ declare_g1 (); Session.Goal.Update.complete ~id () ]
-            (Session.Goal.Update.pause ~id));
-      test "updates target the current goal" (fun () ->
-          expect_apply_error ~msg:"no goal at all"
-            (State.Error.Goal (State.Error.Goal.Unknown (goal_id "goal-9")))
-            (Event.goal_updated
-               (Session.Goal.Update.pause ~id:(goal_id "goal-9")))
-            State.empty;
-          expect_step_error ~msg:"another goal is current"
-            (State.Error.Goal (State.Error.Goal.Unknown (goal_id "goal-9")))
-            (goal_events [ declare_g1 () ])
-            (Event.goal_updated
-               (Session.Goal.Update.pause ~id:(goal_id "goal-9"))));
-      test "accounting derives from goal-continuation turns" (fun () ->
-          let user_turn = turn ~id:"turn-user" () in
-          let cu = claim (Session.Turn.id user_turn) in
-          let continuation =
-            turn ~id:"turn-goal" ~origin:Session.Turn.Origin.Goal_continuation
-              ~input:Session.Turn.Input.continue ()
-          in
-          let c1 = claim ~seed:"goal-1" (Session.Turn.id continuation) in
-          let c2 = claim ~seed:"goal-2" (Session.Turn.id continuation) in
-          let st =
-            state
-              [
-                Event.turn_started user_turn;
-                Event.provider_requested cu;
-                respond ~usage:(usage ~input:900 ~output:100) cu "User work.";
-                finish user_turn;
-                Event.goal_updated (declare_g1 ~token_budget:1000 ());
-                Event.turn_started continuation;
-                Event.provider_requested c1;
-                respond ~usage:(usage ~input:100 ~output:50) c1 "Step one.";
-                Event.provider_requested c2;
-                respond ~usage:(usage ~input:40 ~output:10) c2 "Step two.";
-                finish continuation;
-              ]
-          in
-          match State.goal st with
-          | None -> fail "expected a goal"
-          | Some goal ->
-              equal int ~msg:"continuation turns counted" 1
-                (Session.Goal.continuation_turns goal);
-              equal int ~msg:"tokens derive from continuation responses only"
-                200
-                (Session.Goal.tokens_used goal);
-              equal (option int) ~msg:"remaining clamps against the budget"
-                (Some 800)
-                (Session.Goal.remaining_tokens goal));
-      test "pending-fix F3: accounting windows at the current goal's declare"
-        (fun () ->
-          (* A completed goal's spend must not leak into its successor. *)
-          let continuation =
-            turn ~id:"turn-goal" ~origin:Session.Turn.Origin.Goal_continuation
-              ~input:Session.Turn.Input.continue ()
-          in
-          let c1 = claim (Session.Turn.id continuation) in
-          let st =
-            state
-              [
-                Event.goal_updated (declare_g1 ~token_budget:1000 ());
-                Event.turn_started continuation;
-                Event.provider_requested c1;
-                respond ~usage:(usage ~input:100 ~output:50) c1 "Old goal.";
-                finish continuation;
-                Event.goal_updated
-                  (Session.Goal.Update.complete ~id:(goal_id "goal-1") ());
-                Event.goal_updated
-                  (Session.Goal.Update.declare ~id:(goal_id "goal-2")
-                     ~objective:"Fresh goal" ());
-              ]
-          in
-          match State.goal st with
-          | None -> fail "expected the fresh goal"
-          | Some goal ->
-              equal int ~msg:"fresh goal has no continuation turns yet" 0
-                (Session.Goal.continuation_turns goal);
-              equal int ~msg:"fresh goal has no spend yet" 0
-                (Session.Goal.tokens_used goal));
-      test "status predicates gate the branch reset suffix" (fun () ->
-          is_true ~msg:"completed is terminal"
-            (Session.Goal.Status.is_terminal
-               (Session.Goal.Status.Completed { summary = None }));
-          is_true ~msg:"cleared is terminal"
-            (Session.Goal.Status.is_terminal Session.Goal.Status.Cleared);
-          is_false ~msg:"paused is not terminal"
-            (Session.Goal.Status.is_terminal Session.Goal.Status.Paused);
-          is_true ~msg:"only active is pausable"
-            (Session.Goal.Status.pausable Session.Goal.Status.Active);
-          is_false ~msg:"paused is not pausable"
-            (Session.Goal.Status.pausable Session.Goal.Status.Paused);
-          is_false ~msg:"blocked is not pausable"
-            (Session.Goal.Status.pausable
-               (Session.Goal.Status.Blocked { reason = None })));
-      test "resume carries or resets the budget" (fun () ->
-          let id = goal_id "goal-1" in
-          let budget updates =
-            match State.goal (state (goal_events updates)) with
-            | Some goal -> Session.Goal.token_budget goal
-            | None -> fail "expected a goal"
-          in
-          equal (option int) ~msg:"resume keeps the budget by default"
-            (Some 500)
-            (budget
-               [
-                 declare_g1 ~token_budget:500 ();
-                 Session.Goal.Update.pause ~id;
-                 Session.Goal.Update.resume ~id ();
-               ]);
-          equal (option int) ~msg:"resume may reset the budget" (Some 900)
-            (budget
-               [
-                 declare_g1 ~token_budget:500 ();
-                 Session.Goal.Update.pause ~id;
-                 Session.Goal.Update.resume ~id ~token_budget:900 ();
-               ]));
-      test "update constructors validate local shape" (fun () ->
-          expect_invalid_arg "empty objective" (fun () ->
-              Session.Goal.Update.declare ~id:(goal_id "g") ~objective:"" ());
-          expect_invalid_arg "negative budget" (fun () ->
-              Session.Goal.Update.declare ~id:(goal_id "g") ~objective:"x"
-                ~token_budget:(-1) ());
-          expect_invalid_arg "empty block reason" (fun () ->
-              Session.Goal.Update.block ~id:(goal_id "g") ~reason:"" ());
-          expect_invalid_arg "empty summary" (fun () ->
-              Session.Goal.Update.complete ~id:(goal_id "g") ~summary:"" ()));
-      test "projection construction validates shape and accounting" (fun () ->
-          let make ?(objective = "Ship") ?(status = Session.Goal.Status.Active)
-              ?(token_budget = Some 100) ?(tokens_used = 0)
-              ?(continuation_turns = 0) () =
-            Session.Goal.make ~id:(goal_id "g") ~objective ~status ~token_budget
-              ~tokens_used ~continuation_turns
-          in
-          ignore (make ());
-          expect_invalid_arg "projection empty objective" (fun () ->
-              make ~objective:"" ());
-          expect_invalid_arg "projection negative budget" (fun () ->
-              make ~token_budget:(Some (-1)) ());
-          expect_invalid_arg "projection negative tokens" (fun () ->
-              make ~tokens_used:(-1) ());
-          expect_invalid_arg "projection negative continuations" (fun () ->
-              make ~continuation_turns:(-1) ());
-          expect_invalid_arg "spend requires a continuation" (fun () ->
-              make ~tokens_used:1 ());
-          expect_invalid_arg "projection empty blocked reason" (fun () ->
-              make ~status:(Session.Goal.Status.Blocked { reason = Some "" }) ());
-          expect_invalid_arg "projection empty completion summary" (fun () ->
-              make
-                ~status:(Session.Goal.Status.Completed { summary = Some "" })
-                ()));
-      test "Goal.jsont round-trips every strict status arm" (fun () ->
-          let statuses =
-            [
-              Session.Goal.Status.Active;
-              Session.Goal.Status.Paused;
-              Session.Goal.Status.Blocked { reason = None };
-              Session.Goal.Status.Blocked { reason = Some "waiting" };
-              Session.Goal.Status.Budget_limited;
-              Session.Goal.Status.Completed { summary = None };
-              Session.Goal.Status.Completed { summary = Some "done" };
-              Session.Goal.Status.Cleared;
-            ]
-          in
-          List.iter
-            (fun status ->
-              let goal =
-                Session.Goal.make ~id:(goal_id "g") ~objective:"Ship" ~status
-                  ~token_budget:(Some 100) ~tokens_used:7 ~continuation_turns:1
-              in
-              is_true ~msg:"goal projection round-trips"
-                (Session.Goal.equal goal
-                   (decode Session.Goal.jsont (encode Session.Goal.jsont goal))))
-            statuses;
-          let active =
-            Session.Goal.make ~id:(goal_id "g") ~objective:"Ship"
-              ~status:Session.Goal.Status.Active ~token_budget:None
-              ~tokens_used:0 ~continuation_turns:0
-            |> encode Session.Goal.jsont
-          in
-          let active_status = get_member "status" active in
-          assert_decode_error "active rejects a summary" Session.Goal.jsont
-            (set_member "status"
-               (add_member "summary" (Json.string "irrelevant") active_status)
-               active);
-          let completed =
-            Session.Goal.make ~id:(goal_id "g") ~objective:"Ship"
-              ~status:(Session.Goal.Status.Completed { summary = Some "done" })
-              ~token_budget:None ~tokens_used:0 ~continuation_turns:0
-            |> encode Session.Goal.jsont
-          in
-          assert_decode_error "completed rejects a reason" Session.Goal.jsont
-            (set_member "status"
-               (add_member "reason" (Json.string "irrelevant")
-                  (get_member "status" completed))
-               completed);
-          assert_decode_error "codec enforces accounting" Session.Goal.jsont
-            (set_member "tokens_used" (Json.int 1) active));
-    ]
-
 (* Boards, queue, delegations. *)
 
 let board_group =
@@ -4259,10 +4081,87 @@ let queue_group =
             (State.pending_queue cleared));
       test "constructors validate entries" (fun () ->
           expect_invalid_arg "empty input" (fun () ->
-              Session.Queue.Entry.make ~id:(queue_id "q-1") ~input:[]);
+              Session.Queue.Entry.make ~id:(queue_id "q-1") ~input:[] ());
           expect_invalid_arg "duplicate ids in a replacement" (fun () ->
               Session.Queue.Update.replaced
                 [ queue_entry ~id:"q-1" "one"; queue_entry ~id:"q-1" "two" ]));
+      test "entry origins round-trip and absence means the owner" (fun () ->
+          let roundtrip entry =
+            decode Session.Queue.Entry.jsont
+              (encode Session.Queue.Entry.jsont entry)
+          in
+          let owner = queue_entry ~id:"q-owner" "from the owner" in
+          is_true ~msg:"an owner entry has no origin"
+            (Option.is_none (Session.Queue.Entry.origin owner));
+          is_true ~msg:"an owner entry round-trips"
+            (Session.Queue.Entry.equal owner (roundtrip owner));
+          let from_agent =
+            Session.Queue.Entry.make
+              ~origin:(Session.Origin.agent (Session.Id.of_string "s-parent"))
+              ~id:(queue_id "q-agent")
+              ~input:[ Llm.Content.text "from the parent" ]
+              ()
+          in
+          is_true ~msg:"an agent-origin entry round-trips"
+            (Session.Queue.Entry.equal from_agent (roundtrip from_agent));
+          let from_trigger =
+            Session.Queue.Entry.make
+              ~origin:
+                (Session.Origin.trigger ~source:"nightly-review"
+                   ~digest:"0f9a4c1d2e3b4a5f" ~key:"delivery-42")
+              ~id:(queue_id "q-trigger")
+              ~input:[ Llm.Content.text "from the trigger" ]
+              ()
+          in
+          is_true ~msg:"a trigger-origin entry round-trips"
+            (Session.Queue.Entry.equal from_trigger (roundtrip from_trigger));
+          let event =
+            Event.queue_updated (Session.Queue.Update.enqueued from_agent)
+          in
+          is_true ~msg:"the enqueued fact keeps the origin"
+            (Event.equal event (decode Event.jsont (encode Event.jsont event)));
+          (* Decoder-first: an entry written before the member existed
+             decodes forever, as the owner's. *)
+          let bare =
+            decode Session.Queue.Entry.jsont
+              (json_object
+                 [
+                   ("id", Json.string "q-old");
+                   ( "input",
+                     json_array
+                       [
+                         json_object
+                           [
+                             ("type", Json.string "text");
+                             ("text", Json.string "old journal");
+                           ];
+                       ] );
+                 ])
+          in
+          is_true ~msg:"an origin-less entry decodes as the owner's"
+            (Option.is_none (Session.Queue.Entry.origin bare));
+          assert_decode_error "unknown origin tag" Session.Origin.jsont
+            (json_object [ ("type", Json.string "cron") ]);
+          assert_decode_error "agent origin without a session"
+            Session.Origin.jsont
+            (json_object [ ("type", Json.string "agent") ]);
+          assert_decode_error "trigger origin with an empty member"
+            Session.Origin.jsont
+            (json_object
+               [
+                 ("type", Json.string "trigger");
+                 ("source", Json.string "");
+                 ("digest", Json.string "0f9a4c1d2e3b4a5f");
+                 ("key", Json.string "delivery-42");
+               ]);
+          assert_decode_error "origin with an unknown member"
+            Session.Origin.jsont
+            (json_object
+               [
+                 ("type", Json.string "agent");
+                 ("session", Json.string "s-parent");
+                 ("actor", Json.string "host");
+               ]));
       test "pending-fix F13: a duplicate pending entry id is rejected"
         (fun () ->
           (* Two pending entries with one id would make Queued-origin admission
@@ -4292,6 +4191,27 @@ let queue_group =
           equal (list queue_entry_value) ~msg:"replacement reuses the id"
             [ queue_entry ~id:"q-1" "rewritten" ]
             (State.pending_queue st));
+      test "finished is a settled head with an empty queue" (fun () ->
+          is_false ~msg:"an empty session is not finished"
+            (State.finished (state []));
+          let t = turn () in
+          let c = claim (Session.Turn.id t) in
+          let started = [ Event.turn_started t; Event.provider_requested c ] in
+          is_false ~msg:"an active turn is not finished"
+            (State.finished (state started));
+          let settled = started @ [ respond c "Done."; finish t ] in
+          is_true ~msg:"a settled head with an empty queue is finished"
+            (State.finished (state settled));
+          let mailed =
+            settled
+            @ [
+                Event.queue_updated
+                  (Session.Queue.Update.enqueued (queue_entry ~id:"q-1" "more"));
+              ]
+          in
+          is_false
+            ~msg:"unconsumed mail buys another turn: not finished"
+            (State.finished (state mailed)));
     ]
 
 let delegation_group =
@@ -4451,6 +4371,174 @@ let delegation_group =
 
 (* Replay algebra. *)
 
+let mail_group =
+  let admitted verdict = match verdict with `Admitted -> true | _ -> false in
+  group "mail admission"
+    [
+      test "the admit judgment admits kin and the owner, and only them"
+        (fun () ->
+          (* A parent holding a recorded edge admits its child's mail. *)
+          let t, base = mid_turn [ tool_call () ] in
+          let edge =
+            Session.Delegation.make ~child:(session_id "child-1")
+              ~source_turn:(Session.Turn.id t) ~source_call:"call-1"
+              ~task:[ Llm.Content.text "Explore." ]
+              ()
+          in
+          let parent =
+            saved ~id:"parent-1" (base @ [ Event.delegation_recorded edge ])
+          in
+          is_true ~msg:"the owner (no origin) is admitted"
+            (admitted (Session.admits_mail ~origin:None parent));
+          is_true ~msg:"a recorded child is admitted"
+            (admitted
+               (Session.admits_mail
+                  ~origin:(Some (Session.Origin.agent (session_id "child-1")))
+                  parent));
+          is_true ~msg:"a stranger is refused"
+            (Session.admits_mail
+               ~origin:(Some (Session.Origin.agent (session_id "stranger")))
+               parent
+            = `Refused_sender);
+          is_true ~msg:"a trigger origin is refused"
+            (Session.admits_mail
+               ~origin:
+                 (Some
+                    (Session.Origin.trigger ~source:"nightly" ~digest:"d0"
+                       ~key:"k0"))
+               parent
+            = `Refused_sender);
+          (* A delegated child admits its recorded parent. *)
+          let child =
+            ok_or "child session"
+              (Session.make ~id:(session_id "child-1")
+                 ~metadata:
+                   (Session.Metadata.make
+                      ~delegated_from:
+                        (Session.Metadata.Delegated_from.make
+                           ~parent:(session_id "parent-1")
+                           ~delegation:(Session.Delegation.Id.of_string "d-1"))
+                      ~cwd ~created_at:(time 1) ~updated_at:(time 2) ())
+                 ~events:[])
+          in
+          is_true ~msg:"the recorded parent is admitted"
+            (admitted
+               (Session.admits_mail
+                  ~origin:(Some (Session.Origin.agent (session_id "parent-1")))
+                  child));
+          is_true ~msg:"a sibling is refused"
+            (Session.admits_mail
+               ~origin:(Some (Session.Origin.agent (session_id "child-2")))
+               child
+            = `Refused_sender));
+      test "the backlog cap refuses a sender's unconsumed pile, and only its own"
+        (fun () ->
+          (* A parent with a recorded edge holds unconsumed entries from its
+             child: at the cap the child is refused, the owner and a second
+             child stay admitted, and consumption frees the slot. *)
+          let t, base = mid_turn [ tool_call () ] in
+          let edge child call =
+            Session.Delegation.make ~child:(session_id child)
+              ~source_turn:(Session.Turn.id t) ~source_call:call
+              ~task:[ Llm.Content.text "Explore." ]
+              ()
+          in
+          let origin child = Some (Session.Origin.agent (session_id child)) in
+          let enqueued i =
+            Event.queue_updated
+              (Session.Queue.Update.enqueued
+                 (Session.Queue.Entry.make
+                    ?origin:(origin "child-1")
+                    ~id:(queue_id (Printf.sprintf "q-%d" i))
+                    ~input:[ Llm.Content.text "ping" ]
+                    ()))
+          in
+          let backlog =
+            List.init Session.mail_backlog_cap (fun i -> enqueued i)
+          in
+          let events =
+            base
+            @ [
+                Event.delegation_recorded (edge "child-1" "call-1");
+                Event.delegation_recorded (edge "child-2" "call-2");
+              ]
+            @ backlog
+          in
+          let parent = saved ~id:"parent-1" events in
+          is_true ~msg:"the piled-up sender is refused at the cap"
+            (Session.admits_mail ~origin:(origin "child-1") parent
+            = `Refused_backlog);
+          is_true ~msg:"a different child is not charged for the pile"
+            (admitted (Session.admits_mail ~origin:(origin "child-2") parent));
+          is_true ~msg:"the owner is never capped"
+            (admitted (Session.admits_mail ~origin:None parent));
+          (* Consuming one entry frees exactly one slot: the receipt of the
+             consumed entry persists, so the cap provably counts the pending
+             queue, never the lifetime record. *)
+          let consumed =
+            saved ~id:"parent-1"
+              (events
+              @ [
+                  Event.message_appended
+                    (Llm.Message.tool_result
+                       (Llm.Tool.Result.text (tool_call ()) "done"));
+                  finish t;
+                  Event.turn_started
+                    (turn ~id:"t-consume"
+                       ~origin:(Session.Turn.Origin.Queued (queue_id "q-0"))
+                       ());
+                ])
+          in
+          is_true ~msg:"consumption frees the sender's slot"
+            (admitted (Session.admits_mail ~origin:(origin "child-1") consumed)));
+      test "a trigger-born session admits only its own trigger" (fun () ->
+          let provenance =
+            Session.Metadata.Triggered_from.make ~source:"pr-review"
+              ~digest:"d1" ~key:"k1"
+          in
+          let trig ?(source = "pr-review") ?(digest = "d1") key =
+            Some (Session.Origin.trigger ~source ~digest ~key)
+          in
+          let born events =
+            ok_or "run session"
+              (Session.make ~id:(session_id "run-1")
+                 ~metadata:
+                   (Session.Metadata.make ~triggered_from:provenance ~cwd
+                      ~created_at:(time 1) ~updated_at:(time 2) ())
+                 ~events)
+          in
+          let run = born [] in
+          is_true ~msg:"the recorded trigger is admitted, whatever the key"
+            (admitted (Session.admits_mail ~origin:(trig "k2") run));
+          is_true ~msg:"a moved digest strands no stale mail on the new run"
+            (Session.admits_mail ~origin:(trig ~digest:"d2" "k1") run
+            = `Refused_sender);
+          is_true ~msg:"a foreign source is refused"
+            (Session.admits_mail ~origin:(trig ~source:"other" "k1") run
+            = `Refused_sender);
+          is_true ~msg:"an agent origin is refused on a trigger-born session"
+            (Session.admits_mail
+               ~origin:(Some (Session.Origin.agent (session_id "x")))
+               run
+            = `Refused_sender);
+          (* The backlog is per trigger, counted across event keys. *)
+          let entry i =
+            Event.queue_updated
+              (Session.Queue.Update.enqueued
+                 (Session.Queue.Entry.make
+                    ?origin:(trig (Printf.sprintf "k-%d" i))
+                    ~id:(queue_id (Printf.sprintf "q-%d" i))
+                    ~input:[ Llm.Content.text "ping" ]
+                    ()))
+          in
+          let full = born (List.init Session.mail_backlog_cap entry) in
+          is_true ~msg:"the unconsumed pile across event keys refuses"
+            (Session.admits_mail ~origin:(trig "k-next") full
+            = `Refused_backlog);
+          is_true ~msg:"the owner is never capped on a trigger-born session"
+            (admitted (Session.admits_mail ~origin:None full)));
+    ]
+
 let replay_group =
   group "replay algebra"
     [
@@ -4530,19 +4618,12 @@ let replay_group =
           | [] -> fail "expected a model view");
           is_true ~msg:"model view is request-ready"
             (Llm.Transcript.is_ready (State.model_transcript st));
-          (match tool_result_for "call-risky" st with
+          match tool_result_for "call-risky" st with
           | Some lowered ->
               equal string ~msg:"the denial spelling replays"
                 "The user denied permission to run this command."
                 (result_text lowered)
           | None -> fail "expected the denial result");
-          match State.goal st with
-          | Some goal ->
-              equal int ~msg:"goal accounting derives" 200
-                (Session.Goal.tokens_used goal);
-              equal int ~msg:"one continuation turn" 1
-                (Session.Goal.continuation_turns goal)
-          | None -> fail "expected the goal projection");
       test "replay is prefix-compositional at every split" (fun () ->
           let events = (journal ()).events in
           let direct = state events in
@@ -4821,31 +4902,6 @@ let document_group =
               equal int ~msg:"located at the second event" 1
                 (State.Replay_error.index error)
           | Error error -> failf "unexpected error: %a" Session.Error.pp error);
-      test "the goal projection codec does not change durable session bytes"
-        (fun () ->
-          let session =
-            saved
-              [
-                Event.goal_updated
-                  (Session.Goal.Update.declare ~id:(goal_id "goal-transport")
-                     ~objective:"Keep the journal shape" ~token_budget:500 ());
-              ]
-          in
-          let before = encode_text Session.jsont session in
-          let goal =
-            match State.goal (Session.state session) with
-            | Some goal -> goal
-            | None -> fail "expected the derived goal"
-          in
-          ignore (decode Session.Goal.jsont (encode Session.Goal.jsont goal));
-          let after = encode_text Session.jsont session in
-          equal string ~msg:"transport projection leaves exact bytes alone"
-            before after;
-          is_false ~msg:"derived spend is absent from the durable document"
-            (String.includes ~affix:"tokens_used" after);
-          is_false
-            ~msg:"derived continuation count is absent from durable document"
-            (String.includes ~affix:"continuation_turns" after));
       test "metadata persists its workspace as the bare \"cwd\" path member"
         (fun () ->
           (* Workspace identity unified on [Mentat_workspace.Root], but the
@@ -4864,6 +4920,303 @@ let document_group =
                (decode Session.Metadata.jsont json));
           is_true ~msg:"the cwd accessor still projects the creation directory"
             (Lpath.Abs.equal cwd (Session.Metadata.cwd saved_metadata)));
+      test "trigger provenance and the run policy round-trip and validate"
+        (fun () ->
+          let provenance =
+            Session.Metadata.Triggered_from.make ~source:"pr-review"
+              ~digest:"0f9a4c1d2e3b4a5f" ~key:"github:acme/widgets#7:head"
+          in
+          let policy =
+            Session.Metadata.Run_policy.make
+              ~mode:Session.Contract.Mode.Review
+              ~output_schema:(json_object [ ("type", Json.string "object") ])
+              ~max_steps:32 ~sandbox:"read-only" ~require_sandbox:true
+              ~model:"openai/gpt-5" ~reasoning:"high" ~unattended:"plan"
+              ~project_instructions:false ()
+          in
+          let metadata =
+            Session.Metadata.make ~triggered_from:provenance
+              ~run_policy:policy ~cwd ~created_at:(time 10)
+              ~updated_at:(time 20) ()
+          in
+          let json = encode Session.Metadata.jsont metadata in
+          is_true ~msg:"both members round-trip, schema compared as JSON"
+            (Session.Metadata.equal metadata
+               (decode Session.Metadata.jsont json));
+          expect_invalid_arg "empty provenance member" (fun () ->
+              Session.Metadata.Triggered_from.make ~source:"" ~digest:"d"
+                ~key:"k");
+          expect_invalid_arg "non-positive step cap" (fun () ->
+              Session.Metadata.Run_policy.make ~max_steps:0 ());
+          expect_invalid_arg "empty textual member" (fun () ->
+              Session.Metadata.Run_policy.make ~sandbox:"" ());
+          let delegated =
+            Session.Metadata.Delegated_from.make ~parent:(session_id "p")
+              ~delegation:(Session.Delegation.Id.of_string "d-1")
+          in
+          expect_invalid_arg "trigger and delegation lineage" (fun () ->
+              Session.Metadata.make ~triggered_from:provenance
+                ~delegated_from:delegated ~cwd ~created_at:(time 10)
+                ~updated_at:(time 10) ());
+          expect_invalid_arg "trigger and fork lineage" (fun () ->
+              Session.Metadata.make ~triggered_from:provenance
+                ~forked_from:
+                  (Session.Metadata.Forked_from.make ~parent:(session_id "p")
+                     ~copied_events:0)
+                ~cwd ~created_at:(time 10) ~updated_at:(time 10) ());
+          expect_invalid_arg "a run policy on a delegated session" (fun () ->
+              Session.Metadata.make ~delegated_from:delegated
+                ~run_policy:policy ~cwd ~created_at:(time 10)
+                ~updated_at:(time 10) ());
+          (* Decoding validates the same invariants as make. *)
+          assert_decode_error "empty source on decode" Session.Metadata.jsont
+            (set_member "triggered_from"
+               (json_object
+                  [
+                    ("source", Json.string "");
+                    ("digest", Json.string "d");
+                    ("key", Json.string "k");
+                  ])
+               json));
+      test "goal intent round-trips, validates, and keeps its exclusivity"
+        (fun () ->
+          let goal =
+            Session.Metadata.Goal.make ~objective:"get the suite green"
+              ~max_turns:20 ~budget:5.0 ()
+          in
+          let bare =
+            Session.Metadata.Goal.make ~objective:"finish the refactor" ()
+          in
+          let metadata =
+            Session.Metadata.make ~goal ~cwd ~created_at:(time 10)
+              ~updated_at:(time 20) ()
+          in
+          let json = encode Session.Metadata.jsont metadata in
+          is_true ~msg:"the member round-trips"
+            (Session.Metadata.equal metadata
+               (decode Session.Metadata.jsont json));
+          is_true ~msg:"absent bounds round-trip as absent"
+            (Session.Metadata.Goal.equal bare
+               (decode Session.Metadata.Goal.jsont
+                  (encode Session.Metadata.Goal.jsont bare)));
+          expect_invalid_arg "empty objective" (fun () ->
+              Session.Metadata.Goal.make ~objective:"" ());
+          expect_invalid_arg "non-positive turn bound" (fun () ->
+              Session.Metadata.Goal.make ~objective:"o" ~max_turns:0 ());
+          expect_invalid_arg "non-positive budget" (fun () ->
+              Session.Metadata.Goal.make ~objective:"o" ~budget:0. ());
+          (* The exclusivity family grows a fourth member: a goal refuses the
+             delegated and trigger-born lineages — a delegation edge owns its
+             child's contract, and a trigger-born run already has a steward —
+             while fork lineage and a recorded run policy coexist with it. *)
+          let delegated =
+            Session.Metadata.Delegated_from.make ~parent:(session_id "p")
+              ~delegation:(Session.Delegation.Id.of_string "d-1")
+          in
+          let provenance =
+            Session.Metadata.Triggered_from.make ~source:"pr-review"
+              ~digest:"d1" ~key:"k1"
+          in
+          expect_invalid_arg "a goal on a delegated session" (fun () ->
+              Session.Metadata.make ~delegated_from:delegated ~goal ~cwd
+                ~created_at:(time 10) ~updated_at:(time 10) ());
+          expect_invalid_arg "a goal on a trigger-born session" (fun () ->
+              Session.Metadata.make ~triggered_from:provenance ~goal ~cwd
+                ~created_at:(time 10) ~updated_at:(time 10) ());
+          is_true ~msg:"fork lineage coexists with a goal"
+            (Option.is_some
+               (Session.Metadata.goal
+                  (Session.Metadata.make
+                     ~forked_from:
+                       (Session.Metadata.Forked_from.make
+                          ~parent:(session_id "p") ~copied_events:0)
+                     ~goal ~cwd ~created_at:(time 10) ~updated_at:(time 10) ())));
+          (* The owner verb's write and retire, and its exclusivity. *)
+          let plain =
+            Session.Metadata.make ~cwd ~created_at:(time 10)
+              ~updated_at:(time 10) ()
+          in
+          is_true ~msg:"with_goal records intent"
+            (Option.is_some
+               (Session.Metadata.goal
+                  (Session.Metadata.with_goal (Some goal) plain)));
+          is_true ~msg:"with_goal None retires it"
+            (Option.is_none
+               (Session.Metadata.goal
+                  (Session.Metadata.with_goal None
+                     (Session.Metadata.with_goal (Some goal) plain))));
+          expect_invalid_arg "with_goal on a trigger-born session" (fun () ->
+              Session.Metadata.with_goal (Some goal)
+                (Session.Metadata.make ~triggered_from:provenance ~cwd
+                   ~created_at:(time 10) ~updated_at:(time 10) ()));
+          (* Decoding validates the same invariants as make. *)
+          assert_decode_error "empty objective on decode" Session.Metadata.jsont
+            (set_member "goal"
+               (json_object [ ("objective", Json.string "") ])
+               json);
+          assert_decode_error "a decoded goal beside trigger provenance"
+            Session.Metadata.jsont
+            (add_member "triggered_from"
+               (json_object
+                  [
+                    ("source", Json.string "s");
+                    ("digest", Json.string "d");
+                    ("key", Json.string "k");
+                  ])
+               json));
+      test "the goal_status claim reads tolerantly and its schema seals"
+        (fun () ->
+          let module Claim = Session.Metadata.Goal.Claim in
+          let claim = Testable.make ~pp:Claim.pp ~equal:Claim.equal in
+          let status ?note s =
+            json_object
+              (("status", Json.string s)
+              ::
+              (match note with
+              | None -> []
+              | Some n -> [ ("note", Json.string n) ]))
+          in
+          equal (option claim) ~msg:"done with a note"
+            (Some (Claim.Done (Some "all tests pass")))
+            (Claim.of_json (status ~note:"all tests pass" "done"));
+          equal (option claim) ~msg:"continuing with a note"
+            (Some (Claim.Continuing (Some "two failures left")))
+            (Claim.of_json (status ~note:"two failures left" "continuing"));
+          equal (option claim) ~msg:"a noteless claim carries no note"
+            (Some (Claim.Done None))
+            (Claim.of_json (status "done"));
+          equal (option claim) ~msg:"an empty note reads as no note"
+            (Some (Claim.Done None))
+            (Claim.of_json (status ~note:"" "done"));
+          equal (option claim) ~msg:"an unknown status is unreadable" None
+            (Claim.of_json (status "finished"));
+          equal (option claim) ~msg:"a missing status is unreadable" None
+            (Claim.of_json (json_object [ ("note", Json.string "n") ]));
+          equal (option claim) ~msg:"a non-object is unreadable" None
+            (Claim.of_json (Json.string "done"));
+          (* The schema a steward seals on a continuation turn must clear the
+             same subset gate every output schema clears, or the loop's first
+             turn refuses at run time. *)
+          match Llm.Schema.of_json Claim.schema with
+          | Ok _ -> ()
+          | Error e ->
+              failf "goal_status schema: %s" (Llm.Schema.Error.message e));
+      test "the steward decision table — the goal feature's law" (fun () ->
+          let module Goal = Session.Metadata.Goal in
+          let verdict =
+            Testable.make ~pp:Goal.Verdict.pp ~equal:Goal.Verdict.equal
+          in
+          let status ?note s =
+            json_object
+              (("status", Json.string s)
+              ::
+              (match note with
+              | None -> []
+              | Some n -> [ ("note", Json.string n) ]))
+          in
+          let goal ?max_turns ?budget () =
+            Goal.make ~objective:"get the suite green" ?max_turns ?budget ()
+          in
+          let decide ?(finished = true) ?claim ?(continuations = 0) ?spent g =
+            Goal.decide g ~finished ~claim ~continuations ~spent
+          in
+          equal (option verdict)
+            ~msg:"unfinished decides nothing, claim or not" None
+            (decide ~finished:false ~claim:(status "done") (goal ()));
+          equal (option verdict) ~msg:"a done claim stops the loop"
+            (Some (Goal.Verdict.Done (Some "shipped")))
+            (decide ~claim:(status ~note:"shipped" "done") (goal ()));
+          equal (option verdict) ~msg:"a continuing claim continues"
+            (Some Goal.Verdict.Continue)
+            (decide ~claim:(status "continuing") (goal ()));
+          equal (option verdict) ~msg:"an absent claim continues"
+            (Some Goal.Verdict.Continue) (decide (goal ()));
+          equal (option verdict) ~msg:"an unreadable claim continues"
+            (Some Goal.Verdict.Continue)
+            (decide ~claim:(status "maybe") (goal ()));
+          equal (option verdict)
+            ~msg:"a boundless goal has only the owner and done"
+            (Some Goal.Verdict.Continue)
+            (decide ~continuations:10_000 ~spent:1000. (goal ()));
+          (* The turn-bound edges. *)
+          let bounded = goal ~max_turns:3 () in
+          equal (option verdict) ~msg:"under the bound continues"
+            (Some Goal.Verdict.Continue)
+            (decide ~continuations:2 bounded);
+          equal (option verdict) ~msg:"the spent bound stops"
+            (Some Goal.Verdict.Bound_reached)
+            (decide ~continuations:3 bounded);
+          equal (option verdict) ~msg:"a done claim beats the spent bound"
+            (Some (Goal.Verdict.Done None))
+            (decide ~continuations:3 ~claim:(status "done") bounded);
+          (* The budget edges. *)
+          let budgeted = goal ~budget:5.0 () in
+          equal (option verdict) ~msg:"under the budget continues"
+            (Some Goal.Verdict.Continue)
+            (decide ~spent:4.99 budgeted);
+          equal (option verdict) ~msg:"the spent budget stops"
+            (Some Goal.Verdict.Budget_spent)
+            (decide ~spent:5.0 budgeted);
+          equal (option verdict) ~msg:"an unpriced spend trips no budget"
+            (Some Goal.Verdict.Continue) (decide budgeted);
+          equal (option verdict) ~msg:"a done claim beats the spent budget"
+            (Some (Goal.Verdict.Done None))
+            (decide ~spent:9.0 ~claim:(status "done") budgeted);
+          equal (option verdict)
+            ~msg:"the turn bound is named before the budget"
+            (Some Goal.Verdict.Bound_reached)
+            (decide ~continuations:3 ~spent:9.0
+               (goal ~max_turns:3 ~budget:5.0 ())));
+      test "the continuation framing and its journal-derived counter"
+        (fun () ->
+          let module Goal = Session.Metadata.Goal in
+          let objective = "get the suite green" in
+          let framed = Goal.continuation ~objective in
+          is_true ~msg:"the framing names the goal"
+            (String.starts_with
+               ~prefix:"Continuing toward the goal: get the suite green"
+               framed);
+          is_true ~msg:"the framing carries the goal_status instruction"
+            (let sub = "goal_status" in
+             let rec go i =
+               i + String.length sub <= String.length framed
+               && (String.equal (String.sub framed i (String.length sub)) sub
+                  || go (i + 1))
+             in
+             go 0);
+          let turns_of inputs =
+            List.concat
+              (List.mapi
+                 (fun i text ->
+                   let t =
+                     turn
+                       ~id:(Printf.sprintf "gt-%d" i)
+                       ~input:(Session.Turn.Input.user_text text) ()
+                   in
+                   [ Event.turn_started t; finish t ])
+                 inputs)
+          in
+          let count ~objective inputs =
+            Goal.continuations ~objective
+              (Session.State.turns (state (turns_of inputs)))
+          in
+          equal int ~msg:"framed turns for this exact objective count" 2
+            (count ~objective
+               [
+                 "start the work";
+                 framed;
+                 "an ordinary owner question";
+                 framed;
+                 Goal.continuation ~objective:(objective ^ " and the docs");
+               ]);
+          equal int ~msg:"another objective keeps its own ledger" 1
+            (count
+               ~objective:(objective ^ " and the docs")
+               [ framed; Goal.continuation ~objective:(objective ^ " and the docs") ]);
+          equal int
+            ~msg:"an objective that is a prefix of another counts nothing" 0
+            (count ~objective:"get the suite" [ framed ]);
+          equal int ~msg:"an empty journal counts zero" 0 (count ~objective []));
       test "jsont rejects unsupported versions and unknown members" (fun () ->
           let json = encode Session.jsont (saved (journal ()).events) in
           (* Versions 2 (structured-output), 3 (durable workspace notices), 4
@@ -5061,7 +5414,6 @@ let branch_group =
           let parent_events =
             delegated
             @ [
-                Event.goal_updated (declare_g1 ());
                 Event.queue_updated
                   (Session.Queue.Update.enqueued (queue_entry "queued"));
               ]
@@ -5079,8 +5431,6 @@ let branch_group =
           equal (list event_value) ~msg:"the reset suffix is auditable"
             [
               Event.queue_updated Session.Queue.Update.cleared;
-              Event.goal_updated
-                (Session.Goal.Update.pause ~id:(goal_id "goal-1"));
               Event.delegations_detached;
             ]
             (List.filteri (fun i _ -> i >= n) (Session.events child));
@@ -5100,12 +5450,6 @@ let branch_group =
           equal (list delegation_value) ~msg:"parent still owns its child"
             [ edge ]
             (State.delegations (Session.state parent));
-          (match State.goal (Session.state child) with
-          | Some goal ->
-              is_true ~msg:"child goal is paused"
-                (Session.Goal.Status.equal Session.Goal.Status.Paused
-                   (Session.Goal.status goal))
-          | None -> fail "expected the inherited goal");
           (* Reset-suffix orthogonality: everything else matches the parent. *)
           equal (list turn_value) ~msg:"turns unchanged"
             (State.turns (Session.state parent))
@@ -5122,14 +5466,10 @@ let branch_group =
                   (Session.Queue.Update.enqueued (queue_entry "queued"));
               ]
           in
-          let goal_prefix =
-            finished_turn_events () @ [ Event.goal_updated (declare_g1 ()) ]
-          in
           let delegation_prefix, _ = finished_delegating_turn_events () in
           let all_prefix =
             delegation_prefix
             @ [
-                Event.goal_updated (declare_g1 ());
                 Event.queue_updated
                   (Session.Queue.Update.enqueued (queue_entry "queued"));
               ]
@@ -5139,13 +5479,6 @@ let branch_group =
                (reconstruct_branch queue_prefix
                   [ Event.queue_updated Session.Queue.Update.cleared ]));
           ignore
-            (require_ok ~msg:"goal reset"
-               (reconstruct_branch goal_prefix
-                  [
-                    Event.goal_updated
-                      (Session.Goal.Update.pause ~id:(goal_id "goal-1"));
-                  ]));
-          ignore
             (require_ok ~msg:"delegation reset"
                (reconstruct_branch delegation_prefix
                   [ Event.delegations_detached ]));
@@ -5154,8 +5487,6 @@ let branch_group =
                (reconstruct_branch all_prefix
                   [
                     Event.queue_updated Session.Queue.Update.cleared;
-                    Event.goal_updated
-                      (Session.Goal.Update.pause ~id:(goal_id "goal-1"));
                     Event.delegations_detached;
                   ])));
       test "reconstruction reports the first missing or different reset event"
@@ -5180,24 +5511,19 @@ let branch_group =
           let all_prefix =
             all_prefix
             @ [
-                Event.goal_updated (declare_g1 ());
                 Event.queue_updated
                   (Session.Queue.Update.enqueued (queue_entry "queued"));
               ]
-          in
-          let pause =
-            Event.goal_updated
-              (Session.Goal.Update.pause ~id:(goal_id "goal-1"))
           in
           expect_session_error ~msg:"reordered reset"
             (Session.Error.Branch_reset_mismatch
                {
                  index = List.length all_prefix;
                  expected = queue_reset;
-                 found = Some pause;
+                 found = Some Event.delegations_detached;
                })
             (reconstruct_branch all_prefix
-               [ pause; queue_reset; Event.delegations_detached ]);
+               [ Event.delegations_detached; queue_reset ]);
           let delegation_prefix, _ = finished_delegating_turn_events () in
           expect_session_error ~msg:"filler before detachment"
             (Session.Error.Branch_reset_mismatch
@@ -5270,14 +5596,7 @@ let branch_group =
             []
             (State.delegations (Session.state third)));
       test "the reset suffix guards hold" (fun () ->
-          let parent_events =
-            finished_turn_events ()
-            @ [
-                Event.goal_updated (declare_g1 ());
-                Event.goal_updated
-                  (Session.Goal.Update.complete ~id:(goal_id "goal-1") ());
-              ]
-          in
+          let parent_events = finished_turn_events () in
           let parent = saved parent_events in
           let child =
             ok_or "fork"
@@ -5285,8 +5604,8 @@ let branch_group =
                  parent)
           in
           equal (list event_value)
-            ~msg:"empty queue and finished goal append nothing" parent_events
-            (Session.events child));
+            ~msg:"empty queue and no live children append nothing"
+            parent_events (Session.events child));
       test "fork refuses active turns and deleted parents" (fun () ->
           let active = saved [ Event.turn_started (turn ()) ] in
           expect_session_error ~msg:"active turn"
@@ -5731,26 +6050,13 @@ let view_group =
             (Option.equal Session.Session_view.Waiting.equal
                (Some Session.Session_view.Waiting.Awaiting_provider)
                (Session.Session_view.waiting v)));
-      test "jsont round-trips including a declared goal" (fun () ->
-          let events =
-            finished_events "Prompt"
-            @ [
-                Event.goal_updated
-                  (Session.Goal.Update.declare ~id:(goal_id "g-1")
-                     ~objective:"Ship the thing" ~token_budget:500 ());
-              ]
-          in
+      test "jsont round-trips and pins the transport members" (fun () ->
+          let events = finished_events "Prompt" in
           let v =
             Session.Session_view.of_session
-              (summary_session ~id:"goalview" events)
+              (summary_session ~id:"view-json" events)
           in
-          is_true ~msg:"goal present"
-            (Option.is_some (Session.Session_view.goal v));
           let json = encode Session.Session_view.jsont v in
-          let goal = Option.get (Session.Session_view.goal v) in
-          equal json_value ~msg:"view composes the owner goal codec"
-            (encode Session.Goal.jsont goal)
-            (get_member "goal" json);
           let members, _ = members_of json in
           is_false ~msg:"the full compaction is absent from detail transport"
             (List.exists
@@ -6042,7 +6348,7 @@ let undo_group =
               ]));
       test "arming refuses a non-user anchor" (fun () ->
           let tc =
-            turn ~id:"tc" ~origin:Session.Turn.Origin.Goal_continuation
+            turn ~id:"tc" ~origin:Session.Turn.Origin.Step_limit_wind_down
               ~input:Session.Turn.Input.continue ()
           in
           let c = claim ~seed:"tc-req" (Session.Turn.id tc) in
@@ -6236,10 +6542,10 @@ let () =
       interrupt_group;
       bypass_group;
       compaction_group;
-      goal_group;
       board_group;
       queue_group;
       delegation_group;
+      mail_group;
       undo_group;
       replay_group;
       journal_machine_group;

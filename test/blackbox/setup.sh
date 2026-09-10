@@ -1,7 +1,7 @@
 # Cram setup for the blackbox suite. Sourced before each test with
-# cwd = $TESTCASE_ROOT; mentat, mentat_cram, and fake_provider_server are all
-# on PATH (via the test-cases/dune (binaries) stanza) and are invoked BARE —
-# never `./…` — so they resolve regardless of the .t's depth.
+# cwd = $TESTCASE_ROOT; mentat, mentatd, mentat_cram, and fake_provider_server
+# are all on PATH (via the test-cases/dune (binaries) stanza) and are invoked
+# BARE — never `./…` — so they resolve regardless of the .t's depth.
 #
 # This sourcing establishes only a hermetic, host-independent *environment*. It
 # deliberately does NOT trust the workspace or open the store — workspace
@@ -26,6 +26,13 @@ unset OPENAI_API_KEY ANTHROPIC_API_KEY
 # no fixture depends on a platform sandbox backend.
 export MENTAT_SANDBOX_MODE=danger-full-access
 export MENTAT_AUTO_TITLE=0
+
+# Every run drives its session's own agent, which lingers briefly after
+# settlement so a follow-up delivery finds a live server. The suite default
+# keeps that linger short so a cram never waits seconds for an agent to idle
+# out (and never ends with one still lingering over a store the harness is
+# about to reclaim); a cram that needs a different pace re-exports it.
+export MENTAT_CHILD_LINGER="${MENTAT_CHILD_LINGER:-0.2}"
 
 # The XDG roots exist, but data/mentat and sessions/ are left to the first store
 # open so use_broken_store can plant a fault before anything touches the store.
@@ -77,25 +84,43 @@ use_model () {
 
 # Launch the fake OpenAI Responses server on a scripted fixture; writes its port
 # to $port_file and records requests under $capture. Serves the script's
-# requests then exits; pair with wait_fake_server.
+# requests then exits; pair with wait_fake_server. Any further arguments are
+# passed through to fake_provider_server (mode flags such as --unordered).
 start_fake_server () {
   local script="$1" capture="${2:-capture}" port_file="${3:-server-port}"
+  shift "$(( $# < 3 ? $# : 3 ))"
   mkdir -p "$capture"
   rm -f "$port_file"
   fake_provider_server --script "$script" --capture "$capture" \
-    --port-file "$port_file" --accept-timeout 30 &
+    --port-file "$port_file" --accept-timeout 30 "$@" &
   MENTAT_FAKE_PROVIDER_PID=$!
   wait_for_file "$port_file"
 }
 
 # Start the fake server and point the openai provider at it (base URL + key +
-# model), the common run/models path.
+# model), the common run/models path. Extra arguments pass through to the
+# server.
 start_fake_openai () {
   local script="$1" capture="${2:-capture}" port_file="${3:-openai-port}"
-  start_fake_server "$script" "$capture" "$port_file"
+  shift "$(( $# < 3 ? $# : 3 ))"
+  start_fake_server "$script" "$capture" "$port_file" "$@"
   export OPENAI_API_KEY=test-key
   export MENTAT_MODEL=openai/gpt-5.6-sol
   export MENTAT_OPENAI_BASE_URL="http://127.0.0.1:$(cat "$port_file")/v1"
+}
+
+# Start the fake server in unordered (content-matched) mode and point the
+# openai provider at it: each arriving request consumes the first pending
+# script item whose expectation it satisfies. The delegation path needs this —
+# a parent session and its eagerly-driven children reach the provider in
+# nondeterministic order. Extra arguments pass through to the server (e.g.
+# --port, for a successor fixture that must answer on a predecessor's base
+# URL: a daemon-hosted instance keeps the provider environment it booted
+# with).
+start_fake_openai_unordered () {
+  local script="$1" capture="${2:-capture}" port_file="${3:-openai-port}"
+  shift "$(( $# < 3 ? $# : 3 ))"
+  start_fake_openai "$script" "$capture" "$port_file" --unordered "$@"
 }
 
 # Start the fake server as an OAuth issuer + readiness probe: /v1/models
@@ -194,7 +219,65 @@ wait_captured () { mentat_cram wait-file "capture/request-$1.json"; }
 # Reap $1 and echo its exit code.
 wait_exit () { wait "$1"; echo $?; }
 
-# --- daemon (mentat serve) -----------------------------------------------------
+# --- routine fixtures ----------------------------------------------------------
+
+# The shared pull-request repository fixture: a base branch, a feature head,
+# and a bare remote carrying refs/pull/7/head — what the derived https remote
+# would serve, as a local path at $1 (default origin.git; parents created, so
+# a git-base layout like remotes/acme/widgets.git works). Exports HEAD_SHA.
+make_pr_fixture () {
+  local remote="${1:-origin.git}"
+  git init -q work
+  git -C work config user.email t@test.invalid
+  git -C work config user.name T
+  printf 'hello\n' > work/lib.txt
+  git -C work add lib.txt
+  git -C work commit -qm base
+  git -C work branch -m main
+  git -C work checkout -qb feature
+  printf 'hello\nnew line\n' > work/lib.txt
+  git -C work commit -qam change
+  HEAD_SHA=$(git -C work rev-parse HEAD)
+  mkdir -p "$(dirname "$remote")"
+  git clone -q --bare work "$remote"
+  git -C "$remote" update-ref refs/pull/7/head "$HEAD_SHA"
+}
+
+# Install the standard pr-review routine (webhook + cli arms over
+# acme/widgets, wall clock $1, default 5m) with both credentials in place.
+# Exports CDIR. Proposals that differ from this shape stay inline in their
+# .t — the divergence is the test's own meaning.
+install_review_routine () {
+  local wall_clock="${1:-5m}"
+  mkdir -p proposal
+  cat > proposal/routine.json <<EOF
+{ "routine": 1, "name": "pr-review",
+  "workspace": { "repo": "acme/widgets" },
+  "trigger": [
+    { "kind": "github_webhook", "events": ["pull_request.opened"] },
+    { "kind": "cli" } ],
+  "run": { "mode": "review", "prompt": "prompt.md",
+           "output_schema": "findings.schema.json" },
+  "budget": { "per_run": { "wall_clock": "$wall_clock" } },
+  "publish": { "github": "review-threads" } }
+EOF
+  printf 'Review the diff for defects.\n' > proposal/prompt.md
+  printf '{"type":"object"}\n' > proposal/findings.schema.json
+  mentatd routine add proposal >/dev/null
+  CDIR="$PWD/config/mentat/routines/pr-review"
+  printf 'test-read-token\n' > "$CDIR/secrets/read-token"
+  chmod 600 "$CDIR/secrets/read-token"
+  printf 'test-write-token\n' > "$CDIR/secrets/write-token"
+  chmod 600 "$CDIR/secrets/write-token"
+}
+
+# --- daemon (mentatd) ----------------------------------------------------------
+
+# Every broker resolves the agent binary it spawns as the running executable
+# itself, with MENTAT_BIN as the override. Under the cram harness the
+# self-resolution is platform-dependent (Linux resolves the install-tree
+# symlink into the build tree), so the binary is named explicitly from PATH.
+export MENTAT_BIN="$(command -v mentat)"
 
 # Start the per-user daemon foreground-backgrounded on its default per-store
 # socket under /tmp (short, and keyed by the hermetic data home so it never
@@ -203,7 +286,7 @@ wait_exit () { wait "$1"; echo $?; }
 # and waits until its discovery file exists.
 start_daemon () {
   export MENTAT_DAEMON_MAX_IDLE="${MENTAT_DAEMON_MAX_IDLE:-300}"
-  mentat serve >daemon-serve.out 2>&1 &
+  mentatd >daemon-serve.out 2>&1 &
   MENTAT_DAEMON_PID=$!
   wait_for_file "$XDG_DATA_HOME/mentat/daemon/daemon.json"
 }
@@ -211,10 +294,43 @@ start_daemon () {
 # Stop the daemon: the graceful --stop, then a belt-and-suspenders kill of the
 # recorded pid. A trap in the .t pairs with this so a failing test never leaks.
 stop_daemon () {
-  mentat serve --stop >/dev/null 2>&1 || true
-  if [ -n "$MENTAT_DAEMON_PID" ]; then
+  mentatd stop >/dev/null 2>&1 || true
+  if [ -n "${MENTAT_DAEMON_PID:-}" ]; then
     kill "$MENTAT_DAEMON_PID" 2>/dev/null || true
     wait "$MENTAT_DAEMON_PID" 2>/dev/null || true
     unset MENTAT_DAEMON_PID
   fi
+}
+
+# The shared agent choreography. child_sock_base derives the per-session
+# endpoint tree — where every session's agent binds its socket — from the
+# resolved directories; capture it into SOCK_BASE once. wait_child polls a
+# session's fence-free view until it is idle with the expected number of
+# settled turns; wait_child_exit blocks until the session's agent has
+# exited — its endpoint directory under $SOCK_BASE is gone — so a following
+# fenced command (a json export, a metadata write) finds the fence free.
+child_sock_base () {
+  printf '%s/s\n' "$(mentat debug dirs 2>/dev/null | sed -n 's/^sockets=//p')"
+}
+
+wait_child () {
+  local child="$1" want="$2" tries=0 out phase turns
+  while :; do
+    out=$(mentat session show "$child" --json --cwd "$PWD/work" 2>/dev/null) || out=
+    phase=$(printf '%s' "$out" | mentat_cram json .phase 2>/dev/null) || phase=
+    turns=$(printf '%s' "$out" | mentat_cram json .turns 2>/dev/null) || turns=
+    if [ "$phase" = idle ] && [ "$turns" = "$want" ]; then break; fi
+    tries=$((tries + 1))
+    if [ "$tries" -gt 300 ]; then echo "wait_child timed out: $out"; break; fi
+    sleep 0.1
+  done
+}
+
+wait_child_exit () {
+  local dir="$SOCK_BASE/$1" tries=0
+  while [ -e "$dir" ]; do
+    tries=$((tries + 1))
+    if [ "$tries" -gt 300 ]; then echo "child server still up: $dir"; break; fi
+    sleep 0.1
+  done
 }

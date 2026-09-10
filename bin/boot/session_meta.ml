@@ -1,0 +1,114 @@
+(*---------------------------------------------------------------------------
+  Copyright (c) 2026 Invariant Systems. All rights reserved.
+  SPDX-License-Identifier: ISC
+ ---------------------------------------------------------------------------*)
+
+module Store = Mentat_store
+module Session = Mentat_session
+module Protocol_error = Mentat_protocol.Error
+
+let owner_display holder =
+  Option.map (fun o -> Format.asprintf "%a" Store.Run_lock.Owner.pp o) holder
+
+let session_store_error_to_protocol session (e : Store.Session.Error.t) :
+    Protocol_error.t =
+  match e with
+  | Store.Session.Error.Not_found _ -> Protocol_error.Session_not_found session
+  | Store.Session.Error.Locked { holder; _ } ->
+      Protocol_error.Busy { session; owner = owner_display holder }
+  | Store.Session.Error.Already_exists _ | Store.Session.Error.Conflict _
+  | Store.Session.Error.Corrupt _ | Store.Session.Error.Io _ ->
+      Protocol_error.Unavailable (Store.Session.Error.diagnostic e)
+
+let session_error_to_protocol session (e : Session.Error.t) : Protocol_error.t =
+  match e with
+  | Session.Error.Archived -> Protocol_error.Archived session
+  | Session.Error.Deleted -> Protocol_error.Deleted session
+  | Session.Error.Active_turn turn -> Protocol_error.Active_turn_exists turn
+  | Session.Error.State _ | Session.Error.Replay _
+  | Session.Error.Unknown_turn _ | Session.Error.Turn_not_finished _
+  | Session.Error.Delegated_session _ | Session.Error.Branch_copy_out_of_range _
+  | Session.Error.Branch_reset_mismatch _
+  | Session.Error.Unexpected_delegation_detachment _
+  | Session.Error.Unsupported_version _ ->
+      Protocol_error.unavailable (Session.Error.message e)
+
+(* A hold that releases on its own, worth a bounded wait instead of a Busy:
+   a custodial hold (a send appending mail, the store removing a session), or
+   a settled session's agent lingering toward its own exit — the serving
+   label over a concluded head. An agent actively driving (an unfinished
+   head) is a real driver, refused immediately; one held open by a live
+   connection past the patience is refused too, naming the holder. *)
+let transient_hold ~store session holder =
+  match Option.bind holder Store.Run_lock.Owner.label with
+  | None -> false
+  | Some label ->
+      Mentat_broker.custodial_label label
+      || String.equal label Mentat_broker.serve_owner_label
+         &&
+         (match Store.Session.load store session with
+         | Error _ -> false
+         | Ok doc ->
+             Session.State.finished
+               (Session.state (Store.Session.Document.session doc)))
+
+(* Derived from the linger, never restated: the patience must clear a
+   settled agent's linger plus its watchdog beat and durable close, or the
+   run-then-offline-command Busy this wait exists to kill returns on a
+   loaded machine. *)
+let fence_patience_s = Mentat_broker.serve_linger_s +. 1.0
+
+let with_fence ~store ~sw ~clock ~owner session f =
+  let rec acquire waited =
+    match Store.Run_lock.try_acquire ~sw store ~session ~owner with
+    | Error (`Held holder) ->
+        if waited < fence_patience_s && transient_hold ~store session holder
+        then begin
+          (* The wait parks a fiber, never the domain: the TUI answers its
+             lifecycle calls on the one Eio domain this would otherwise
+             freeze for the whole patience. *)
+          Eio.Time.sleep clock 0.1;
+          acquire (waited +. 0.1)
+        end
+        else
+          Error (Protocol_error.Busy { session; owner = owner_display holder })
+    | Error (`Io io) -> Error (Protocol_error.unavailable (Store.Io.message io))
+    | Ok guard ->
+        Fun.protect
+          ~finally:(fun () -> Store.Run_lock.release guard)
+          (fun () -> f guard)
+  in
+  acquire 0.
+
+let commit_transform ~store ~sw ~clock ~owner ~now session ~transform =
+  with_fence ~store ~sw ~clock ~owner session (fun guard ->
+      match Store.Session.load store session with
+      | Error e -> Error (session_store_error_to_protocol session e)
+      | Ok doc -> (
+          match transform (Store.Session.Document.session doc) with
+          | Error _ as e -> e
+          | Ok updated -> (
+              let stamped = Session.touch now updated in
+              match Store.Session.commit store ~fence:guard doc stamped with
+              | Ok _ -> Ok ()
+              | Error e -> Error (session_store_error_to_protocol session e))))
+
+(* Mint a fresh id at the command boundary — a wall-clock millisecond stamp and
+   a random suffix, never derived from a session, scope, or ordinal (the mutation
+   library's rule for revert ids, boundary-validated for session and turn ids).
+   Each
+   caller wraps the string in its own id type, so a session, turn, or revert id
+   minted from the CLI, the daemon web edge, or here reads the same shape. *)
+let id_seed = lazy (Random.self_init ())
+
+let fresh_id ?prefix () =
+  Lazy.force id_seed;
+  let body =
+    Printf.sprintf "%013.0f-%04x"
+      (Unix.gettimeofday () *. 1000.)
+      (Random.int 0x10000)
+  in
+  match prefix with None -> body | Some prefix -> prefix ^ "-" ^ body
+
+let fresh_revert_id () =
+  Mentat_mutation.Revert.Id.of_string (fresh_id ~prefix:"revert" ())

@@ -8,13 +8,13 @@
     A state is the deterministic, total fold of an {!Event.t} list. It
     reconstructs the full display transcript, the derived model-visible
     transcript across compaction, accepted turns, the single open suspension,
-    provider and tool claims, decisions, runtime permission grants, the goal
-    projection, the task board, the next-turn queue, and delegation edges.
+    provider and tool claims, decisions, runtime permission grants, the task
+    board, the next-turn queue, and delegation edges.
 
     {!apply} is the sole authority for cross-event invariants: id uniqueness,
     turn ownership, single suspension, single close, staged-claim ordering,
-    decision validation, compaction boundary and idempotency, goal transition
-    legality, and grants reconstruction. A mismatch is a hard located error,
+    decision validation, compaction boundary and idempotency, and grants
+    reconstruction. A mismatch is a hard located error,
     never a silent skip. State is inert data: no session id, no metadata, no
     clock, no IO, no callbacks.
 
@@ -151,17 +151,6 @@ module Error : sig
               call, so a later result for it would orphan the model view. *)
   end
 
-  module Goal : sig
-    (** Goal state errors. *)
-    type t =
-      | Unfinished of Goal.Id.t
-          (** A [Declare] ran while a goal was unfinished. *)
-      | Unknown of Goal.Id.t
-          (** An update targeted a goal that is not current. *)
-      | Illegal_transition of { id : Goal.Id.t; from_status : string }
-          (** The update was inadmissible from the current status. *)
-  end
-
   module Delegation : sig
     (** Delegation state errors. *)
     type t =
@@ -185,7 +174,6 @@ module Error : sig
     | Tool_claim of Tool_claim.t
     | Decision of Decision.t
     | Compaction of Compaction.t
-    | Goal of Goal.t
     | Delegation of Delegation.t
     | Queue of Queue.t
     | Undo of Undo.t
@@ -283,10 +271,6 @@ type t
       full transcript; the derived model view is a valid transcript that keeps
       the opener of every still-pending call, so no later result orphans it; a
       duplicate [(request_digest, reason)] key is rejected.
-    - {b Goals.} A declare requires no unfinished goal; every transition must be
-      admissible from the current status; accounting is derived, never stored,
-      and windowed at the goal's own declaration so a later goal never inherits
-      an earlier goal's continuation spend.
     - {b Delegations.} A delegation edge's source turn is the active turn; the
       edge is immutable; its delegation id and child session id are each unique
       within the live ownership projection. A branch reset clears that
@@ -306,8 +290,8 @@ type t
       is still a [Result_bypass].
 
     State is inert data: no session id, no metadata, no clock, no IO, no
-    callbacks. Every derived view — the model transcript, grants, goal
-    accounting — is projected on demand and never stored. *)
+    callbacks. Every derived view — the model transcript, grants — is projected
+    on demand and never stored. *)
 
 val empty : t
 (** [empty] is the state before any event has been applied. *)
@@ -388,12 +372,13 @@ val turn : Turn.Id.t -> t -> Turn.t option
 val turn_first_message_index : Turn.Id.t -> t -> int option
 (** [turn_first_message_index id t] is the absolute index in the full transcript
     of turn [id]'s appended user input, or [None] when [id] is unknown or is a
-    non-user turn (a [Continue] or a plan-build) that appended none. This is the
-    first message an undo boundary anchored at [id] excludes. *)
+    turn (a [Continue] or a plan-build) that appended none. This is the first
+    message an undo boundary anchored at [id] excludes. *)
 
 val can_undo_anchor : Turn.Id.t -> t -> bool
 (** [can_undo_anchor id t] is [true] iff an undo boundary may arm at turn [id]:
-    it is a user turn whose first message is at or after the model-context head
+    it is a turn carrying user-authored input whose first message is at or
+    after the model-context head
     (a compaction retained-tail start or a Fresh plan-build reset). The undo
     driver checks it before reverting files so an arm that the fold would reject
     ({!Error.Undo.Anchor_before_context}) never leaves the working tree reverted
@@ -433,6 +418,21 @@ val active_turn_id : t -> Turn.Id.t option
 
 val turn_outcome : Turn.Id.t -> t -> Turn.Outcome.t option
 (** [turn_outcome id t] is the terminal outcome of turn [id], if finished. *)
+
+val settled_head : t -> (Turn.t * Turn.Outcome.t option) option
+(** [settled_head t] is the last accepted turn and its recorded outcome when
+    [t] has run and nothing is active — the session's settled head. [None]
+    while no turn has been accepted or a turn is still unfinished. The outcome
+    is [None] when the head turn finished without recording one (a
+    crash-truncated journal); the head is settled either way. *)
+
+val finished : t -> bool
+(** [finished t] is [true] iff [t]'s work is concluded: the last accepted turn
+    is settled ({!settled_head}) and the next-turn queue is empty — the one
+    judgment "this session's work is concluded" reduces to. A settled head
+    with unconsumed queued input is not finished: the entry buys the session
+    another turn, so whoever supervises it must run it rather than settle
+    against the pre-entry result. *)
 
 val turn_response_count : Turn.Id.t -> t -> int option
 (** [turn_response_count id t] is the number of provider responses for turn
@@ -502,20 +502,6 @@ val grants : t -> Mentat_permission.Policy.Grants.t
 val permission_rules : t -> Mentat_permission.Policy.Rule.t list
 (** [permission_rules t] is the visible conversation-lifetime family rules
     reconstructed from decision resolutions, in installation order. *)
-
-(** {1:goal Goal} *)
-
-val goal : t -> Goal.t option
-(** [goal t] is the current goal projection with derived accounting, if a goal
-    is declared. *)
-
-val goal_objective_edit_pending : t -> bool
-(** [goal_objective_edit_pending t] is [true] iff the current goal is
-    {!Goal.Status.Active} and its objective was edited more recently than the
-    last {!Turn.Origin.Goal_continuation} turn — that is, no goal-continuation
-    turn has yet re-entered on the edited objective. Derived from the goal's
-    edit epoch and the turn order, never stored; the next goal-continuation turn
-    consumes it. A fresh {!Goal.Update.Declare} clears the epoch. *)
 
 (** {1:tasks Tasks} *)
 

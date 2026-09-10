@@ -31,8 +31,13 @@ internal notes, see the rest of [`doc/`](../).
   fork, rewind, diff, and revert them.
 - [Headless runs](headless.md) — `mentat run` for scripts and CI: run flags,
   images, output schemas, JSONL events, exit codes, and continuation.
-- [Daemon and web](daemon-and-web.md) — opt-in `--attach`, daemon lifecycle and
-  local socket trust, plus the authenticated loopback browser frontend.
+- [GitHub review](github-review.md) — the two-half review pipeline: producing
+  a findings document, rendering it into GitHub API requests, and posting.
+- [Routines](routines.md) — standing, unattended pull-request review: the
+  routine directory, credentials, crontab or resident deployment, budgets,
+  and the durable record.
+- [Daemon and web](daemon-and-web.md) — the opt-in resident daemon's
+  lifecycle, plus the authenticated loopback browser frontend.
 - [Shell completions](completions.md) — installing cmdliner completion
   for zsh, bash, and PowerShell.
 - [Troubleshooting](troubleshooting.md) — where logs, crash reports, and state

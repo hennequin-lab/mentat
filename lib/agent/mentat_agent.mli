@@ -18,11 +18,15 @@
     protection, advance outside protection), and the single-writer fence (one
     driver per session, acquired at first admission, held across turns).
 
-    Resources reach the engine only through the three {!Ports} — this library
-    links no store backend, no provider transport, no filesystem library, no UI.
-    The engine never parses configuration, performs credential IO, or prompts
-    for trust: context arrives as sealed data ({!Config.t}), notices drain
-    through the workspace port.
+    The engine abstracts what varies and links what does not. The provider —
+    five live transports plus scripted fakes — and the workspace capability
+    reach it only through the two {!Ports}; the store is a substrate with no
+    variation, so the engine links [mentat.store] directly and holds the opened
+    root as a plain capability value. Beyond that substrate this library links
+    no provider transport, no filesystem library, no UI. The engine never
+    parses configuration, performs credential IO, or prompts for trust: context
+    arrives as sealed data ({!Config.t}), notices drain through the workspace
+    port.
 
     {b The honesty laws.} Crash-time recovery is the sole minter of an
     [Ambiguous] settlement for a claim a dead process left open, and a live
@@ -58,8 +62,8 @@ module Config = Config
 (** Resolved per-session engine configuration, sealed by the executable. *)
 
 module Ports = Ports
-(** The store interface, provider function, and workspace capability value — the
-    engine's whole reach into the world. *)
+(** The provider function and workspace capability value — the engine's reach
+    into what genuinely varies. *)
 
 module Execution = Execution
 (** The per-turn execution selection an execution callback returns: catalog,
@@ -77,27 +81,51 @@ type t
 
 val create :
   sw:Eio.Switch.t ->
-  store:(module Ports.STORE) ->
+  store:Mentat_store.t ->
+  owner:Mentat_store.Run_lock.Owner.t ->
   provider:Ports.provider_call ->
   config:
     (Mentat_session.Id.t ->
     latest_model:Mentat_llm.Model.t option ->
     (Config.t, Mentat_diagnostic.t) result) ->
   now:(unit -> Mentat_session.Time.t) ->
+  merge:bool ->
+  revert_observe:(Mentat_workspace.Path.t -> Mentat_edit.Observed.t) ->
+  revert_checkpoint:
+    (boundary:Mentat_mutation.Checkpoint.boundary ->
+    Mentat_mutation.Checkpoint.t) ->
+  revert_apply:
+    (Mentat_edit.t -> (Mentat_edit.Result.t, Mentat_edit.Apply_error.t) result) ->
+  revert_new_id:(unit -> Mentat_mutation.Revert.Id.t) ->
   ?max_children:int ->
+  broker:Mentat_broker.t ->
+  broker_engine:Mentat_broker.Engine.t ->
   execution_for_mode:Execution.factory ->
   delegated_execution:Execution.delegated_factory ->
   unit ->
   t
-(** [create ~sw ~store ~provider ~config ~now ~execution_for_mode
+(** [create ~sw ~store ~owner ~provider ~config ~now ~merge ~execution_for_mode
      ~delegated_execution ()] is the process runtime. Drivers run as sibling
-    fibers under [sw]. [config] runs at each turn boundary — settings changes
+    fibers under [sw]. [store] is the opened store root every driver commits
+    through; run fences acquired at attachment register on [sw] and carry
+    [owner]. [config] runs at each turn boundary — settings changes
     take effect at the next turn. It receives [latest_model], the session's most
     recently started model as recorded in its own journal, so the executable can
     prefer that durable per-session fact over a global default when no
     process-local override applies. [now] is the injected clock for the session
-    values the engine itself constructs (children, fork and rewind targets); the
-    engine reads no clock. [execution_for_mode] is a factory: the driver applies
+    values the engine itself constructs (children, fork and rewind targets) and
+    for the [updated_at] stamp each commit composes; the engine reads no clock.
+
+    [merge], [revert_observe], [revert_checkpoint], [revert_apply], and
+    [revert_new_id] serve the online revert cone: each fenced revert threads
+    them per call to {!Mentat_store.Mutation.revert_apply} — [merge] is the
+    [revert.merge] config value, [revert_observe] and [revert_apply] the
+    workspace-write capability's read and all-or-nothing apply,
+    [revert_checkpoint] the [Before_revert] boundary capture, and
+    [revert_new_id] the revert-id minter — the effects the revert lifecycle
+    composes that neither the engine nor the store owns.
+
+    [execution_for_mode] is a factory: the driver applies
     it to its own nested per-session switch ([~background]) once, yielding a
     pair — a per-turn selector and a live background-process view (backing
     {!Mentat_client.running_processes}). The selector, at each new turn,
@@ -122,7 +150,90 @@ val create :
     an empty background-process view. Independently attached children verify
     their metadata backlink against the parent delegation edge before a driver
     is created. [max_children] bounds the scheduler's tree-wide capacity permit
-    (default [4]). *)
+    (default [4]). [broker] is the process's one {!Mentat_broker.t}, and every
+    delegated child session is its to run: once the edge and the child
+    document are durable, the runtime hands the child's identity to
+    {!Mentat_broker.materialize} — the broker owns spawn, observation, and
+    reaping, and reports what it observes back through
+    {{!section-brokered}the observation seam} — while the runtime keeps the
+    edge record, the child document, and the semantic capacity permit. A
+    child this runtime already drives (a resumed session holding a sibling
+    driver) is never handed to the broker: its own driver and fence are the
+    materialization, and a second process racing that fence could only lose.
+    [broker_engine] is this runtime as the broker reaches back into it
+    ({!Mentat_broker.Engine.t}) — the workspace identity a child is spawned
+    and dialed under, and the wrappers every brokered observation reports
+    through; the composition that owns both halves builds it. Every recorded
+    message is sent through the broker ({!Mentat_broker.send}) — the one
+    delivery road — one delegation edge's messages delivered in receipt
+    order, durable in the target's journal or loudly undelivered, re-driven
+    from the durable receipt at the next attach or the observed child exit;
+    sending never wakes the child, a follow-up's wake is the separate
+    materialization act. A recorded message to the session's own parent
+    rides the same lanes with no wake at all. *)
+
+val child_first_turn :
+  Mentat_session.Delegation.Id.t -> Mentat_session.Turn.Id.t
+(** [child_first_turn delegation] is the deterministic id of a delegated
+    child's first turn: a keyed digest over [delegation] alone. It is the one
+    cross-process mint rule — every minter, the child's own serve boot above
+    all, submits the child's first turn under this id, so a crash re-drive
+    or a re-materialization resubmits the same turn and the byte-identical
+    task prompt is idempotent rather than duplicated. *)
+
+(** {1:brokered The brokered observation seam}
+
+    A brokered child's driver lives in another process; what this runtime holds
+    is the durable journals and the parent's scheduler bookkeeping. These three
+    calls are how the broker reports what it observes — a settlement seen on
+    the child's feed, a child process reaped, a materialization abandoned — and
+    how a node re-adopts a session no client is asking for. Each resolves
+    entirely against journals, so a spurious, repeated, or racing call
+    converges to the same state; none of them blocks on the child. *)
+
+val adopt : t -> Mentat_session.Id.t -> (unit, Mentat_protocol.Error.t) result
+(** [adopt t session] attaches [session]'s driver on demand with no
+    accompanying command: acquire the fence, load, and recover to quiescence,
+    leaving the driver resident. Recovery's own consequences run as they would
+    under any attach — a parked children-wait is reconstructed, unfinished
+    delegation edges re-drive through the broker, settled ones are
+    folded into the scheduler buffer, and undelivered recorded messages are
+    re-driven. It is the verb a restarted node uses to re-adopt the parent of
+    an orphaned child so the child's eventual settlement has a driver to wake.
+    Idempotent for a session this runtime already drives; [Busy] when another
+    process holds the fence. *)
+
+val integrate_brokered_child :
+  t ->
+  child:Mentat_session.Id.t ->
+  [ `Integrated | `Not_settled | `Unbound ]
+(** [integrate_brokered_child t ~child] folds an observed brokered-child
+    settlement into the parent: it re-derives the result from the child
+    journal's settled head (never from the report), buffers it, returns the
+    capacity permit, wakes the parent's parked wait, and re-drives any of the
+    parent's recorded messages for this child that were never delivered — the
+    sweep a child's exit makes deliverable, deduplicated by the derived message
+    ids so repetition is harmless. [`Integrated] on success. [`Not_settled]
+    when the child journal holds unfinished work — an unstarted child, an
+    active turn, an unreadable journal, or a settled head with unconsumed
+    queued mail (the mail buys the child another turn, so the delegation must
+    not settle against the pre-mail result) — which after a child process
+    exit means re-materialization, not integration, is the caller's next
+    move. [`Unbound] when this runtime holds no parent binding
+    for [child] (it never delegated through this engine, or has shut down);
+    the journals still hold the truth and the parent's next attach integrates
+    without the broker. *)
+
+val fail_brokered_child :
+  t -> child:Mentat_session.Id.t -> message:string -> unit
+(** [fail_brokered_child t ~child ~message] settles the parent's wait for
+    [child] with the spawn-failure text carrying [message] and returns the
+    capacity permit — the loud floor for a child the broker has abandoned
+    (spawn refused, repeated crashes, an unidentifiable fence holder). The
+    parent's parked wait completes with that text instead of parking forever;
+    no child journal fact is minted, so a later successful materialization of
+    the same edge supersedes the failure through the ordinary settlement path.
+    A no-op when this runtime holds no parent binding for [child]. *)
 
 val shutdown : t -> unit
 (** [shutdown t] stops admission and closes every driver, then returns. It has

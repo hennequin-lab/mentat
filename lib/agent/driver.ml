@@ -7,39 +7,39 @@ type io = {
   session_id : Mentat_session.Id.t;
   commit :
     Mentat_session.Event.t list ->
-    (Mentat_session.t, Ports.Store_error.t) result;
+    (Mentat_session.t, Error.t) result;
   commit_metadata :
-    Mentat_session.t -> (Mentat_session.t, Ports.Store_error.t) result;
+    Mentat_session.t -> (Mentat_session.t, Error.t) result;
   append_edit :
     entries:Mentat_edit.Result.Entry.t list ->
     Mentat_mutation.Event.t ->
-    (Mentat_mutation.State.t, Ports.Store_error.t) result;
+    (Mentat_mutation.State.t, Error.t) result;
   append_mutation :
     Mentat_mutation.Event.t list ->
-    (Mentat_mutation.State.t, Ports.Store_error.t) result;
+    (Mentat_mutation.State.t, Error.t) result;
   put_attachment :
-    string -> (Mentat_digest.Content_ref.t, Ports.Store_error.t) result;
+    string -> (Mentat_digest.Content_ref.t, Mentat_diagnostic.t) result;
   attachment :
-    Mentat_digest.Content_ref.t -> (string option, Ports.Store_error.t) result;
+    Mentat_digest.Content_ref.t -> (string option, Mentat_diagnostic.t) result;
   fork :
     events:Mentat_mutation.Event.t list ->
     Mentat_session.t ->
-    (unit, Ports.Store_error.t) result;
+    (unit, Error.t) result;
   revert :
     scope:Mentat_mutation.Revert.Scope.t ->
     ( Mentat_mutation.Revert.Outcome.t * Mentat_mutation.State.t,
-      Ports.Store_error.t )
+      Error.t )
     result;
   undo_revert :
     Mentat_mutation.Revert.Selection.t ->
     ( Mentat_mutation.Revert.Outcome.t * Mentat_mutation.State.t,
-      Ports.Store_error.t )
+      Error.t )
     result;
   truncate :
     keep:(Mentat_session.Turn.Id.t -> bool) ->
     Mentat_session.t ->
-    (Mentat_session.t * Mentat_mutation.State.t, Ports.Store_error.t) result;
-  export : unit -> (string, Ports.Store_error.t) result;
+    (Mentat_session.t * Mentat_mutation.State.t, Error.t) result;
+  export : unit -> (string, Error.t) result;
   release : unit -> unit;
   provider_call :
     Mentat_llm.Request.t ->
@@ -55,7 +55,7 @@ type hooks = {
     [ `Granted | `Refused of Mentat_agent_step.Step.Reservation.Refusal.t ];
   release_permit : delegation:Mentat_session.Delegation.Id.t -> unit;
   observe_delegation : Mentat_session.Delegation.t -> unit;
-  deliver_message : Mentat_agent_step.Step.Child_message.t -> unit;
+  deliver_message : Mentat_agent_step.Step.Mail.t -> unit;
   settled_children :
     Mentat_session.Delegation.Id.t list ->
     (Mentat_session.Delegation.Id.t * Scheduler.child_result) list;
@@ -79,7 +79,7 @@ exception Interrupted_by_driver
 
 (* A worker-side store append failed: the driver faults without settling —
    the open claim degrades to Ambiguous at a successor's recovery. *)
-exception Store_failed of Ports.Store_error.t
+exception Store_failed of Error.t
 
 type phase =
   | Running
@@ -118,9 +118,6 @@ type msg =
       * (Mentat_mutation.Revert.Outcome.t, Mentat_protocol.Error.t) result
         Eio.Promise.u
   | Export of (string, Mentat_protocol.Error.t) result Eio.Promise.u
-  | Enqueue of
-      Mentat_session.Queue.Entry.t
-      * (unit, Mentat_protocol.Error.t) result Eio.Promise.u
   | Stop
 
 (* The worker's yield: the effect's raw runtime outcome. *)
@@ -282,7 +279,6 @@ let build_env t ~context_prelude ~workspace catalog cfg ~max_steps =
     ~prelude:context_prelude
     ~max_steps:(Option.value max_steps ~default:cfg.Config.max_steps)
     ~compaction_pressure_tokens:cfg.Config.compaction_pressure_tokens
-    ~continuation_turn_limit:cfg.Config.continuation_turn_limit
     ~max_spawn_depth:cfg.Config.max_spawn_depth
     ~max_exchanges:cfg.Config.max_exchanges ~depth:t.depth ()
 
@@ -409,7 +405,7 @@ let commit_step t step =
                         ~delegation:(Mentat_session.Delegation.id d)
                   | _ -> ())
                 events;
-              Error (Error.Store e)
+              Error e
           | Ok session ->
               t.session <- session;
               (* Register each newly delegated child before the hub announces its
@@ -444,8 +440,8 @@ let commit_step t step =
                             (compaction_result_of_outcome outcome)
                       | Some _ | None -> t.hooks.on_turn_settled ~turn outcome)
                   | Mentat_session.Event.Message_appended _ as event -> (
-                      (* A settled send_message/follow_up receipt commits here;
-                     the runtime routes the recorded message to the child. *)
+                      (* A settled send/follow_up receipt commits here; the
+                     runtime routes the recorded message to its target. *)
                       match Mentat_agent_step.settled_message session event with
                       | Some message -> t.hooks.deliver_message message
                       | None -> ())
@@ -455,7 +451,7 @@ let commit_step t step =
 
 let commit_events t events =
   match t.io.commit events with
-  | Error e -> Error (Error.Store e)
+  | Error e -> Error e
   | Ok session ->
       t.session <- session;
       Feed.Hub.publish t.hub ~delta:events session t.mstate;
@@ -469,30 +465,10 @@ let commit_events t events =
    fact is emitted, so the feed does not publish: metadata is not journal state. *)
 let commit_metadata_committed t session' =
   match t.io.commit_metadata session' with
-  | Error e -> Error (Error.Store e)
+  | Error e -> Error e
   | Ok session ->
       t.session <- session;
       Ok ()
-
-(* The goal id a rejected goal transition names, for either a live-state or a
-   replay rejection. A declare-while-unfinished, an unknown target, or an illegal
-   transition all identify their goal, and all map to the one protocol
-   transition error. *)
-let goal_transition_id (store_error : Mentat_session.Error.t) =
-  let of_goal = function
-    | Mentat_session.State.Error.Goal.Illegal_transition { id; _ }
-    | Mentat_session.State.Error.Goal.Unfinished id
-    | Mentat_session.State.Error.Goal.Unknown id ->
-        id
-  in
-  match store_error with
-  | Mentat_session.Error.State (Mentat_session.State.Error.Goal g) ->
-      Some (of_goal g)
-  | Mentat_session.Error.Replay replay -> (
-      match Mentat_session.State.Replay_error.cause replay with
-      | Mentat_session.State.Error.Goal g -> Some (of_goal g)
-      | _ -> None)
-  | _ -> None
 
 let fault t e =
   t.phase <- Faulted e;
@@ -568,6 +544,38 @@ and start_build_turn t cfg ~input ~origin =
     ~max_steps:None ~id:(mint_turn_id t) ~input ~origin ~output_schema:None
     ~ack:ignore
 
+(* Queued admission on a session with a recorded run policy seals the turn
+   under it — the recorded mode and output schema, never the plain Build
+   defaults — and a trigger-origin entry mints the turn as [Triggered],
+   recording the consumed entry: trigger provenance rides mail, and this
+   admission is where it reaches the turn. *)
+and start_queued_turn t cfg entry =
+  let policy =
+    Mentat_session.Metadata.run_policy (Mentat_session.metadata t.session)
+  in
+  let mode =
+    match Option.bind policy Mentat_session.Metadata.Run_policy.mode with
+    | Some mode -> mode
+    | None -> Mentat_session.Contract.Mode.Build
+  in
+  let output_schema =
+    Option.bind policy Mentat_session.Metadata.Run_policy.output_schema
+  in
+  let entry_id = Mentat_session.Queue.Entry.id entry in
+  let origin =
+    match Mentat_session.Queue.Entry.origin entry with
+    | Some (Mentat_session.Origin.Trigger { source; digest; key }) ->
+        Mentat_session.Turn.Origin.triggered ~entry:entry_id ~source ~digest
+          ~key ()
+    | Some (Mentat_session.Origin.Agent _) | None ->
+        Mentat_session.Turn.Origin.Queued entry_id
+  in
+  start_turn t cfg ~mode ~options:None ~max_steps:None ~id:(mint_turn_id t)
+    ~input:
+      (Mentat_session.Turn.Input.user
+         (Mentat_agent_step.queued_input t.session entry))
+    ~origin ~output_schema ~ack:ignore
+
 and admission t =
   if t.stopping then begin
     t.execution <- None;
@@ -585,37 +593,13 @@ and admission t =
               ~input:(Mentat_session.Turn.Input.plan_build approval)
               ~origin:Mentat_session.Turn.Origin.Plan_build
         | None -> (
-            match
-              Mentat_agent_step.next_admission
-                ~continuation_turn_limit:cfg.Config.continuation_turn_limit
-                (state t)
-            with
+            match Mentat_agent_step.next_admission (state t) with
             | Mentat_agent_step.Admission.Queued entry ->
-                start_build_turn t cfg
-                  ~input:
-                    (Mentat_session.Turn.Input.user
-                       (Mentat_session.Queue.Entry.input entry))
-                  ~origin:
-                    (Mentat_session.Turn.Origin.Queued
-                       (Mentat_session.Queue.Entry.id entry))
-            | Mentat_agent_step.Admission.Continuation input ->
-                start_build_turn t cfg ~input
-                  ~origin:Mentat_session.Turn.Origin.Goal_continuation
-            | Mentat_agent_step.Admission.Budget_wind_down { goal; input } -> (
-                (* Record the budget-limited transition before the wind-down turn
-                   so the goal leaves [Active] and admits no further
-                   continuation; then start the final goal-continuation turn. *)
-                match
-                  commit_events t
-                    [
-                      Mentat_session.Event.goal_updated
-                        (Mentat_session.Goal.Update.budget_limited ~id:goal);
-                    ]
-                with
-                | Error e -> fault t e
-                | Ok () ->
-                    start_build_turn t cfg ~input
-                      ~origin:Mentat_session.Turn.Origin.Goal_continuation)
+                (* An origin-bearing entry is framed from its typed origin —
+                   the sender named from this session's own recorded facts,
+                   the body fenced as sender material; an owner entry is its
+                   content verbatim. *)
+                start_queued_turn t cfg entry
             | Mentat_agent_step.Admission.Step_limit_wind_down input ->
                 start_build_turn t cfg ~input
                   ~origin:Mentat_session.Turn.Origin.Step_limit_wind_down
@@ -949,7 +933,7 @@ and settle_model t ~id ~purpose ~prose ~stream_usage outcome =
       feed_commit t (fun s ->
           Mentat_agent_step.interrupt ?reason:t.interrupt_reason
             ?assistant_text:prose ?usage:!stream_usage s)
-  | Error (Store_failed e) -> Error (Error.Store e)
+  | Error (Store_failed e) -> Error e
   | Error _exn ->
       (* A callback exception does not prove the call produced no effects:
          the live Ambiguous mint. *)
@@ -1051,7 +1035,7 @@ and settle_tool_effect t ~id ~turn ~closer outcome =
       | Error Interrupted_by_driver ->
           feed_commit t (fun s ->
               Mentat_agent_step.interrupt ?reason:t.interrupt_reason s)
-      | Error (Store_failed e) -> Error (Error.Store e)
+      | Error (Store_failed e) -> Error e
       | Error _exn ->
           (* The exception does not prove the callback produced no effects. *)
           settling (fun s ->
@@ -1095,7 +1079,7 @@ and append_evidence t ~turn ~claim evidence =
             | None -> applies_loop ordinal rest
             | Some (entries, event) -> (
                 match t.io.append_edit ~entries event with
-                | Error e -> Error (Error.Store e)
+                | Error e -> Error e
                 | Ok mstate ->
                     t.mstate <- mstate;
                     applies_loop (ordinal + 1) rest))
@@ -1110,7 +1094,7 @@ and append_evidence t ~turn ~claim evidence =
                 Mentat_mutation.Event.tool_observed ~turn ~claim paths
               in
               match t.io.append_mutation [ event ] with
-              | Error e -> Error (Error.Store e)
+              | Error e -> Error e
               | Ok mstate ->
                   t.mstate <- mstate;
                   Ok ())))
@@ -1146,25 +1130,6 @@ and handle_any t msg ~mid_effect =
   | Revert (scope, ack) -> revert_flow t ~scope ~ack
   | Undo_op (op, ack) -> undo_flow t ~op ~ack
   | Export ack -> export_flow t ~ack
-  | Enqueue (entry, ack) -> (
-      let resolve r = Eio.Promise.resolve ack r in
-      match t.phase with
-      | Faulted e -> resolve (Error (unavailable e))
-      | _ ->
-          let id = Mentat_session.Queue.Entry.id entry in
-          let delivered =
-            (* A consumed entry's [Enqueued] fact still proves delivery: the
-               session fold keeps the receipt past consumption. *)
-            Mentat_session.State.enqueue_recorded id
-              (Mentat_session.state t.session)
-          in
-          if delivered then resolve (Ok ())
-          else
-            journal_commit t ~ack:resolve
-              [
-                Mentat_session.Event.queue_updated
-                  (Mentat_session.Queue.Update.enqueued entry);
-              ])
   | Stop -> (
       t.stopping <- true;
       if not mid_effect then
@@ -1182,8 +1147,8 @@ and handle_any t msg ~mid_effect =
 and handle_command t command ~mid_effect ~ack =
   match command with
   | Mentat_protocol.Command.Prompt
-      { turn; input; options; mode; max_steps; goal; output_schema; _ } ->
-      prompt t ~turn ~input ~options ~mode ~max_steps ~goal ~output_schema ~ack
+      { turn; input; options; mode; max_steps; output_schema; _ } ->
+      prompt t ~turn ~input ~options ~mode ~max_steps ~output_schema ~ack
   | Mentat_protocol.Command.Answer_decision { decision; answer; _ } ->
       if mid_effect then
         ack (Error (Mentat_protocol.Error.Decision_not_pending decision))
@@ -1194,16 +1159,51 @@ and handle_command t command ~mid_effect ~ack =
       (* Mid-effect interrupts are consumed by [supervise]; this is the
          parked path. *)
       parked_interrupt t ~reason ~ack
-  | Mentat_protocol.Command.Queue_next { input; _ } -> (
+  | Mentat_protocol.Command.Queue_next { id; origin; input; _ } -> (
       match externalize_content t input with
       | Error e -> ack (Error e)
-      | Ok input ->
-          journal_commit t ~ack
-            [
-              Mentat_session.Event.queue_updated
-                (Mentat_session.Queue.Update.enqueued
-                   (Mentat_session.Queue.Entry.make ~id:(mint_queue_id t) ~input));
-            ])
+      | Ok input -> (
+          match id with
+          | Some id
+            when Mentat_session.State.enqueue_recorded id
+                   (Mentat_session.state t.session) ->
+              (* A consumed entry's [Enqueued] fact still proves delivery: a
+                 client-minted id makes the at-least-once resubmission
+                 idempotent. *)
+              ack (Ok ())
+          | Some _ | None -> (
+              (* The admit judgment, after the dedup exactly as the broker's
+                 fence-held append runs it: an origin the session's recorded
+                 facts do not admit, or one whose unconsumed backlog is at the
+                 cap, is a structured refusal, never a committed fact. *)
+              match Mentat_session.admits_mail ~origin t.session with
+              | `Refused_sender ->
+                  ack
+                    (Error
+                       (Mentat_protocol.Error.unavailable
+                          (Printf.sprintf
+                             "session %s does not accept this sender's mail"
+                             (Mentat_session.Id.to_string t.io.session_id))))
+              | `Refused_backlog ->
+                  ack
+                    (Error
+                       (Mentat_protocol.Error.unavailable
+                          (Printf.sprintf
+                             "session %s's mailbox is full for this sender \
+                              (backlog cap %d)"
+                             (Mentat_session.Id.to_string t.io.session_id)
+                             Mentat_session.mail_backlog_cap)))
+              | `Admitted ->
+                  let id =
+                    match id with Some id -> id | None -> mint_queue_id t
+                  in
+                  journal_commit t ~ack
+                    [
+                      Mentat_session.Event.queue_updated
+                        (Mentat_session.Queue.Update.enqueued
+                           (Mentat_session.Queue.Entry.make ?origin ~id ~input
+                              ()));
+                    ])))
   | Mentat_protocol.Command.Replace_queued { inputs; _ } -> (
       let rec externalize_all acc = function
         | [] -> Ok (List.rev acc)
@@ -1220,7 +1220,7 @@ and handle_command t command ~mid_effect ~ack =
               (fun ordinal input ->
                 Mentat_session.Queue.Entry.make
                   ~id:(mint_replacement_queue_id t ordinal)
-                  ~input)
+                  ~input ())
               inputs
           in
           journal_commit t ~ack
@@ -1233,94 +1233,13 @@ and handle_command t command ~mid_effect ~ack =
         [
           Mentat_session.Event.queue_updated Mentat_session.Queue.Update.cleared;
         ]
-  | Mentat_protocol.Command.Goal_pause { goal; _ } ->
-      goal_command t ~goal ~ack (fun ~id ->
-          Mentat_session.Goal.Update.pause ~id)
-  | Mentat_protocol.Command.Goal_edit { goal; objective; _ } ->
-      goal_command t ~goal ~ack (fun ~id ->
-          Mentat_session.Goal.Update.edit ~id ~objective)
-  | Mentat_protocol.Command.Goal_resume { goal; budget; _ } ->
-      goal_command t ~goal ~ack (fun ~id ->
-          Mentat_session.Goal.Update.resume ~id ?token_budget:budget ())
-  | Mentat_protocol.Command.Goal_clear { goal; _ } ->
-      goal_command t ~goal ~ack (fun ~id ->
-          Mentat_session.Goal.Update.clear ~id)
-
-and goal_command t ~goal ~ack update_of =
-  (* A goal command names the goal it saw: the session must have a declared goal
-     ([Goal_not_found]), and it must be the current one ([Goal_is_not_current]),
-     since a goal is replaceable and a stale command must not act on its
-     successor. *)
-  let illegal_transition = function
-    | Mentat_session.Error.State
-        (Mentat_session.State.Error.Goal
-           (Mentat_session.State.Error.Goal.Illegal_transition { id; _ })) ->
-        Some id
-    | Mentat_session.Error.Replay replay -> (
-        match Mentat_session.State.Replay_error.cause replay with
-        | Mentat_session.State.Error.Goal
-            (Mentat_session.State.Error.Goal.Illegal_transition { id; _ }) ->
-            Some id
-        | _ -> None)
-    | _ -> None
-  in
-  match Mentat_session.State.goal (state t) with
-  | None -> ack (Error (Mentat_protocol.Error.Goal_not_found t.io.session_id))
-  | Some current -> (
-      let id = Mentat_session.Goal.id current in
-      if not (Mentat_session.Goal.Id.equal id goal) then
-        ack (Error (Mentat_protocol.Error.Goal_is_not_current goal))
-      else
-        match
-          commit_events t [ Mentat_session.Event.goal_updated (update_of ~id) ]
-        with
-        | Error (Error.Store (Ports.Store_error.Rejected error)) -> (
-            match illegal_transition error with
-            | Some id ->
-                ack
-                  (Error (Mentat_protocol.Error.Goal_transition_not_allowed id))
-            | None ->
-                ack
-                  (Error
-                     (unavailable
-                        (Error.Store (Ports.Store_error.Rejected error)))))
-        | Error e -> ack (Error (unavailable e))
-        | Ok () -> ack (Ok ()))
 
 and journal_commit t ~ack events =
   match commit_events t events with
   | Error e -> ack (Error (unavailable e))
   | Ok () -> ack (Ok ())
 
-(* A goal declared with the prompt is minted engine-side and appended before the
-   turn starts, so the model plans with the goal already in the journal (goals
-   are never client-minted). The id is deterministic in the turn — a
-   fixed [prompt-goal] tag, not a call id — so a retried prompt declares the same
-   goal. A declaration while a goal is still live is rejected and the turn is not
-   admitted, surfaced as the same transition error the standalone goal verbs use. *)
-and declare_prompt_goal t ~turn ~goal =
-  match goal with
-  | None -> Ok ()
-  | Some { Mentat_protocol.Command.objective; token_budget } -> (
-      let id =
-        Mentat_session.Goal.Id.of_string
-          ("goal-"
-          ^ Mentat_digest.key ~length:16 ~domain:"mentat.agent.goal.v1"
-              [ Mentat_session.Turn.Id.to_string turn; "prompt-goal" ])
-      in
-      let update =
-        Mentat_session.Goal.Update.declare ~id ~objective ?token_budget ()
-      in
-      match commit_events t [ Mentat_session.Event.goal_updated update ] with
-      | Ok () -> Ok ()
-      | Error (Error.Store (Ports.Store_error.Rejected store_error) as e) -> (
-          match goal_transition_id store_error with
-          | Some id ->
-              Error (Mentat_protocol.Error.Goal_transition_not_allowed id)
-          | None -> Error (unavailable e))
-      | Error e -> Error (unavailable e))
-
-and prompt t ~turn ~input ~options ~mode ~max_steps ~goal ~output_schema ~ack =
+and prompt t ~turn ~input ~options ~mode ~max_steps ~output_schema ~ack =
   (* The engine mints the turn input from the command's content after admission:
      [Command.Prompt] carries content, never the engine-only [Continue]. The
      content is non-empty by the command constructor's contract. Inline
@@ -1353,19 +1272,15 @@ and prompt t ~turn ~input ~options ~mode ~max_steps ~goal ~output_schema ~ack =
                     ~latest_model:(Mentat_session.State.latest_model (state t))
                 with
                 | Error d -> ack (Error (unavailable (Error.Configuration d)))
-                | Ok cfg -> (
-                    match declare_prompt_goal t ~turn ~goal with
-                    | Error e -> ack (Error e)
-                    | Ok () ->
-                        start_turn t cfg
-                          ~mode:
-                            (Option.value mode
-                               ~default:Mentat_session.Contract.Mode.Build)
-                          ~options ~max_steps ~id:turn ~input
-                          ~origin:Mentat_session.Turn.Origin.User ~output_schema
-                          ~ack:(fun r ->
-                            ack (Result.map_error (fun e -> unavailable e) r))))
-          ))
+                | Ok cfg ->
+                    start_turn t cfg
+                      ~mode:
+                        (Option.value mode
+                           ~default:Mentat_session.Contract.Mode.Build)
+                      ~options ~max_steps ~id:turn ~input
+                      ~origin:Mentat_session.Turn.Origin.User ~output_schema
+                      ~ack:(fun r ->
+                        ack (Result.map_error (fun e -> unavailable e) r)))))
 
 and answer_decision t ~decision ~answer ~by ~ack =
   match t.phase with
@@ -1450,7 +1365,7 @@ and fork_flow t ~id =
   | Error e -> Error (Error.Session e)
   | Ok forked -> (
       match t.io.fork ~events:(branch_events t forked) forked with
-      | Error e -> Error (Error.Store e)
+      | Error e -> Error e
       | Ok () -> Ok id)
 
 and rewind_flow t ~id anchor =
@@ -1461,7 +1376,7 @@ and rewind_flow t ~id anchor =
   | Error e -> Error (Error.Session e)
   | Ok rewound -> (
       match t.io.fork ~events:(branch_events t rewound) rewound with
-      | Error e -> Error (Error.Store e)
+      | Error e -> Error e
       | Ok () -> Ok id)
 
 (* Manual compaction. *)
@@ -1557,17 +1472,17 @@ and commit_metadata_flow t ~transform ~ack =
           | Error e -> resolve (Error (unavailable e))))
 
 (* The online revert cone at a driven session's idle point: the
-   port op resolves the scope, captures a [Before_revert] checkpoint, freezes the
-   plan, applies it, and settles — all under the held fence, {b synchronously}.
-   Success adopts the re-read mutation state the port returns, so the driver's
-   ledger mirror reflects the revert facts a subsequent turn's checkpoint and a
-   branch's copied prefix depend on (the mutation analogue of
+   store op resolves the scope, captures a [Before_revert] checkpoint, freezes
+   the plan, applies it, and settles — all under the held fence,
+   {b synchronously}. Success adopts the re-read mutation state it returns, so
+   the driver's ledger mirror reflects the revert facts a subsequent turn's
+   checkpoint and a branch's copied prefix depend on (the mutation analogue of
    {!commit_metadata_committed}'s revision adoption). A store [Conflict] under the
    held fence surfaces loudly as [Unavailable] — never a silent retry. *)
 and revert_flow t ~scope ~ack =
   with_idle_head t ~ack (fun resolve ->
       match t.io.revert ~scope with
-      | Error e -> resolve (Error (unavailable (Error.Store e)))
+      | Error e -> resolve (Error (unavailable e))
       | Ok (outcome, mstate) ->
           t.mstate <- mstate;
           resolve (Ok outcome))
@@ -1583,7 +1498,7 @@ and revert_flow t ~scope ~ack =
 and undo_flow t ~op ~ack =
   with_idle_head t ~ack (fun resolve ->
       let st = state t in
-      let store_error e = resolve (Error (unavailable (Error.Store e))) in
+      let store_error e = resolve (Error (unavailable e)) in
       let refuse messages =
         resolve (Ok (Mentat_mutation.Revert.Outcome.Refused messages))
       in
@@ -1733,7 +1648,7 @@ and undo_flow t ~op ~ack =
 and export_flow t ~ack =
   with_idle_head t ~ack (fun resolve ->
       match t.io.export () with
-      | Error e -> resolve (Error (unavailable (Error.Store e)))
+      | Error e -> resolve (Error (unavailable e))
       | Ok bundle -> resolve (Ok bundle))
 
 and compact_start t cfg ~id ~ack =
@@ -1778,14 +1693,45 @@ let serve t =
       let msg = next_msg t in
       contain t (fun () -> handle_any t msg ~mid_effect:false);
       (* The idle boundary: a command that landed on an idle session —
-         a queue entry, a goal resume — may make an admission available now
+         a queue entry — may make an admission available now
          rather than at a settle that already passed. It reaches the same
-         adapter and hook code a settle does (a queued spawn attaches its
+         store and hook code a settle does (a queued spawn attaches its
          child here), so it is contained identically. *)
       if (not t.stopping) && (not (faulted t)) && not (has_active_turn t) then
         contain t (fun () -> admission t)
     end
   done
+
+(* After the serve loop, nothing will ever take another message: resolve
+   every ask the mailbox still carries — one posted after [Stop] but before
+   the controller handled it, or one left behind by a fault — with the
+   shutdown refusal, so no caller parks forever on a resolver nothing serves.
+   [t.stopping] is set first: [ask]'s refusal check and its post share one
+   non-suspending step, so every ask is either refused up front or finds its
+   message drained here. *)
+let drain_mailbox t =
+  t.stopping <- true;
+  let refuse resolver =
+    Eio.Promise.resolve resolver (Error (unavailable Error.Shutting_down))
+  in
+  let rec drain () =
+    match Queue.take_opt t.mailbox with
+    | None -> ()
+    | Some msg ->
+        (match msg with
+        | Command (_, resolver)
+        | Unattended (_, resolver)
+        | Commit_metadata (_, resolver) ->
+            refuse resolver
+        | Fork (_, resolver) | Rewind (_, _, resolver) ->
+            Eio.Promise.resolve resolver (Error Error.Shutting_down)
+        | Compact (_, resolver) -> refuse resolver
+        | Revert (_, resolver) | Undo_op (_, resolver) -> refuse resolver
+        | Export resolver -> refuse resolver
+        | Deliver | Stop -> ());
+        drain ()
+  in
+  drain ()
 
 let recovery_execution t turn =
   match
@@ -1836,7 +1782,7 @@ let controller t =
       contain t (fun () ->
           match active_turn t with
           | None ->
-              (* Preserve crash-time queue/goal admission without speculatively
+              (* Preserve crash-time queue admission without speculatively
                  selecting a Build execution merely to recover an idle head. *)
               admission t
           | Some turn -> (
@@ -1862,7 +1808,8 @@ let controller t =
                   drive t step));
       (* [serve] contains its own message and admission work; wrapping it too
          keeps an unforeseen escape from skipping the fence release below. *)
-      contain t (fun () -> serve t));
+      contain t (fun () -> serve t);
+      drain_mailbox t);
   t.io.release ();
   Eio.Promise.resolve (snd t.quiesced) ()
 
@@ -1930,11 +1877,6 @@ let answer_unattended t ~decision =
     (fun resolver -> Unattended (decision, resolver))
 
 let deliver t = post t Deliver
-
-let enqueue t entry =
-  ask t
-    ~when_stopping:(Error (unavailable Error.Shutting_down))
-    (fun resolver -> Enqueue (entry, resolver))
 
 let fork t ~id =
   ask t ~when_stopping:(Error Error.Shutting_down) (fun resolver ->

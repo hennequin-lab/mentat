@@ -16,8 +16,8 @@ module Question = Question
 module Plan = Plan
 module Decision = Decision
 module Task = Task
-module Goal = Goal
 module Delegation = Delegation
+module Origin = Origin
 module Queue = Queue
 module Compaction = Compaction
 module Notice = Notice
@@ -100,18 +100,12 @@ let reset_suffix prefix =
         | [] -> []
         | _ :: _ -> [ Event.queue_updated Queue.Update.cleared ]
       in
-      let goal_suffix =
-        match State.goal state with
-        | Some goal when Goal.Status.pausable (Goal.status goal) ->
-            [ Event.goal_updated (Goal.Update.pause ~id:(Goal.id goal)) ]
-        | Some _ | None -> []
-      in
       let delegation_suffix =
         match State.delegations state with
         | [] -> []
         | _ :: _ -> [ Event.delegations_detached ]
       in
-      Ok (queue_suffix @ goal_suffix @ delegation_suffix)
+      Ok (queue_suffix @ delegation_suffix)
 
 let copied_events metadata =
   match Metadata.fork metadata with
@@ -164,12 +158,13 @@ let make ~id ~metadata ~events =
           | Error _ as error -> error
           | Ok () -> Ok { id; metadata; events_rev = List.rev events; state }))
 
-let create ~id ?title ?delegated_from ~cwd ~created_at () =
+let create ~id ?title ?delegated_from ?triggered_from ?run_policy ?goal ~cwd
+    ~created_at () =
   {
     id;
     metadata =
-      Metadata.make ?title ?delegated_from ~cwd ~created_at
-        ~updated_at:created_at ();
+      Metadata.make ?title ?delegated_from ?triggered_from ?run_policy ?goal
+        ~cwd ~created_at ~updated_at:created_at ();
     events_rev = [];
     state = State.empty;
   }
@@ -178,6 +173,63 @@ let id t = t.id
 let metadata t = t.metadata
 let events t = List.rev t.events_rev
 let state t = t.state
+
+(* The admit judgment over the target's own recorded facts — the honest floor
+   while only delegation kin and the owner send. One home, consumed by every
+   queue admission (a live driver's, and a fence-held append on a dormant
+   journal), so the arms cannot drift. The backlog cap counts unconsumed
+   entries only — consumption frees the sender's slots — and never counts the
+   owner: backpressure bounds agents, not the human whose account this is. *)
+let mail_backlog_cap = 8
+
+let admits_mail ~origin t =
+  let backlog_admits counts =
+    let backlog =
+      List.length
+        (List.filter
+           (fun entry ->
+             match Queue.Entry.origin entry with
+             | Some o -> counts o
+             | None -> false)
+           (State.pending_queue t.state))
+    in
+    if backlog >= mail_backlog_cap then `Refused_backlog else `Admitted
+  in
+  match origin with
+  | None -> `Admitted
+  | Some (Origin.Trigger { source; digest; key = _ }) -> (
+      (* The session's own trigger, proved from its recorded provenance:
+         source and digest must both match — a policy edit moves the digest
+         and mints a fresh run session, so a stale trigger never mails a
+         newer policy's run. The backlog counts the trigger's unconsumed
+         entries whatever event keys they carry: the (target, origin) bound
+         is per trigger, not per event. *)
+      match Metadata.triggered_from t.metadata with
+      | Some provenance
+        when String.equal (Metadata.Triggered_from.source provenance) source
+             && String.equal
+                  (Metadata.Triggered_from.digest provenance)
+                  digest ->
+          backlog_admits (function
+            | Origin.Trigger o ->
+                String.equal o.source source && String.equal o.digest digest
+            | Origin.Agent _ -> false)
+      | Some _ | None -> `Refused_sender)
+  | Some (Origin.Agent sender as sender_origin) ->
+      let is_parent =
+        match Metadata.delegated_from t.metadata with
+        | None -> false
+        | Some lineage ->
+            Id.equal (Metadata.Delegated_from.parent lineage) sender
+      in
+      let is_kin =
+        is_parent
+        || List.exists
+             (fun edge -> Id.equal (Delegation.child edge) sender)
+             (State.delegations t.state)
+      in
+      if not is_kin then `Refused_sender
+      else backlog_admits (Origin.equal sender_origin)
 
 let require_not_deleted t =
   if Metadata.is_deleted t.metadata then Error Error.Deleted else Ok ()
@@ -247,6 +299,8 @@ let append_all events t =
 
 let set_title title t =
   { t with metadata = Metadata.with_title title t.metadata }
+
+let set_goal goal t = { t with metadata = Metadata.with_goal goal t.metadata }
 
 let touch time t = { t with metadata = Metadata.touch time t.metadata }
 
@@ -453,7 +507,7 @@ let event_content_lists (event : Event.t) =
   | Event.Interrupt_requested _ | Event.Turn_finished _
   | Event.Provider_requested _ | Event.Provider_settled _ | Event.Tool_claimed _
   | Event.Decision_requested _ | Event.Decision_resolved _
-  | Event.Compaction_installed _ | Event.Tasks_replaced _ | Event.Goal_updated _
+  | Event.Compaction_installed _ | Event.Tasks_replaced _
   | Event.Delegation_recorded _ | Event.Delegations_detached
   | Event.Workspace_notice _ | Event.Undo_updated _ ->
       []
@@ -587,9 +641,8 @@ let jsont =
 
 (* A manual-compaction turn is an internal mechanism, not conversational work: it
    is transparent to every session projection. Its turn-boundary facts are
-   suppressed on the feed, it does not drive goal continuation,
-   and it does not count as a round or contribute its outcome/mode/usage-as-a-turn
-   to the summary and view projections below. *)
+   suppressed on the feed, and it does not count as a round or contribute its
+   outcome/mode/usage-as-a-turn to the summary and view projections below. *)
 let is_compaction_turn turn =
   Turn.Origin.equal (Turn.origin turn) Turn.Origin.Compaction
 
@@ -795,7 +848,7 @@ let metrics session =
         | Event.Message_appended _ | Event.Provider_requested _
         | Event.Tool_claimed _ | Event.Tool_settled _
         | Event.Decision_requested _ | Event.Tasks_replaced _
-        | Event.Goal_updated _ | Event.Delegation_recorded _
+        | Event.Delegation_recorded _
         | Event.Delegations_detached | Event.Queue_updated _
         | Event.Workspace_notice _ | Event.Undo_updated _ ->
             (usage, responses, turns, rejections, denials, compaction_ids))
@@ -1091,8 +1144,8 @@ module Session_view = struct
     waiting : Waiting.t option;
     workflow_mode : Contract.Mode.t option;
     last_text : string option;
-    goal : Goal.t option;
     metrics : Metrics.t;
+    goal : Metadata.Goal.t option;
   }
 
   let waiting_of_state state =
@@ -1131,8 +1184,8 @@ module Session_view = struct
       waiting = waiting_of_state state;
       workflow_mode = workflow_mode_of_state state;
       last_text = State.final_text state;
-      goal = State.goal state;
       metrics = metrics session;
+      goal = Metadata.goal (metadata session);
     }
 
   let summary t = t.summary
@@ -1141,8 +1194,8 @@ module Session_view = struct
   let waiting t = t.waiting
   let workflow_mode t = t.workflow_mode
   let last_text t = t.last_text
-  let goal t = t.goal
   let metrics t = t.metrics
+  let goal t = t.goal
 
   let equal a b =
     Summary.equal a.summary b.summary
@@ -1151,8 +1204,8 @@ module Session_view = struct
     && Option.equal Waiting.equal a.waiting b.waiting
     && Option.equal Contract.Mode.equal a.workflow_mode b.workflow_mode
     && Option.equal String.equal a.last_text b.last_text
-    && Option.equal Goal.equal a.goal b.goal
     && Metrics.equal a.metrics b.metrics
+    && Option.equal Metadata.Goal.equal a.goal b.goal
 
   let pp ppf t =
     Format.fprintf ppf
@@ -1173,8 +1226,8 @@ module Session_view = struct
         waiting
         workflow_mode
         last_text
-        goal
         metrics
+        goal
       ->
         {
           summary;
@@ -1183,8 +1236,8 @@ module Session_view = struct
           waiting;
           workflow_mode;
           last_text;
-          goal;
           metrics;
+          goal;
         })
     |> Jsont.Object.mem "summary" Summary.jsont ~enc:(fun t -> t.summary)
     |> Jsont.Object.opt_mem "active_model" Mentat_llm.Model.jsont ~enc:(fun t ->
@@ -1195,8 +1248,8 @@ module Session_view = struct
     |> Jsont.Object.opt_mem "workflow_mode" Contract.Mode.jsont ~enc:(fun t ->
         t.workflow_mode)
     |> Jsont.Object.opt_mem "last_text" Jsont.string ~enc:(fun t -> t.last_text)
-    |> Jsont.Object.opt_mem "goal" Goal.jsont ~enc:(fun t -> t.goal)
     |> Jsont.Object.mem "metrics" Metrics.jsont ~enc:(fun t -> t.metrics)
+    |> Jsont.Object.opt_mem "goal" Metadata.Goal.jsont ~enc:(fun t -> t.goal)
     |> Jsont.Object.error_unknown |> Jsont.Object.finish
 end
 

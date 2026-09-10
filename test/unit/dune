@@ -345,12 +345,13 @@
   eio_main
   unix))
 
-; The review-git projection lives in bin/ (executable-side adapter, RFC 0009);
-; its source is copied in so its pure closure-injected unit tests keep running
-; as a fast unit suite without linking the executable.
+; The review-git projection lives in bin/boot (executable-side adapter, RFC
+; 0009); its source is copied in so its pure closure-injected unit tests keep
+; running as a fast unit suite without linking the boot library's engine
+; closure.
 
 (copy_files
- (files ../../bin/review_git.{ml,mli}))
+ (files ../../bin/boot/review_git.{ml,mli}))
 
 (test
  (name test_review_git)
@@ -362,6 +363,186 @@
   lpath
   mentat_review
   mentat_workspace))
+
+; The user-directory path policy lives in bin/boot (executable-side); its
+; derivations are pure functions, so its source is copied in and the suite
+; runs without linking the boot library. The child-socket leaf rule it binds
+; to the per-user base lives in mentat_broker.
+
+(copy_files
+ (files ../../bin/boot/user_dirs.{ml,mli}))
+
+(test
+ (name test_user_dirs)
+ (modules test_user_dirs user_dirs)
+ (libraries windtrap mentat_broker mentat_digest unix))
+
+; The executable-side filesystem primitives live in bin/boot; the source is
+; copied in and the suite runs without linking the boot library. The append
+; tests run under Eio_main — append serializes in-process callers on a
+; per-path Eio.Mutex, so it must run inside a fiber.
+
+(copy_files
+ (files ../../bin/boot/fs.{ml,mli}))
+
+(test
+ (name test_fs)
+ (modules test_fs fs)
+ (libraries windtrap eio eio.unix eio_main unix))
+
+; The shared notification hook lives in bin/boot; it strips event strings
+; through [Output], so both sources are copied in.
+
+(copy_files
+ (files ../../bin/boot/notify.{ml,mli}))
+
+(copy_files
+ (files ../../bin/boot/output.{ml,mli}))
+
+(test
+ (name test_notify)
+ (modules test_notify notify output)
+ (libraries windtrap eio eio.unix eio_main unix jsont jsont.bytesrw))
+
+; The child broker's reconciliation tables are Mentat_broker.Reconcile —
+; pure decision units over thunk probes, driven here with no process, socket,
+; or store behind them.
+
+(test
+ (name test_reconcile)
+ (modules test_reconcile)
+ (libraries windtrap mentat_broker))
+
+(test
+ (name test_broker)
+ (modules test_broker)
+ (libraries
+  windtrap
+  eio
+  eio_main
+  unix
+  jsont
+  jsont.bytesrw
+  lpath
+  mentat_broker
+  mentat_digest
+  mentat_llm
+  mentat_permission
+  mentat_sandbox
+  mentat_server
+  mentat_session
+  mentat_store))
+
+(test
+ (name test_github_app_store)
+ (modules test_github_app_store)
+ (flags
+  (:standard -open Mentat_boot))
+ (libraries windtrap mentat_boot unix))
+
+(test
+ (name test_review_finding)
+ (modules test_review_finding)
+ (libraries windtrap mentat_connector jsont jsont.bytesrw mentat_llm))
+
+(test
+ (name test_publication)
+ (modules test_publication)
+ (libraries windtrap mentat_connector jsont jsont.bytesrw))
+
+(test
+ (name test_routine)
+ (modules test_routine)
+ (libraries windtrap mentat_routine jsont jsont.bytesrw))
+
+; The fire pipeline is a boot-library module (both binaries invoke it), so
+; its pure folds are driven through the linked library rather than a
+; flat-directory copy — its effectful spine composes half of boot.
+
+(test
+ (name test_routine_fire)
+ (modules test_routine_fire)
+ (flags
+  (:standard -open Mentat_boot))
+ (libraries
+  windtrap
+  mentat_boot
+  mentat_routine
+  mentat_digest
+  mentat_llm
+  mentat_permission
+  mentat_sandbox
+  mentat_session
+  mentat_tool
+  lpath
+  jsont
+  jsont.bytesrw))
+
+; The confinement door is a boot-library module; its suite links the
+; library exactly as test_routine_fire does.
+
+(test
+ (name test_session_endpoint)
+ (modules test_session_endpoint)
+ (flags
+  (:standard -open Mentat_boot))
+ (libraries
+  windtrap
+  mentat_boot
+  mentat_client
+  mentat_diagnostic
+  mentat_permission
+  mentat_protocol
+  mentat_provider
+  mentat_session
+  mentat_store
+  lpath
+  eio
+  eio_main
+  unix))
+
+; The frontend's per-session router is a boot-library module; its suite
+; links the library exactly as test_session_endpoint does. The composition is
+; staged for real over a hermetic temp home, and the one process-shaped
+; effect — the broker's spawn — is refused loudly through MENTAT_BIN, so
+; every start decision is visible without a process.
+
+(test
+ (name test_agent_client)
+ (modules test_agent_client)
+ (flags
+  (:standard -open Mentat_boot))
+ (libraries
+  windtrap
+  mentat_boot
+  mentat_client
+  mentat_diagnostic
+  mentat_protocol
+  mentat_server
+  mentat_session
+  lpath
+  eio
+  eio_main
+  unix))
+
+; The routine store is a boot-library module too, so its suite links the
+; library exactly as test_routine_fire does — no flat-directory copies.
+
+(test
+ (name test_routine_store)
+ (modules test_routine_store)
+ (flags
+  (:standard -open Mentat_boot))
+ (libraries
+  windtrap
+  mentat_boot
+  mentat_routine
+  eio
+  eio.unix
+  eio_main
+  unix
+  jsont
+  jsont.bytesrw))
 
 (test
  (name test_store)
@@ -396,6 +577,7 @@
   jsont
   jsont.bytesrw
   mentat_agent
+  mentat_broker
   mentat_agent_step
   mentat_client
   mentat_diagnostic
@@ -409,10 +591,12 @@
   mentat_provider
   mentat_sandbox
   mentat_session
+  mentat_store
   mentat_tool
   mentat_workspace
   eio
-  eio_main))
+  eio_main
+  unix))
 
 (test
  (name test_provider_runtime)
@@ -482,9 +666,11 @@
   jsont.bytesrw
   cohttp
   cohttp-eio
+  digestif
   uri
   mentat_server
   mentat_agent
+  mentat_broker
   mentat_agent_step
   mentat_edit
   mentat_client
@@ -497,6 +683,7 @@
   mentat_sandbox
   mentat_provider
   mentat_review
+  mentat_store
   mentat_workspace
   mentat_diagnostic
   lpath
@@ -532,3 +719,106 @@
  (name test_theme)
  (modules test_theme)
  (libraries windtrap mentat_tui mosaic jsont))
+
+; mentatd's resident-service surface lives in bin/mentatd as the module
+; service; its source is copied in like reconcile's, and only the pure half
+; (rendering, paths, standing) is driven — the effectful verbs need a service
+; manager. The copy compiles whole, so the stanza links mentat_boot under the
+; executable's own -open, as test_routine_fire does.
+
+(copy_files
+ (files ../../bin/mentatd/service.{ml,mli}))
+
+(test
+ (name test_service)
+ (modules test_service service)
+ (flags
+  (:standard -open Mentat_boot))
+ (libraries windtrap mentat_boot unix))
+
+; The resident routine node lives in bin/mentatd as the module node; its
+; source is copied in like service's, and only the pure folds (ingress
+; resolution, the delivery route, the child-environment scrub) are driven —
+; the effectful surfaces need a daemon behind them. The copy compiles whole,
+; so the stanza links the node's libraries under the executable's own -open.
+
+(copy_files
+ (files ../../bin/mentatd/node.{ml,mli}))
+
+(copy_files
+ (files ../../bin/mentatd/github_auth.{ml,mli}))
+
+(test
+ (name test_node)
+ (modules test_node node github_auth)
+ (flags
+  (:standard -open Mentat_boot))
+ (libraries
+  windtrap
+  mentat_boot
+  mentat_broker
+  mentat_routine
+  mentat_connector
+  github
+  mentat_provider_runtime
+  mentat_server
+  eio
+  unix))
+
+; The node's routine reconcile drivers live in bin/mentatd as the module
+; routine_reconcile; its source is copied in like reconcile's and the
+; drivers are exercised over a temporary routine estate (the pure tables
+; they interpret live in mentat_routine and are tested with that library).
+; The copy compiles whole, so the stanza links the drivers' libraries under
+; the executable's own -open.
+
+(copy_files
+ (files ../../bin/mentatd/routine_reconcile.{ml,mli}))
+
+(test
+ (name test_routine_reconcile)
+ (modules test_routine_reconcile routine_reconcile)
+ (flags
+  (:standard -open Mentat_boot))
+ (libraries
+  windtrap
+  mentat_boot
+  mentat_broker
+  mentat_routine
+  mentat_digest
+  mentat_llm
+  mentat_permission
+  mentat_provider
+  mentat_sandbox
+  mentat_session
+  mentat_store
+  lpath
+  jsont
+  eio
+  eio.unix
+  eio_main
+  unix))
+
+; The daemon's routines dashboard lives in bin/mentatd as the module
+; routine_dashboard; its source is copied in and only the pure projection
+; is driven — the effectful observation needs a daemon estate behind it,
+; which the web blackbox family exercises end to end.
+
+(copy_files
+ (files ../../bin/mentatd/routine_dashboard.{ml,mli}))
+
+(test
+ (name test_routine_dashboard)
+ (modules test_routine_dashboard routine_dashboard)
+ (flags
+  (:standard -open Mentat_boot))
+ (libraries
+  windtrap
+  mentat_boot
+  mentat_routine
+  mentat_session
+  mentat_store
+  mentat_web
+  jsont
+  eio
+  unix))

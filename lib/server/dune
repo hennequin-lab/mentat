@@ -24,14 +24,17 @@
   mentat_review
   mentat_session
   mentat_workspace
+  ;; the webhook ingress's delivery authentication: the github library's
+  ;; strict-grammar, constant-time signature check; eqaf stays for the wire
+  ;; token's own constant-time compares
+  github
+  eqaf
   ;; the socket transport and its security primitives
   eio
   eio.unix
   unix
   cohttp
   cohttp-eio
-  tls
-  tls-eio
   cstruct
   ipaddr
   mirage-crypto-rng

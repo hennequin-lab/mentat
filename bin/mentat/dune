@@ -1,0 +1,78 @@
+(executable
+ (name main)
+ (public_name mentat)
+ (package mentat)
+ (modules
+  auto_title
+  session_locate
+  session_html
+  image_clipboard
+  cli_common
+  cli_trust
+  cli_sandbox
+  cli_doctor
+  cli_config
+  cli_permission
+  cli_models
+  cli_auth
+  cli_session
+  cli_run
+  cli_serve
+  cli_github
+  cli_skills
+  cli_commands
+  cli_debug
+  cli_report
+  cli_completion
+  cli_trust_prompt
+  cli_tui
+  main)
+ (libraries
+  base64
+  cmarkit
+  cmdliner
+  dune-build-info
+  eio
+  eio.unix
+  eio_main
+  matrix
+  matrix-eio
+  mosaic
+  unix
+  jsont
+  jsont.bytesrw
+  logs
+  uri
+  mentat_boot
+  mentat_diagnostic
+  mentat_digest
+  lpath
+  mentat_edit
+  mentat_llm
+  mentat_permission
+  mentat_workspace
+  mentat_context
+  mentat_prompts
+  mentat_agent
+  ; mentat_broker: the serving fence label cli_serve acquires under is
+  ; the broker layer's shared vocabulary.
+  mentat_broker
+  mentat_client
+  mentat_connector
+  github
+  ; mentat_server: consumed by cli_serve's per-session child server —
+  ; the one serve boot in this binary; the daemon's serve boot lives in mentatd.
+  mentat_server
+  mentat_provider_runtime
+  mentat_provider
+  mentat_config
+  mentat_session
+  mentat_store
+  mentat_workspace_io
+  mentat_sandbox
+  mentat_protocol
+  mentat_mutation
+  textdiff
+  mentat_tool
+  mentat_tools
+  mentat_tui))

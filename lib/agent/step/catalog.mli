@@ -12,9 +12,11 @@
 
     Engine verbs are dispatch vocabulary, never executable tools: a verb call is
     evaluated by the step as a pure function of decoded input and session state.
-    The verb spellings are stable: [spawn], [wait], [send_message], and
-    [follow_up] for delegation, [todo_write], [update_goal], [ask_user], and
-    [propose_plan] for the product-native verbs. *)
+    The verb spellings are stable: [spawn], [wait], [send], and [follow_up]
+    for the collaboration verbs, [todo_write], [ask_user], and [propose_plan]
+    for the product-native verbs. Recorded calls under the retired
+    [send_message] spelling stay readable — the step's receipt scan decodes
+    them forever — but the name is no longer declared or dispatched. *)
 
 (** {1:verbs Engine verbs} *)
 
@@ -22,12 +24,13 @@ module Verb : sig
   (** The type for the engine's built-in dispatch verbs. *)
   type t =
     | Todo_write  (** Replace the whole task board. *)
-    | Update_goal  (** Advance the goal lifecycle. *)
     | Ask_user  (** Park a reviewer question decision. *)
     | Propose_plan  (** Park a plan-proposal decision. *)
     | Spawn  (** Reserve and record a child delegation. *)
     | Wait  (** Park on named children until they settle. *)
-    | Send_message  (** Durable context into a child's journal. *)
+    | Send  (** Durable mail into a kin session's queue — a spawned child
+                ([to: "child:<id>"]) or this session's parent
+                ([to: "parent"]). *)
     | Follow_up  (** One new turn on an idle child. *)
 
   val name : t -> string
@@ -68,6 +71,15 @@ val output_tool_name : string
     turn contract and dispatched by the step's own terminal branch — but it is
     reserved here so no executable tool can claim it, keeping the request's
     [declarations @ [output_tool]] free of a duplicate name. *)
+
+val claim : Mentat_session.t -> Jsont.json option
+(** [claim session] is what [session]'s head turn declared: the input of the
+    last {!output_tool_name} claim in the last accepted turn, read from the
+    journal, and only when that turn completed — completion is what proves
+    the claim was the schema-conforming terminating answer. [None] while a
+    turn is active, when the head turn ended any other way, or when it made
+    no structured-output claim. The one shared head-claim read; each consumer
+    interprets the JSON under its own schema. *)
 
 type t
 (** The type for one exact validated dispatch vocabulary. Invariant: executable

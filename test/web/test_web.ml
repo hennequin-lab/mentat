@@ -154,7 +154,15 @@ let turn_family_tests =
           let acc, blocks =
             fold Render.initial (position 0)
               (Fact.Turn_started
-                 (turn ~origin:Session.Turn.Origin.Goal_continuation
+                 (turn
+                    ~origin:
+                      (Session.Turn.Origin.Triggered
+                         {
+                           source = "nightly-review";
+                           digest = "0123456789abcdef";
+                           key = "2026-08-25T06:00";
+                           entry = None;
+                         })
                     ~input:Session.Turn.Input.continue ()))
           in
           equal int 0 (List.length blocks);
@@ -377,21 +385,13 @@ let journal_family_tests =
           contains ~msg:html ~sub:"class=\"board\"" html;
           contains ~sub:"task in_progress" html;
           contains ~sub:"write the code" html);
-      test "journal.goal renders a goal chip" (fun () ->
-          let acc, _ = started () in
-          let update =
-            Session.Goal.Update.declare
-              ~id:(Session.Goal.Id.of_string "g1")
-              ~objective:"ship the release" ()
-          in
-          let acc, _ = fold acc (position 1) (Fact.Journal_goal update) in
-          contains ~sub:"ship the release" (live acc));
       test "journal.queue renders a queue chip" (fun () ->
           let acc, _ = started () in
           let entry =
             Session.Queue.Entry.make
               ~id:(Session.Queue.Id.of_string "q1")
               ~input:[ Llm.Content.text "next" ]
+              ()
           in
           let update = Session.Queue.Update.enqueued entry in
           let acc, _ = fold acc (position 1) (Fact.Journal_queue update) in
@@ -858,6 +858,7 @@ let default_lifecycle : Driver.Lifecycle.t =
     archive = (fun ~session:_ -> fail "archive: not scripted");
     restore = (fun ~session:_ -> fail "restore: not scripted");
     delete = (fun ~session:_ -> fail "delete: not scripted");
+    set_goal = (fun ~session:_ ~goal:_ -> fail "set_goal: not scripted");
     sessions = (fun ~listing:_ -> fail "sessions: not scripted");
     session = (fun _ -> fail "session: not scripted");
   }

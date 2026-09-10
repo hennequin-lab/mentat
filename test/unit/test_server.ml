@@ -234,6 +234,7 @@ let default_lifecycle : Driver.Lifecycle.t =
   {
     Driver.Lifecycle.create = (fun ~id:_ ~title:_ -> Ok ());
     rename = (fun ~session:_ ~title:_ -> Ok ());
+    set_goal = (fun ~session:_ ~goal:_ -> Ok ());
     archive = (fun ~session:_ -> Ok ());
     restore = (fun ~session:_ -> Ok ());
     delete = (fun ~session:_ -> Ok ());
@@ -678,7 +679,7 @@ let commands_group =
               let command =
                 match
                   Protocol.Command.queue_next ~session:session_id
-                    ~input:[ Llm.Content.text "again" ]
+                    ~input:[ Llm.Content.text "again" ] ()
                 with
                 | Ok c -> c
                 | Error _ -> fail "queue_next build"
@@ -746,8 +747,8 @@ let edge_group =
           is_true ~msg:"a token equals its own re-parse"
             (Server.Token.equal a
                (Server.Token.of_string (Server.Token.to_string a)));
-          (* The hand-written constant-time compare over the three cases the
-             ruling names (eqaf is not in the lock). *)
+          (* The constant-time compare (eqaf-backed) over the three cases the
+             ruling names. *)
           let tok = Server.Token.of_string in
           is_true ~msg:"equal: identical strings compare equal"
             (Server.Token.equal (tok "abcdef") (tok "abcdef"));
@@ -770,12 +771,10 @@ let edge_group =
           | _ -> fail "a too-long socket path must be refused before bind");
     ]
 
-(* [Bind.public] is the sole constructor accepting a non-loopback host, and it
-   cannot be built without the TLS × token × origin triple (property 7); that
-   guarantee is a compile fact of the type, not a runtime check, and [listen]
-   raises {!Server.Unsupported} on it in Stage 1. Both are exercised by the type
-   checker admitting this module, not by a runtime test that would need a real
-   TLS server configuration. *)
+(* [Bind] admits only local targets — a unix socket or the loopback interface;
+   a public (non-loopback) listener cannot be described at all (property 7).
+   That guarantee is a compile fact of the closed type, exercised by the type
+   checker admitting this module, not by a runtime test. *)
 
 let introspection_group =
   group "descriptor table"
@@ -1126,27 +1125,26 @@ let endpoint_corpus_group =
    resume against the live hub, tail/page over real journal state, heartbeats
    during a provider stall, and a slow reader losing nothing.
 
-   The engine runs over test_agent's proven in-memory [Ports.STORE] fixture (the
-   only lib-level way to a [Ports.STORE]; [bin/store_adapter] is executable-
-   private and not linkable). The store backend is orthogonal to every property
-   here — the engine, the hub, turns, tail/page, and positioned resume behave
-   identically over an in-memory or a disk journal; only durable persistence
-   differs, which none of these properties exercise. *)
+   The engine links [mentat.store] directly, so it runs over a real store root
+   in a fresh temp directory. The store backend is orthogonal to every property
+   here — the engine, the hub, turns, tail/page, and positioned resume would
+   behave identically over any durable journal; none of these properties
+   exercises persistence itself. *)
 
 module Agent = Mentat_agent
 module Ports = Mentat_agent.Ports
+module Store = Mentat_store
 module Catalog = Mentat_agent_step.Catalog
 
 let all_verbs =
   Catalog.Verb.
     [
       Todo_write;
-      Update_goal;
       Ask_user;
       Propose_plan;
       Spawn;
       Wait;
-      Send_message;
+      Send;
       Follow_up;
     ]
 
@@ -1162,19 +1160,18 @@ let plain_response text =
   Llm.Response.make ~model:engine_model ~stop:Llm.Response.Stop.end_turn
     (Llm.Message.Assistant.text text)
 
-(* An in-memory Ports.STORE (test_agent's fixture, minus its fault hooks). *)
+(* A real store root in a fresh temp directory — the engine's direct
+   substrate. *)
 type store_state = {
-  sessions : (string, Session.t) Hashtbl.t;
-  muts : (string, Mutation.Event.t list) Hashtbl.t;
-  held : (string, string) Hashtbl.t;
+  root : Store.t;
+  owner : Store.Run_lock.Owner.t;
 }
 
-let fresh_store () =
-  {
-    sessions = Hashtbl.create 8;
-    muts = Hashtbl.create 8;
-    held = Hashtbl.create 8;
-  }
+let fresh_store ~sw ~fs () =
+  let base = Unix.realpath (temp_dir ~prefix:"mentat-server-store" ()) in
+  match Store.open_ ~sw (Eio.Path.( / ) fs base) with
+  | Ok root -> { root; owner = Store.Run_lock.Owner.make () }
+  | Error e -> failf "open store root: %s" (Store.Error.message e)
 
 let seed_session st ~id =
   let s =
@@ -1182,135 +1179,9 @@ let seed_session st ~id =
       ~created_at:(Session.Time.of_unix_ms 1L)
       ()
   in
-  Hashtbl.replace st.sessions id s;
-  Hashtbl.replace st.muts id []
-
-let store_of st : (module Ports.STORE) =
-  (module struct
-    type guard = string
-    type loaded = Session.t
-
-    let session_of l = l
-
-    let try_acquire id =
-      let k = Session.Id.to_string id in
-      match Hashtbl.find_opt st.held k with
-      | Some owner -> `Held (Some owner)
-      | None ->
-          Hashtbl.replace st.held k "fake-owner";
-          `Acquired k
-
-    let release g = Hashtbl.remove st.held g
-
-    let create session =
-      let k = Session.Id.to_string (Session.id session) in
-      if Hashtbl.mem st.sessions k then Error Ports.Store_error.Conflict
-      else begin
-        Hashtbl.replace st.sessions k session;
-        Hashtbl.replace st.muts k [];
-        Ok session
-      end
-
-    let fork ~from:_ ~events session =
-      let k = Session.Id.to_string (Session.id session) in
-      if Hashtbl.mem st.sessions k then Error Ports.Store_error.Conflict
-      else begin
-        Hashtbl.replace st.sessions k session;
-        Hashtbl.replace st.muts k events;
-        Ok session
-      end
-
-    let load g =
-      match Hashtbl.find_opt st.sessions g with
-      | Some s -> Ok s
-      | None -> Error Ports.Store_error.Not_found
-
-    let view id =
-      match Hashtbl.find_opt st.sessions (Session.Id.to_string id) with
-      | Some s -> Ok s
-      | None -> Error Ports.Store_error.Not_found
-
-    let commit g loaded events =
-      match Session.append_all events loaded with
-      | Error e -> Error (Ports.Store_error.Rejected e)
-      | Ok s ->
-          Hashtbl.replace st.sessions g s;
-          Ok s
-
-    let commit_metadata g _loaded session =
-      Hashtbl.replace st.sessions g session;
-      Ok session
-
-    let of_events_or_corrupt updated =
-      match Mutation.State.of_events updated with
-      | Ok state -> Ok state
-      | Error _ ->
-          Error
-            (Ports.Store_error.Corrupt
-               (Mentat_diagnostic.of_text "fake mutation ledger inconsistent"))
-
-    let append_edit g _loaded ~entries:_ event =
-      let updated =
-        Option.value (Hashtbl.find_opt st.muts g) ~default:[] @ [ event ]
-      in
-      Hashtbl.replace st.muts g updated;
-      of_events_or_corrupt updated
-
-    let append_mutation g _loaded events =
-      let updated =
-        Option.value (Hashtbl.find_opt st.muts g) ~default:[] @ events
-      in
-      Hashtbl.replace st.muts g updated;
-      of_events_or_corrupt updated
-
-    let mutation_events loaded =
-      let id = Session.id loaded in
-      Ok
-        (Option.value
-           (Hashtbl.find_opt st.muts (Session.Id.to_string id))
-           ~default:[])
-
-    let blob _id _ref = Ok None
-
-    (* A small in-memory attachment namespace, content-addressed like the real
-       store, so the engine's media passes round-trip if a test exercises them. *)
-    let attachments : (string, string) Hashtbl.t = Hashtbl.create 8
-
-    let attachment_key id reference =
-      Session.Id.to_string id ^ "\x00"
-      ^ Mentat_digest.Content_ref.to_token reference
-
-    let put_attachment id bytes =
-      let reference = Mentat_digest.Content_ref.of_contents bytes in
-      Hashtbl.replace attachments (attachment_key id reference) bytes;
-      Ok reference
-
-    let attachment id reference =
-      Ok (Hashtbl.find_opt attachments (attachment_key id reference))
-
-    (* The fake has no revert/export backend; the online cones are proven against
-       the real store elsewhere, so these decline honestly. *)
-    let revert _g _loaded ~scope:_ =
-      Error
-        (Ports.Store_error.Io
-           (Mentat_diagnostic.of_text "fake store: revert not implemented"))
-
-    let revert_selection _g _loaded ~selection:_ =
-      Error
-        (Ports.Store_error.Io
-           (Mentat_diagnostic.of_text
-              "fake store: revert_selection not implemented"))
-
-    let truncate _g _loaded ~keep:_ _session =
-      Error
-        (Ports.Store_error.Io
-           (Mentat_diagnostic.of_text "fake store: truncate not implemented"))
-
-    let export _g =
-      Error
-        (Ports.Store_error.Io
-           (Mentat_diagnostic.of_text "fake store: export not implemented"))
-  end)
+  match Store.Session.create st.root s with
+  | Ok _ -> ()
+  | Error e -> failf "seed session %s: %s" id (Store.Session.Error.message e)
 
 let ports_workspace : Ports.workspace =
   let checkpoint ~boundary =
@@ -1339,7 +1210,7 @@ let engine_catalog =
   | Error e -> failf "catalog: %a" Catalog.Error.pp e
 
 let engine_config _id ~latest_model:_ =
-  Ok (Agent.Config.make ~model:engine_model ~continuation_turn_limit:None ())
+  Ok (Agent.Config.make ~model:engine_model ())
 
 let make_engine ~sw ~store ~script =
   let now =
@@ -1368,8 +1239,37 @@ let make_engine ~sw ~store ~script =
     in
     (select, fun () -> [])
   in
-  Agent.create ~sw ~store:(store_of store) ~provider:script
-    ~config:engine_config ~now ~execution_for_mode ~delegated_execution ()
+  (* The revert-cone effects: no live-harness property drives a revert, so
+     the observe stub answers [Missing] and an unexpected apply fails
+     loudly. *)
+  Agent.create ~sw ~store:store.root ~owner:store.owner ~provider:script
+    ~config:engine_config ~now ~merge:true
+    ~revert_observe:(fun _path -> Mentat_edit.Observed.Missing)
+    ~revert_checkpoint:(fun ~boundary ->
+      Mutation.Checkpoint.make ~boundary
+        ~capture:
+          (Mutation.Checkpoint.Capture.Available
+             {
+               snapshot =
+                 Mutation.Checkpoint.Snapshot.make ~backend:"fake"
+                   ~reference:"ref";
+               excluded = 0;
+             }))
+    ~revert_apply:(fun _edit ->
+      fail "the engine revert cone applied an edit no test expected")
+    ~revert_new_id:(fun () -> Mutation.Revert.Id.of_string "revert-test")
+    ~broker:
+      (Mentat_broker.for_tests
+         ~send:(fun ~origin:_ ~target:_ ~id:_ ~input:_ -> `Delivered)
+         ())
+    ~broker_engine:
+      {
+        Mentat_broker.Engine.root = Lpath.Abs.of_string_exn (Sys.getcwd ());
+        environment = [];
+        integrate_child = (fun ~child:_ -> `Unbound);
+        fail_child = (fun ~child:_ ~message:_ -> ());
+      }
+    ~execution_for_mode ~delegated_execution ()
 
 let live_driver engine : Driver.t =
   {
@@ -1393,8 +1293,9 @@ let with_live_server ?(make_script = fun _clock -> default_script)
   Eio_main.run @@ fun env ->
   let net = Eio.Stdenv.net env in
   let clock = Eio.Stdenv.clock env in
+  let fs = Eio.Stdenv.fs env in
   Eio.Switch.run @@ fun sw ->
-  let store = fresh_store () in
+  let store = fresh_store ~sw ~fs () in
   seed_session store ~id:"root";
   let engine = make_engine ~sw ~store ~script:(make_script clock) in
   let driver = live_driver engine in
@@ -1667,7 +1568,7 @@ let request_id_of body =
 let queue_next command_session =
   match
     Protocol.Command.queue_next ~session:command_session
-      ~input:[ Llm.Content.text "again" ]
+      ~input:[ Llm.Content.text "again" ] ()
   with
   | Ok c -> c
   | Error _ -> fail "queue_next build"
@@ -2171,15 +2072,15 @@ let coverage_group =
 
 (* ---- W2: daemon discovery ---- *)
 
-let a_discovery ?web_url ~socket ~pid () =
+let a_discovery ?web_url ?ingress ~pid () =
   {
-    Server.Discovery.socket;
-    pid;
+    Server.Discovery.pid;
     protocol = 1;
     binary = "0.1.0-test";
     config_home = "/home/u/.config/mentat";
     started_at = 1_753_000_000_000;
     web_url;
+    ingress;
   }
 
 (* A guaranteed-fresh 0700 directory. The discovery file has no sun_path limit
@@ -2191,25 +2092,25 @@ let discovery_group =
   group "daemon discovery"
     [
       test "the discovery record round-trips through its codec" (fun () ->
-          let d = a_discovery ~socket:"/tmp/mtsrv/mentat.sock" ~pid:4242 () in
+          let d = a_discovery ~pid:4242 () in
           match
             Jsont_bytesrw.decode_string Server.Discovery.jsont
               (enc Server.Discovery.jsont d)
           with
           | Ok d' ->
-              equal string ~msg:"socket" d.Server.Discovery.socket
-                d'.Server.Discovery.socket;
               equal int ~msg:"pid" d.Server.Discovery.pid
                 d'.Server.Discovery.pid;
               equal int ~msg:"protocol" d.Server.Discovery.protocol
                 d'.Server.Discovery.protocol;
               is_true ~msg:"an absent web_url decodes to None"
-                (Option.is_none d'.Server.Discovery.web_url)
+                (Option.is_none d'.Server.Discovery.web_url);
+              is_true ~msg:"an absent ingress decodes to None"
+                (Option.is_none d'.Server.Discovery.ingress)
           | Error message -> failf "decode: %s" message);
       test "the optional web_url round-trips when present (additive field)"
         (fun () ->
           let url = "http://127.0.0.1:8080/?t=deadbeef" in
-          let d = a_discovery ~web_url:url ~socket:"/s" ~pid:7 () in
+          let d = a_discovery ~web_url:url ~pid:7 () in
           match
             Jsont_bytesrw.decode_string Server.Discovery.jsont
               (enc Server.Discovery.jsont d)
@@ -2220,6 +2121,19 @@ let discovery_group =
                   equal string ~msg:"web_url survives the round-trip" url u
               | None -> fail "web_url was dropped on the round-trip")
           | Error message -> failf "decode: %s" message);
+      test "the optional ingress address round-trips when present" (fun () ->
+          let address = "127.0.0.1:53412" in
+          let d = a_discovery ~ingress:address ~pid:7 () in
+          match
+            Jsont_bytesrw.decode_string Server.Discovery.jsont
+              (enc Server.Discovery.jsont d)
+          with
+          | Ok d' -> (
+              match d'.Server.Discovery.ingress with
+              | Some a ->
+                  equal string ~msg:"ingress survives the round-trip" address a
+              | None -> fail "ingress was dropped on the round-trip")
+          | Error message -> failf "decode: %s" message);
       test "an unknown file-format version is rejected on decode" (fun () ->
           match
             Jsont_bytesrw.decode_string Server.Discovery.jsont
@@ -2227,11 +2141,32 @@ let discovery_group =
           with
           | Error _ -> ()
           | Ok _ -> fail "an unknown v must not decode");
+      test
+        "the historical socket member is tolerated on decode, never written"
+        (fun () ->
+          (match
+             Jsont_bytesrw.decode_string Server.Discovery.jsont
+               {|{"v":1,"socket":"/tmp/old/mentat.sock","pid":5,"protocol":1,"binary":"b","config_home":"/c","started_at":0}|}
+           with
+          | Ok d ->
+              equal int ~msg:"a pre-R4 record still reads (stop needs its pid)"
+                5 d.Server.Discovery.pid
+          | Error message -> failf "a pre-R4 record must decode: %s" message);
+          let fresh = enc Server.Discovery.jsont (a_discovery ~pid:5 ()) in
+          let contains hay needle =
+            let n = String.length needle and h = String.length hay in
+            let rec go i =
+              i + n <= h && (String.equal (String.sub hay i n) needle || go (i + 1))
+            in
+            go 0
+          in
+          is_false ~msg:"a fresh record carries no socket member"
+            (contains fresh "socket"));
       test "write is atomic: 0600 file under a 0700 dir, no tmp residue"
         (fun () ->
           let dir = fresh_daemon_dir () in
           let dir_s = Lpath.Abs.to_string dir in
-          let d = a_discovery ~socket:(dir_s ^ "/mentat.sock") ~pid:777 () in
+          let d = a_discovery ~pid:777 () in
           (match Server.Discovery.write ~dir d with
           | Ok () -> ()
           | Error message -> failf "write: %s" message);
@@ -2260,8 +2195,7 @@ let discovery_group =
           (match Server.Discovery.read ~dir with
           | `Foreign _ -> ()
           | _ -> fail "undecodable bytes are Foreign");
-          ignore
-            (Server.Discovery.write ~dir (a_discovery ~socket:"/s" ~pid:9 ()));
+          ignore (Server.Discovery.write ~dir (a_discovery ~pid:9 ()));
           match Server.Discovery.read ~dir with
           | `Found _ -> ()
           | _ -> fail "a valid file is Found");
@@ -2514,17 +2448,18 @@ let driver_for_group =
               equal int ~msg:"the one binding closed exactly once" 1 !closes));
     ]
 
-(* A composite driver in the shape the daemon's registry hands back: its
-   session-cone fields route by the payload's session id (session→instance),
-   independent of the connection's bound workspace. Here [possibly_mutating]
-   stands in for that routing probe. *)
+(* A driver that discriminates by the payload's session id, the way a
+   frontend's per-session router does: the wire must carry the session
+   identity on every session-cone call, independent of the connection's
+   bound workspace. Here [possibly_mutating] stands in for that routing
+   probe. *)
 let session_routing_group =
-  group "session→instance routing"
+  group "session routing"
     [
       test "a session-cone call routes by session id, not the bound workspace"
         (fun () ->
           let a_hits = ref 0 and b_hits = ref 0 in
-          (* The registry's session→instance resolution, as a map. *)
+          (* A per-session resolution, as a map. *)
           let route session =
             match Session.Id.to_string session with "s-in-b" -> `B | _ -> `A
           in
@@ -2619,229 +2554,6 @@ let session_routing_group =
                 !b_renames;
               equal int ~msg:"the A-owned session's rename reached A" 1
                 !a_renames));
-    ]
-
-(* [Discovery.locate] is the find-or-spawn convergence state machine over injected
-   effects; each branch of the race is pinned deterministically here, the
-   real two-process end-to-end path in [serve.t]. The connection type is a fake
-   token string. *)
-let find_or_spawn_group =
-  group "find-or-spawn convergence"
-    [
-      test "a live, identity-matched daemon attaches without spawning"
-        (fun () ->
-          let spawned = ref 0 in
-          match
-            Server.Discovery.locate
-              ~read:(fun () -> `Found (a_discovery ~socket:"/s" ~pid:1 ()))
-              ~claim_free:(fun () -> false)
-              ~probe:(fun _ -> Some "driver")
-              ~identity_ok:(fun _ -> true)
-              ~spawn:(fun () -> incr spawned)
-              ~sleep:(fun () -> ())
-              ~poll_budget:10
-          with
-          | `Attached "driver" ->
-              equal int ~msg:"a reachable daemon is never respawned" 0 !spawned
-          | _ -> fail "a live matched daemon must attach");
-      test
-        "a MENTAT_DAEMON_SOCKET override attaches to the named socket without \
-         reading the file, checking identity, or spawning" (fun () ->
-          let spawned = ref 0 and reads = ref 0 in
-          match
-            Server.Discovery.locate_with_override
-              ~socket_override:(fun () -> `Reached "override-driver")
-              ~read:(fun () ->
-                incr reads;
-                `Absent)
-              ~claim_free:(fun () -> fail "the claim must not be consulted")
-              ~probe:(fun _ -> fail "the discovery probe must not run")
-              ~identity_ok:(fun _ ->
-                fail "no identity check beyond the handshake")
-              ~spawn:(fun () -> incr spawned)
-              ~sleep:(fun () -> ())
-              ~poll_budget:10
-          with
-          | `Attached "override-driver" ->
-              equal int ~msg:"the override never spawns" 0 !spawned;
-              equal int ~msg:"the override never reads the discovery file" 0
-                !reads
-          | _ -> fail "the override must attach straight to the named socket");
-      test
-        "a MENTAT_DAEMON_SOCKET override naming an unreachable socket is a \
-         definite failure, never a spawn or file read" (fun () ->
-          let spawned = ref 0 and reads = ref 0 in
-          match
-            Server.Discovery.locate_with_override
-              ~socket_override:(fun () -> `Set_unreachable)
-              ~read:(fun () ->
-                incr reads;
-                `Absent)
-              ~claim_free:(fun () -> fail "the claim must not be consulted")
-              ~probe:(fun _ -> fail "the discovery probe must not run")
-              ~identity_ok:(fun _ -> fail "no identity check")
-              ~spawn:(fun () -> incr spawned)
-              ~sleep:(fun () -> ())
-              ~poll_budget:10
-          with
-          | `Timeout ->
-              equal int ~msg:"a dead override never spawns" 0 !spawned;
-              equal int ~msg:"a dead override never reads the discovery file" 0
-                !reads
-          | _ -> fail "an unreachable override must not fall back to discovery");
-      test "a stale file with a free claim is reclaimed by one spawn" (fun () ->
-          let up = ref false and spawned = ref 0 in
-          match
-            Server.Discovery.locate
-              ~read:(fun () -> `Found (a_discovery ~socket:"/s" ~pid:1 ()))
-              ~claim_free:(fun () -> not !up)
-              ~probe:(fun _ -> if !up then Some "driver" else None)
-              ~identity_ok:(fun _ -> true)
-              ~spawn:(fun () ->
-                incr spawned;
-                up := true)
-              ~sleep:(fun () -> ())
-              ~poll_budget:10
-          with
-          | `Attached "driver" ->
-              equal int ~msg:"the stale file is reclaimed by exactly one spawn"
-                1 !spawned
-          | _ -> fail "a stale daemon file must be reclaimed");
-      test
-        "a starting daemon (held claim, no socket yet) is polled, not spawned"
-        (fun () ->
-          let spawned = ref 0 and probes = ref 0 in
-          match
-            Server.Discovery.locate
-              ~read:(fun () -> `Found (a_discovery ~socket:"/s" ~pid:1 ()))
-              ~claim_free:(fun () -> false)
-              ~probe:(fun _ ->
-                incr probes;
-                if !probes >= 3 then Some "driver" else None)
-              ~identity_ok:(fun _ -> true)
-              ~spawn:(fun () -> incr spawned)
-              ~sleep:(fun () -> ())
-              ~poll_budget:10
-          with
-          | `Attached "driver" ->
-              equal int ~msg:"a starting daemon is never spawned over" 0
-                !spawned
-          | _ -> fail "a starting daemon must be polled to readiness");
-      test "an absent file spawns and converges" (fun () ->
-          let up = ref false and spawned = ref 0 in
-          match
-            Server.Discovery.locate
-              ~read:(fun () ->
-                if !up then `Found (a_discovery ~socket:"/s" ~pid:1 ())
-                else `Absent)
-              ~claim_free:(fun () -> true)
-              ~probe:(fun _ -> Some "driver")
-              ~identity_ok:(fun _ -> true)
-              ~spawn:(fun () ->
-                incr spawned;
-                up := true)
-              ~sleep:(fun () -> ())
-              ~poll_budget:10
-          with
-          | `Attached "driver" ->
-              equal int ~msg:"an absent file spawns once" 1 !spawned
-          | _ -> fail "an absent file must spawn a daemon");
-      test "a live daemon with a mismatched identity is refused, not spawned"
-        (fun () ->
-          let spawned = ref 0 in
-          match
-            Server.Discovery.locate
-              ~read:(fun () -> `Found (a_discovery ~socket:"/s" ~pid:1 ()))
-              ~claim_free:(fun () -> false)
-              ~probe:(fun _ -> Some "driver")
-              ~identity_ok:(fun _ -> false)
-              ~spawn:(fun () -> incr spawned)
-              ~sleep:(fun () -> ())
-              ~poll_budget:10
-          with
-          | `Mismatch _ ->
-              equal int ~msg:"a mismatched live daemon is never auto-killed" 0
-                !spawned
-          | _ -> fail "a mismatched live daemon must be refused");
-      test "a foreign file whose claim is held is refused" (fun () ->
-          let spawned = ref 0 in
-          match
-            Server.Discovery.locate
-              ~read:(fun () -> `Foreign "unknown v")
-              ~claim_free:(fun () -> false)
-              ~probe:(fun _ -> Some "driver")
-              ~identity_ok:(fun _ -> true)
-              ~spawn:(fun () -> incr spawned)
-              ~sleep:(fun () -> ())
-              ~poll_budget:10
-          with
-          | `Foreign_held ->
-              equal int ~msg:"a held foreign daemon is never clobbered" 0
-                !spawned
-          | _ -> fail "a foreign file with a held claim must be refused");
-      test
-        "a mismatched daemon that answers during the poll is refused, not \
-         attached" (fun () ->
-          (* After we spawn, a different-identity daemon can win the claim and
-             answer first; the poll must refuse it, not attach silently. *)
-          let up = ref false and spawned = ref 0 in
-          match
-            Server.Discovery.locate
-              ~read:(fun () ->
-                if !up then `Found (a_discovery ~socket:"/s" ~pid:1 ())
-                else `Absent)
-              ~claim_free:(fun () -> true)
-              ~probe:(fun _ -> if !up then Some "driver" else None)
-              ~identity_ok:(fun _ -> false)
-              ~spawn:(fun () ->
-                incr spawned;
-                up := true)
-              ~sleep:(fun () -> ())
-              ~poll_budget:10
-          with
-          | `Mismatch _ ->
-              equal int ~msg:"spawned once, then refused the foreign winner" 1
-                !spawned
-          | _ ->
-              fail
-                "a mismatched daemon answering during the poll must be refused");
-      test "the outer retry recovers a winner that died before writing the file"
-        (fun () ->
-          (* First attempt: the recorded daemon never answers within the budget
-             (claim held, socket dead); the whole attempt is retried once and the
-             reclaimed daemon is up by then — no spawn (the claim was never free). *)
-          let probes = ref 0 and spawned = ref 0 in
-          match
-            Server.Discovery.locate
-              ~read:(fun () -> `Found (a_discovery ~socket:"/s" ~pid:1 ()))
-              ~claim_free:(fun () -> false)
-              ~probe:(fun _ ->
-                incr probes;
-                if !probes > 3 then Some "driver" else None)
-              ~identity_ok:(fun _ -> true)
-              ~spawn:(fun () -> incr spawned)
-              ~sleep:(fun () -> ())
-              ~poll_budget:2
-          with
-          | `Attached "driver" ->
-              equal int ~msg:"the retry never spawned (claim held)" 0 !spawned
-          | _ -> fail "the outer retry must recover the reclaimed daemon");
-      test "an unreachable daemon exhausts both attempts and reports Timeout"
-        (fun () ->
-          let spawned = ref 0 in
-          match
-            Server.Discovery.locate
-              ~read:(fun () -> `Absent)
-              ~claim_free:(fun () -> true)
-              ~probe:(fun _ -> None)
-              ~identity_ok:(fun _ -> true)
-              ~spawn:(fun () -> incr spawned)
-              ~sleep:(fun () -> ())
-              ~poll_budget:3
-          with
-          | `Timeout ->
-              equal int ~msg:"both attempts spawned before giving up" 2 !spawned
-          | _ -> fail "an unreachable spawned daemon must time out");
     ]
 
 let web_edge_group =
@@ -3035,6 +2747,613 @@ let web_edge_group =
                 (contains_substring "data: attach failed" body)));
     ]
 
+(* ---- The webhook ingress family ---- *)
+
+(* HMAC-SHA256 rebuilt from the bare hash (the keyed two-pass construction), so
+   the server's verifier is checked against the construction itself rather than
+   against its own [hmac_string]; the pinned literals in the first test anchor
+   this helper to the wire format. *)
+let hmac_sha256 ~key message =
+  let block = 64 in
+  let key =
+    if String.length key > block then
+      Digestif.SHA256.(to_raw_string (digest_string key))
+    else key
+  in
+  let key = key ^ String.make (block - String.length key) '\000' in
+  let xor_pad byte =
+    String.init block (fun i -> Char.chr (Char.code key.[i] lxor byte))
+  in
+  let inner =
+    Digestif.SHA256.(to_raw_string (digest_string (xor_pad 0x36 ^ message)))
+  in
+  Digestif.SHA256.(to_raw_string (digest_string (xor_pad 0x5c ^ inner)))
+
+let hex_of_raw s =
+  let buffer = Buffer.create (String.length s * 2) in
+  String.iter
+    (fun c -> Buffer.add_string buffer (Printf.sprintf "%02x" (Char.code c)))
+    s;
+  Buffer.contents buffer
+
+let ingress_secret = "It's a Secret to Everybody"
+let ingress_path = "/ingress/github/routine-1"
+
+let signature_of ~secret body =
+  "sha256=" ^ hex_of_raw (hmac_sha256 ~key:secret body)
+
+let signed_headers ?(secret = ingress_secret) body =
+  [
+    ("content-type", "application/json");
+    ("X-Hub-Signature-256", signature_of ~secret body);
+  ]
+
+(* A scripted ingress: every id resolves to the one configuration (or
+   [Unknown]), recording the resolved ids; [deliver] records what it was
+   handed custody of before answering [outcome]. [on_headers] observes the
+   two GitHub identity headers each delivery carried; [on_rejected] is the
+   401 observer, absent by default. *)
+let scripted_ingress ?(known = true) ?(enabled = true) ?(outcome = `Accepted)
+    ?on_headers ?on_rejected ~secret () =
+  let resolved = ref [] in
+  let deliveries = ref [] in
+  let ingress =
+    {
+      Server.Ingress.resolve =
+        (fun ~ingress_id ->
+          resolved := ingress_id :: !resolved;
+          if known then Server.Ingress.Resolved { secret; enabled }
+          else Server.Ingress.Unknown);
+      deliver =
+        (fun ~ingress_id ~enabled ~event ~delivery_id ~body ->
+          deliveries := (ingress_id, enabled, body) :: !deliveries;
+          (match on_headers with
+          | None -> ()
+          | Some observe -> observe ~event ~delivery_id);
+          outcome);
+      rejected = on_rejected;
+    }
+  in
+  (ingress, resolved, deliveries)
+
+(* Serve with the family mounted over a unix socket; no handshake is ever
+   spoken, so every delivery below also witnesses that the ingress needs no
+   connection binding. *)
+let with_ingress_server ~ingress f =
+  Eio_main.run @@ fun env ->
+  let net = Eio.Stdenv.net env in
+  let clock = Eio.Stdenv.clock env in
+  Eio.Switch.run @@ fun sw ->
+  let dir = socket_dir () in
+  let bind = Server.Bind.unix ~dir in
+  let listener = Server.listen ~sw ~net bind in
+  Eio.Fiber.fork_daemon ~sw (fun () ->
+      (try
+         Server.serve ~sw ~clock ~ingress
+           ~driver_for:(const_driver_for (make_driver ()))
+           listener
+       with Eio.Cancel.Cancelled _ -> ());
+      `Stop_daemon);
+  let body () =
+    f ~net ~sw ~dir;
+    Ok ()
+  in
+  match Eio.Time.with_timeout clock 30.0 body with
+  | Ok () -> ()
+  | Error `Timeout -> fail "deadlock guard: the ingress harness exceeded 30s"
+
+(* The loopback variant, for the bearer-separation probes: same [serve], a
+   token-carrying TCP bind, raw HTTP via the web helpers. *)
+let with_loopback_ingress_server ~ingress f =
+  Eio_main.run @@ fun env ->
+  let net = Eio.Stdenv.net env in
+  let clock = Eio.Stdenv.clock env in
+  Eio.Switch.run @@ fun sw ->
+  let token = Server.Token.generate () in
+  let listener =
+    Server.listen ~sw ~net (Server.Bind.loopback ~port:None ~token)
+  in
+  let port =
+    match Server.port listener with Some p -> p | None -> fail "no bound port"
+  in
+  Eio.Fiber.fork_daemon ~sw (fun () ->
+      (try
+         Server.serve ~sw ~clock ~ingress
+           ~driver_for:(const_driver_for (make_driver ()))
+           listener
+       with Eio.Cancel.Cancelled _ -> ());
+      `Stop_daemon);
+  let body () =
+    f ~net ~sw ~port ~token;
+    Ok ()
+  in
+  match Eio.Time.with_timeout clock 30.0 body with
+  | Ok () -> ()
+  | Error `Timeout -> fail "deadlock guard: the ingress harness exceeded 30s"
+
+let ingress_post ~net ~dir ~sw ?(headers = []) path body =
+  let client = raw_client ~net ~dir in
+  let response, rbody =
+    Cohttp_eio.Client.post client ~sw
+      ~headers:(Cohttp.Header.of_list headers)
+      ~body:(Cohttp_eio.Body.of_string body)
+      (Uri.of_string ("http://mentat" ^ path))
+  in
+  (Cohttp.Code.code_of_status (Cohttp.Response.status response), raw_read rbody)
+
+let one_delivery ~msg deliveries =
+  match !deliveries with
+  | [ delivery ] -> delivery
+  | l -> failf "%s: expected exactly one delivery, saw %d" msg (List.length l)
+
+let ingress_group =
+  group "webhook ingress"
+    [
+      test "the test's HMAC construction matches the pinned wire goldens"
+        (fun () ->
+          (* Two fixed literals computed outside this tree: the classic
+             HMAC-SHA256 vector, and the GitHub webhook documentation's
+             secret/payload pair — the exact wire format a delivery carries. *)
+          equal string ~msg:"the classic HMAC-SHA256 vector"
+            "f7bc83f430538424b13298e6aa6fb143ef4d59a14946175997479dbc2d1a3cd8"
+            (hex_of_raw
+               (hmac_sha256 ~key:"key"
+                  "The quick brown fox jumps over the lazy dog"));
+          equal string ~msg:"the GitHub documentation pair, header-formatted"
+            ("sha256="
+            ^ "757107ea0eb2509fc211221cce984b8a37570b6d7586c22c46f4379c8b043e17"
+            )
+            (signature_of ~secret:ingress_secret "Hello, World!"));
+      test "a signed delivery is a content-free 202 with the exact raw bytes"
+        (fun () ->
+          let ingress, resolved, deliveries =
+            scripted_ingress ~secret:ingress_secret ()
+          in
+          (* Content neutrality: the body is bytes, not a text format. *)
+          let payload = String.init 256 Char.chr in
+          with_ingress_server ~ingress (fun ~net ~sw ~dir ->
+              let status, rbody =
+                ingress_post ~net ~dir ~sw
+                  ~headers:(signed_headers payload)
+                  ingress_path payload
+              in
+              equal int ~msg:"a verified delivery is 202" 202 status;
+              equal string ~msg:"the 202 is content-free" "" rbody;
+              (* Once to gate the body read, once after it — custody
+                 verifies against the post-body resolution, so a rotation
+                 cannot race an in-flight delivery. *)
+              equal (list string) ~msg:"the resolver saw the path token twice"
+                [ "routine-1"; "routine-1" ] !resolved;
+              let id, enabled, body = one_delivery ~msg:"accepted" deliveries in
+              equal string ~msg:"the callback saw the path token" "routine-1"
+                id;
+              is_true ~msg:"the resolver's enabled snapshot rode through"
+                enabled;
+              equal string ~msg:"the callback saw the exact raw bytes" payload
+                body));
+      test "an absent signature header is a content-free 401" (fun () ->
+          let ingress, _, deliveries =
+            scripted_ingress ~secret:ingress_secret ()
+          in
+          with_ingress_server ~ingress (fun ~net ~sw ~dir ->
+              let status, rbody =
+                ingress_post ~net ~dir ~sw ingress_path "{}"
+              in
+              equal int ~msg:"no header is refused" 401 status;
+              equal string ~msg:"the 401 is content-free" "" rbody;
+              equal int ~msg:"custody was never offered" 0
+                (List.length !deliveries)));
+      test "a wrong signature is the same content-free 401" (fun () ->
+          let ingress, _, deliveries =
+            scripted_ingress ~secret:ingress_secret ()
+          in
+          with_ingress_server ~ingress (fun ~net ~sw ~dir ->
+              (* Well-formed 64-hex, computed over different bytes. *)
+              let status, rbody =
+                ingress_post ~net ~dir ~sw
+                  ~headers:(signed_headers "other bytes")
+                  ingress_path "{}"
+              in
+              equal int ~msg:"a mismatch is refused" 401 status;
+              equal string ~msg:"the 401 is content-free" "" rbody;
+              equal int ~msg:"custody was never offered" 0
+                (List.length !deliveries)));
+      test "malformed signature values are the same content-free 401" (fun () ->
+          let ingress, _, deliveries =
+            scripted_ingress ~secret:ingress_secret ()
+          in
+          with_ingress_server ~ingress (fun ~net ~sw ~dir ->
+              let refuse ~msg value =
+                let status, rbody =
+                  ingress_post ~net ~dir ~sw
+                    ~headers:[ ("X-Hub-Signature-256", value) ]
+                    ingress_path "{}"
+                in
+                equal int ~msg 401 status;
+                equal string ~msg:"content-free" "" rbody
+              in
+              let hex =
+                hex_of_raw (hmac_sha256 ~key:ingress_secret "{}")
+              in
+              refuse ~msg:"odd-length hex" "sha256=abc";
+              refuse ~msg:"non-hex digits"
+                ("sha256=" ^ String.make 64 'z');
+              refuse ~msg:"missing prefix" hex;
+              refuse ~msg:"wrong prefix separator" ("sha256:" ^ hex);
+              refuse ~msg:"uppercase prefix" ("SHA256=" ^ hex);
+              refuse ~msg:"empty digest" "sha256=";
+              equal int ~msg:"custody was never offered" 0
+                (List.length !deliveries)));
+      test "the SHA-1 X-Hub-Signature is never consulted" (fun () ->
+          let ingress, _, deliveries =
+            scripted_ingress ~secret:ingress_secret ()
+          in
+          with_ingress_server ~ingress (fun ~net ~sw ~dir ->
+              (* A genuinely valid SHA-1 signature, and no SHA-256 header: if
+                 the legacy header were consulted this would verify. *)
+              let sha1 =
+                Digestif.SHA1.(
+                  to_hex (hmac_string ~key:ingress_secret "{}"))
+              in
+              let status, rbody =
+                ingress_post ~net ~dir ~sw
+                  ~headers:[ ("X-Hub-Signature", "sha1=" ^ sha1) ]
+                  ingress_path "{}"
+              in
+              equal int ~msg:"the legacy header verifies nothing" 401 status;
+              equal string ~msg:"content-free" "" rbody;
+              equal int ~msg:"custody was never offered" 0
+                (List.length !deliveries)));
+      test "an unknown ingress id is a content-free 404" (fun () ->
+          let ingress, resolved, deliveries =
+            scripted_ingress ~known:false ~secret:ingress_secret ()
+          in
+          with_ingress_server ~ingress (fun ~net ~sw ~dir ->
+              let status, rbody =
+                ingress_post ~net ~dir ~sw
+                  ~headers:(signed_headers "{}")
+                  ingress_path "{}"
+              in
+              equal int ~msg:"an unresolvable id is 404" 404 status;
+              equal string ~msg:"the 404 is content-free" "" rbody;
+              equal (list string) ~msg:"the resolver was asked"
+                [ "routine-1" ] !resolved;
+              equal int ~msg:"custody was never offered" 0
+                (List.length !deliveries)));
+      test "a disabled routine verifies, then informs the callback" (fun () ->
+          let ingress, _, deliveries =
+            scripted_ingress ~enabled:false ~secret:ingress_secret ()
+          in
+          with_ingress_server ~ingress (fun ~net ~sw ~dir ->
+              (* An unverified sender cannot observe even the disablement. *)
+              let status, rbody =
+                ingress_post ~net ~dir ~sw
+                  ~headers:(signed_headers "other bytes")
+                  ingress_path "{}"
+              in
+              equal int ~msg:"disabled still gates on the signature" 401 status;
+              equal string ~msg:"content-free" "" rbody;
+              equal int ~msg:"no unverified custody" 0
+                (List.length !deliveries);
+              (* A verified delivery is handed over with the snapshot; what
+                 disabled means (a skipped receipt) is the callback's. *)
+              let status, rbody =
+                ingress_post ~net ~dir ~sw
+                  ~headers:(signed_headers "{}")
+                  ingress_path "{}"
+              in
+              equal int ~msg:"verified custody still answers 202" 202 status;
+              equal string ~msg:"content-free" "" rbody;
+              let _, enabled, _ = one_delivery ~msg:"disabled" deliveries in
+              is_false ~msg:"the callback was told the routine is disabled"
+                enabled));
+      test "a body over the 1 MiB cap is a content-free 413" (fun () ->
+          let cap = 1024 * 1024 in
+          let ingress, _, deliveries =
+            scripted_ingress ~secret:ingress_secret ()
+          in
+          with_ingress_server ~ingress (fun ~net ~sw ~dir ->
+              let at_cap = String.make cap 'x' in
+              let status, rbody =
+                ingress_post ~net ~dir ~sw
+                  ~headers:(signed_headers at_cap)
+                  ingress_path at_cap
+              in
+              equal int ~msg:"exactly the cap is still a delivery" 202 status;
+              equal string ~msg:"content-free" "" rbody;
+              let _, _, body = one_delivery ~msg:"at-cap" deliveries in
+              equal int ~msg:"the callback saw every byte of the cap" cap
+                (String.length body);
+              deliveries := [];
+              let over = String.make (cap + 1) 'x' in
+              let status, rbody =
+                ingress_post ~net ~dir ~sw
+                  ~headers:(signed_headers over)
+                  ingress_path over
+              in
+              equal int ~msg:"one byte over the cap is refused" 413 status;
+              equal string ~msg:"the 413 is content-free" "" rbody;
+              (* A grossly oversized body trips the read cap itself; the
+                 refusal may tear the connection under the client mid-write,
+                 so only a delivered response is asserted on. *)
+              (match
+                 ingress_post ~net ~dir ~sw
+                   ~headers:(signed_headers "irrelevant")
+                   ingress_path
+                   (String.make (4 * cap) 'x')
+               with
+              | status, rbody ->
+                  equal int ~msg:"far over the cap is refused" 413 status;
+                  equal string ~msg:"content-free" "" rbody
+              | exception _ -> ());
+              equal int ~msg:"custody was never offered past the cap" 0
+                (List.length !deliveries)));
+      test "a refused delivery is a content-free 500" (fun () ->
+          let ingress, _, deliveries =
+            scripted_ingress ~outcome:(`Refused "receipts.jsonl: read-only")
+              ~secret:ingress_secret ()
+          in
+          with_ingress_server ~ingress (fun ~net ~sw ~dir ->
+              let status, rbody =
+                ingress_post ~net ~dir ~sw
+                  ~headers:(signed_headers "{}")
+                  ingress_path "{}"
+              in
+              equal int ~msg:"unwritable custody is 500, never 202" 500 status;
+              equal string ~msg:"the 500 is content-free" "" rbody;
+              equal int ~msg:"the delivery reached the callback once" 1
+                (List.length !deliveries)));
+      test "the GitHub identity headers ride through to deliver, unverified"
+        (fun () ->
+          let seen = ref [] in
+          let ingress, _, deliveries =
+            scripted_ingress
+              ~on_headers:(fun ~event ~delivery_id ->
+                seen := (event, delivery_id) :: !seen)
+              ~secret:ingress_secret ()
+          in
+          with_ingress_server ~ingress (fun ~net ~sw ~dir ->
+              (* The HMAC covers the body only, so the headers verify nothing
+                 and ride through as received. *)
+              let status, _ =
+                ingress_post ~net ~dir ~sw
+                  ~headers:
+                    (("X-GitHub-Event", "ping")
+                    :: ("X-GitHub-Delivery", "72d3162e-cc78-11e3")
+                    :: signed_headers "{}")
+                  ingress_path "{}"
+              in
+              equal int ~msg:"delivered" 202 status;
+              let status, _ =
+                ingress_post ~net ~dir ~sw
+                  ~headers:(signed_headers "{}")
+                  ingress_path "{}"
+              in
+              equal int ~msg:"headerless is still a delivery" 202 status;
+              equal int ~msg:"two deliveries" 2 (List.length !deliveries);
+              match List.rev !seen with
+              | [ (event, delivery_id); (none_event, none_delivery) ] ->
+                  equal (option string) ~msg:"the event header rode through"
+                    (Some "ping") event;
+                  equal (option string) ~msg:"the delivery id rode through"
+                    (Some "72d3162e-cc78-11e3") delivery_id;
+                  equal (option string) ~msg:"an absent event header is None"
+                    None none_event;
+                  equal (option string)
+                    ~msg:"an absent delivery header is None" None none_delivery
+              | l -> failf "expected two header records, saw %d" (List.length l)));
+      test "the rejection hook fires on the 401 path only" (fun () ->
+          let rejections = ref [] in
+          let on_rejected ~ingress_id = rejections := ingress_id :: !rejections in
+          let ingress, _, _ =
+            scripted_ingress ~on_rejected ~secret:ingress_secret ()
+          in
+          with_ingress_server ~ingress (fun ~net ~sw ~dir ->
+              (* A forged signature on a resolved id: exactly one firing. *)
+              let status, _ =
+                ingress_post ~net ~dir ~sw
+                  ~headers:(signed_headers "other bytes")
+                  ingress_path "{}"
+              in
+              equal int ~msg:"forged is 401" 401 status;
+              equal (list string) ~msg:"the hook saw the refused id"
+                [ "routine-1" ] !rejections;
+              (* An oversized body is a 413, never a rejection. *)
+              let over = String.make ((1024 * 1024) + 1) 'x' in
+              let status, _ =
+                ingress_post ~net ~dir ~sw
+                  ~headers:(signed_headers over)
+                  ingress_path over
+              in
+              equal int ~msg:"oversized is 413" 413 status;
+              (* A verified delivery is never a rejection. *)
+              let status, _ =
+                ingress_post ~net ~dir ~sw
+                  ~headers:(signed_headers "{}")
+                  ingress_path "{}"
+              in
+              equal int ~msg:"verified is 202" 202 status;
+              equal (list string) ~msg:"the 413 and the 202 fired nothing"
+                [ "routine-1" ] !rejections);
+          (* An unknown id is a 404, never a rejection. *)
+          let ingress, _, _ =
+            scripted_ingress ~known:false ~on_rejected ~secret:ingress_secret
+              ()
+          in
+          rejections := [];
+          with_ingress_server ~ingress (fun ~net ~sw ~dir ->
+              let status, _ =
+                ingress_post ~net ~dir ~sw
+                  ~headers:(signed_headers "other bytes")
+                  ingress_path "{}"
+              in
+              equal int ~msg:"unknown is 404" 404 status;
+              equal (list string) ~msg:"the 404 fired nothing" [] !rejections));
+      test "a raising deliver is caught into a content-free 500" (fun () ->
+          let calls = ref 0 in
+          let ingress =
+            {
+              Server.Ingress.resolve =
+                (fun ~ingress_id:_ ->
+                  Server.Ingress.Resolved
+                    { secret = ingress_secret; enabled = true });
+              deliver =
+                (fun ~ingress_id:_ ~enabled:_ ~event:_ ~delivery_id:_ ~body:_ ->
+                  incr calls;
+                  failwith "receipts.jsonl: disk gone");
+              rejected = None;
+            }
+          in
+          with_ingress_server ~ingress (fun ~net ~sw ~dir ->
+              let status, rbody =
+                ingress_post ~net ~dir ~sw
+                  ~headers:(signed_headers "{}")
+                  ingress_path "{}"
+              in
+              equal int ~msg:"the raise is answered as 500, not torn" 500
+                status;
+              equal string ~msg:"the 500 is content-free" "" rbody;
+              equal int ~msg:"deliver ran once" 1 !calls;
+              (* The connection machinery survives: a second request is
+                 answered normally. *)
+              let status, _ =
+                ingress_post ~net ~dir ~sw
+                  ~headers:(signed_headers "{}")
+                  ingress_path "{}"
+              in
+              equal int ~msg:"the server still answers" 500 status));
+      test "rotation between the body read and custody revokes the old key"
+        (fun () ->
+          let fresh = "rotated to a fresh 256-bit key" in
+          let calls = ref 0 in
+          let deliveries = ref [] in
+          let rejections = ref [] in
+          let ingress =
+            {
+              Server.Ingress.resolve =
+                (fun ~ingress_id:_ ->
+                  incr calls;
+                  (* The gate resolve answers the retained secret; the
+                     rotation lands before the post-body re-resolve. *)
+                  Server.Ingress.Resolved
+                    {
+                      secret =
+                        (if !calls = 1 then ingress_secret else fresh);
+                      enabled = true;
+                    });
+              deliver =
+                (fun ~ingress_id:_ ~enabled:_ ~event:_ ~delivery_id:_ ~body ->
+                  deliveries := body :: !deliveries;
+                  `Accepted);
+              rejected =
+                Some
+                  (fun ~ingress_id -> rejections := ingress_id :: !rejections);
+            }
+          in
+          with_ingress_server ~ingress (fun ~net ~sw ~dir ->
+              let status, rbody =
+                ingress_post ~net ~dir ~sw
+                  ~headers:(signed_headers ~secret:ingress_secret "{}")
+                  ingress_path "{}"
+              in
+              equal int ~msg:"the in-flight old-key delivery is revoked" 401
+                status;
+              equal string ~msg:"the 401 is content-free" "" rbody;
+              equal int ~msg:"custody was never offered" 0
+                (List.length !deliveries);
+              equal (list string) ~msg:"the rejection observer fired"
+                [ "routine-1" ] !rejections;
+              (* A delivery signed with the rotated key verifies end to
+                 end against the fresh resolution. *)
+              let status, _ =
+                ingress_post ~net ~dir ~sw
+                  ~headers:(signed_headers ~secret:fresh "{}")
+                  ingress_path "{}"
+              in
+              equal int ~msg:"the fresh key delivers" 202 status;
+              equal int ~msg:"custody followed the fresh key" 1
+                (List.length !deliveries)));
+      test "everything else under the prefix is a content-free 404" (fun () ->
+          let ingress, _, deliveries =
+            scripted_ingress ~secret:ingress_secret ()
+          in
+          with_ingress_server ~ingress (fun ~net ~sw ~dir ->
+              let refuse ~msg (status, rbody) =
+                equal int ~msg 404 status;
+                equal string ~msg:"content-free" "" rbody
+              in
+              let client = raw_client ~net ~dir in
+              refuse ~msg:"GET on the route is not the family's shape"
+                (raw_get client ~sw ingress_path);
+              refuse ~msg:"a missing id"
+                (ingress_post ~net ~dir ~sw
+                   ~headers:(signed_headers "{}")
+                   "/ingress/github" "{}");
+              refuse ~msg:"a trailing segment"
+                (ingress_post ~net ~dir ~sw
+                   ~headers:(signed_headers "{}")
+                   (ingress_path ^ "/extra") "{}");
+              refuse ~msg:"an unknown provider segment"
+                (ingress_post ~net ~dir ~sw
+                   ~headers:(signed_headers "{}")
+                   "/ingress/gitlab/routine-1" "{}");
+              equal int ~msg:"custody was never offered" 0
+                (List.length !deliveries)));
+      test "the family and the bearer surface grant each other nothing"
+        (fun () ->
+          let ingress, _, deliveries =
+            scripted_ingress ~secret:ingress_secret ()
+          in
+          with_loopback_ingress_server ~ingress
+            (fun ~net ~sw ~port ~token ->
+              let bearer =
+                ("authorization", "Bearer " ^ Server.Token.to_string token)
+              in
+              (* A valid wire token, a bad signature: the family's own
+                 content-free 401, not the bearer's bodied one — the token
+                 bought nothing under /ingress/. *)
+              let status, _, rbody =
+                web_post ~net ~port ~sw
+                  ~headers:(bearer :: signed_headers "other bytes")
+                  ~body:"{}" ingress_path
+              in
+              equal int ~msg:"a wire token does not verify a delivery" 401
+                status;
+              equal string ~msg:"the refusal is the family's, content-free" ""
+                rbody;
+              equal int ~msg:"custody was never offered" 0
+                (List.length !deliveries);
+              (* A valid signature outside /ingress/: the bearer surface
+                 answers, and the signature buys nothing there. *)
+              let status, _, rbody =
+                web_post ~net ~port ~sw
+                  ~headers:(signed_headers "{}")
+                  ~body:"{}" "/wire"
+              in
+              equal int ~msg:"a valid signature opens no other route" 401
+                status;
+              equal string ~msg:"the bearer refusal, not the family's"
+                "unauthorized" rbody;
+              (* The family owns only its prefix: health stays pre-auth. *)
+              let status, _, rbody = web_get ~net ~port ~sw "/health" in
+              equal int ~msg:"health is untouched" 200 status;
+              equal string ~msg:"health body" "ok" rbody));
+      test "an unconfigured serve leaves /ingress paths as before" (fun () ->
+          with_server ~driver:(make_driver ())
+            (fun ~env:_ ~net ~sw ~dir ~bind:_ ~remote:_ ->
+              (* No [?ingress]: the prefix is nobody's, so the request rides
+                 the ordinary pre-binding path to its bodied 404. *)
+              let status, rbody =
+                ingress_post ~net ~dir ~sw
+                  ~headers:(signed_headers "{}")
+                  ingress_path "{}"
+              in
+              equal int ~msg:"an unmounted family answers as any unknown route"
+                404 status;
+              equal string ~msg:"the ordinary bodied not-found, not the \
+                                 family's content-free one" "not found" rbody));
+    ]
+
 let () =
   Random.self_init ();
   run "mentat.server"
@@ -3043,11 +3362,11 @@ let () =
       discovery_group;
       driver_for_group;
       session_routing_group;
-      find_or_spawn_group;
       feed_group;
       reads_group;
       commands_group;
       edge_group;
+      ingress_group;
       introspection_group;
       m4_group;
       idempotency_group;

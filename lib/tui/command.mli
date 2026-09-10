@@ -25,7 +25,7 @@
 type category = Session | Conversation | Navigation | Model | View | App
 
 (** A full-screen surface with its own verbs. *)
-type screen = Review | Sessions | Settings | Goal
+type screen = Review | Sessions | Settings
 
 (** The three settings pages: the destination tab an {!Open_settings} fate
     carries. *)
@@ -65,7 +65,6 @@ type fate =
   | Undo_session  (** Step the durable undo boundary back one user turn. *)
   | Redo_session  (** Step the undo boundary forward one user turn. *)
   | Compact_session  (** Compact the active conversation. *)
-  | Open_goal  (** Open the active session's goal projection. *)
   | Rename_session  (** Rename the active session. *)
   | Open_model  (** Open model selection. *)
   | Open_theme  (** Open theme selection. *)
@@ -83,6 +82,11 @@ type fate =
       (** Drive the supervised build watch: [/dune restart] forgives a
           terminal state and cycles a fresh watch, [/dune stop] ends
           supervision for the session. *)
+  | Goal_command
+      (** Drive the standing goal: [/goal OBJECTIVE [--max-turns N]
+          [--budget USD]] declares one and arms the steward loop,
+          [/goal stop] retires it, [/goal resume] re-arms a recorded goal,
+          and bare [/goal] reports the standing state. *)
   | Init_project of string
       (** Submit the carried AGENTS.md initialization prompt as a Build turn. *)
   | Quit  (** Request process exit through the shell's guarded quit flow. *)

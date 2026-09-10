@@ -185,6 +185,22 @@ let create_seeded t session ~seed =
 let create t session = create_seeded t session ~seed:(fun () -> Ok ())
 let on_disk_dir t id = Handle.native t (Layout.session_dir id)
 
+(* One stat, no read: every commit replaces the document onto a fresh inode,
+   so the (device, inode, size, mtime) tuple changes with the bytes in
+   practice. *)
+let stamp t id =
+  match
+    Eio.Path.stat ~follow:true (Handle.path t (Layout.document id))
+  with
+  | stat ->
+      Some
+        (Printf.sprintf "%Lx-%Lx-%s-%h" stat.Eio.File.Stat.dev
+           stat.Eio.File.Stat.ino
+           (Optint.Int63.to_string stat.Eio.File.Stat.size)
+           stat.Eio.File.Stat.mtime)
+  | exception (Eio.Cancel.Cancelled _ as exn) -> raise exn
+  | exception _ -> None
+
 let load t id =
   let path = Layout.document id in
   match path_kind t path with
@@ -286,7 +302,7 @@ let remove t document =
   Eio.Switch.run @@ fun sw ->
   match
     Run_lock.try_acquire ~sw t ~session:id
-      ~owner:(Owner.make ~label:"remove" ())
+      ~owner:(Owner.make ~label:Run_lock.remove_owner_label ())
   with
   | Error (`Held holder) -> Error (Error.Locked { id; holder })
   | Error (`Io io) -> Error (Error.Io io)

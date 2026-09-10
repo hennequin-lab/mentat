@@ -23,8 +23,7 @@
     untouched: only the composition root consumes both directions.
 
     The unix-socket transport, the loopback browser edge ({!Web}), and the
-    parity harness all ship; the public bind constructor exists at the type
-    level but its TLS listener is a named future — {!listen} refuses it. *)
+    parity harness all ship. *)
 
 (** {1:tokens Connection tokens}
 
@@ -74,9 +73,11 @@ end
 
     [Bind] is the only way to describe a listener, for both this JSON wire and
     the future [mentat.web] browser surface. Each constructor carries everything
-    its safety requires, and the type admits a non-loopback address {b only}
-    paired with the TLS × token × origin-allowlist triple — so an open agent
-    port without those does not type-check. *)
+    its safety requires, and both bind the local machine only — a unix socket or
+    the loopback interface. A public (non-loopback) listener is deliberately
+    absent: if one ever lands it enters here as a new constructor carrying its
+    own safety requirements, so an open agent port without them can never
+    type-check. *)
 
 module Bind : sig
   type t
@@ -97,23 +98,18 @@ module Bind : sig
   (** [loopback ~port ~token] binds 127.0.0.1 only. [None] requests an ephemeral
       port (written to the discovery file). A token is required. *)
 
-  val public :
-    host:string ->
-    port:int ->
-    tls:Tls.Config.server ->
-    token:Token.t ->
-    origins:Origin.t list ->
-    t
-  (** [public ~host ~port ~tls ~token ~origins] is the only constructor
-      accepting a non-loopback host, and only with the full triple. Its listener
-      is a Stage-3 landing; {!listen} raises {!Unsupported} on it in Stage 1
-      (the type exists now). *)
-end
+  val socket_path : dir:Lpath.Abs.t -> string
+  (** [socket_path ~dir] is the native path of the socket a {!unix} bind at
+      [dir] creates. The socket's leaf name is owned here; consumers that
+      display, dial, or remove the endpoint derive the path rather than
+      restating the literal. *)
 
-exception Unsupported of string
-(** Raised by {!listen} for a {!Bind.public} target in Stage 1, naming the
-    Stage-3 landing. The type-level guarantee (a public bind needs the triple)
-    is unaffected. *)
+  val remove_endpoint : dir:Lpath.Abs.t -> unit
+  (** [remove_endpoint ~dir] best-effort removes the on-disk residue a {!unix}
+      bind leaves once its server is gone: the socket file, then [dir] itself.
+      A path that resists — a non-empty or foreign directory — is left behind
+      as diagnosable residue; never an error. *)
+end
 
 type listener
 (** The type for a bound, listening socket. *)
@@ -121,14 +117,108 @@ type listener
 val listen : sw:Eio.Switch.t -> net:_ Eio.Net.t -> Bind.t -> listener
 (** [listen ~sw ~net bind] creates and binds the socket [bind] describes, ready
     for {!serve}. It performs the 0700 directory and 0600 socket discipline for
-    a {!Bind.unix} target and refuses a {!Bind.public} target with
-    {!Unsupported} this stage. *)
+    a {!Bind.unix} target. *)
 
 val port : listener -> int option
-(** [port listener] is the TCP port a loopback (or public) [listener] bound —
-    the daemon reads it to name the browser URL when the bind requested an
-    ephemeral port. [None] for a {!Bind.unix} listener, which carries no port.
-*)
+(** [port listener] is the TCP port a loopback [listener] bound — the daemon
+    reads it to name the browser URL when the bind requested an ephemeral port.
+    [None] for a {!Bind.unix} listener, which carries no port. *)
+
+(** {1:ingress The webhook ingress}
+
+    A content-neutral route family {!serve} mounts when given an {!Ingress.t} —
+    the third pre-auth surface beside the handshake and [GET /health]:
+
+    {v POST /ingress/github/<ingress-id> v}
+
+    [<ingress-id>] is an opaque path token (a high-entropy capability, a second
+    factor but never the authenticator). The family does exactly one thing:
+    authenticate each delivery end-to-end — [X-Hub-Signature-256], an
+    HMAC-SHA256 over the {b raw} request body, compared in constant time — and
+    hand the verified bytes to the injected callback. Verification and routing
+    live here;
+    what a verified delivery {e means} (receipts, gates, spawning) is entirely
+    the callback owner's.
+
+    The family shares nothing with the other surfaces: it never consults the
+    bearer token, the endpoint table, the handshake bindings, or the browser
+    edge's cookie/[Origin] machinery — a valid wire token grants nothing under
+    [/ingress/], and a valid delivery signature grants nothing outside it.
+
+    Every refusal is answered, never raised, and {b content-free} (an empty
+    body; an internet-facing endpoint gets garbage, and garbage deserves no
+    detail): an id {!Ingress.resolution.Unknown} to the resolver is [404]; an
+    absent [X-Hub-Signature-256], an undecodable one, and a clean mismatch are
+    one indistinguishable [401] (the SHA-1 [X-Hub-Signature] is never
+    consulted); a body over 1 MiB is [413], its read capped so the excess is
+    never buffered; anything under [/ingress/] that is not the family's one
+    route shape is [404]. A verified delivery answers by the callback:
+    [`Accepted] is a content-free [202], [`Refused] a content-free [500]. *)
+
+module Ingress : sig
+  type resolution =
+    | Resolved of { secret : string; enabled : bool }
+        (** The configuration answering to an ingress id: the webhook secret
+            its deliveries are verified against, and whether it is enabled. A
+            disabled configuration {b still verifies} against the retained
+            secret — disabling is owner intent, not hook failure, and an
+            unverified delivery must not be able to observe even that much —
+            and [enabled] is passed through to {!t.deliver} unread, so
+            interpreting it (a skipped-disabled receipt, say) stays with the
+            callback. *)
+    | Unknown
+        (** Nothing answers to the id (never minted, or removed): a
+            content-free [404]. *)
+  (** The type for the resolver's answer: one consistent snapshot — secret
+      and enabled state read together. *)
+
+  type t = {
+    resolve : ingress_id:string -> resolution;
+        (** Resolve an ingress id to its snapshot. Called before the body
+            is read — an unknown id ([404]) never buys a read — and, for a
+            delivery that verifies against that first snapshot, once more
+            after the body has arrived: the re-resolved secret is the one
+            custody is verified under, so rotating a secret revokes an
+            in-flight old-key delivery instead of racing it. Keep it prompt
+            and side-effect minimal: it runs on unauthenticated input. *)
+    deliver :
+      ingress_id:string ->
+      enabled:bool ->
+      event:string option ->
+      delivery_id:string option ->
+      body:string ->
+      [ `Accepted | `Refused of string ];
+        (** Take custody of one {b verified} delivery: [body] is the exact raw
+            bytes the signature was checked over, [enabled] the state of
+            the post-body resolution the signature was verified under.
+            [event]
+            and [delivery_id] are the [X-GitHub-Event] and [X-GitHub-Delivery]
+            header values as received, [None] when absent; {b headers are not
+            covered by the body HMAC}, so both ride through unverified —
+            useful identity for receipts (a [ping] versus a [pull_request], a
+            delivery GUID before any payload decodes), never trusted input.
+            [`Accepted] means custody is durable — answered as [202]
+            immediately, before any interpretation work. [`Refused reason]
+            means it is not (a receipt that cannot be written): answered as a
+            content-free [500] so the sender retries or its log shows the
+            failure; [reason] is logged, never sent. Report failure as
+            [`Refused], never by raising — though a raise is caught into a
+            content-free [500] with the exception logged, so it can never
+            tear the connection down responseless. *)
+    rejected : (ingress_id:string -> unit) option;
+        (** Observe one delivery refused as a [401] — an absent, undecodable,
+            or mismatched signature on a resolved id. [None] ignores
+            refusals; the family still answers the [401] either way. The hook
+            fires on the [401] path only — never for an [Unknown] id ([404])
+            or an oversized body ([413]) — so a counter behind it meters
+            exactly the forged-delivery pressure on a minted id. A raise is
+            caught and logged; the [401] is answered regardless. *)
+  }
+  (** The type for the ingress configuration: the callbacks the family routes
+      through. All run on the serving fiber; keep them prompt (resolve a
+      handful of ids, append one receipt), never blocking on gate or run
+      work. *)
+end
 
 (** {1:serve Serving a driver over the wire} *)
 
@@ -154,14 +244,16 @@ val serve :
   clock:_ Eio.Time.clock ->
   ?heartbeat_s:float ->
   ?ledger_cap:int ->
+  ?ingress:Ingress.t ->
   driver_for:
     (workspace:string option ->
     environment:(string * string) list option ->
     (target, Mentat_protocol.Error.t) result) ->
   listener ->
   unit
-(** [serve ~sw ~clock ?heartbeat_s ?ledger_cap ~driver_for listener] runs the
-    accept loop. Each connection's {b first} request must be [POST /handshake];
+(** [serve ~sw ~clock ?heartbeat_s ?ledger_cap ?ingress ~driver_for listener]
+    runs the accept loop. Each connection's {b first} request must be
+    [POST /handshake];
     [serve] calls [driver_for] with the requested workspace — and the
     environment the client offered, which matters only to the handshake that
     (re)boots a workspace instance; a live instance keeps the environment it
@@ -182,7 +274,11 @@ val serve :
 
     [clock] paces the SSE keep-alive, whose idle interval is [heartbeat_s]
     seconds (default [15.]). It answers a pre-auth, content-free [GET /health].
-    It blocks until [sw] is cancelled.
+    Given [ingress], it also mounts the {{!section-ingress}webhook ingress}
+    family, which then owns every path under [/ingress/] — resolved before, and
+    never through, the bearer check and the endpoint table; without [ingress]
+    no such family exists and those paths answer as any other unknown route. It
+    blocks until [sw] is cancelled.
 
     The request-id find-or-create ledger that dedups a lost-ack retry of a
     [Requires_request_id] operation is daemon-global and {b bounded}: it holds

@@ -23,29 +23,49 @@ module Id =
 module Origin = struct
   type t =
     | User
-    | Goal_continuation
     | Queued of Queue.Id.t
+    | Triggered of {
+        source : string;
+        digest : string;
+        key : string;
+        entry : Queue.Id.t option;
+      }
     | Plan_build
     | Compaction
     | Step_limit_wind_down
 
+  let triggered ?entry ~source ~digest ~key () =
+    let reject field value =
+      if String.is_empty value then
+        invalid "Origin.triggered" (field ^ " must not be empty")
+    in
+    reject "source" source;
+    reject "digest" digest;
+    reject "key" key;
+    Triggered { source; digest; key; entry }
+
   let equal a b =
     match (a, b) with
     | User, User -> true
-    | Goal_continuation, Goal_continuation -> true
     | Queued a, Queued b -> Queue.Id.equal a b
+    | Triggered a, Triggered b ->
+        String.equal a.source b.source
+        && String.equal a.digest b.digest
+        && String.equal a.key b.key
+        && Option.equal Queue.Id.equal a.entry b.entry
     | Plan_build, Plan_build -> true
     | Compaction, Compaction -> true
     | Step_limit_wind_down, Step_limit_wind_down -> true
-    | ( ( User | Goal_continuation | Queued _ | Plan_build | Compaction
+    | ( ( User | Queued _ | Triggered _ | Plan_build | Compaction
         | Step_limit_wind_down ),
         _ ) ->
         false
 
   let pp ppf = function
     | User -> Format.pp_print_string ppf "user"
-    | Goal_continuation -> Format.pp_print_string ppf "goal-continuation"
     | Queued id -> Format.fprintf ppf "queued(%a)" Queue.Id.pp id
+    | Triggered { source; digest; key; entry = _ } ->
+        Format.fprintf ppf "triggered(%s@%s:%s)" source digest key
     | Plan_build -> Format.pp_print_string ppf "plan-build"
     | Compaction -> Format.pp_print_string ppf "compaction"
     | Step_limit_wind_down -> Format.pp_print_string ppf "step-limit-wind-down"
@@ -56,20 +76,36 @@ module Origin = struct
       |> Jsont.Object.error_unknown |> Jsont.Object.finish
       |> Jsont.Object.Case.map "user" ~dec:Fun.id
     in
-    let goal_case =
-      Jsont.Object.map ~kind:"goal-continuation origin" Goal_continuation
-      |> Jsont.Object.error_unknown |> Jsont.Object.finish
-      |> Jsont.Object.Case.map "goal_continuation" ~dec:Fun.id
-    in
     let queued_case =
       Jsont.Object.map ~kind:"queued origin" (fun id -> Queued id)
       |> Jsont.Object.mem "entry" Queue.Id.jsont ~enc:(function
         | Queued id -> id
-        | User | Goal_continuation | Plan_build | Compaction
-        | Step_limit_wind_down ->
+        | User | Triggered _ | Plan_build | Compaction | Step_limit_wind_down ->
             assert false)
       |> Jsont.Object.error_unknown |> Jsont.Object.finish
       |> Jsont.Object.Case.map "queued" ~dec:Fun.id
+    in
+    let triggered_case =
+      Jsont.Object.map ~kind:"triggered origin" (fun source digest key entry ->
+          decode_invalid_arg (fun () -> triggered ?entry ~source ~digest ~key ()))
+      |> Jsont.Object.mem "source" Jsont.string ~enc:(function
+        | Triggered { source; _ } -> source
+        | User | Queued _ | Plan_build | Compaction | Step_limit_wind_down ->
+            assert false)
+      |> Jsont.Object.mem "digest" Jsont.string ~enc:(function
+        | Triggered { digest; _ } -> digest
+        | User | Queued _ | Plan_build | Compaction | Step_limit_wind_down ->
+            assert false)
+      |> Jsont.Object.mem "key" Jsont.string ~enc:(function
+        | Triggered { key; _ } -> key
+        | User | Queued _ | Plan_build | Compaction | Step_limit_wind_down ->
+            assert false)
+      |> Jsont.Object.opt_mem "entry" Queue.Id.jsont ~enc:(function
+        | Triggered { entry; _ } -> entry
+        | User | Queued _ | Plan_build | Compaction | Step_limit_wind_down ->
+            assert false)
+      |> Jsont.Object.error_unknown |> Jsont.Object.finish
+      |> Jsont.Object.Case.map "triggered" ~dec:Fun.id
     in
     let plan_case =
       Jsont.Object.map ~kind:"plan-build origin" Plan_build
@@ -90,8 +126,8 @@ module Origin = struct
       List.map Jsont.Object.Case.make
         [
           user_case;
-          goal_case;
           queued_case;
+          triggered_case;
           plan_case;
           compaction_case;
           step_limit_case;
@@ -99,8 +135,8 @@ module Origin = struct
     in
     let enc_case = function
       | User as origin -> Jsont.Object.Case.value user_case origin
-      | Goal_continuation as origin -> Jsont.Object.Case.value goal_case origin
       | Queued _ as origin -> Jsont.Object.Case.value queued_case origin
+      | Triggered _ as origin -> Jsont.Object.Case.value triggered_case origin
       | Plan_build as origin -> Jsont.Object.Case.value plan_case origin
       | Compaction as origin -> Jsont.Object.Case.value compaction_case origin
       | Step_limit_wind_down as origin ->
